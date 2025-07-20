@@ -303,9 +303,10 @@ On Vercel, use Vercel Cron:
 ### Adding New Games
 1. Create game logic in `lib/game/[game-name]/`
 2. Add UI components in `components/game/[game-name]/`
-3. Implement API endpoints in `app/api/`
-4. Update database schema if needed
-5. Add tests for game mechanics
+3. Implement API endpoints in `app/api/[game-name]/`
+4. Add database tables with `{game_name}_` prefix
+5. Register game in `cinamini_games` table
+6. Add tests for game mechanics
 
 ### Testing
 ```bash
