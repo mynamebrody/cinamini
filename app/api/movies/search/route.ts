@@ -10,11 +10,16 @@ export async function GET(request: NextRequest) {
   try {
     // Check if TMDB API key is configured
     if (!process.env.TMDB_API_KEY) {
+      console.error('TMDB_API_KEY environment variable is not set')
       return NextResponse.json(
         { error: 'TMDB API key is not configured' } as APIErrorResponse,
         { status: 500 }
       )
     }
+
+    // Log API key presence for debugging (without revealing the key)
+    console.log('TMDB API Key configured:', process.env.TMDB_API_KEY ? 'Yes' : 'No')
+    console.log('TMDB API Key length:', process.env.TMDB_API_KEY?.length || 0)
 
     // Verify user authentication
     const supabase = await createClient()
@@ -49,23 +54,38 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Make request to TMDB API
+    // Make request to TMDB API using Bearer token authentication
     const tmdbUrl = new URL(`${TMDB_BASE_URL}/search/movie`)
-    tmdbUrl.searchParams.set('api_key', process.env.TMDB_API_KEY)
     tmdbUrl.searchParams.set('query', sanitizedQuery)
     tmdbUrl.searchParams.set('page', page)
     tmdbUrl.searchParams.set('include_adult', 'false')
 
+    console.log('Making TMDB request to:', tmdbUrl.toString())
+
     const tmdbResponse = await fetch(tmdbUrl.toString(), {
       headers: {
         'Accept': 'application/json',
+        'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
       },
       // Add timeout to prevent hanging requests
       signal: AbortSignal.timeout(10000), // 10 second timeout
     })
 
+    console.log('TMDB Response Status:', tmdbResponse.status, tmdbResponse.statusText)
+
     if (!tmdbResponse.ok) {
+      const errorText = await tmdbResponse.text()
+      console.error('TMDB API error details:', errorText)
       console.error('TMDB API error:', tmdbResponse.status, tmdbResponse.statusText)
+      
+      // If 401, it's likely an API key issue
+      if (tmdbResponse.status === 401) {
+        return NextResponse.json(
+          { error: 'Invalid TMDB API key. Please check your configuration.' } as APIErrorResponse,
+          { status: 500 }
+        )
+      }
+      
       return NextResponse.json(
         { error: 'Failed to search movies. Please try again.' } as APIErrorResponse,
         { status: 500 }

@@ -23,7 +23,14 @@ The TMDB integration allows authenticated users to search for movies using a cle
 1. Create an account at [The Movie Database](https://www.themoviedb.org/)
 2. Go to [API Settings](https://www.themoviedb.org/settings/api)
 3. Request an API key (it's free)
-4. Copy your API key
+4. **Important**: You need the **"API Read Access Token"** (Bearer token), NOT the API Key (v3 auth)
+5. Copy the long token that starts with "eyJhbGciOiJIUzI1NiJ9..."
+
+**Note**: TMDB provides two types of authentication:
+- **API Key (v3 auth)**: A shorter key (32 characters) - This is the OLD method
+- **API Read Access Token**: A longer JWT token (~200+ characters) - This is what we need
+
+Make sure you're using the **API Read Access Token** for Bearer authentication.
 
 ### 2. Environment Configuration
 
