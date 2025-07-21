@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { signOut } from "@/lib/actions"
+import { MovieSearch } from "@/components/movie-search"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -26,16 +27,27 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#161616]">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold mb-4 text-white">Hello {user.email}</h1>
-        <form action={signOut}>
-          <Button type="submit" className="bg-[#2b725e] hover:bg-[#235e4c] text-white">
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </form>
-      </div>
+    <div className="min-h-screen bg-[#161616]">
+      {/* Header with user info and sign out */}
+      <header className="border-b border-white/10 bg-[#161616]/90 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold text-white">Cinamini</h1>
+            <p className="text-sm text-gray-400">Welcome back, {user.email}</p>
+          </div>
+          <form action={signOut}>
+            <Button type="submit" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </form>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="py-8">
+        <MovieSearch />
+      </main>
     </div>
   )
 }
