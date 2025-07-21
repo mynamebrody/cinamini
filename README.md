@@ -16,12 +16,28 @@ A daily movie puzzle platform featuring multiple games, starting with **Retitled
 
 **Example Share:** `CineMini #123 🇪🇸 🟩⬜⬜🟩 cinemini.app`
 
+## 🎬 Features
+
+### Movie Search
+- **TMDB Integration**: Secure backend integration with The Movie Database API
+- **Real-time Search**: Search movies as you type with instant results
+- **Rich Movie Data**: View movie posters, titles, release years, ratings, and descriptions
+- **Responsive Design**: Mobile-first design with clean, organized movie cards
+- **Authentication Required**: Search feature only available to logged-in users
+- **Error Handling**: Graceful handling of API failures and network issues
+
+### User Experience
+- **Authentication**: Secure user registration and login with Supabase
+- **Dashboard**: Clean, modern interface with movie search functionality
+- **Loading States**: Smooth loading indicators during searches
+- **Empty States**: Helpful messages when no results are found
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ and npm
 - Supabase account
-- TMDB API key
+- TMDB API key (from [themoviedb.org](https://www.themoviedb.org/settings/api))
 
 ### Installation
 
@@ -55,7 +71,6 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # TMDB API (get from https://www.themoviedb.org/settings/api)
 TMDB_API_KEY=your_tmdb_api_key
-TMDB_BASE_URL=https://api.themoviedb.org/3
 
 # Share Card Generation
 SHARE_CARD_SECRET=your_random_secret_for_share_urls
@@ -90,11 +105,14 @@ npx supabase db push
 │   ├── game/                 # Game interface (to be built)
 │   ├── stats/                # User statistics (to be built)
 │   ├── share/[id]/           # Share pages for SEO (to be built)
-│   └── api/                  # API endpoints (to be built)
+│   └── api/                  # API endpoints
+│       └── movies/           # Movie-related endpoints
+│           └── search/       # TMDB movie search endpoint
 ├── components/               # React components
 │   ├── ui/                   # shadcn/ui components
 │   ├── game/                 # Game-specific components (to be built)
-│   └── *.tsx                 # Feature components
+│   ├── movie-search.tsx      # Movie search component with TMDB integration
+│   └── *.tsx                 # Other feature components
 ├── lib/                      # Utilities and configurations
 │   ├── supabase/             # Database client setup
 │   ├── tmdb/                 # TMDB API utilities (to be built)
