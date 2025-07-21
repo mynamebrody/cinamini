@@ -53,6 +53,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
+# Site URL for OAuth redirects
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
 # TMDB API (get from https://www.themoviedb.org/settings/api)
 TMDB_API_KEY=your_tmdb_api_key
 TMDB_BASE_URL=https://api.themoviedb.org/3
@@ -72,6 +75,39 @@ Or use the Supabase CLI:
 ```bash
 npx supabase db push
 ```
+
+### Google OAuth Setup
+
+To enable Google authentication, you need to configure OAuth in your Supabase project:
+
+1. **Create Google OAuth Credentials**:
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
+   - Set the application type to "Web application"
+   - Add authorized redirect URIs:
+     - For development: `http://localhost:3000/auth/callback`
+     - For production: `https://your-domain.com/auth/callback`
+   - Copy the Client ID and Client Secret
+
+2. **Configure Supabase**:
+   - Go to your Supabase dashboard
+   - Navigate to Authentication → Providers → Google
+   - Enable Google provider
+   - Add your Google Client ID and Client Secret
+   - Set the redirect URL to: `https://your-project-ref.supabase.co/auth/v1/callback`
+
+3. **Update Site URL**:
+   - In your Supabase dashboard, go to Authentication → URL Configuration
+   - Set your Site URL to match your `NEXT_PUBLIC_SITE_URL` environment variable
+   - Add redirect URLs for both development and production
+
+The Google OAuth implementation includes:
+- **Sign in with Google button** on login and signup pages
+- **Automatic user creation** for new Google accounts
+- **Session management** with proper redirect handling
+- **Error handling** for failed authentication attempts
 
 ## 🏗️ Architecture
 

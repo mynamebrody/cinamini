@@ -41,16 +41,8 @@ export async function updateSession(request: NextRequest) {
       }
     )
 
-    // Check if this is an auth callback
-    const requestUrl = new URL(request.url)
-    const code = requestUrl.searchParams.get("code")
-
-    if (code) {
-      // Exchange the code for a session
-      await supabase.auth.exchangeCodeForSession(code)
-      // Redirect to home page after successful auth
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+    // Auth callback is handled by the dedicated callback route handler
+    // No need to handle code exchange in middleware
 
     // This will refresh session if expired - required for Server Components
     const { data: { user } } = await supabase.auth.getUser()
@@ -59,7 +51,8 @@ export async function updateSession(request: NextRequest) {
     const isAuthRoute =
       request.nextUrl.pathname.startsWith("/auth/login") ||
       request.nextUrl.pathname.startsWith("/auth/sign-up") ||
-      request.nextUrl.pathname === "/auth/callback"
+      request.nextUrl.pathname.startsWith("/auth/callback") ||
+      request.nextUrl.pathname.startsWith("/auth/auth-code-error")
 
     if (!isAuthRoute && !user) {
       const redirectUrl = new URL("/auth/login", request.url)

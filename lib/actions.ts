@@ -112,6 +112,35 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 }
 
+export async function signInWithGoogle() {
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured) {
+    return { error: "Supabase is not configured. Please set up your environment variables." }
+  }
+
+  try {
+    const supabase = await createServerActionClient()
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    if (data.url) {
+      redirect(data.url) // use the redirect API for server actions
+    }
+  } catch (error) {
+    console.error("Google sign in error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
+}
+
 export async function signOut() {
   if (!isSupabaseConfigured) {
     redirect("/auth/login")
