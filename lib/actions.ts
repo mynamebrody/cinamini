@@ -1,9 +1,37 @@
 "use server"
 
-import { createServerActionClient } from "@supabase/auth-helpers-nextjs"
+import { createServerClient } from '@supabase/ssr'
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
+
+// Helper function to create Supabase client for server actions
+async function createServerActionClient() {
+  const cookieStore = await cookies()
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
+}
 
 // Update the signIn function to handle redirects properly
 export async function signIn(prevState: any, formData: FormData) {
@@ -26,8 +54,7 @@ export async function signIn(prevState: any, formData: FormData) {
   }
 
   try {
-    const cookieStore = cookies()
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
+    const supabase = await createServerActionClient()
 
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
@@ -67,8 +94,7 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 
   try {
-    const cookieStore = cookies()
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
+    const supabase = await createServerActionClient()
 
     const { error } = await supabase.auth.signUp({
       email: email.toString(),
@@ -93,9 +119,7 @@ export async function signOut() {
   }
 
   try {
-    const cookieStore = cookies()
-    const supabase = createServerActionClient({ cookies: () => cookieStore })
-
+    const supabase = await createServerActionClient()
     await supabase.auth.signOut()
   } catch (error) {
     console.error("Sign out error:", error)

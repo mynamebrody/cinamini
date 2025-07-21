@@ -1,6 +1,5 @@
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import { cache } from "react"
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 // Check if Supabase environment variables are available
 export const isSupabaseConfigured =
@@ -9,8 +8,8 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-// Create a cached version of the Supabase client for Server Components
-export const createClient = cache(() => {
+// Create Supabase client for Server Components
+export async function createClient() {
   if (!isSupabaseConfigured) {
     // Return a mock client that doesn't make any requests
     return {
@@ -22,6 +21,28 @@ export const createClient = cache(() => {
     } as any
   }
 
-  const cookieStore = cookies()
-  return createServerComponentClient({ cookies: () => cookieStore })
-})
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  )
+}
