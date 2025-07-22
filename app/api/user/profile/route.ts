@@ -181,7 +181,7 @@ export async function PUT(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Username is already taken' },
+        { error: `The username "${trimmedUsername}" is already taken. Please try a different username.` },
         { status: 409 }
       )
     }
@@ -204,6 +204,15 @@ export async function PUT(request: NextRequest) {
 
     if (updateError) {
       console.error('Profile update error:', updateError)
+      
+      // Handle unique constraint violation for username
+      if (updateError.code === '23505' && updateError.message?.includes('cinamini_user_profiles_display_name_key')) {
+        return NextResponse.json(
+          { error: `The username "${trimmedUsername}" is already taken. Please try a different username.` },
+          { status: 409 }
+        )
+      }
+      
       return NextResponse.json(
         { error: 'Failed to update username' },
         { status: 500 }

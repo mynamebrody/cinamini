@@ -27,6 +27,7 @@ export default function ProfileForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   // Fetch profile data
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function ProfileForm() {
     setValidationError(validateUsername(value))
     setError(null)
     setSuccess(null)
+    setSuggestions([])
   }
 
   // Start editing mode
@@ -93,6 +95,7 @@ export default function ProfileForm() {
     setValidationError(null)
     setError(null)
     setSuccess(null)
+    setSuggestions([])
   }
 
   // Cancel editing
@@ -102,6 +105,41 @@ export default function ProfileForm() {
     setValidationError(null)
     setError(null)
     setSuccess(null)
+    setSuggestions([])
+  }
+
+  // Apply suggested username
+  const applySuggestion = (suggestion: string) => {
+    setEditedUsername(suggestion)
+    setSuggestions([])
+    setError(null)
+    setValidationError(null)
+  }
+
+  // Generate username suggestions
+  const generateUsernameSuggestions = (baseUsername: string): string[] => {
+    const suggestions = []
+    const base = baseUsername.toLowerCase().replace(/[^a-z0-9]/g, '')
+    
+    // Add random numbers
+    for (let i = 0; i < 3; i++) {
+      const randomNum = Math.floor(Math.random() * 999) + 1
+      suggestions.push(`${base}${randomNum}`)
+    }
+    
+    // Add year
+    const currentYear = new Date().getFullYear()
+    suggestions.push(`${base}${currentYear}`)
+    
+    // Add common suffixes
+    const suffixes = ['_user', '_player', '_gamer']
+    suffixes.forEach(suffix => {
+      if (base.length + suffix.length <= 20) {
+        suggestions.push(`${base}${suffix}`)
+      }
+    })
+    
+    return suggestions.slice(0, 3) // Return top 3 suggestions
   }
 
   // Save username
@@ -130,7 +168,17 @@ export default function ProfileForm() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update username')
+        const errorMessage = data.error || 'Failed to update username'
+        
+        // If username is taken, generate and store suggestions
+        if (response.status === 409) {
+          const usernameSuggestions = generateUsernameSuggestions(editedUsername.trim())
+          setSuggestions(usernameSuggestions)
+        } else {
+          setSuggestions([])
+        }
+        
+        throw new Error(errorMessage)
       }
       
       // Update local state with new data
@@ -138,6 +186,7 @@ export default function ProfileForm() {
       setIsEditing(false)
       setSuccess("Username updated successfully!")
       setValidationError(null)
+      setSuggestions([])
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000)
@@ -210,6 +259,24 @@ export default function ProfileForm() {
         {error && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
             {error}
+          </div>
+        )}
+
+        {/* Username Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 px-4 py-3 rounded-lg">
+            <p className="text-sm font-medium mb-2">Try these available usernames:</p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => applySuggestion(suggestion)}
+                  className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-md text-blue-300 hover:text-blue-200 transition-colors text-sm"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
