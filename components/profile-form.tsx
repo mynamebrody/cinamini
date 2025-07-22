@@ -421,9 +421,9 @@ export default function ProfileForm() {
     </Card>
     
     {/* Favorite Films Section */}
-    <Card className="mt-6">
+    <Card className="mt-6 bg-[#1c1c1c] border-gray-800">
       <CardHeader>
-        <CardTitle>Favorite Films</CardTitle>
+        <CardTitle className="text-white">Favorite Films</CardTitle>
       </CardHeader>
       <CardContent>
         <FavoriteFilmsSection />

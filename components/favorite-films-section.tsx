@@ -191,8 +191,8 @@ export function FavoriteFilmsSection() {
   if (loading) {
     return (
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Top Four Films</h3>
-        <div className="grid grid-cols-2 gap-4 max-w-2xl">
+        <h3 className="text-lg font-semibold text-white">Top Four Films</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((position) => (
             <div key={position} className="aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
           ))}
@@ -204,13 +204,13 @@ export function FavoriteFilmsSection() {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-semibold">Top Four Films</h3>
+        <h3 className="text-lg font-semibold text-white">Top Four Films</h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Showcase your favorite movies on your profile
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 max-w-2xl">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((position) => {
           const favorite = getFavoriteByPosition(position)
           const isDragOver = dragOverPosition === position && (!favorite || draggedMovie?.id !== favorite.id)

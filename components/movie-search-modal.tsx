@@ -92,9 +92,9 @@ export function MovieSearchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-[#1c1c1c] border-gray-800">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-white">
             Add Movie to Favorites {position && `(Position ${position})`}
           </DialogTitle>
         </DialogHeader>
@@ -177,12 +177,9 @@ export function MovieSearchModal({
                       </div>
                       
                       <div className="mt-2">
-                        <h3 className="font-medium text-sm line-clamp-1">{movie.title}</h3>
-                        {movie.releaseYear && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {movie.releaseYear}
-                          </p>
-                        )}
+                        <h3 className="font-medium text-sm line-clamp-1 text-white">
+                          {movie.title}{movie.releaseYear && ` (${movie.releaseYear})`}
+                        </h3>
                       </div>
                     </button>
                   )
