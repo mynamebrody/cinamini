@@ -7,6 +7,7 @@ The user profile feature allows authenticated users to view and edit their profi
 ## Features Implemented
 
 ### ✅ Core Functionality
+- **Automatic Profile Creation**: Database trigger automatically creates profile for every new user
 - **Profile Display**: Shows user email (read-only) and username (editable)
 - **Username Editing**: Inline editing with edit/save/cancel functionality
 - **Real-time Validation**: Instant feedback on username validity
@@ -41,7 +42,10 @@ The user profile feature allows authenticated users to view and edit their profi
 ├── components/
 │   └── profile-form.tsx              # Profile form with edit functionality
 ├── sql/
-│   └── 001_create_user_profiles_table.sql  # Database migration
+│   ├── 001_create_user_profiles_table.sql    # Initial table creation
+│   ├── 002_auto_create_user_profiles.sql     # Automatic profile creation trigger
+│   ├── 003_create_profiles_for_existing_users.sql  # Backfill existing users
+│   └── 004_test_profile_trigger.sql          # Test/verification queries
 └── docs/
     └── PROFILE_FEATURE.md            # This documentation
 ```
@@ -110,6 +114,11 @@ CREATE TABLE cinamini_user_profiles (
 - Users can only view/edit their own profile
 - Automatic `updated_at` timestamp via trigger
 - Proper foreign key constraints with cascade delete
+
+**Automatic Profile Creation Trigger**:
+- Database trigger automatically creates profile entry when new user signs up
+- Ensures every user has a profile from registration moment
+- Handles edge cases gracefully with error logging
 
 ## Username Validation Rules
 
@@ -255,9 +264,13 @@ function validateUsername(username: string): { isValid: boolean; error?: string 
 ## Deployment Checklist
 
 ### Database Setup
-- [ ] Run SQL migration: `001_create_user_profiles_table.sql`
+- [ ] Run SQL migrations in order:
+  - [ ] `001_create_user_profiles_table.sql` - Create the profiles table
+  - [ ] `002_auto_create_user_profiles.sql` - Set up automatic profile creation trigger
+  - [ ] `003_create_profiles_for_existing_users.sql` - Backfill profiles for existing users
 - [ ] Verify RLS policies are active
 - [ ] Test database connections and permissions
+- [ ] Verify trigger is working with `004_test_profile_trigger.sql`
 
 ### Environment Configuration
 - [ ] Ensure Supabase credentials are configured

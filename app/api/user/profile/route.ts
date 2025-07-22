@@ -63,47 +63,51 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user profile from database
+    // Profile should exist due to automatic creation trigger
     const { data: profile, error: profileError } = await supabase
       .from('cinamini_user_profiles')
       .select('display_name, created_at, updated_at')
       .eq('user_id', user.id)
       .single()
 
-    if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('Profile fetch error:', profileError)
-      return NextResponse.json(
-        { error: 'Failed to fetch profile' },
-        { status: 500 }
-      )
-    }
+    if (profileError) {
+      if (profileError.code === 'PGRST116') {
+        // Profile doesn't exist - this shouldn't happen with the trigger
+        // But we'll handle it gracefully for existing users or edge cases
+        console.warn('Profile not found for user:', user.id, 'Creating manually...')
+        
+        const { data: newProfile, error: createError } = await supabase
+          .from('cinamini_user_profiles')
+          .insert([
+            {
+              user_id: user.id,
+              display_name: null,
+            }
+          ])
+          .select('display_name, created_at, updated_at')
+          .single()
 
-    // If no profile exists, create one
-    if (!profile) {
-      const { data: newProfile, error: createError } = await supabase
-        .from('cinamini_user_profiles')
-        .insert([
-          {
-            user_id: user.id,
-            display_name: null,
-          }
-        ])
-        .select('display_name, created_at, updated_at')
-        .single()
+        if (createError) {
+          console.error('Profile creation error:', createError)
+          return NextResponse.json(
+            { error: 'Failed to create profile' },
+            { status: 500 }
+          )
+        }
 
-      if (createError) {
-        console.error('Profile creation error:', createError)
+        return NextResponse.json({
+          email: user.email,
+          username: newProfile.display_name,
+          createdAt: newProfile.created_at,
+          updatedAt: newProfile.updated_at,
+        })
+      } else {
+        console.error('Profile fetch error:', profileError)
         return NextResponse.json(
-          { error: 'Failed to create profile' },
+          { error: 'Failed to fetch profile' },
           { status: 500 }
         )
       }
-
-      return NextResponse.json({
-        email: user.email,
-        username: newProfile.display_name,
-        createdAt: newProfile.created_at,
-        updatedAt: newProfile.updated_at,
-      })
     }
 
     return NextResponse.json({
