@@ -26,6 +26,16 @@ export default async function Home() {
     redirect("/auth/login")
   }
 
+  // Get user profile for display name/username
+  const { data: profile } = await supabase
+    .from('cinamini_user_profiles')
+    .select('display_name')
+    .eq('user_id', user.id)
+    .single()
+
+  // Use username if available, otherwise fallback to email
+  const displayName = profile?.display_name || user.email
+
   return (
     <div className="min-h-screen bg-[#161616]">
       {/* Header with user info and sign out */}
@@ -33,14 +43,19 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold text-white">Cinamini</h1>
-            <p className="text-sm text-gray-400">Welcome back, {user.email}</p>
+            <p className="text-sm text-gray-400">Welcome back, {displayName}</p>
           </div>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+          <div className="flex items-center gap-3">
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+              <a href="/profile">Profile</a>
             </Button>
-          </form>
+            <form action={signOut}>
+              <Button type="submit" variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 
