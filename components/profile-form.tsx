@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Loader2, Edit2, Save, X, User, Mail } from "lucide-react"
+import { FavoriteFilmsSection } from "@/components/favorite-films-section"
 
 interface ProfileData {
   email: string
@@ -240,13 +241,14 @@ export default function ProfileForm() {
   }
 
   return (
-    <Card className="bg-[#1c1c1c] border-gray-800">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Account Information
-        </CardTitle>
-      </CardHeader>
+    <>
+      <Card className="bg-[#1c1c1c] border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Account Information
+          </CardTitle>
+        </CardHeader>
       <CardContent className="space-y-6">
         {/* Success Message */}
         {success && (
@@ -417,5 +419,16 @@ export default function ProfileForm() {
         </div>
       </CardContent>
     </Card>
+    
+    {/* Favorite Films Section */}
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Favorite Films</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FavoriteFilmsSection />
+      </CardContent>
+    </Card>
+    </>
   )
 }
