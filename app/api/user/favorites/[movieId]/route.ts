@@ -4,11 +4,12 @@ import { createClient } from "@/lib/supabase/server"
 // PUT /api/user/favorites/:movieId - Update position of a favorite
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { movieId: string } }
+  { params }: { params: Promise<{ movieId: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const movieId = parseInt(params.movieId)
+    const { movieId: movieIdParam } = await params
+    const movieId = parseInt(movieIdParam)
     
     // Validate movieId
     if (isNaN(movieId)) {
@@ -130,11 +131,12 @@ export async function PUT(
 // DELETE /api/user/favorites/:movieId - Remove a movie from favorites
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { movieId: string } }
+  { params }: { params: Promise<{ movieId: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const movieId = parseInt(params.movieId)
+    const { movieId: movieIdParam } = await params
+    const movieId = parseInt(movieIdParam)
     
     // Validate movieId
     if (isNaN(movieId)) {

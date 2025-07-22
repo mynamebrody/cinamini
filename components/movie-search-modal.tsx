@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import type { MovieSearchResult, MovieSearchResponse, APIErrorResponse } from '@/lib/types/tmdb'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface MovieSearchModalProps {
   open: boolean
@@ -95,7 +96,7 @@ export function MovieSearchModal({
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-[#1c1c1c] border-gray-800">
         <DialogHeader>
           <DialogTitle className="text-white">
-            Add Movie to Favorites {position && `(Position ${position})`}
+            Add Movie to Favorites
           </DialogTitle>
         </DialogHeader>
 
@@ -127,64 +128,76 @@ export function MovieSearchModal({
                 ))}
               </div>
             ) : searchResults.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {searchResults.map((movie) => {
-                  const isAlreadyFavorited = existingMovieIds.includes(movie.id)
-                  
-                  return (
-                    <button
-                      key={movie.id}
-                      onClick={() => !isAlreadyFavorited && handleMovieSelect(movie)}
-                      disabled={isAlreadyFavorited}
-                      className={cn(
-                        "group relative text-left transition-all duration-200",
-                        "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg",
-                        isAlreadyFavorited
-                          ? "opacity-50 cursor-not-allowed"
-                          : "hover:scale-105"
-                      )}
-                    >
-                      <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-                        {movie.posterUrl ? (
-                          <Image
-                            src={movie.posterUrl}
-                            alt={movie.title}
-                            fill
-                            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-gray-400 text-sm">No poster</span>
-                          </div>
-                        )}
-                        
-                        {/* Overlay */}
-                        <div className={cn(
-                          "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity",
-                          "flex items-center justify-center",
-                          isAlreadyFavorited && "opacity-100"
-                        )}>
-                          {isAlreadyFavorited ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <Check className="h-8 w-8 text-green-500" />
-                              <span className="text-sm text-white">Already Added</span>
+              <TooltipProvider>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1">
+                  {searchResults.map((movie) => {
+                    const isAlreadyFavorited = existingMovieIds.includes(movie.id)
+                    const displayTitle = `${movie.title}${movie.releaseYear ? ` (${movie.releaseYear})` : ''}`
+                    
+                    return (
+                      <Tooltip key={movie.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => !isAlreadyFavorited && handleMovieSelect(movie)}
+                            disabled={isAlreadyFavorited}
+                            className={cn(
+                              "group relative text-left transition-all duration-200",
+                              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg",
+                              isAlreadyFavorited
+                                ? "opacity-50 cursor-not-allowed"
+                                : "hover:scale-105"
+                            )}
+                          >
+                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                              {movie.posterUrl ? (
+                                <Image
+                                  src={movie.posterUrl}
+                                  alt={movie.title}
+                                  fill
+                                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-gray-400 text-sm">No poster</span>
+                                </div>
+                              )}
+                              
+                              {/* Overlay */}
+                              <div className={cn(
+                                "absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity",
+                                "flex items-center justify-center",
+                                isAlreadyFavorited && "opacity-100"
+                              )}>
+                                {isAlreadyFavorited ? (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Check className="h-8 w-8 text-green-500" />
+                                    <span className="text-sm text-white">Already Added</span>
+                                  </div>
+                                ) : (
+                                  <Heart className="h-8 w-8 text-white" />
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <Heart className="h-8 w-8 text-white" />
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2">
-                        <h3 className="font-medium text-sm line-clamp-1 text-white">
-                          {movie.title}{movie.releaseYear && ` (${movie.releaseYear})`}
-                        </h3>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
+                            
+                            <div className="mt-2">
+                              <h3 className="font-medium text-sm line-clamp-1 text-white">
+                                {displayTitle}
+                              </h3>
+                            </div>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="bottom" 
+                          className="bg-[#1c1c1c] border-gray-700 text-white max-w-xs"
+                        >
+                          <p>{displayTitle}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )
+                  })}
+                </div>
+              </TooltipProvider>
             ) : currentQuery && !loading ? (
               <div className="text-center py-8">
                 <p className="text-gray-500 dark:text-gray-400">
