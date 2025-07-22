@@ -230,7 +230,7 @@ export function formatBudget(budget: number, includeEstimate: boolean = false): 
  */
 export function getPosterUrl(posterPath: string | null, size: string = 'w342'): string {
   if (!posterPath) {
-    return '/placeholder-poster.jpg'; // Fallback poster
+    return '/placeholder-poster.svg'; // Fallback poster
   }
   return `https://image.tmdb.org/t/p/${size}${posterPath}`;
 }
