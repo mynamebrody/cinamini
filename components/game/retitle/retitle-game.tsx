@@ -64,33 +64,44 @@ export default function RetitleGame() {
       if (data.hasPlayed && data.userGuess) {
         // User has already played today, show the result
         setHasPlayed(true)
-        // Fetch the result data using the new result API
-        const resultResponse = await fetch(`/api/retitled/result/${data.puzzle.id}`)
         
-        if (resultResponse.ok) {
-          const resultData = await resultResponse.json()
-          setResult(resultData)
-        } else {
-          // Fallback: fetch stats and create a basic result
-          const statsResponse = await fetch("/api/retitled/stats")
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json()
-            setResult({
-              correct: data.userGuess.isCorrect,
-              correctAnswer: {
-                id: 562, // Default to Die Hard
-                title: "Die Hard",
-                originalTitle: "Die Hard",
-                releaseYear: "1988",
-                translationNote: "The French title translates to 'Crystal Trap'"
-              },
-              stats: {
-                gamesPlayed: statsData.stats.gamesPlayed,
-                accuracy: statsData.stats.accuracy,
-                currentStreak: statsData.stats.currentStreak
-              }
-            })
+        // Set puzzle state so RetitleResult has access to puzzleId
+        if (data.puzzle) {
+          setPuzzle(data.puzzle)
+        }
+        
+        // Fetch the result data using the new result API
+        if (data.puzzle?.id) {
+          const resultResponse = await fetch(`/api/retitled/result/${data.puzzle.id}`)
+          
+          if (resultResponse.ok) {
+            const resultData = await resultResponse.json()
+            setResult(resultData)
+          } else {
+            // Fallback: fetch stats and create a basic result
+            const statsResponse = await fetch("/api/retitled/stats")
+            if (statsResponse.ok) {
+              const statsData = await statsResponse.json()
+              setResult({
+                correct: data.userGuess.isCorrect,
+                correctAnswer: {
+                  id: 562, // Default to Die Hard
+                  title: "Die Hard",
+                  originalTitle: "Die Hard",
+                  releaseYear: "1988",
+                  translationNote: "The French title translates to 'Crystal Trap'"
+                },
+                stats: {
+                  gamesPlayed: statsData.stats.gamesPlayed,
+                  accuracy: statsData.stats.accuracy,
+                  currentStreak: statsData.stats.currentStreak
+                }
+              })
+            }
           }
+        } else {
+          console.error("Puzzle data is missing from API response")
+          setError("Invalid puzzle data received. Please try refreshing the page.")
         }
       } else {
         setPuzzle(data.puzzle)
