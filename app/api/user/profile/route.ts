@@ -193,7 +193,6 @@ export async function PUT(request: NextRequest) {
         {
           user_id: user.id,
           display_name: trimmedUsername,
-          updated_at: new Date().toISOString(),
         },
         {
           onConflict: 'user_id'
