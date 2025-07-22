@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { signOut } from "@/lib/actions"
-import { MovieSearch } from "@/components/movie-search"
+import GamesList from "@/components/games-list"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -32,7 +32,7 @@ export default async function Home() {
       <header className="border-b border-white/10 bg-[#161616]/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-xl font-bold text-white">Cinamini</h1>
+            <h1 className="text-xl font-bold text-white">CineMini</h1>
             <p className="text-sm text-gray-400">Welcome back, {user.email}</p>
           </div>
           <form action={signOut}>
@@ -45,8 +45,8 @@ export default async function Home() {
       </header>
 
       {/* Main content */}
-      <main className="py-8">
-        <MovieSearch />
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <GamesList />
       </main>
     </div>
   )
