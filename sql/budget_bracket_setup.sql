@@ -1,4 +1,9 @@
--- Create Budget Bracket game tables
+-- Budget Bracket Game Setup
+-- Safe installation script that avoids conflicts with existing schema
+
+-- =============================================================================
+-- 1. CREATE BUDGET BRACKET TABLES
+-- =============================================================================
 
 -- Table to store movies with budget data for Budget Bracket
 CREATE TABLE IF NOT EXISTS budget_bracket_movies (
@@ -54,16 +59,45 @@ CREATE TABLE IF NOT EXISTS budget_bracket_stats (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_bb_movies_tmdb_id ON budget_bracket_movies(tmdb_id);
-CREATE INDEX IF NOT EXISTS idx_bb_movies_budget ON budget_bracket_movies(production_budget);
-CREATE INDEX IF NOT EXISTS idx_bb_movies_popularity ON budget_bracket_movies(popularity_score);
-CREATE INDEX IF NOT EXISTS idx_bb_puzzles_date ON budget_bracket_puzzles(puzzle_date);
-CREATE INDEX IF NOT EXISTS idx_bb_games_user_puzzle ON budget_bracket_games(user_id, puzzle_id);
-CREATE INDEX IF NOT EXISTS idx_bb_games_completed_at ON budget_bracket_games(completed_at);
-CREATE INDEX IF NOT EXISTS idx_bb_stats_user_id ON budget_bracket_stats(user_id);
+-- =============================================================================
+-- 2. CREATE INDEXES (with safe names to avoid conflicts)
+-- =============================================================================
 
--- Create triggers for updated_at timestamps
+DROP INDEX IF EXISTS idx_bb_movies_tmdb_id;
+CREATE INDEX idx_bb_movies_tmdb_id ON budget_bracket_movies(tmdb_id);
+
+DROP INDEX IF EXISTS idx_bb_movies_budget;
+CREATE INDEX idx_bb_movies_budget ON budget_bracket_movies(production_budget);
+
+DROP INDEX IF EXISTS idx_bb_movies_popularity;
+CREATE INDEX idx_bb_movies_popularity ON budget_bracket_movies(popularity_score);
+
+DROP INDEX IF EXISTS idx_bb_puzzles_date;
+CREATE INDEX idx_bb_puzzles_date ON budget_bracket_puzzles(puzzle_date);
+
+DROP INDEX IF EXISTS idx_bb_games_user_puzzle;
+CREATE INDEX idx_bb_games_user_puzzle ON budget_bracket_games(user_id, puzzle_id);
+
+DROP INDEX IF EXISTS idx_bb_games_completed_at;
+CREATE INDEX idx_bb_games_completed_at ON budget_bracket_games(completed_at);
+
+DROP INDEX IF EXISTS idx_bb_stats_user_id;
+CREATE INDEX idx_bb_stats_user_id ON budget_bracket_stats(user_id);
+
+-- =============================================================================
+-- 3. CREATE TRIGGERS FOR TIMESTAMPS
+-- =============================================================================
+
+-- Create or replace the update function if it doesn't exist
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Drop and recreate triggers to ensure they work
 DROP TRIGGER IF EXISTS update_budget_bracket_movies_updated_at ON budget_bracket_movies;
 CREATE TRIGGER update_budget_bracket_movies_updated_at
     BEFORE UPDATE ON budget_bracket_movies
@@ -76,13 +110,28 @@ CREATE TRIGGER update_budget_bracket_stats_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Enable Row Level Security (RLS)
+-- =============================================================================
+-- 4. ENABLE ROW LEVEL SECURITY
+-- =============================================================================
+
 ALTER TABLE budget_bracket_movies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budget_bracket_puzzles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budget_bracket_games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE budget_bracket_stats ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
+-- =============================================================================
+-- 5. CREATE RLS POLICIES
+-- =============================================================================
+
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Authenticated users can view movies" ON budget_bracket_movies;
+DROP POLICY IF EXISTS "Authenticated users can view puzzles" ON budget_bracket_puzzles;
+DROP POLICY IF EXISTS "Users can view own games" ON budget_bracket_games;
+DROP POLICY IF EXISTS "Users can insert own games" ON budget_bracket_games;
+DROP POLICY IF EXISTS "Users can update own games" ON budget_bracket_games;
+DROP POLICY IF EXISTS "Users can view own stats" ON budget_bracket_stats;
+DROP POLICY IF EXISTS "Users can insert own stats" ON budget_bracket_stats;
+DROP POLICY IF EXISTS "Users can update own stats" ON budget_bracket_stats;
 
 -- Movies: Read-only for authenticated users
 CREATE POLICY "Authenticated users can view movies" ON budget_bracket_movies
@@ -114,13 +163,22 @@ CREATE POLICY "Users can update own stats" ON budget_bracket_stats
     FOR UPDATE USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- Add comments for documentation
-COMMENT ON TABLE budget_bracket_movies IS 'Movies with budget data for Budget Bracket game';
-COMMENT ON TABLE budget_bracket_puzzles IS 'Daily Budget Bracket puzzle configurations';
-COMMENT ON TABLE budget_bracket_games IS 'Individual user gameplay sessions for Budget Bracket';
-COMMENT ON TABLE budget_bracket_stats IS 'Aggregated user statistics for Budget Bracket game';
+-- =============================================================================
+-- 6. ADD BUDGET BRACKET TO GAMES TABLE
+-- =============================================================================
 
--- Insert some sample movie data (for development/testing)
+-- Insert Budget Bracket game entry (safe upsert)
+INSERT INTO cinamini_games (game_id, display_name, description, is_active) VALUES
+('budget-bracket', 'Budget Bracket', 'Compare movie budgets in this daily guessing game. Pick the film with the higher production cost!', true)
+ON CONFLICT (game_id) DO UPDATE SET
+    display_name = EXCLUDED.display_name,
+    description = EXCLUDED.description,
+    is_active = EXCLUDED.is_active;
+
+-- =============================================================================
+-- 7. INSERT SAMPLE MOVIE DATA
+-- =============================================================================
+
 INSERT INTO budget_bracket_movies (tmdb_id, title, production_budget, budget_source, poster_path, release_date, popularity_score) VALUES
 (299536, 'Avengers: Infinity War', 321000000, 'tmdb', '/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg', '2018-04-27', 125.0),
 (299534, 'Avengers: Endgame', 356000000, 'tmdb', '/or06FN3Dka5tukK1e9sl16pB3iy.jpg', '2019-04-26', 145.0),
@@ -131,5 +189,22 @@ INSERT INTO budget_bracket_movies (tmdb_id, title, production_budget, budget_sou
 (315635, 'Spider-Man: Homecoming', 175000000, 'tmdb', '/c24sv2weTHPsmDa7jEMN0m2P3RT.jpg', '2017-07-07', 88.0),
 (550, 'Fight Club', 63000000, 'tmdb', '/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg', '1999-10-15', 95.0),
 (155, 'The Dark Knight', 185000000, 'tmdb', '/qJ2tW6WMUDux911r6m7haRef0WH.jpg', '2008-07-18', 110.0),
-(27205, 'Inception', 160000000, 'tmdb', '/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg', '2010-07-16', 105.0)
+(27205, 'Inception', 160000000, 'tmdb', '/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg', '2010-07-16', 105.0),
+(120, 'The Lord of the Rings: The Fellowship of the Ring', 93000000, 'tmdb', '/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg', '2001-12-19', 95.0),
+(121, 'The Lord of the Rings: The Two Towers', 94000000, 'tmdb', '/5VTN0pR8gcqV3EPUHHfMGnJYN9L.jpg', '2002-12-18', 92.0),
+(122, 'The Lord of the Rings: The Return of the King', 94000000, 'tmdb', '/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg', '2003-12-17', 98.0),
+(140607, 'Star Wars: The Force Awakens', 245000000, 'tmdb', '/wqnLdwVXoBjKibFRR5U3y0aDUhs.jpg', '2015-12-18', 115.0),
+(181808, 'Star Wars: The Last Jedi', 220000000, 'tmdb', '/kOVEVeg59E0wsnXmF9nrh6OmWII.jpg', '2017-12-15', 108.0)
 ON CONFLICT (tmdb_id) DO NOTHING;
+
+-- =============================================================================
+-- 8. COMPLETION MESSAGE
+-- =============================================================================
+
+DO $$
+BEGIN
+    RAISE NOTICE 'Budget Bracket game setup completed successfully!';
+    RAISE NOTICE 'Tables created: budget_bracket_movies, budget_bracket_puzzles, budget_bracket_games, budget_bracket_stats';
+    RAISE NOTICE 'Sample data: % movies added', (SELECT COUNT(*) FROM budget_bracket_movies);
+    RAISE NOTICE 'Game registered in cinamini_games table';
+END $$;

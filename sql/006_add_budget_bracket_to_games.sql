@@ -1,15 +1,18 @@
--- Add Budget Bracket to the cinamini_games table
+-- Add Budget Bracket to the existing cinamini_games table
 
--- First, create the games table if it doesn't exist (following the existing pattern)
-CREATE TABLE IF NOT EXISTS cinamini_games (
-    game_id VARCHAR(50) PRIMARY KEY,
-    display_name VARCHAR(100) NOT NULL,
-    description TEXT,
-    is_active BOOLEAN DEFAULT true,
-    launch_date DATE DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Add missing columns to existing games table if they don't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'cinamini_games' AND column_name = 'updated_at') THEN
+        ALTER TABLE cinamini_games ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name = 'cinamini_games' AND column_name = 'launch_date') THEN
+        ALTER TABLE cinamini_games ADD COLUMN launch_date DATE DEFAULT CURRENT_DATE;
+    END IF;
+END $$;
 
 -- Insert Budget Bracket game entry
 INSERT INTO cinamini_games (game_id, display_name, description, is_active, launch_date) VALUES
@@ -19,25 +22,20 @@ ON CONFLICT (game_id) DO UPDATE SET
     description = EXCLUDED.description,
     is_active = EXCLUDED.is_active;
 
--- Ensure Retitled game is also in the table
+-- Update Retitled game description if needed
 INSERT INTO cinamini_games (game_id, display_name, description, is_active, launch_date) VALUES
 ('retitled', 'Retitled', 'Guess the English movie title from its foreign translation in this daily puzzle.', true, CURRENT_DATE)
 ON CONFLICT (game_id) DO UPDATE SET
     display_name = EXCLUDED.display_name,
-    description = EXCLUDED.description,
-    is_active = EXCLUDED.is_active;
+    description = EXCLUDED.description;
 
--- Add updated_at trigger for games table
-DROP TRIGGER IF EXISTS update_cinamini_games_updated_at ON cinamini_games;
-CREATE TRIGGER update_cinamini_games_updated_at
-    BEFORE UPDATE ON cinamini_games
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
--- Add comments
-COMMENT ON TABLE cinamini_games IS 'Available games in the CinaMini platform';
-COMMENT ON COLUMN cinamini_games.game_id IS 'Unique identifier for the game (used in URLs)';
-COMMENT ON COLUMN cinamini_games.display_name IS 'Human-readable name of the game';
-COMMENT ON COLUMN cinamini_games.description IS 'Short description of the game mechanics';
-COMMENT ON COLUMN cinamini_games.is_active IS 'Whether the game is currently available to play';
-COMMENT ON COLUMN cinamini_games.launch_date IS 'When the game was first made available';
+-- Add updated_at trigger for games table if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_cinamini_games_updated_at') THEN
+        CREATE TRIGGER update_cinamini_games_updated_at
+            BEFORE UPDATE ON cinamini_games
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
