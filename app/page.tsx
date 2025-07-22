@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 import { signOut } from "@/lib/actions"
-import { MovieSearch } from "@/components/movie-search"
+import GamesList from "@/components/games-list"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -60,8 +60,8 @@ export default async function Home() {
       </header>
 
       {/* Main content */}
-      <main className="py-8">
-        <MovieSearch />
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <GamesList />
       </main>
     </div>
   )
