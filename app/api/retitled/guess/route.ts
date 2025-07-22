@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-
-// Hardcoded movie data for MVP
-const MOVIE_DATA: Record<number, { title: string, releaseYear: string }> = {
-  562: { title: "Die Hard", releaseYear: "1988" },
-  679: { title: "Aliens", releaseYear: "1986" },
-  78: { title: "Blade Runner", releaseYear: "1982" },
-  280: { title: "The Terminator", releaseYear: "1984" }
-}
+import { getMovieById, getReleaseYear } from "@/lib/tmdb"
 
 export async function POST(request: NextRequest) {
   try {
@@ -124,16 +117,20 @@ export async function POST(request: NextRequest) {
         })
     }
 
-    // Get the correct movie data
-    const correctMovie = MOVIE_DATA[puzzle.film_id]
+    // Get the correct movie data from TMDB
+    const correctMovie = await getMovieById(puzzle.film_id)
+    
+    if (!correctMovie) {
+      return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
+    }
 
     return NextResponse.json({
       correct: isCorrect,
       correctAnswer: {
         id: puzzle.film_id,
         title: correctMovie.title,
-        originalTitle: correctMovie.title,
-        releaseYear: correctMovie.releaseYear,
+        originalTitle: correctMovie.original_title,
+        releaseYear: getReleaseYear(correctMovie.release_date),
         translationNote: puzzle.translation_note
       },
       stats: {

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-
-// Hardcoded movie options for MVP
-const MOVIE_OPTIONS = [
-  { id: 562, title: "Die Hard" },
-  { id: 679, title: "Aliens" },
-  { id: 78, title: "Blade Runner" },
-  { id: 280, title: "The Terminator" }
-]
+import { getMultipleMovies } from "@/lib/tmdb"
 
 // Country flag emojis mapping
 const FLAG_EMOJIS: Record<string, string> = {
@@ -54,10 +47,17 @@ export async function GET(request: NextRequest) {
       .eq("puzzle_id", puzzle.id)
       .single()
 
-    // Build the options array
-    const options = MOVIE_OPTIONS.filter(movie => 
-      movie.id === puzzle.film_id || puzzle.distractor_ids.includes(movie.id)
-    )
+    // Get all movie IDs for this puzzle
+    const allMovieIds = [puzzle.film_id, ...puzzle.distractor_ids]
+    
+    // Fetch movie data from TMDB
+    const movieData = await getMultipleMovies(allMovieIds)
+    
+    // Build the options array with actual movie data
+    const options = movieData.map(movie => ({
+      id: movie.id,
+      title: movie.title
+    }))
 
     // Shuffle options for better UX
     const shuffledOptions = [...options].sort(() => Math.random() - 0.5)
