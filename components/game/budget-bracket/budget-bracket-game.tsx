@@ -118,18 +118,72 @@ export default function BudgetBracketGame() {
     const updatedChoices = [...gameChoices, newChoice]
     setGameChoices(updatedChoices)
 
-    // Move to next round or complete game
-    if (currentRound < 5) {
-      setCurrentRound(currentRound + 1)
-    } else {
-      // Game complete, submit all choices
-      submitGame(updatedChoices)
-    }
+    // Add a delay to show feedback before determining next action
+    setTimeout(() => {
+      // We need to check if the answer was correct to decide what to do
+      // For now, we'll determine this by checking the actual budgets
+      // This is temporary - ideally this logic should be in the API
+      fetchMovieBudgetsAndContinue(updatedChoices, chosenMovieTmdbId)
+    }, 2000) // 2 second delay to show feedback
   }
 
   const handleGameEnd = (choices: GameChoice[]) => {
     // Game ended early due to wrong answer
     submitGame(choices)
+  }
+
+  const fetchMovieBudgetsAndContinue = async (choices: GameChoice[], chosenMovieTmdbId: number) => {
+    try {
+      const currentPair = puzzle!.pairs[currentRound - 1]
+      const response = await fetch('/api/budget-bracket/movie-budgets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          movieA_tmdb_id: currentPair.movieA.tmdb_id,
+          movieB_tmdb_id: currentPair.movieB.tmdb_id
+        })
+      })
+
+      if (response.ok) {
+        const budgetData = await response.json()
+        const movieABudget = budgetData.movieA.budget
+        const movieBBudget = budgetData.movieB.budget
+        
+        // Determine if the choice was correct
+        const chosenMovieA = chosenMovieTmdbId === currentPair.movieA.tmdb_id
+        const chosenBudget = chosenMovieA ? movieABudget : movieBBudget
+        const otherBudget = chosenMovieA ? movieBBudget : movieABudget
+        const isCorrect = chosenBudget > otherBudget
+        
+        if (isCorrect) {
+          // Correct answer - continue to next round or finish game
+          if (currentRound < 5) {
+            setCurrentRound(currentRound + 1)
+          } else {
+            // Game complete with perfect score
+            submitGame(choices)
+          }
+        } else {
+          // Wrong answer - end game immediately
+          submitGame(choices)
+        }
+      } else {
+        // API error - just continue for now
+        if (currentRound < 5) {
+          setCurrentRound(currentRound + 1)
+        } else {
+          submitGame(choices)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching budget data for game logic:', error)
+      // Error - just continue for now
+      if (currentRound < 5) {
+        setCurrentRound(currentRound + 1)
+      } else {
+        submitGame(choices)
+      }
+    }
   }
 
   const submitGame = async (choices: GameChoice[]) => {
