@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: user.id,
         puzzle_id,
-        rounds_completed: isCorrect ? round : round - 1,
+        rounds_completed: round,
         final_result: finalResult,
         choices: gameChoices,
         total_duration_ms: totalDuration
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const response = {
       correct: isCorrect,
       game_complete: isGameComplete,
-      rounds_completed: isCorrect ? round : round - 1,
+      rounds_completed: round,
       final_result: finalResult,
       revealed_budgets: {
         movieA: {
@@ -162,7 +162,7 @@ async function updateUserStats(
       .eq('user_id', userId)
       .single()
 
-    const roundsCompleted = lastGuessCorrect ? choices.length : choices.length - 1
+    const roundsCompleted = choices.length
     const wasStreakBroken = currentStats?.last_played_date && 
       currentStats.last_played_date !== today && 
       !isConsecutiveDay(currentStats.last_played_date, today)
@@ -212,7 +212,7 @@ async function updateUserStats(
 function isConsecutiveDay(lastDate: string, today: string): boolean {
   const last = new Date(lastDate)
   const current = new Date(today)
-  const diffTime = Math.abs(current.getTime() - last.getTime())
+  const diffTime = current.getTime() - last.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   return diffDays === 1
 }

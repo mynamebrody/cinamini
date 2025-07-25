@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const roundsCompleted = verifiedChoices.filter(c => c.correct).length
+    const roundsCompleted = verifiedChoices.length
     const finalResult = calculateFinalResult(verifiedChoices)
     const isPerfectGame = roundsCompleted === 5
 
@@ -161,7 +161,7 @@ async function updateUserStats(
 ) {
   try {
     const today = new Date().toISOString().split('T')[0]
-    const roundsCompleted = choices.filter(c => c.correct).length
+    const roundsCompleted = choices.length
     
     // Get current stats
     const { data: currentStats } = await supabase
@@ -227,7 +227,7 @@ async function updateUserStats(
 function isConsecutiveDay(lastDate: string, today: string): boolean {
   const last = new Date(lastDate)
   const current = new Date(today)
-  const diffTime = Math.abs(current.getTime() - last.getTime())
+  const diffTime = current.getTime() - last.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   return diffDays === 1
 }
