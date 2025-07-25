@@ -64,8 +64,8 @@ export async function GET(
     const resultGrid = guess.is_correct ? '🟩⬜⬜⬜' : '🟥⬜⬜⬜'
 
     // Generate share text
-    const shareText = `CineMini Retitle #${puzzleNumber} ${flagEmoji}\n${resultGrid}\ncinemini.app`
-    const shareUrl = `https://cinemini.app/retitled/${puzzleNumber}`
+    const shareText = `CinaMini Retitle #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nCinaMini.app`
+    const shareUrl = `https://CinaMini.app/retitled/${puzzleNumber}`
 
     return NextResponse.json({
       shareText,

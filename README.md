@@ -1,10 +1,10 @@
-# 🎬 CineMini
+# 🎬 CinaMini
 
 > *Snack-size movie challenges, every single day.*
 
 A daily movie puzzle platform featuring multiple games, starting with **Retitled** - a quick, mobile-first game where players identify English films from their localized titles. Think "Wordle for movie buffs" with spoiler-free sharing.
 
-![CineMini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=CineMini+Game+Demo)
+![CinaMini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=CinaMini+Game+Demo)
 
 ## 🎯 Game Concept
 
@@ -14,7 +14,7 @@ A daily movie puzzle platform featuring multiple games, starting with **Retitled
 3. Get instant feedback with translation tooltip
 4. Share your result with spoiler-free emoji grid
 
-**Example Share:** `CineMini #123 🇪🇸 🟩⬜⬜🟩 cinemini.app`
+**Example Share:** `CinaMini #123 🇪🇸 🟩⬜⬜🟩 CinaMini.app`
 
 ## 🚀 Quick Start
 
@@ -180,7 +180,7 @@ GET /api/retitled/stats
 ### Typography
 - **Primary**: Inter (clean sans-serif)
 - **Monospace**: For share card previews and code
-- **Logo**: Custom film-reel icon forming the 'C' in CineMini
+- **Logo**: Custom film-reel icon forming the 'C' in CinaMini
 
 ### Mobile-First Principles
 - Minimum 44px touch targets
@@ -326,10 +326,10 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🎬 About
 
-CineMini is inspired by the daily puzzle phenomenon popularized by Wordle, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
+CinaMini is inspired by the daily puzzle phenomenon popularized by Wordle, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
 
 **Team**: Built with ❤️ for movie lovers everywhere.
 
 ---
 
-*Ready for today's flick-fix?* Start playing at [cinemini.app](https://cinemini.app)
+*Ready for today's flick-fix?* Start playing at [CinaMini.app](https://CinaMini.app)

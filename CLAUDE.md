@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**CineMini** is a daily movie puzzle platform featuring multiple games, starting with "Retitled" - a quick, mobile-first game where players identify English films from their localized titles. Think "Wordle for movie buffs" with spoiler-free sharing.
+**CinaMini** is a daily movie puzzle platform featuring multiple games, starting with "Retitled" - a quick, mobile-first game where players identify English films from their localized titles. Think "Wordle for movie buffs" with spoiler-free sharing.
 
 **Retitled Game Loop:**
 1. Show flag 🇪🇸 + localized title "*Solo en Casa*"
@@ -55,7 +55,7 @@ lib/                         # Utilities and configurations
 
 ### Multi-Game Architecture
 
-The database is designed to support multiple puzzle games under the CineMini platform. Core tables use `cinamini_` prefix, while game-specific tables use the game name prefix (e.g., `retitled_` for the localized titles game).
+The database is designed to support multiple puzzle games under the CinaMini platform. Core tables use `cinamini_` prefix, while game-specific tables use the game name prefix (e.g., `retitled_` for the localized titles game).
 
 ### Core Platform Tables
 ```sql
@@ -190,7 +190,7 @@ export interface TMDBTranslation {
 - **Format**: Server-side image generation (HTML-to-PNG)
 - **Content**: Country flag emoji + colored squares grid (🟩⬜)
 - **Size**: 2x resolution for retina displays
-- **Text**: "CineMini #123 🟩⬜⬜🟩 cinemini.app"
+- **Text**: "CinaMini #123 🟩⬜⬜🟩 CinaMini.app"
 
 ## UI/UX Guidelines
 

@@ -1,7 +1,7 @@
 # Retitle Game Setup Instructions
 
 ## Overview
-The Retitle game has been implemented for CineMini. This is a daily puzzle game where players identify English-language films from their localized titles in other countries.
+The Retitle game has been implemented for CinaMini. This is a daily puzzle game where players identify English-language films from their localized titles in other countries.
 
 ## Implementation Details
 

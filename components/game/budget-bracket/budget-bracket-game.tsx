@@ -9,6 +9,7 @@ import BudgetBracketStats from "./budget-bracket-stats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Trophy, Play, BarChart3 } from "lucide-react"
+import { GameSettingsButton } from "@/components/game-settings"
 import { type GameChoice } from "@/lib/budget-bracket"
 
 interface PuzzleMovie {
@@ -232,201 +233,240 @@ export default function BudgetBracketGame() {
 
   if (gameState === 'loading') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Budget Bracket</h1>
-          <div className="animate-pulse">Loading today's puzzle...</div>
-        </div>
+      <div className="game-container">
+        <header className="game-header">
+          <div></div>
+          <h1 className="game-title">Budget Bracket</h1>
+          <GameSettingsButton />
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (gameState === 'error') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Budget Bracket</h1>
-          <Card>
-            <CardContent className="pt-6">
+      <div className="game-container">
+        <header className="game-header">
+          <div></div>
+          <h1 className="game-title">Budget Bracket</h1>
+          <GameSettingsButton />
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="pt-6 text-center">
               <p className="text-red-500 mb-4">{error}</p>
               <Button onClick={loadTodaysPuzzle} className="w-full">
                 Try Again
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </main>
       </div>
     )
   }
 
   if (gameState === 'stats') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={backToGame}>
+      <div className="game-container">
+        <header className="game-header">
+          <Button variant="ghost" size="sm" onClick={backToGame}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-xl font-bold">Stats</h1>
-          <div className="w-16" /> {/* Spacer */}
-        </div>
-        <BudgetBracketStats />
+          <h1 className="game-title">Stats</h1>
+          <GameSettingsButton />
+        </header>
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-md mx-auto">
+            <BudgetBracketStats />
+          </div>
+        </main>
       </div>
     )
   }
 
   if (gameState === 'completed') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={goHome}>
+      <div className="game-container">
+        <header className="game-header">
+          <Button variant="ghost" size="sm" onClick={goHome}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Home
           </Button>
-          <h1 className="text-xl font-bold">Budget Bracket</h1>
-          <Button variant="ghost" onClick={showStats}>
-            <BarChart3 className="w-4 h-4" />
-          </Button>
-        </div>
-        <BudgetBracketResult 
-          result={gameResult!} 
-          puzzle={puzzle!}
-          onShowStats={showStats}
-        />
+          <h1 className="game-title">Budget Bracket</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={showStats}>
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+            <GameSettingsButton />
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-md mx-auto">
+            <BudgetBracketResult 
+              result={gameResult!} 
+              puzzle={puzzle!}
+              onShowStats={showStats}
+            />
+          </div>
+        </main>
       </div>
     )
   }
 
   if (gameState === 'already_played') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={goHome}>
+      <div className="game-container">
+        <header className="game-header">
+          <Button variant="ghost" size="sm" onClick={goHome}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Home
           </Button>
-          <h1 className="text-xl font-bold">Budget Bracket</h1>
-          <Button variant="ghost" onClick={showStats}>
-            <BarChart3 className="w-4 h-4" />
-          </Button>
-        </div>
-        
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="flex items-center justify-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
-              Already Played Today!
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center text-muted-foreground">
-              You've completed today's Budget Bracket puzzle.
-            </div>
-            
-            {puzzle?.user_result && (
-              <div className="bg-muted rounded-lg p-4">
-                <div className="text-sm font-medium mb-2">Your Result:</div>
-                <div className="text-lg">
-                  {puzzle.user_result.rounds_completed === 5 ? (
-                    <span className="text-green-500 font-bold">Perfect Producer! 🎬</span>
-                  ) : (
-                    <span>Rounds completed: {puzzle.user_result.rounds_completed}/5</span>
-                  )}
+          <h1 className="game-title">Budget Bracket</h1>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={showStats}>
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+            <GameSettingsButton />
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  Already Played Today!
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center text-muted-foreground">
+                  You've completed today's Budget Bracket puzzle.
                 </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Time: {Math.round(puzzle.user_result.total_duration_ms / 1000)}s
+                
+                {puzzle?.user_result && (
+                  <div className="bg-muted rounded-lg p-4">
+                    <div className="text-sm font-medium mb-2">Your Result:</div>
+                    <div className="text-lg">
+                      {puzzle.user_result.rounds_completed === 5 ? (
+                        <span className="text-green-500 font-bold">Perfect Producer! 🎬</span>
+                      ) : (
+                        <span>Rounds completed: {puzzle.user_result.rounds_completed}/5</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      Time: {Math.round(puzzle.user_result.total_duration_ms / 1000)}s
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={showStats} className="flex-1">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    View Stats
+                  </Button>
+                  <Button onClick={goHome} className="flex-1">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Home
+                  </Button>
                 </div>
-              </div>
-            )}
 
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={showStats} className="flex-1">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                View Stats
-              </Button>
-              <Button onClick={goHome} className="flex-1">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Home
-              </Button>
-            </div>
-
-            <div className="text-center text-sm text-muted-foreground">
-              Come back tomorrow for a new puzzle!
-            </div>
-          </CardContent>
-        </Card>
+                <div className="text-center text-sm text-muted-foreground">
+                  Come back tomorrow for a new puzzle!
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     )
   }
 
   if (gameState === 'playing') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <Button variant="ghost" onClick={() => setGameState('start')}>
+      <div className="game-container">
+        <header className="game-header">
+          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-xl font-bold">Budget Bracket</h1>
-          <div className="text-sm text-muted-foreground">
-            Round {currentRound}/5
+          <h1 className="game-title">Budget Bracket</h1>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">
+              Round {currentRound}/5
+            </div>
+            <GameSettingsButton />
           </div>
-        </div>
-        
-        <BudgetBracketRound
-          pair={puzzle!.pairs[currentRound - 1]}
-          round={currentRound}
-          onChoice={handleRoundChoice}
-          onGameEnd={handleGameEnd}
-          gameChoices={gameChoices}
-          puzzle={puzzle!}
-        />
+        </header>
+        <main className="flex-1 overflow-auto p-4">
+          <div className="max-w-md mx-auto">
+            <BudgetBracketRound
+              pair={puzzle!.pairs[currentRound - 1]}
+              round={currentRound}
+              onChoice={handleRoundChoice}
+              onGameEnd={handleGameEnd}
+              gameChoices={gameChoices}
+              puzzle={puzzle!}
+            />
+          </div>
+        </main>
       </div>
     )
   }
 
   // Start screen
   return (
-    <div className="container mx-auto px-4 py-8 max-w-md">
-      <div className="flex items-center justify-between mb-6">
-        <Button variant="ghost" onClick={goHome}>
+    <div className="game-container">
+      <header className="game-header">
+        <Button variant="ghost" size="sm" onClick={goHome}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Home
         </Button>
-        <h1 className="text-xl font-bold">Budget Bracket</h1>
-        <Button variant="ghost" onClick={showStats}>
-          <BarChart3 className="w-4 h-4" />
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle>Budget Bracket #{puzzle?.seed_value.slice(0, 6)}</CardTitle>
-          <p className="text-muted-foreground">
-            Pick the movie with the higher production budget
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted rounded-lg p-4">
-            <h3 className="font-semibold mb-2">How to Play:</h3>
-            <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• See two movie posters side-by-side</li>
-              <li>• Pick the one with the higher production budget</li>
-              <li>• Complete 5 rounds to become a "Perfect Producer"</li>
-              <li>• One wrong guess ends the game</li>
-            </ul>
-          </div>
-
-          <Button onClick={startGame} className="w-full" size="lg">
-            <Play className="w-4 h-4 mr-2" />
-            Start Playing
+        <h1 className="game-title">Budget Bracket</h1>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={showStats}>
+            <BarChart3 className="w-4 h-4" />
           </Button>
+          <GameSettingsButton />
+        </div>
+      </header>
+      <main className="flex-1 overflow-auto p-4">
+        <div className="max-w-md mx-auto">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle>Budget Bracket #{puzzle?.seed_value.slice(0, 6)}</CardTitle>
+              <p className="text-muted-foreground">
+                Pick the movie with the higher production budget
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted rounded-lg p-4">
+                <h3 className="font-semibold mb-2">How to Play:</h3>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• See two movie posters side-by-side</li>
+                  <li>• Pick the one with the higher production budget</li>
+                  <li>• Complete 5 rounds to become a "Perfect Producer"</li>
+                  <li>• One wrong guess ends the game</li>
+                </ul>
+              </div>
 
-          <div className="text-center text-sm text-muted-foreground">
-            Daily puzzle • {new Date().toLocaleDateString()}
-          </div>
-        </CardContent>
-      </Card>
+              <Button onClick={startGame} className="w-full" size="lg">
+                <Play className="w-4 h-4 mr-2" />
+                Start Playing
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                Daily puzzle • {new Date().toLocaleDateString()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   )
 }

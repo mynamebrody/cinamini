@@ -1,66 +1,116 @@
 @import "tailwindcss";
 
 @layer base {
+  /* CinaMini Design System - Inspired by Wordle's approach */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    /* Core Game Colors */
+    --game-correct: 104 72% 56%;      /* Green for correct answers */
+    --game-correct-dark: 104 66% 48%; /* Darker green for dark mode */
+    --game-present: 51 100% 50%;      /* Yellow for partial matches */
+    --game-present-dark: 49 88% 42%;  /* Darker yellow for dark mode */
+    --game-absent: 0 0% 53%;          /* Gray for incorrect/absent */
+    --game-absent-dark: 0 0% 26%;     /* Darker gray for dark mode */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    /* Cinema Theme Colors */
+    --cinema-red: 0 84% 50%;          /* Classic cinema red */
+    --cinema-gold: 48 100% 50%;       /* Golden accents for wins/streaks */
+    
+    /* Tone Scale (Light Theme) */
+    --tone-1: 210 11% 11%;            /* Darkest text */
+    --tone-2: 210 9% 47%;             /* Secondary text */
+    --tone-3: 210 8% 53%;             /* Tertiary text */
+    --tone-4: 210 14% 83%;            /* Light borders */
+    --tone-5: 210 20% 92%;            /* Light backgrounds */
+    --tone-6: 210 25% 96%;            /* Lighter backgrounds */
+    --tone-7: 0 0% 100%;              /* Pure white */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    /* Game UI Variables */
+    --game-max-width: 500px;
+    --header-height: 60px;
+    --game-tile-size: 62px;
+    --game-gap: 5px;
+    --radius: 6px;
 
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 20%;
-
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 20%;
-
+    /* Semantic mappings for light theme */
+    --background: var(--tone-7);
+    --foreground: var(--tone-1);
+    --card: var(--tone-7);
+    --card-foreground: var(--tone-1);
+    --popover: var(--tone-7);
+    --popover-foreground: var(--tone-1);
+    --primary: var(--tone-1);
+    --primary-foreground: var(--tone-7);
+    --secondary: var(--tone-5);
+    --secondary-foreground: var(--tone-1);
+    --muted: var(--tone-5);
+    --muted-foreground: var(--tone-2);
+    --accent: var(--tone-5);
+    --accent-foreground: var(--tone-1);
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
+    --border: var(--tone-4);
+    --input: var(--tone-4);
+    --ring: var(--tone-1);
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 0%;
-
-    --radius: 0.5rem;
+    /* Legacy Tailwind compatibility */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
   }
 
   .dark {
-    --background: 0 0% 10%;
-    --foreground: 0 0% 98%;
+    /* Dark Theme Tone Scale */
+    --tone-1: 210 11% 87%;            /* Light text */
+    --tone-2: 210 9% 51%;             /* Secondary text */
+    --tone-3: 210 8% 34%;             /* Tertiary text */
+    --tone-4: 210 14% 23%;            /* Dark borders */
+    --tone-5: 210 20% 16%;            /* Dark backgrounds */
+    --tone-6: 210 25% 11%;            /* Darker backgrounds */
+    --tone-7: 210 30% 7%;             /* Darkest background */
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 98%;
-
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 98%;
-
+    /* Semantic mappings for dark theme */
+    --background: var(--tone-7);
+    --foreground: var(--tone-1);
+    --card: var(--tone-6);
+    --card-foreground: var(--tone-1);
+    --popover: var(--tone-6);
+    --popover-foreground: var(--tone-1);
+    --primary: var(--tone-1);
+    --primary-foreground: var(--tone-7);
+    --secondary: var(--tone-5);
+    --secondary-foreground: var(--tone-1);
+    --muted: var(--tone-5);
+    --muted-foreground: var(--tone-2);
+    --accent: var(--tone-5);
+    --accent-foreground: var(--tone-1);
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+    --border: var(--tone-4);
+    --input: var(--tone-4);
+    --ring: var(--tone-1);
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 100%;
+    /* Legacy Tailwind compatibility */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 87%;
+  }
+
+  /* High Contrast Mode */
+  .high-contrast {
+    --game-correct: 120 100% 25%;     /* Darker green */
+    --game-present: 39 100% 35%;      /* Darker orange */
+    --game-absent: 0 0% 20%;          /* Darker gray */
+    --tone-1: 0 0% 0%;                /* Pure black text */
+    --tone-4: 0 0% 40%;               /* Higher contrast borders */
+    --border: 0 0% 40%;
+  }
+
+  .dark.high-contrast {
+    --game-correct: 120 100% 50%;     /* Brighter green */
+    --game-present: 39 100% 60%;      /* Brighter orange */
+    --game-absent: 0 0% 60%;          /* Lighter gray */
+    --tone-1: 0 0% 100%;              /* Pure white text */
+    --tone-7: 0 0% 0%;                /* Pure black background */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
   }
 }
 
@@ -68,8 +118,195 @@
   * {
     border-color: hsl(var(--border));
   }
+  
+  html {
+    height: 100%;
+  }
+  
   body {
+    height: 100%;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+  }
+
+  /* Game Layout Styles */
+  .game-container {
+    width: 100%;
+    max-width: var(--game-max-width);
+    margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: var(--header-height);
+    border-bottom: 1px solid hsl(var(--border));
+    padding: 0 16px;
+    position: sticky;
+    top: 0;
+    background-color: hsl(var(--background));
+    z-index: 50;
+  }
+
+  .game-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground));
+  }
+
+  /* Game Tiles */
+  .game-tile {
+    width: var(--game-tile-size);
+    height: var(--game-tile-size);
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    font-weight: bold;
+    border-radius: var(--radius);
+    border: 2px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    text-transform: uppercase;
+    user-select: none;
+    transition: all 0.2s ease;
+  }
+
+  .game-tile[data-state='empty'] {
+    border-color: hsl(var(--tone-4));
+  }
+
+  .game-tile[data-state='filled'] {
+    border-color: hsl(var(--tone-3));
+    color: hsl(var(--tone-1));
+  }
+
+  .game-tile[data-state='correct'] {
+    background-color: hsl(var(--game-correct));
+    border-color: hsl(var(--game-correct));
+    color: white;
+  }
+
+  .game-tile[data-state='present'] {
+    background-color: hsl(var(--game-present));
+    border-color: hsl(var(--game-present));
+    color: white;
+  }
+
+  .game-tile[data-state='absent'] {
+    background-color: hsl(var(--game-absent));
+    border-color: hsl(var(--game-absent));
+    color: white;
+  }
+
+  /* Game Buttons */
+  .game-button {
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    border: 2px solid hsl(var(--border));
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .game-button:hover {
+    background-color: hsl(var(--tone-5));
+  }
+
+  .game-button:active {
+    transform: scale(0.98);
+  }
+
+  .game-button.primary {
+    background-color: hsl(var(--tone-1));
+    color: hsl(var(--tone-7));
+    border-color: hsl(var(--tone-1));
+  }
+
+  .game-button.primary:hover {
+    background-color: hsl(var(--tone-2));
+    border-color: hsl(var(--tone-2));
+  }
+
+  .game-button.correct {
+    background-color: hsl(var(--game-correct));
+    color: white;
+    border-color: hsl(var(--game-correct));
+  }
+
+  .game-button.incorrect {
+    background-color: hsl(var(--game-absent));
+    color: white;
+    border-color: hsl(var(--game-absent));
+  }
+
+  /* Animations */
+  @keyframes tile-flip {
+    0% { transform: rotateY(0deg); }
+    50% { transform: rotateY(-90deg); }
+    100% { transform: rotateY(0deg); }
+  }
+
+  @keyframes tile-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+  }
+
+  @keyframes bounce {
+    0%, 20% { transform: translateY(0); }
+    40% { transform: translateY(-30px); }
+    50% { transform: translateY(5px); }
+    60% { transform: translateY(-15px); }
+    80% { transform: translateY(2px); }
+    100% { transform: translateY(0); }
+  }
+
+  .animate-flip { animation: tile-flip 0.5s ease-in-out; }
+  .animate-pop { animation: tile-pop 0.2s ease-in-out; }
+  .animate-shake { animation: shake 0.6s ease-in-out; }
+  .animate-bounce { animation: bounce 1s ease-in-out; }
+
+  /* Mobile Optimizations */
+  @media (max-width: 480px) {
+    .game-tile {
+      width: calc(var(--game-tile-size) * 0.85);
+      height: calc(var(--game-tile-size) * 0.85);
+      font-size: 1.5rem;
+    }
+    
+    .game-title {
+      font-size: 1.25rem;
+    }
+    
+    .game-header {
+      height: calc(var(--header-height) * 0.85);
+      padding: 0 12px;
+    }
+  }
+
+  @media (max-height: 600px) {
+    .game-tile {
+      font-size: 1.5rem;
+    }
   }
 }

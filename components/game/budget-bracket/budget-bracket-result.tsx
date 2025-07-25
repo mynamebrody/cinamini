@@ -87,7 +87,7 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
       ? "Perfect Producer! 🎬" 
       : `${result.rounds_completed}/5 rounds`
     
-    return `Budget Bracket #${seedDisplay} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s\ncinemini.app`
+    return `Budget Bracket #${seedDisplay} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s\nCinaMini.app`
   }
 
   const handleShare = async () => {
@@ -96,7 +96,7 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
         await navigator.share({
           title: 'Budget Bracket',
           text: shareText,
-          url: 'https://cinemini.app'
+          url: 'https://CinaMini.app'
         })
       } catch (error) {
         // Fallback to clipboard

@@ -8,6 +8,7 @@ import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trophy } from "lucide-react"
+import { GameSettingsButton } from "@/components/game-settings"
 
 interface PuzzleData {
   id: string
@@ -138,17 +139,19 @@ export default function RetitleGame() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#161616] flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="game-container min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-pulse text-lg">Loading...</div>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#161616] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
+      <div className="game-container min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-red-500">{error}</p>
           <Button onClick={() => router.push("/")} variant="outline">
             Back to Home
           </Button>
@@ -158,49 +161,54 @@ export default function RetitleGame() {
   }
 
   return (
-    <div className="min-h-screen bg-[#161616]">
+    <div className="game-container">
       {/* Header */}
-      <header className="border-b border-white/10 bg-[#161616]/90 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Button 
-            onClick={() => router.push("/")}
-            variant="ghost"
-            className="text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="text-xl font-bold text-white">Retitle</h1>
+      <header className="game-header">
+        <Button 
+          onClick={() => router.push("/")}
+          variant="ghost"
+          size="sm"
+          className="hover:bg-current/10"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        <h1 className="game-title">Retitle</h1>
+        <div className="flex items-center gap-2">
           <Button
             onClick={() => setShowStats(!showStats)}
             variant="ghost"
-            className="text-white hover:bg-white/10"
+            size="sm"
+            className="hover:bg-current/10"
           >
             <Trophy className="h-4 w-4" />
           </Button>
+          <GameSettingsButton />
         </div>
       </header>
 
       {/* Main content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {showStats ? (
-          <RetitleStats onClose={() => setShowStats(false)} />
-        ) : hasPlayed && result ? (
-          <RetitleResult 
-            result={result} 
-            puzzleId={puzzle?.id || ""}
-          />
-        ) : puzzle ? (
-          <RetitlePuzzle 
-            puzzle={puzzle}
-            onGuess={handleGuess}
-            startTime={startTime}
-          />
-        ) : (
-          <div className="text-center text-white">
-            <p>No puzzle available today. Please check back tomorrow!</p>
-          </div>
-        )}
+      <main className="flex-1 overflow-auto p-4">
+        <div className="max-w-4xl mx-auto">
+          {showStats ? (
+            <RetitleStats onClose={() => setShowStats(false)} />
+          ) : hasPlayed && result ? (
+            <RetitleResult 
+              result={result} 
+              puzzleId={puzzle?.id || ""}
+            />
+          ) : puzzle ? (
+            <RetitlePuzzle 
+              puzzle={puzzle}
+              onGuess={handleGuess}
+              startTime={startTime}
+            />
+          ) : (
+            <div className="text-center">
+              <p>No puzzle available today. Please check back tomorrow!</p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

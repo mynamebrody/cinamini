@@ -248,4 +248,4 @@ The migration includes 10 sample movies with budget data for immediate testing:
 4. **Navigate to**: `/game/budget-bracket`
 5. **Play the game** and test all features!
 
-The game is now fully integrated into the CineMini platform and ready for production deployment.
+The game is now fully integrated into the CinaMini platform and ready for production deployment.
