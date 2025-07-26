@@ -15,8 +15,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     enableCSRF: !isDevelopment && !isAuthRoute && !isRootLogout, // Disable CSRF in development
     enableRateLimit: !isDevelopment, // Disable rate limiting in development too
     enableSecurityHeaders: true, // Keep security headers
-    enableAuthentication: false, // Let Supabase handle auth for now
-    enableLogging: isDevelopment // Keep logging in development for debugging
+    enableAuthentication: 'read-only', // Read session for logging but don't enforce
+    enableLogging: isDevelopment // Show accurate auth state in development
   })
   
   // If security middleware returned a response (error/redirect), return it

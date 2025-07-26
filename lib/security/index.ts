@@ -9,7 +9,7 @@ interface SecurityConfig {
   enableCSRF?: boolean
   enableRateLimit?: boolean
   enableSecurityHeaders?: boolean
-  enableAuthentication?: boolean
+  enableAuthentication?: boolean | 'read-only' // true = enforce, 'read-only' = read for logging only
   enableLogging?: boolean
 }
 
@@ -52,7 +52,8 @@ export async function applySecurity(
       authResponse = authResult.response
       
       // If auth middleware returned a response (redirect/error), handle it
-      if (authResponse) {
+      // But skip enforcement if in read-only mode (let Supabase handle auth)
+      if (authResponse && config.enableAuthentication !== 'read-only') {
         return authResponse
       }
     }
