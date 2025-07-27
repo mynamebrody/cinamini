@@ -1,6 +1,11 @@
-// Budget Bracket game logic and utilities
+// Budget Bracket game logic and utilities - CLIENT SAFE
+import { 
+  generateDailySeed, 
+  SeededRandom, 
+  type SeedableGameItem 
+} from './game-seeding';
 
-export interface BudgetBracketMovie {
+export interface BudgetBracketMovie extends SeedableGameItem {
   id: number;
   tmdb_id: number;
   title: string;
@@ -11,6 +16,8 @@ export interface BudgetBracketMovie {
   release_date: string;
   popularity_score: number;
 }
+
+// Removed: EnhancedBudgetBracketMovie interface (over-engineered)
 
 export interface MoviePair {
   movieA: BudgetBracketMovie;
@@ -64,57 +71,31 @@ export const DIFFICULTY_TARGETS = [
 ];
 
 /**
- * Generate a deterministic seed from a date
+ * Generate a Budget Bracket specific daily seed
  */
-export function generateDailySeed(date: Date): string {
-  const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-  // Simple hash function for deterministic seed
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    const char = dateStr.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(16);
+export function generateBudgetBracketSeed(date: Date): string {
+  return generateDailySeed(date, { 
+    gameId: 'budget-bracket',
+    gameEntropy: 'movie-pairs' 
+  });
 }
 
+// Removed: getBudgetBracketMovies (server-side operation moved to API routes)
+
 /**
- * Seeded random number generator for consistent daily puzzles
+ * Validate that a movie meets Budget Bracket requirements
  */
-export class SeededRandom {
-  private seed: number;
-
-  constructor(seed: string) {
-    this.seed = this.hashString(seed);
-  }
-
-  private hashString(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return Math.abs(hash);
-  }
-
-  next(): number {
-    this.seed = (this.seed * 9301 + 49297) % 233280;
-    return this.seed / 233280;
-  }
-
-  nextInt(min: number, max: number): number {
-    return Math.floor(this.next() * (max - min + 1)) + min;
-  }
-
-  shuffle<T>(array: T[]): T[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(this.next() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }
+export function validateBudgetBracketMovie(
+  movie: any
+): movie is BudgetBracketMovie {
+  return (
+    typeof movie.tmdb_id === 'number' &&
+    typeof movie.title === 'string' &&
+    typeof movie.production_budget === 'number' &&
+    movie.production_budget >= 5_000_000 &&
+    typeof movie.popularity_score === 'number' &&
+    movie.popularity_score >= 30
+  );
 }
 
 /**
@@ -148,8 +129,11 @@ export function isValidPair(
   }
 }
 
+// Removed: Complex server-side puzzle generation functions
+// These have been moved to API routes to properly separate client/server concerns
+
 /**
- * Generate movie pairs for a daily puzzle
+ * Generate puzzle pairs from provided movies (client-safe)
  */
 export function generatePuzzlePairs(
   movies: BudgetBracketMovie[], 
@@ -284,3 +268,6 @@ export function hasPlayedToday(lastPlayedDate: string | null): boolean {
   const today = new Date().toISOString().split('T')[0];
   return lastPlayedDate === today;
 }
+
+// Re-export seeding functions for backward compatibility and convenience
+export { generateDailySeed, SeededRandom } from './game-seeding';

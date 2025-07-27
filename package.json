@@ -5,7 +5,8 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "quick-dev": "npm i && next dev --turbopack",
+    "quick-dev": "concurrently 'npm i && next dev --turbopack' 'npm run ngrok'",
+    "ngrok": "ngrok http --url=cinamini.ngrok.app 3000",
     "lint": "next lint",
     "start": "next start"
   },
@@ -43,8 +44,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "dompurify": "^3.2.6",
-    "jsdom": "^26.1.0",
     "lucide-react": "^0.525.0",
     "next": "15.4.2",
     "next-themes": "^0.4.6",
@@ -59,8 +58,6 @@
   "devDependencies": {
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/postcss": "^4.1.11",
-    "@types/dompurify": "^3.0.5",
-    "@types/jsdom": "^21.1.7",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",

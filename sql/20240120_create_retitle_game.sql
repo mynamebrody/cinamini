@@ -17,6 +17,7 @@ ON CONFLICT (game_id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS retitled_puzzles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     puzzle_date DATE UNIQUE NOT NULL,
+    seed_value VARCHAR(32) NOT NULL, -- Deterministic seed for daily generation
     film_id INTEGER NOT NULL,
     film_title VARCHAR NOT NULL,
     localized_title VARCHAR NOT NULL,
@@ -62,6 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_retitled_guesses_puzzle ON retitled_guesses(puzzl
 -- Insert the hardcoded puzzle for MVP
 INSERT INTO retitled_puzzles (
     puzzle_date,
+    seed_value,
     film_id,
     film_title,
     localized_title,
@@ -72,6 +74,7 @@ INSERT INTO retitled_puzzles (
     translation_note
 ) VALUES (
     CURRENT_DATE,
+    'fallback_' || CURRENT_DATE,
     562,
     'Die Hard',
     'Piège de Cristal',

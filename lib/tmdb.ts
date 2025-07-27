@@ -1,16 +1,10 @@
 // TMDB API utility functions
+import { TMDBMovie } from './types/tmdb'
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 
-export interface TMDBMovie {
-  id: number
-  title: string
-  original_title: string
-  release_date: string
-  overview: string
-  poster_path: string | null
-  backdrop_path: string | null
-}
+// Re-export TMDBMovie interface for backward compatibility
 
 export async function getMovieById(movieId: number): Promise<TMDBMovie | null> {
   if (!TMDB_API_KEY) {
@@ -20,7 +14,13 @@ export async function getMovieById(movieId: number): Promise<TMDBMovie | null> {
 
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}?api_key=${TMDB_API_KEY}&language=en-US`
+      `${TMDB_BASE_URL}/movie/${movieId}?language=en-US`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
     )
     
     if (!response.ok) {
@@ -87,4 +87,93 @@ function getFallbackMovieData(movieId: number): TMDBMovie | null {
 
 export function getReleaseYear(releaseDate: string): string {
   return new Date(releaseDate).getFullYear().toString()
-} 
+}
+
+/**
+ * Get movie translations from TMDB API
+ */
+export async function getMovieTranslations(movieId: number): Promise<any | null> {
+  if (!TMDB_API_KEY) {
+    console.warn('TMDB API key not configured')
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}/translations`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error(`Error fetching translations for movie ${movieId}:`, error)
+    return null
+  }
+}
+
+/**
+ * Check if TMDB API is configured
+ */
+export function isTMDBConfigured(): boolean {
+  return Boolean(TMDB_API_KEY && TMDB_API_KEY.length > 0)
+}
+
+/**
+ * Get TMDB configuration (base URLs for images, etc.)
+ */
+export async function getTMDBConfiguration(): Promise<any | null> {
+  if (!TMDB_API_KEY) {
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/configuration`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('Error fetching TMDB configuration:', error)
+    return null
+  }
+}
+
+/**
+ * Build poster URL with fallback
+ */
+export function getPosterUrl(posterPath: string | null, size: string = 'w500'): string | null {
+  if (!posterPath) return null
+  return `https://image.tmdb.org/t/p/${size}${posterPath}`
+}
+
+/**
+ * Build backdrop URL with fallback
+ */
+export function getBackdropUrl(backdropPath: string | null, size: string = 'w1280'): string | null {
+  if (!backdropPath) return null
+  return `https://image.tmdb.org/t/p/${size}${backdropPath}`
+}
+
+// Re-export the TMDBMovie type for convenience
+export type { TMDBMovie } 

@@ -2,7 +2,6 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist } from "next/font/google"
 import { CinaMiniThemeProvider } from "@/components/theme-provider"
-import { SecurityProvider } from "@/components/security-provider"
 import "./globals.css"
 
 const geist = Geist({
@@ -25,11 +24,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <SecurityProvider>
-          <></>
-        </SecurityProvider>
-      </head>
       <body className={geist.className}>
         <CinaMiniThemeProvider
           defaultTheme="system"

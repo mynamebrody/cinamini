@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { 
-  generateDailySeed, 
+  generateBudgetBracketSeed,
   generatePuzzlePairs, 
   DIFFICULTY_TARGETS,
   type BudgetBracketMovie,
@@ -20,7 +20,7 @@ export async function GET() {
 
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0] // YYYY-MM-DD
-    const seed = generateDailySeed(today)
+    const seed = generateBudgetBracketSeed(today)
 
     // Check if today's puzzle already exists
     const { data: existingPuzzle, error: puzzleError } = await supabase
@@ -38,22 +38,21 @@ export async function GET() {
 
     // If puzzle doesn't exist, generate it
     if (!puzzle) {
-      // Get all available movies for puzzle generation
-      const { data: movies, error: moviesError } = await supabase
-        .from('budget_bracket_movies')
-        .select('*')
-        .gte('production_budget', 5000000) // Minimum $5M budget
-        .gte('popularity_score', 30) // Minimum popularity
-        .order('popularity_score', { ascending: false })
-        .limit(200) // Get top 200 for variety
-
-      if (moviesError || !movies || movies.length < 10) {
-        console.error('Error fetching movies:', moviesError)
-        return NextResponse.json({ error: 'Insufficient movie data' }, { status: 500 })
-      }
-
       try {
-        // Generate puzzle pairs
+        // Fetch budget bracket movies from database (server-side)
+        const { data: movies, error: moviesError } = await supabase
+          .from('budget_bracket_movies')
+          .select('*')
+          .gte('production_budget', 5000000) // Minimum $5M budget
+          .gte('popularity_score', 30) // Minimum popularity
+          .order('popularity_score', { ascending: false })
+          .limit(200) // Get top 200 for variety
+
+        if (moviesError || !movies || movies.length < 10) {
+          throw new Error('Insufficient movie data available')
+        }
+
+        // Generate puzzle pairs using client-safe function
         const pairs = generatePuzzlePairs(movies as BudgetBracketMovie[], seed)
         
         // Store the puzzle
@@ -76,7 +75,23 @@ export async function GET() {
         puzzle = newPuzzle
       } catch (error) {
         console.error('Error generating puzzle pairs:', error)
-        return NextResponse.json({ error: 'Failed to generate puzzle' }, { status: 500 })
+        
+        // Enhanced error handling with more specific messages
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        
+        // If it's a pool manager error, provide more context
+        if (errorMessage.includes('pool manager')) {
+          console.error('Movie pool manager failed, check trending API and database connection')
+          return NextResponse.json({ 
+            error: 'Movie selection system temporarily unavailable',
+            details: 'Please try again in a few minutes'
+          }, { status: 503 })
+        }
+        
+        return NextResponse.json({ 
+          error: 'Failed to generate puzzle',
+          details: errorMessage 
+        }, { status: 500 })
       }
     }
 
