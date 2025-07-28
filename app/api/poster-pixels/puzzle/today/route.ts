@@ -1,0 +1,174 @@
+import { NextRequest, NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
+import { getBlendedMoviePool } from "@/lib/tmdb-trending"
+
+
+// Seed for consistent daily puzzles
+function getDailySeed(): number {
+  const today = new Date()
+  const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`
+  
+  // Create a simple hash from the date string
+  let hash = 0
+  for (let i = 0; i < dateStr.length; i++) {
+    const char = dateStr.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  
+  return Math.abs(hash)
+}
+
+// Seeded random number generator
+function seededRandom(seed: number): () => number {
+  return function() {
+    const x = Math.sin(seed++) * 10000
+    return x - Math.floor(x)
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const today = new Date().toISOString().split('T')[0]
+    
+    // Check if we already have today's puzzle
+    const { data: existingPuzzle, error: puzzleError } = await supabase
+      .from("poster_pixels_puzzles")
+      .select("*")
+      .eq("puzzle_date", today)
+      .single()
+
+    let puzzle = existingPuzzle
+
+    // If no puzzle exists for today, create one
+    if (!puzzle) {
+      try {
+        // Get blended movie pool (trending + popular)
+        const moviePool = await getBlendedMoviePool()
+        
+        // Filter movies that have poster images
+        const moviesWithPosters = moviePool.filter(movie => movie.poster_path)
+        
+        if (moviesWithPosters.length === 0) {
+          throw new Error("No movies with posters available")
+        }
+
+        // Use seeded random to select a movie
+        const seed = getDailySeed()
+        const random = seededRandom(seed)
+        const selectedIndex = Math.floor(random() * moviesWithPosters.length)
+        const selectedMovie = moviesWithPosters[selectedIndex]
+
+        // Create the puzzle
+        const { data: newPuzzle, error: insertError } = await supabase
+          .from("poster_pixels_puzzles")
+          .insert({
+            puzzle_date: today,
+            movie_data: {
+              id: selectedMovie.id,
+              title: selectedMovie.title,
+              poster_path: selectedMovie.poster_path,
+              release_date: selectedMovie.release_date,
+              overview: selectedMovie.overview,
+            },
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error("Error creating puzzle:", insertError)
+          throw insertError
+        }
+
+        puzzle = newPuzzle
+      } catch (error) {
+        console.error("Error generating puzzle:", error)
+        
+        // Fallback to a hardcoded popular movie if API fails
+        const fallbackMovies = [
+          {
+            id: 550,
+            title: "Fight Club",
+            poster_path: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+            release_date: "1999-10-15",
+            overview: "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy.",
+          },
+          {
+            id: 680,
+            title: "Pulp Fiction",
+            poster_path: "/fIE3lAGcZDV1G6XM5KmuWnNsPp1.jpg",
+            release_date: "1994-09-10",
+            overview: "A burger-loving hit man, his philosophical partner, a drug-addled gangster's moll and a washed-up boxer converge in this sprawling, comedic crime caper.",
+          },
+          {
+            id: 155,
+            title: "The Dark Knight",
+            poster_path: "/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+            release_date: "2008-07-14",
+            overview: "Batman raises the stakes in his war on crime. With the help of Lt. Jim Gordon and District Attorney Harvey Dent, Batman sets out to dismantle the remaining criminal organizations that plague the streets.",
+          },
+        ]
+
+        const seed = getDailySeed()
+        const random = seededRandom(seed)
+        const selectedIndex = Math.floor(random() * fallbackMovies.length)
+        const selectedMovie = fallbackMovies[selectedIndex]
+
+        const { data: newPuzzle, error: insertError } = await supabase
+          .from("poster_pixels_puzzles")
+          .insert({
+            puzzle_date: today,
+            movie_data: selectedMovie,
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          throw insertError
+        }
+
+        puzzle = newPuzzle
+      }
+    }
+
+    // Check if user has played today
+    const { data: todaysGame } = await supabase
+      .from("poster_pixels_games")
+      .select(`
+        *,
+        poster_pixels_guesses(*)
+      `)
+      .eq("user_id", user.id)
+      .eq("puzzle_id", puzzle.id)
+      .single()
+
+    return NextResponse.json({
+      puzzle: {
+        id: puzzle.id,
+        movie_data: puzzle.movie_data,
+      },
+      hasPlayedToday: !!todaysGame,
+      previousGame: todaysGame ? {
+        won: todaysGame.won,
+        guesses: todaysGame.poster_pixels_guesses.map((g: any) => ({
+          movieId: g.guessed_movie_id,
+          movieTitle: g.guessed_movie_title,
+          isCorrect: g.is_correct,
+          clarityLevel: g.clarity_level,
+        })),
+      } : null,
+    })
+  } catch (error) {
+    console.error("Error in poster-pixels puzzle API:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

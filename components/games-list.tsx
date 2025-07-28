@@ -70,7 +70,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
 
   // Separate featured games from other games
   const featuredGames = games.filter(game => 
-    game.game_id === 'budget-bracket' || game.game_id === 'retitled'
+    game.game_id === 'budget-bracket' || game.game_id === 'retitled' || game.game_id === 'poster-pixels'
   )
   const otherGames = games.filter(game => 
     !featuredGames.some(featured => featured.game_id === game.game_id)
