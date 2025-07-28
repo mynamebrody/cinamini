@@ -4,6 +4,7 @@ import {
   SeededRandom, 
   type SeedableGameItem 
 } from './game-seeding';
+// Note: Trending integration is now handled directly in API routes
 
 export interface BudgetBracketMovie extends SeedableGameItem {
   id: number;
@@ -104,6 +105,12 @@ export function validateBudgetBracketMovie(
 export function calculateDifficultyRatio(budget1: number, budget2: number): number {
   const higher = Math.max(budget1, budget2);
   const lower = Math.min(budget1, budget2);
+  
+  // Prevent division by zero and handle identical budgets
+  if (lower === 0 || higher === lower) {
+    return 1; // Identical budgets have no difficulty ratio
+  }
+  
   return higher / lower;
 }
 
@@ -116,6 +123,16 @@ export function isValidPair(
   targetDifficulty: number,
   tolerance: number = 0.3
 ): boolean {
+  // Reject pairs with identical budgets immediately
+  if (movieA.production_budget === movieB.production_budget) {
+    return false;
+  }
+  
+  // Reject pairs with zero or negative budgets
+  if (movieA.production_budget <= 0 || movieB.production_budget <= 0) {
+    return false;
+  }
+  
   const ratio = calculateDifficultyRatio(movieA.production_budget, movieB.production_budget);
   
   // For early rounds (easy), we want ratio >= target
@@ -131,6 +148,8 @@ export function isValidPair(
 
 // Removed: Complex server-side puzzle generation functions
 // These have been moved to API routes to properly separate client/server concerns
+
+// Removed: getBudgetBracketMoviesWithTrending - now handled directly in API routes with real TMDB budget data
 
 /**
  * Generate puzzle pairs from provided movies (client-safe)

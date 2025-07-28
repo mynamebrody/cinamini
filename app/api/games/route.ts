@@ -5,11 +5,8 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Get current user (but don't require authentication)
+    const { data: { user } } = await supabase.auth.getUser()
 
     // Get all active games
     const { data: games, error: gamesError } = await supabase
@@ -23,54 +20,63 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch games" }, { status: 500 })
     }
 
-    // Check if user has played each game today
-    const today = new Date().toISOString().split('T')[0]
-    const gamesWithStatus = await Promise.all(
-      (games || []).map(async (game) => {
-        let hasPlayedToday = false
+    // Check if user has played each game today (only if authenticated)
+    let gamesWithStatus
+    if (user) {
+      const today = new Date().toISOString().split('T')[0]
+      gamesWithStatus = await Promise.all(
+        (games || []).map(async (game) => {
+          let hasPlayedToday = false
 
-        if (game.game_id === 'retitled') {
-          const { data: todaysPuzzle } = await supabase
-            .from("retitled_puzzles")
-            .select("id")
-            .eq("puzzle_date", today)
-            .single()
-
-          if (todaysPuzzle) {
-            const { data: hasPlayed } = await supabase
-              .from("retitled_guesses")
+          if (game.game_id === 'retitled') {
+            const { data: todaysPuzzle } = await supabase
+              .from("retitled_puzzles")
               .select("id")
-              .eq("user_id", user.id)
-              .eq("puzzle_id", todaysPuzzle.id)
+              .eq("puzzle_date", today)
               .single()
 
-            hasPlayedToday = !!hasPlayed
-          }
-        } else if (game.game_id === 'budget-bracket') {
-          const { data: todaysPuzzle } = await supabase
-            .from("budget_bracket_puzzles")
-            .select("id")
-            .eq("puzzle_date", today)
-            .single()
+            if (todaysPuzzle) {
+              const { data: hasPlayed } = await supabase
+                .from("retitled_guesses")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("puzzle_id", todaysPuzzle.id)
+                .single()
 
-          if (todaysPuzzle) {
-            const { data: hasPlayed } = await supabase
-              .from("budget_bracket_games")
+              hasPlayedToday = !!hasPlayed
+            }
+          } else if (game.game_id === 'budget-bracket') {
+            const { data: todaysPuzzle } = await supabase
+              .from("budget_bracket_puzzles")
               .select("id")
-              .eq("user_id", user.id)
-              .eq("puzzle_id", todaysPuzzle.id)
+              .eq("puzzle_date", today)
               .single()
 
-            hasPlayedToday = !!hasPlayed
-          }
-        }
+            if (todaysPuzzle) {
+              const { data: hasPlayed } = await supabase
+                .from("budget_bracket_games")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("puzzle_id", todaysPuzzle.id)
+                .single()
 
-        return {
-          ...game,
-          hasPlayedToday
-        }
-      })
-    )
+              hasPlayedToday = !!hasPlayed
+            }
+          }
+
+          return {
+            ...game,
+            hasPlayedToday
+          }
+        })
+      )
+    } else {
+      // For unauthenticated users, just return games without play status
+      gamesWithStatus = (games || []).map(game => ({
+        ...game,
+        hasPlayedToday: false
+      }))
+    }
 
     return NextResponse.json({ 
       games: gamesWithStatus 

@@ -13,11 +13,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 interface GameSettingsProps {
   children?: React.ReactNode
   triggerClassName?: string
+  onPause?: () => void
+  isPaused?: boolean
 }
 
-export function GameSettings({ children, triggerClassName = '' }: GameSettingsProps) {
+export function GameSettings({ children, triggerClassName = '', onPause, isPaused }: GameSettingsProps) {
   const { theme, contrast, setTheme, setContrast } = useCinaMiniTheme()
   const [open, setOpen] = React.useState(false)
+  
+  const handlePause = () => {
+    if (onPause) {
+      onPause()
+      setOpen(false) // Close settings when pausing
+    }
+  }
 
   const themeOptions = [
     { value: 'light', label: 'Light', icon: Sun },
@@ -47,6 +56,20 @@ export function GameSettings({ children, triggerClassName = '' }: GameSettingsPr
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-6">
+          {/* Pause Game (only show during gameplay) */}
+          {onPause && !isPaused && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Game Controls</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handlePause} variant="outline" className="w-full">
+                  Pause Game
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Theme Selection */}
           <Card>
             <CardHeader className="pb-3">
@@ -120,7 +143,7 @@ export function GameSettings({ children, triggerClassName = '' }: GameSettingsPr
                 <span>1.0.0</span>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Puzzle #{new Date().toISOString().slice(0, 10).replace(/-/g, '')}</span>
+                <span>Today's Puzzle</span>
                 <span>{new Date().toLocaleDateString()}</span>
               </div>
             </CardContent>
@@ -132,9 +155,17 @@ export function GameSettings({ children, triggerClassName = '' }: GameSettingsPr
 }
 
 // Compact version for in-game headers
-export function GameSettingsButton({ className = '' }: { className?: string }) {
+export function GameSettingsButton({ 
+  className = '', 
+  onPause, 
+  isPaused 
+}: { 
+  className?: string
+  onPause?: () => void
+  isPaused?: boolean
+}) {
   return (
-    <GameSettings triggerClassName={className}>
+    <GameSettings triggerClassName={className} onPause={onPause} isPaused={isPaused}>
       <Button
         variant="ghost"
         size="icon"

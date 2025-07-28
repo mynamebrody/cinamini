@@ -56,9 +56,9 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
       {/* Flag and Title */}
       <div className="text-center space-y-4">
         <div className="text-6xl">{puzzle.flagEmoji}</div>
-        <div className="text-sm text-gray-400">{puzzle.countryName}</div>
-        <h2 className="text-3xl font-bold text-white">"{puzzle.localizedTitle}"</h2>
-        <p className="text-gray-400">Which movie is this?</p>
+        <div className="text-sm text-muted-foreground">{puzzle.countryName}</div>
+        <h2 className="text-3xl font-bold text-foreground">"{puzzle.localizedTitle}"</h2>
+        <p className="text-muted-foreground">Which movie is this?</p>
       </div>
 
       {/* Options */}
@@ -69,13 +69,13 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             onClick={() => handleSelect(option.id)}
             className={cn(
               "p-4 cursor-pointer transition-all duration-200",
-              "bg-[#1c1c1c] border-white/10 hover:bg-[#252525] hover:border-white/20",
+              "bg-card border hover:bg-accent hover:border-accent-foreground/20",
               "transform hover:scale-[1.02] active:scale-[0.98]",
-              selectedId === option.id && "ring-2 ring-white/50 bg-[#252525]",
+              selectedId === option.id && "ring-2 ring-primary/50 bg-accent",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
-            <p className="text-white text-lg font-medium text-center">
+            <p className="text-foreground text-lg font-medium text-center">
               {option.title}
             </p>
           </Card>
@@ -83,7 +83,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
       </div>
 
       {/* Timer */}
-      <div className="text-center text-gray-400">
+      <div className="text-center text-muted-foreground">
         <p className="text-sm">Timer: {formatTime(elapsedTime)}</p>
       </div>
     </div>

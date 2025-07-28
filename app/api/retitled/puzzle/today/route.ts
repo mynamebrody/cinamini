@@ -63,12 +63,14 @@ export async function GET(request: NextRequest) {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
+        puzzleNumber: puzzle.puzzle_number,
         localizedTitle: puzzle.localized_title,
         countryCode: puzzle.country_code,
         countryName: puzzle.country_name || getCountryName(puzzle.country_code),
         flagEmoji: getCountryFlag(puzzle.country_code),
         difficultyLevel: puzzle.difficulty_level,
         translationNote: puzzle.translation_note,
+        seedValue: puzzle.seed_value,
         options: shuffledOptions
       },
       hasPlayed: !!userGuess,
@@ -94,7 +96,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     // First, try to get existing puzzle
     const { data: existingPuzzle, error: fetchError } = await supabase
       .from("retitled_puzzles")
-      .select("*")
+      .select("*, puzzle_number")
       .eq("puzzle_date", dateString)
       .single()
 
@@ -131,7 +133,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         translation_note: generatedPuzzle.translation_note,
         seed_value: generatedPuzzle.seed_value
       })
-      .select()
+      .select("*, puzzle_number")
       .single()
 
     if (insertError) {
@@ -140,7 +142,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         console.log("Puzzle was created concurrently, fetching existing one")
         const { data: concurrentPuzzle } = await supabase
           .from("retitled_puzzles")
-          .select("*")
+          .select("*, puzzle_number")
           .eq("puzzle_date", dateString)
           .single()
         return concurrentPuzzle

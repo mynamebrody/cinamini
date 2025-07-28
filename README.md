@@ -64,14 +64,17 @@ SHARE_CARD_SECRET=your_random_secret_for_share_urls
 ### Database Setup
 
 1. Create a new Supabase project
-2. Run the SQL migrations in `/sql/` directory:
-   - `001_create_cinamini_core_tables.sql` - Platform tables
-   - `002_create_retitled_tables.sql` - Retitled game tables
-
-Or use the Supabase CLI:
+2. Use the Supabase CLI to apply schema and seed data:
 ```bash
+# Apply migrations to remote database
 npx supabase db push
+
+# For local development with seed data
+npx supabase db reset
 ```
+
+All database schema is managed through Supabase CLI migrations in `/supabase/migrations/`. 
+Seed data (like game definitions) is automatically loaded from `/supabase/seed.sql`.
 
 ## 🏗️ Architecture
 
@@ -100,7 +103,7 @@ npx supabase db push
 │   ├── tmdb/                 # TMDB API utilities (to be built)
 │   ├── game/                 # Game logic (to be built)
 │   └── actions.ts            # Server actions
-└── sql/                      # Database migrations (to be created)
+└── supabase/                 # Database migrations and config
 ```
 
 ## 🎮 Game Development
@@ -238,11 +241,26 @@ npm run generate-puzzle -- --date=2024-01-01
 
 ### Database Migrations
 ```bash
-# Apply migrations
+# Apply migrations to remote database
 npx supabase db push
 
-# Reset database (development only)
+# Reset local database with fresh schema + seed data (development only)
 npx supabase db reset
+
+# Generate new migration file
+npx supabase migration new <migration_name>
+```
+
+### Local Development Auth Reset
+After running `npx supabase db reset`, browser cookies may persist while user records are deleted, causing auth conflicts.
+
+**Quick Fix Options:**
+```bash
+# Option 1: Visit dev route to clear auth cookies
+http://localhost:3000/api/dev/reset-auth
+
+# Option 2: Clear browser storage manually
+# In Chrome: DevTools > Application > Storage > Clear site data for localhost:3000
 ```
 
 ## 🚀 Deployment

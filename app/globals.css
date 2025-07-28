@@ -51,10 +51,6 @@
     --border: var(--tone-4);
     --input: var(--tone-4);
     --ring: var(--tone-1);
-
-    /* Legacy Tailwind compatibility */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
   }
 
   .dark {
@@ -87,10 +83,6 @@
     --border: var(--tone-4);
     --input: var(--tone-4);
     --ring: var(--tone-1);
-
-    /* Legacy Tailwind compatibility */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 87%;
   }
 
   /* High Contrast Mode */
@@ -112,6 +104,7 @@
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
   }
+
 }
 
 @layer base {

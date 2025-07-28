@@ -12,7 +12,8 @@ import {
   type SeedableGameItem 
 } from './game-seeding';
 import { createClient } from '@/lib/supabase/server';
-import { getMovieTranslations, type TMDBMovie } from './tmdb';
+import { getMovieTranslations, getMovieAlternativeTitles, type TMDBMovie, type TMDBAlternativeTitles } from './tmdb';
+import { getBlendedMoviePool } from './tmdb-trending';
 
 // ============================================================================
 // CORE INTERFACES AND TYPES
@@ -113,6 +114,46 @@ export const SUPPORTED_COUNTRIES = {
 export type CountryCode = keyof typeof SUPPORTED_COUNTRIES;
 
 /**
+ * Map country codes to their primary languages
+ */
+const COUNTRY_LANGUAGES: Record<string, { iso_639_1: string; english_name: string; native_name: string }> = {
+  'FR': { iso_639_1: 'fr', english_name: 'French', native_name: 'Français' },
+  'ES': { iso_639_1: 'es', english_name: 'Spanish', native_name: 'Español' },
+  'DE': { iso_639_1: 'de', english_name: 'German', native_name: 'Deutsch' },
+  'IT': { iso_639_1: 'it', english_name: 'Italian', native_name: 'Italiano' },
+  'JP': { iso_639_1: 'ja', english_name: 'Japanese', native_name: '日本語' },
+  'KR': { iso_639_1: 'ko', english_name: 'Korean', native_name: '한국어' },
+  'CN': { iso_639_1: 'zh', english_name: 'Chinese', native_name: '中文' },
+  'BR': { iso_639_1: 'pt', english_name: 'Portuguese', native_name: 'Português' },
+  'RU': { iso_639_1: 'ru', english_name: 'Russian', native_name: 'Русский' },
+  'IN': { iso_639_1: 'hi', english_name: 'Hindi', native_name: 'हिन्दी' },
+  'MX': { iso_639_1: 'es', english_name: 'Spanish', native_name: 'Español' },
+  'AR': { iso_639_1: 'es', english_name: 'Spanish', native_name: 'Español' },
+  'NL': { iso_639_1: 'nl', english_name: 'Dutch', native_name: 'Nederlands' },
+  'SE': { iso_639_1: 'sv', english_name: 'Swedish', native_name: 'Svenska' },
+  'NO': { iso_639_1: 'no', english_name: 'Norwegian', native_name: 'Norsk' },
+  'FI': { iso_639_1: 'fi', english_name: 'Finnish', native_name: 'Suomi' },
+  'DK': { iso_639_1: 'da', english_name: 'Danish', native_name: 'Dansk' },
+  'PL': { iso_639_1: 'pl', english_name: 'Polish', native_name: 'Polski' },
+  'TR': { iso_639_1: 'tr', english_name: 'Turkish', native_name: 'Türkçe' }
+};
+
+/**
+ * Helper functions for country language mapping
+ */
+function getCountryLanguage(countryCode: string): string {
+  return COUNTRY_LANGUAGES[countryCode]?.iso_639_1 || 'en';
+}
+
+function getCountryLanguageEnglish(countryCode: string): string {
+  return COUNTRY_LANGUAGES[countryCode]?.english_name || 'English';
+}
+
+function getCountryLanguageNative(countryCode: string): string {
+  return COUNTRY_LANGUAGES[countryCode]?.native_name || 'English';
+}
+
+/**
  * Difficulty levels based on various factors
  */
 export const DIFFICULTY_LEVELS = {
@@ -136,7 +177,128 @@ export function generateRetitledSeed(date: Date): string {
   });
 }
 
-// Removed: getRetitledMovies (over-engineered movie pool system)
+/**
+ * Configuration for movie pool selection
+ */
+export interface MoviePoolConfig {
+  seedConfig: {
+    gameId: string
+    gameEntropy: string
+  }
+  strategy: {
+    name: 'balanced' | 'trending-heavy' | 'classic-heavy'
+    trendingWeight: number
+    minTrendingPercent: number
+    maxTrendingPercent: number
+    trendingWindow: 'day' | 'week'
+  }
+  filters: {
+    minPopularity: number
+    minVoteCount: number
+    excludeAdult: boolean
+    customFilter?: (movie: TMDBMovie) => boolean
+  }
+}
+
+/**
+ * Result from movie pool selection
+ */
+export interface MoviePoolResult {
+  movies: RetitledMovie[]
+  trendingCount: number
+  classicCount: number
+  totalCount: number
+}
+
+/**
+ * Get movies for Retitled game with trending integration
+ */
+export async function getRetitledMovies(config: MoviePoolConfig): Promise<MoviePoolResult> {
+  try {
+    // Get blended movie pool with trending integration
+    const blendedMovies = await getBlendedMoviePool(
+      config.strategy.trendingWeight,
+      60 // Minimum pool size
+    )
+
+    // Filter movies based on configuration
+    const filteredMovies = blendedMovies.filter(movie => {
+      // Basic filters
+      if (movie.adult && config.filters.excludeAdult) return false
+      if (movie.popularity < config.filters.minPopularity) return false
+      if (movie.vote_count < config.filters.minVoteCount) return false
+
+      // Custom filter if provided
+      if (config.filters.customFilter && !config.filters.customFilter(movie)) {
+        return false
+      }
+
+      return true
+    })
+
+    // Convert TMDBMovie to RetitledMovie format
+    const retitledMovies: RetitledMovie[] = filteredMovies.map(movie => ({
+      id: movie.id,
+      tmdb_id: movie.id,
+      title: movie.title,
+      original_title: movie.original_title,
+      release_date: movie.release_date,
+      poster_path: movie.poster_path,
+      popularity: movie.popularity,
+      vote_count: movie.vote_count,
+      adult: movie.adult,
+      genre_ids: movie.genre_ids,
+      original_language: movie.original_language,
+      is_trending: (movie as any).is_trending || false,
+      // SeedableGameItem properties
+      seedValue: movie.id.toString(),
+      gameRelevanceScore: movie.popularity / 100 // Normalize popularity as relevance
+    }))
+
+    // Count trending vs classic movies
+    const trendingCount = retitledMovies.filter(m => m.is_trending).length
+    const classicCount = retitledMovies.length - trendingCount
+
+    console.log(`Movie pool created: ${trendingCount} trending + ${classicCount} classic = ${retitledMovies.length} total`)
+
+    return {
+      movies: retitledMovies,
+      trendingCount,
+      classicCount,
+      totalCount: retitledMovies.length
+    }
+
+  } catch (error) {
+    console.error('Error in getRetitledMovies:', error)
+    
+    // Fallback to hardcoded movies if everything fails
+    const fallbackMovies: RetitledMovie[] = [
+      {
+        id: 562,
+        tmdb_id: 562,
+        title: "Die Hard",
+        original_title: "Die Hard",
+        release_date: "1988-07-22",
+        poster_path: "/yFihWxQcmqcaBR31QM6Y8gT6aYV.jpg",
+        popularity: 45.0,
+        vote_count: 9500,
+        adult: false,
+        genre_ids: [28, 53],
+        original_language: "en",
+        is_trending: false,
+        seedValue: "562",
+        gameRelevanceScore: 0.45
+      }
+    ]
+
+    return {
+      movies: fallbackMovies,
+      trendingCount: 0,
+      classicCount: 1,
+      totalCount: 1
+    }
+  }
+}
 
 /**
  * Validate that a movie meets Retitled requirements
@@ -153,40 +315,73 @@ export function validateRetitledMovie(movie: any): movie is RetitledMovie {
 }
 
 /**
- * Fetch localized titles for a movie from TMDB
+ * Fetch localized titles for a movie from TMDB using both alternative titles and translations
  */
 export async function getLocalizedTitles(movieId: number): Promise<LocalizedTitle[]> {
   try {
-    const translations = await getMovieTranslations(movieId);
+    // Try alternative titles first (more accurate)
+    const alternativeTitles = await getMovieAlternativeTitles(movieId);
+    let localizedTitles: LocalizedTitle[] = [];
     
-    if (!translations || !translations.translations) {
-      return [];
+    if (alternativeTitles && alternativeTitles.titles) {
+      for (const altTitle of alternativeTitles.titles) {
+        const countryCode = altTitle.iso_3166_1;
+        
+        // Only include supported countries
+        if (!(countryCode in SUPPORTED_COUNTRIES)) {
+          continue;
+        }
+        
+        // Skip if no title or same as original
+        if (!altTitle.title || altTitle.title.trim() === '') {
+          continue;
+        }
+        
+        localizedTitles.push({
+          title: altTitle.title,
+          country_code: countryCode,
+          country_name: SUPPORTED_COUNTRIES[countryCode as CountryCode].name,
+          iso_639_1: getCountryLanguage(countryCode),
+          english_name: getCountryLanguageEnglish(countryCode),
+          name: getCountryLanguageNative(countryCode)
+        });
+      }
     }
-
-    const localizedTitles: LocalizedTitle[] = [];
     
-    for (const translation of translations.translations) {
-      const countryCode = translation.iso_3166_1;
+    // If we don't have enough alternative titles, supplement with translations
+    if (localizedTitles.length < 3) {
+      const translations = await getMovieTranslations(movieId);
       
-      // Only include supported countries
-      if (!(countryCode in SUPPORTED_COUNTRIES)) {
-        continue;
+      if (translations && translations.translations) {
+        for (const translation of translations.translations) {
+          const countryCode = translation.iso_3166_1;
+          
+          // Only include supported countries
+          if (!(countryCode in SUPPORTED_COUNTRIES)) {
+            continue;
+          }
+          
+          // Skip if already have this country from alternative titles
+          if (localizedTitles.some(lt => lt.country_code === countryCode)) {
+            continue;
+          }
+          
+          // Skip if no localized title or same as original
+          const localizedTitle = translation.data?.title;
+          if (!localizedTitle || localizedTitle.trim() === '') {
+            continue;
+          }
+          
+          localizedTitles.push({
+            title: localizedTitle,
+            country_code: countryCode,
+            country_name: SUPPORTED_COUNTRIES[countryCode as CountryCode].name,
+            iso_639_1: translation.iso_639_1 || 'en',
+            english_name: translation.english_name || 'English',
+            name: translation.name || translation.english_name || 'English'
+          });
+        }
       }
-      
-      // Skip if no localized title or same as original
-      const localizedTitle = translation.data?.title;
-      if (!localizedTitle || localizedTitle.trim() === '') {
-        continue;
-      }
-      
-      localizedTitles.push({
-        title: localizedTitle,
-        country_code: countryCode,
-        country_name: SUPPORTED_COUNTRIES[countryCode as CountryCode].name,
-        iso_639_1: translation.iso_639_1 || 'en',
-        english_name: translation.english_name || 'English',
-        name: translation.name || translation.english_name || 'English'
-      });
     }
     
     return localizedTitles;

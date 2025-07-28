@@ -13,7 +13,7 @@ import {
   Award,
   Flame
 } from "lucide-react"
-import { type BudgetBracketStats } from "@/lib/budget-bracket"
+import { type BudgetBracketStats } from "@/lib/budget-bracket-client"
 
 export default function BudgetBracketStats() {
   const [stats, setStats] = useState<BudgetBracketStats | null>(null)

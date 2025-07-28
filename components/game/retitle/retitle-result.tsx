@@ -65,7 +65,7 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
       {/* Result Card */}
       <Card className={cn(
         "p-8 text-center space-y-6",
-        "bg-[#1c1c1c] border-white/10",
+        "bg-card border",
         result.correct ? "border-green-500/50" : "border-red-500/50"
       )}>
         {/* Icon */}
@@ -82,40 +82,40 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
 
         {/* Result Text */}
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2">
             {result.correct ? "Correct!" : "Not quite!"}
           </h2>
-          <p className="text-gray-400">
+          <p className="text-muted-foreground">
             The answer was:
           </p>
         </div>
 
         {/* Movie Details */}
         <div className="space-y-2">
-          <h3 className="text-xl font-semibold text-white">
+          <h3 className="text-xl font-semibold text-foreground">
             {result.correctAnswer.title} ({result.correctAnswer.releaseYear})
           </h3>
-          <p className="text-sm text-gray-400 italic">
+          <p className="text-sm text-muted-foreground italic">
             {result.correctAnswer.translationNote}
           </p>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
+        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
           <div>
-            <p className="text-2xl font-bold text-white">{result.stats.gamesPlayed}</p>
-            <p className="text-xs text-gray-400">Games Played</p>
+            <p className="text-2xl font-bold text-foreground">{result.stats.gamesPlayed}</p>
+            <p className="text-xs text-muted-foreground">Games Played</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-white">{result.stats.accuracy}%</p>
-            <p className="text-xs text-gray-400">Accuracy</p>
+            <p className="text-2xl font-bold text-foreground">{result.stats.accuracy}%</p>
+            <p className="text-xs text-muted-foreground">Accuracy</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-white flex items-center justify-center gap-1">
+            <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
               {result.stats.currentStreak}
               {result.stats.currentStreak > 0 && <Flame className="w-4 h-4 text-orange-500" />}
             </p>
-            <p className="text-xs text-gray-400">Streak</p>
+            <p className="text-xs text-muted-foreground">Streak</p>
           </div>
         </div>
       </Card>
@@ -125,7 +125,7 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
         <Button
           onClick={handleShare}
           disabled={sharing}
-          className="w-full bg-white text-black hover:bg-gray-200"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {sharing ? (
             "Sharing..."
@@ -137,7 +137,7 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
           )}
         </Button>
         
-        <p className="text-center text-gray-400 text-sm">
+        <p className="text-center text-muted-foreground text-sm">
           Come back tomorrow for a new puzzle!
         </p>
       </div>

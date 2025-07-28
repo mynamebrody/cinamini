@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getPosterUrl } from "@/lib/budget-bracket"
-import { type GameChoice } from "@/lib/budget-bracket"
+import { getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 import { Clock, DollarSign } from "lucide-react"
 
 interface PuzzleMovie {

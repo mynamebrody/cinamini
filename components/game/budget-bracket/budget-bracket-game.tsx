@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Trophy, Play, BarChart3 } from "lucide-react"
 import { GameSettingsButton } from "@/components/game-settings"
-import { type GameChoice } from "@/lib/budget-bracket"
+import { type GameChoice } from "@/lib/budget-bracket-client"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -28,6 +28,7 @@ interface PuzzlePair {
 interface PuzzleData {
   id: number
   puzzle_date: string
+  puzzle_number: number
   seed_value: string
   pairs: PuzzlePair[]
   has_played: boolean
@@ -61,7 +62,7 @@ interface GameResult {
   updated_stats: any
 }
 
-type GameState = 'loading' | 'start' | 'playing' | 'completed' | 'already_played' | 'stats' | 'error'
+type GameState = 'loading' | 'start' | 'playing' | 'paused' | 'completed' | 'already_played' | 'stats' | 'error'
 
 export default function BudgetBracketGame() {
   const router = useRouter()
@@ -71,6 +72,7 @@ export default function BudgetBracketGame() {
   const [gameChoices, setGameChoices] = useState<GameChoice[]>([])
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [gameStartTime, setGameStartTime] = useState<number>(0)
+  const [pausedTime, setPausedTime] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -231,6 +233,22 @@ export default function BudgetBracketGame() {
     router.push('/')
   }
 
+  const pauseGame = () => {
+    if (gameState === 'playing') {
+      setPausedTime(Date.now())
+      setGameState('paused')
+    }
+  }
+
+  const resumeGame = () => {
+    if (gameState === 'paused') {
+      // Adjust start time to account for pause duration
+      const pauseDuration = Date.now() - pausedTime
+      setGameStartTime(gameStartTime + pauseDuration)
+      setGameState('playing')
+    }
+  }
+
   if (gameState === 'loading') {
     return (
       <div className="game-container">
@@ -387,6 +405,44 @@ export default function BudgetBracketGame() {
     )
   }
 
+  if (gameState === 'paused') {
+    return (
+      <div className="game-container">
+        <header className="game-header">
+          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            End Game
+          </Button>
+          <h1 className="game-title">Budget Bracket</h1>
+          <div className="flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">
+              Round {currentRound}/5 • Paused
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle>Game Paused</CardTitle>
+              <p className="text-muted-foreground">
+                Round {currentRound} of 5
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={resumeGame} className="w-full" size="lg">
+                <Play className="w-4 h-4 mr-2" />
+                Resume Game
+              </Button>
+              <Button onClick={() => setGameState('start')} variant="outline" className="w-full">
+                End Game
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    )
+  }
+
   if (gameState === 'playing') {
     return (
       <div className="game-container">
@@ -400,7 +456,7 @@ export default function BudgetBracketGame() {
             <div className="text-sm text-muted-foreground">
               Round {currentRound}/5
             </div>
-            <GameSettingsButton />
+            <GameSettingsButton onPause={pauseGame} isPaused={false} />
           </div>
         </header>
         <main className="flex-1 overflow-auto p-4">
@@ -439,7 +495,7 @@ export default function BudgetBracketGame() {
         <div className="max-w-md mx-auto">
           <Card>
             <CardHeader className="text-center">
-              <CardTitle>Budget Bracket #{puzzle?.seed_value.slice(0, 6)}</CardTitle>
+              <CardTitle>Budget Bracket #{puzzle?.puzzle_number}</CardTitle>
               <p className="text-muted-foreground">
                 Pick the movie with the higher production budget
               </p>

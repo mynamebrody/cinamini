@@ -15,8 +15,7 @@ import {
   Copy,
   Check
 } from "lucide-react"
-import { generateSharePattern, formatBudget, getPosterUrl } from "@/lib/budget-bracket"
-import { type GameChoice } from "@/lib/budget-bracket"
+import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 
 interface PuzzleMovie {
   tmdb_id: number

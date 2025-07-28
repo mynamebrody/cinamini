@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { type MoviePair, type BudgetBracketMovie } from '@/lib/budget-bracket'
 
 interface BudgetRequest {
   movieA_tmdb_id: number
@@ -24,28 +25,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Movie IDs are required' }, { status: 400 })
     }
 
-    // Get budget data for both movies
-    const { data: movies, error } = await supabase
-      .from('budget_bracket_movies')
-      .select('tmdb_id, title, production_budget, budget_source, is_budget_estimated')
-      .in('tmdb_id', [movieA_tmdb_id, movieB_tmdb_id])
+    // Get today's puzzle to extract budget data from movie pairs
+    const today = new Date().toISOString().split('T')[0]
+    const { data: puzzle, error: puzzleError } = await supabase
+      .from('budget_bracket_puzzles')
+      .select('movie_pairs')
+      .eq('puzzle_date', today)
+      .single()
 
-    if (error) {
-      console.error('Error fetching movie budgets:', error)
-      return NextResponse.json({ error: 'Failed to fetch movie data' }, { status: 500 })
+    if (puzzleError || !puzzle) {
+      console.error('Error fetching today\'s puzzle:', puzzleError)
+      return NextResponse.json({ error: 'Today\'s puzzle not found' }, { status: 404 })
     }
 
-    if (!movies || movies.length !== 2) {
-      return NextResponse.json({ error: 'Movie data not found' }, { status: 404 })
+    // Find the pair containing these movies
+    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const targetPair = moviePairs.find(pair => 
+      (pair.movieA.tmdb_id === movieA_tmdb_id && pair.movieB.tmdb_id === movieB_tmdb_id) ||
+      (pair.movieA.tmdb_id === movieB_tmdb_id && pair.movieB.tmdb_id === movieA_tmdb_id)
+    )
+
+    if (!targetPair) {
+      return NextResponse.json({ error: 'Movie pair not found in today\'s puzzle' }, { status: 404 })
     }
 
-    // Sort movies to match the request order
-    const movieA = movies.find((m: any) => m.tmdb_id === movieA_tmdb_id)
-    const movieB = movies.find((m: any) => m.tmdb_id === movieB_tmdb_id)
-
-    if (!movieA || !movieB) {
-      return NextResponse.json({ error: 'Movie data incomplete' }, { status: 404 })
-    }
+    // Extract budget data from the pair
+    const movieA: BudgetBracketMovie = targetPair.movieA.tmdb_id === movieA_tmdb_id 
+      ? targetPair.movieA 
+      : targetPair.movieB
+    const movieB: BudgetBracketMovie = targetPair.movieA.tmdb_id === movieB_tmdb_id 
+      ? targetPair.movieA 
+      : targetPair.movieB
 
     const response = {
       movieA: {
