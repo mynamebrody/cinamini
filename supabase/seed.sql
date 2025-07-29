@@ -12,6 +12,44 @@ ON CONFLICT (game_id) DO UPDATE SET
   is_active = EXCLUDED.is_active,
   updated_at = NOW();
 
+-- Create a super admin user (You'll need to create this user via Supabase Auth first)
+-- Email: admin@cinamini.com
+-- Password: [Set a secure password when creating the user]
+DO $$
+DECLARE
+  admin_user_id UUID;
+BEGIN
+  -- Check if admin user exists in auth.users
+  SELECT id INTO admin_user_id 
+  FROM auth.users 
+  WHERE email = 'admin@cinamini.com' 
+  LIMIT 1;
+
+  -- If admin user exists, create/update their profile
+  IF admin_user_id IS NOT NULL THEN
+    INSERT INTO "public"."cinamini_user_profiles" (
+      "user_id", 
+      "display_name", 
+      "is_super_admin",
+      "created_at", 
+      "updated_at"
+    ) VALUES (
+      admin_user_id,
+      'Admin',
+      TRUE,
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT (user_id) DO UPDATE SET
+      is_super_admin = TRUE,
+      updated_at = NOW();
+
+    RAISE NOTICE 'Super admin profile created/updated for admin@cinamini.com';
+  ELSE
+    RAISE NOTICE 'Admin user not found. Please create user admin@cinamini.com via Supabase Auth first.';
+  END IF;
+END $$;
+
 -- Add sample user profile (for development/testing)
 -- Note: This will only work if there's an existing auth.users entry
 -- You may need to sign up through the app first
