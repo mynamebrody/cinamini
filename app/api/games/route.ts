@@ -62,6 +62,23 @@ export async function GET(request: NextRequest) {
 
               hasPlayedToday = !!hasPlayed
             }
+          } else if (game.game_id === 'cast-climb') {
+            const { data: todaysPuzzle } = await supabase
+              .from("cast_climb_puzzles")
+              .select("id")
+              .eq("puzzle_date", today)
+              .single()
+
+            if (todaysPuzzle) {
+              const { data: hasPlayed } = await supabase
+                .from("cast_climb_guesses")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("puzzle_id", todaysPuzzle.id)
+                .single()
+
+              hasPlayedToday = !!hasPlayed
+            }
           }
 
           return {
