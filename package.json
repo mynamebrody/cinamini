@@ -8,7 +8,13 @@
     "quick-dev": "concurrently 'npm i && next dev --turbopack' 'npm run ngrok'",
     "ngrok": "ngrok http --url=cinamini.ngrok.app 3000",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "db:reset": "npx supabase db reset",
+    "db:pull": "npx supabase db pull",
+    "db:push": "npx supabase db push",
+    "db:studio": "npx supabase studio",
+    "db:start": "npx supabase start",
+    "db:stop": "npx supabase stop"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "1.2.11",

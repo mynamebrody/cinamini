@@ -70,7 +70,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
 
   // Separate featured games from other games
   const featuredGames = games.filter(game => 
-    game.game_id === 'budget-bracket' || game.game_id === 'retitled' || game.game_id === 'poster-pixels'
+    game.game_id === 'budget-bracket' || game.game_id === 'retitled' || game.game_id === 'poster-pixels' || game.game_id === 'cast-climb'
   )
   const otherGames = games.filter(game => 
     !featuredGames.some(featured => featured.game_id === game.game_id)
@@ -86,7 +86,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
             <p className="text-gray-400 text-lg">Our most popular daily movie challenges</p>
           </div>
           
-          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
             {featuredGames.map((game) => (
               <GameCard
                 key={game.game_id}

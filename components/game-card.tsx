@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { CheckCircle2, PlayCircle, DollarSign, Globe, Film, Image } from "lucide-react"
+import { CheckCircle2, PlayCircle, DollarSign, Globe, Film, Image, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import AuthDialog from "./auth-dialog"
 
@@ -37,6 +37,8 @@ export default function GameCard({ id, name, description, hasPlayedToday, featur
         return <Globe className={cn("text-blue-400", featured ? "w-6 h-6" : "w-5 h-5")} />
       case 'poster-pixels':
         return <Image className={cn("text-purple-400", featured ? "w-6 h-6" : "w-5 h-5")} />
+      case 'cast-climb':
+        return <Users className={cn("text-purple-400", featured ? "w-6 h-6" : "w-5 h-5")} />
       default:
         return <Film className={cn("text-gray-400", featured ? "w-6 h-6" : "w-5 h-5")} />
     }
@@ -49,6 +51,8 @@ export default function GameCard({ id, name, description, hasPlayedToday, featur
       case 'retitled':
         return featured ? "from-blue-500/10 to-transparent" : ""
       case 'poster-pixels':
+        return featured ? "from-orange-500/10 to-transparent" : ""
+      case 'cast-climb':
         return featured ? "from-purple-500/10 to-transparent" : ""
       default:
         return ""

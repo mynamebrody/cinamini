@@ -136,6 +136,7 @@ export default async function Home() {
                     <div className="flex justify-center gap-4 text-xs text-white/60">
                       <span>💰 Budget Bracket</span>
                       <span>🌍 Retitled</span>
+                      <span>🎬 Cast Climb</span>
                     </div>
                   </div>
                 </div>
