@@ -79,6 +79,23 @@ export async function GET(request: NextRequest) {
 
               hasPlayedToday = !!hasPlayed
             }
+          } else if (game.game_id === 'poster-pixel') {
+            const { data: todaysPuzzle } = await supabase
+              .from("poster_pixel_puzzles")
+              .select("id")
+              .eq("puzzle_date", today)
+              .single()
+
+            if (todaysPuzzle) {
+              const { data: hasPlayed } = await supabase
+                .from("poster_pixel_games")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("puzzle_id", todaysPuzzle.id)
+                .single()
+
+              hasPlayedToday = !!hasPlayed
+            }
           }
 
           return {

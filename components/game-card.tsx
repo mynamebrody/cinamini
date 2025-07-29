@@ -37,6 +37,8 @@ export default function GameCard({ id, name, description, hasPlayedToday, featur
         return <Globe className={cn("text-blue-400", featured ? "w-6 h-6" : "w-5 h-5")} />
       case 'cast-climb':
         return <Users className={cn("text-purple-400", featured ? "w-6 h-6" : "w-5 h-5")} />
+      case 'poster-pixel':
+        return <Film className={cn("text-orange-400", featured ? "w-6 h-6" : "w-5 h-5")} />
       default:
         return <Film className={cn("text-gray-400", featured ? "w-6 h-6" : "w-5 h-5")} />
     }
@@ -50,6 +52,8 @@ export default function GameCard({ id, name, description, hasPlayedToday, featur
         return featured ? "from-blue-500/10 to-transparent" : ""
       case 'cast-climb':
         return featured ? "from-purple-500/10 to-transparent" : ""
+      case 'poster-pixel':
+        return featured ? "from-orange-500/10 to-transparent" : ""
       default:
         return ""
     }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import CastClimbStats from "@/components/game/cast-climb/cast-climb-stats"
 import RetitleStats from "@/components/game/retitle/retitle-stats"
 import BudgetBracketStats from "@/components/game/budget-bracket/budget-bracket-stats"
+import PosterPixelStats from "@/components/game/poster-pixel/poster-pixel-stats"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default async function StatsPage() {
@@ -60,6 +61,7 @@ export default async function StatsPage() {
               <TabsTrigger value="cast-climb">Cast Climb</TabsTrigger>
               <TabsTrigger value="retitled">Retitled</TabsTrigger>
               <TabsTrigger value="budget-bracket">Budget Bracket</TabsTrigger>
+              <TabsTrigger value="poster-pixel">Poster Pixel</TabsTrigger>
             </TabsList>
             
             <TabsContent value="cast-climb" className="mt-6">
@@ -72,6 +74,10 @@ export default async function StatsPage() {
             
             <TabsContent value="budget-bracket" className="mt-6">
               <BudgetBracketStats />
+            </TabsContent>
+            
+            <TabsContent value="poster-pixel" className="mt-6">
+              <PosterPixelStats />
             </TabsContent>
           </Tabs>
         </div>

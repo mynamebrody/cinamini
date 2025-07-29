@@ -137,6 +137,7 @@ export default async function Home() {
                       <span>💰 Budget Bracket</span>
                       <span>🌍 Retitled</span>
                       <span>🎬 Cast Climb</span>
+                      <span>🖼️ Poster Pixel</span>
                     </div>
                   </div>
                 </div>
