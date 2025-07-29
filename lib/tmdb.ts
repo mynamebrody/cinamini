@@ -1,5 +1,5 @@
 // TMDB API utility functions
-import { TMDBMovie, TMDBMovieDetails, TMDBAlternativeTitles } from './types/tmdb'
+import { TMDBMovie, TMDBMovieDetails, TMDBAlternativeTitles, TMDBCreditsResponse, TMDBCast, TMDBCrew } from './types/tmdb'
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
@@ -374,5 +374,37 @@ export async function enrichMoviesWithDetails(movies: TMDBMovie[]): Promise<any[
   return enrichedMovies
 }
 
+/**
+ * Get movie cast and crew credits from TMDB API
+ */
+export async function getMovieCredits(movieId: number): Promise<TMDBCreditsResponse | null> {
+  if (!TMDB_API_KEY) {
+    console.warn('TMDB API key not configured')
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}/credits`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data as TMDBCreditsResponse
+  } catch (error) {
+    console.error(`Error fetching credits for movie ${movieId}:`, error)
+    return null
+  }
+}
+
 // Re-export the TMDB types for convenience
-export type { TMDBMovie, TMDBMovieDetails, TMDBAlternativeTitles } 
+export type { TMDBMovie, TMDBMovieDetails, TMDBAlternativeTitles, TMDBCreditsResponse, TMDBCast, TMDBCrew } 

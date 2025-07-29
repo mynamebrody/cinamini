@@ -98,3 +98,39 @@ export interface EnrichedTMDBMovie extends TMDBMovie {
   budgetSource?: 'tmdb' | 'estimated' | 'unknown'
   is_trending?: boolean
 }
+
+// Cast and Credits interfaces
+export interface TMDBCast {
+  id: number
+  name: string
+  character: string
+  credit_id: string
+  order: number
+  adult: boolean
+  gender: number | null
+  known_for_department: string
+  original_name: string
+  popularity: number
+  profile_path: string | null
+  cast_id: number
+}
+
+export interface TMDBCrew {
+  id: number
+  name: string
+  job: string
+  department: string
+  credit_id: string
+  adult: boolean
+  gender: number | null
+  known_for_department: string
+  original_name: string
+  popularity: number
+  profile_path: string | null
+}
+
+export interface TMDBCreditsResponse {
+  id: number
+  cast: TMDBCast[]
+  crew: TMDBCrew[]
+}
