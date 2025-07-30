@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Trophy, Play, BarChart3 } from "lucide-react"
-import { GameSettingsButton } from "@/components/game-settings"
+import { Play, BarChart3 } from "lucide-react"
+import { GameHeader } from "../game-header"
+import { HowToPlayModal } from "../how-to-play-modal"
+import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 
 interface PuzzleData {
   id: string
@@ -38,14 +39,14 @@ interface GuessResult {
   }
 }
 
-type GameState = 'loading' | 'start' | 'playing' | 'paused' | 'completed' | 'stats' | 'error'
+type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
+type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function RetitleGame() {
-  const router = useRouter()
   const [gameState, setGameState] = useState<GameState>('loading')
+  const [modalState, setModalState] = useState<ModalState>('none')
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null)
   const [startTime, setStartTime] = useState<number>(0)
-  const [pausedTime, setPausedTime] = useState<number>(0)
   const [result, setResult] = useState<GuessResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -98,7 +99,12 @@ export default function RetitleGame() {
         setGameState('completed')
       } else {
         setPuzzle(data.puzzle)
-        setGameState('start')
+        // Check if this is the user's first time playing
+        const hasPlayedBefore = localStorage.getItem('retitled-played')
+        setGameState('ready')
+        if (!hasPlayedBefore) {
+          setModalState('howtoplay')
+        }
       }
     } catch (err) {
       console.error("Error loading puzzle:", err)
@@ -108,8 +114,13 @@ export default function RetitleGame() {
   }
 
   const startGame = () => {
+    // Mark that the user has played before if coming from how to play
+    if (modalState === 'howtoplay') {
+      localStorage.setItem('retitled-played', 'true')
+    }
     setGameState('playing')
     setStartTime(Date.now())
+    setModalState('none')
   }
 
   const handleGuess = async (guessFilmId: number) => {
@@ -146,237 +157,135 @@ export default function RetitleGame() {
   }
 
   const showStats = () => {
-    setGameState('stats')
+    setModalState('stats')
   }
 
-  const backToGame = () => {
-    if (result) {
-      setGameState('completed')
-    } else {
-      setGameState('start')
-    }
+  const showHowToPlay = () => {
+    setModalState('howtoplay')
   }
 
-  const goHome = () => {
-    router.push('/')
-  }
-
-  const pauseGame = () => {
-    if (gameState === 'playing') {
-      setPausedTime(Date.now())
-      setGameState('paused')
-    }
-  }
-
-  const resumeGame = () => {
-    if (gameState === 'paused') {
-      // Adjust start time to account for pause duration
-      const pauseDuration = Date.now() - pausedTime
-      setStartTime(startTime + pauseDuration)
-      setGameState('playing')
-    }
-  }
-
-  if (gameState === 'loading') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <div></div>
-          <h1 className="game-title">Retitle</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="animate-pulse text-lg">Loading today's puzzle...</div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'error') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <div></div>
-          <h1 className="game-title">Retitle</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-red-500 mb-4">{error}</p>
-              <Button onClick={loadTodaysPuzzle} className="w-full">
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'stats') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={backToGame}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="game-title">Stats</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto">
-            <RetitleStats onClose={() => setGameState('stats')} />
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'completed') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={goHome}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
-          <h1 className="game-title">Retitle</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={showStats}>
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-            <GameSettingsButton />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto">
-            {result && (
-              <RetitleResult 
-                result={result} 
-                puzzleId={puzzle?.id || ""}
-              />
-            )}
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'paused') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            End Game
-          </Button>
-          <h1 className="game-title">Retitle</h1>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              Paused
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle>Game Paused</CardTitle>
-              <p className="text-muted-foreground">
-                Take your time to think
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={resumeGame} className="w-full" size="lg">
-                <Play className="w-4 h-4 mr-2" />
-                Resume Game
-              </Button>
-              <Button onClick={() => setGameState('start')} variant="outline" className="w-full">
-                End Game
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'playing') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="game-title">Retitle</h1>
-          <GameSettingsButton onPause={pauseGame} isPaused={false} />
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-4xl mx-auto">
-            {puzzle && (
-              <RetitlePuzzle 
-                puzzle={puzzle}
-                onGuess={handleGuess}
-                startTime={startTime}
-              />
-            )}
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  // Start screen
+  // Render the game
   return (
     <div className="game-container">
-      <header className="game-header">
-        <Button variant="ghost" size="sm" onClick={goHome}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Home
-        </Button>
-        <h1 className="game-title">Retitle</h1>
-        <div className="flex items-center gap-2">
+      <GameHeader 
+        title="Retitled" 
+        onHelpClick={showHowToPlay}
+      >
+        {(gameState === 'ready' || gameState === 'completed') && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>
-          <GameSettingsButton />
-        </div>
-      </header>
+        )}
+      </GameHeader>
+
+      {/* How to Play Modal */}
+      <HowToPlayModal
+        open={modalState === 'howtoplay'}
+        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        title="Retitled"
+        instructions={
+          <div className="space-y-4">
+            <p className="text-neutral-600">
+              Test your movie knowledge by identifying English films from their foreign titles!
+            </p>
+            <div className="bg-neutral-50 rounded-lg p-4">
+              <h3 className="font-semibold mb-2">How to Play:</h3>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li>• You'll see a foreign movie title with a country flag</li>
+                <li>• Choose the correct English title from 4-5 options</li>
+                <li>• Learn interesting translation trivia along the way</li>
+                <li>• One puzzle per day - make it count!</li>
+              </ul>
+            </div>
+          </div>
+        }
+        onStart={startGame}
+      />
+
+      {/* Stats Modal */}
+      <GameModal
+        open={modalState === 'stats'}
+        onOpenChange={(open) => setModalState(open ? 'stats' : 'none')}
+        className="max-w-lg"
+      >
+        <GameModalHeader>
+          <GameModalTitle>Statistics</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <RetitleStats onClose={() => setModalState('none')} />
+        </GameModalBody>
+      </GameModal>
+
       <main className="flex-1 overflow-auto p-4">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Retitle #{puzzle?.puzzleNumber}</CardTitle>
-              <p className="text-muted-foreground">
-                Identify the English film from its foreign title
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-muted rounded-lg p-4">
-                <h3 className="font-semibold mb-2">How to Play:</h3>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• See a foreign movie title with a country flag</li>
-                  <li>• Choose the correct English title from the options</li>
-                  <li>• Learn interesting translation trivia along the way</li>
-                  <li>• One puzzle per day - make it count!</li>
-                </ul>
-              </div>
+        {gameState === 'loading' && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+            </div>
+          </div>
+        )}
 
-              <Button onClick={startGame} className="w-full" size="lg">
-                <Play className="w-4 h-4 mr-2" />
-                Start Playing
-              </Button>
+        {gameState === 'error' && (
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6 text-center">
+                <p className="text-red-500 mb-4">{error}</p>
+                <Button onClick={loadTodaysPuzzle} className="w-full">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-              <div className="text-center text-sm text-muted-foreground">
-                Daily puzzle • {new Date().toLocaleDateString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {gameState === 'ready' && (
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle>Retitled #{puzzle?.puzzleNumber}</CardTitle>
+                <p className="text-muted-foreground">
+                  Identify the English film from its foreign title
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-muted rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Can you identify the English movie from its foreign title?
+                  </p>
+                </div>
+
+                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Playing
+                </Button>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  Daily puzzle • {new Date().toLocaleDateString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {gameState === 'playing' && puzzle && (
+          <div className="max-w-4xl mx-auto">
+            <RetitlePuzzle 
+              puzzle={puzzle}
+              onGuess={handleGuess}
+              startTime={startTime}
+            />
+          </div>
+        )}
+
+        {gameState === 'completed' && result && (
+          <div className="max-w-md mx-auto">
+            <RetitleResult 
+              result={result} 
+              puzzleId={puzzle?.id || ""}
+            />
+          </div>
+        )}
       </main>
     </div>
   )

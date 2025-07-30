@@ -194,7 +194,7 @@ export function FavoriteFilmsSection() {
         <h3 className="text-lg font-semibold text-white">Top Four Films</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((position) => (
-            <div key={position} className="aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+            <div key={position} className="aspect-[2/3] bg-gray-200 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -205,7 +205,7 @@ export function FavoriteFilmsSection() {
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold text-white">Top Four Films</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500">
           Showcase your favorite movies on your profile
         </p>
       </div>

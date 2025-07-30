@@ -135,8 +135,8 @@ export default function BudgetBracketStats() {
           </div>
           
           {stats.current_streak >= 3 && (
-            <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
-              <div className="text-sm text-orange-700 dark:text-orange-300 font-medium">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="text-sm text-orange-700 font-medium">
                 {stats.current_streak >= 7 ? "You're on fire! 🔥" : "Hot streak! Keep it going! ⚡"}
               </div>
             </div>

@@ -131,7 +131,13 @@ export async function POST(request: NextRequest) {
         title: correctMovie.title,
         originalTitle: correctMovie.original_title,
         releaseYear: getReleaseYear(correctMovie.release_date),
-        translationNote: puzzle.translation_note
+        translationNote: puzzle.translation_note,
+        posterPath: correctMovie.poster_path
+      },
+      puzzle: {
+        localizedTitle: puzzle.localized_title,
+        countryCode: puzzle.country_code,
+        flagEmoji: puzzle.flag_emoji
       },
       stats: {
         gamesPlayed: newStats.games_played,

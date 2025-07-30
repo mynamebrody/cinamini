@@ -1,17 +1,18 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { LogOut, Film, Trophy, Zap } from "lucide-react"
-import { signOut } from "@/lib/actions"
 import GamesList from "@/components/games-list"
-import DailyStats from "@/components/daily-stats"
+import { SiteHeader } from "@/components/site-header"
+import { Banner } from "@/components/banner"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#161616]">
-        <h1 className="text-2xl font-bold mb-4 text-white">Connect Supabase to get started</h1>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4 text-neutral-900">Connect Supabase to get started</h1>
+          <p className="text-neutral-600">Please configure your Supabase connection to continue.</p>
+        </div>
       </div>
     )
   }
@@ -35,124 +36,74 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#161616]">
-      {/* Header with dynamic content based on auth status */}
-      <header className="border-b border-white/10 bg-[#161616]/90 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold text-white">CinaMini</h1>
-            {user ? (
-              <p className="text-sm text-gray-400">Welcome back, {displayName}</p>
-            ) : (
-              <p className="text-sm text-gray-400">Daily movie puzzles for film lovers</p>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            {user ? (
-              // Authenticated user menu
-              <>
-                <Button asChild variant="ghost" className="text-white hover:bg-white/10">
-                  <a href="/profile">Profile</a>
+    <div className="min-h-screen bg-white">
+      {/* Optional Banner */}
+      <Banner
+        message="🎬 New game coming soon: Poster Pixels! Can you guess the movie from a pixelated poster?"
+        show={false} // Toggle this to show/hide banner
+      />
+
+      {/* Navigation Header */}
+      <SiteHeader user={user} displayName={displayName} />
+
+      {/* Hero Section */}
+      <section className="bg-white py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="mb-6">
+              <p className="text-sm font-medium text-cinema-red uppercase tracking-wide mb-2">
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </p>
+              <h1 className="font-nyt text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-4">
+                The Cinema Challenge
+              </h1>
+              <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+                Test your movie knowledge with daily puzzles. From budget battles to cast climbs, 
+                discover new depths of cinema trivia every day.
+              </p>
+            </div>
+
+            {!user && (
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button asChild variant="primary" size="lg">
+                  <a href="/auth/sign-up">Start Playing Free</a>
                 </Button>
-                <form action={signOut}>
-                  <Button type="submit" variant="outline" className="border-white/20 text-white hover:bg-white/10">
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </form>
-              </>
-            ) : (
-              // Guest user menu
-              <>
-                <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+                <Button asChild variant="ghost" size="lg">
                   <a href="/auth/login">Sign In</a>
                 </Button>
-                <Button asChild className="bg-[#B31B1B] text-white hover:bg-[#9A1A1A]">
-                  <a href="/auth/sign-up">Get Started</a>
-                </Button>
-              </>
+              </div>
             )}
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-[#B31B1B] to-[#8B1538] text-white">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-white/90">
-                <Film className="w-5 h-5" />
-                <span className="text-sm font-medium uppercase tracking-wide">Daily Movie Puzzles</span>
-              </div>
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                Test Your
-                <br />
-                <span className="text-yellow-300">Film Knowledge</span>
-              </h1>
-              <p className="text-xl text-white/90 max-w-lg">
-                Challenge yourself with daily movie puzzles. From budget guessing to localized titles, discover how much you really know about cinema.
-              </p>
-              <div className="flex items-center gap-4 pt-4">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-300" />
-                  <span className="text-sm">Daily Challenges</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-yellow-300" />
-                  <span className="text-sm">Quick & Fun</span>
-                </div>
-              </div>
-              
-              {!user && (
-                <div className="flex gap-3 pt-6">
-                  <Button asChild size="lg" className="bg-white text-black hover:bg-gray-200">
-                    <a href="/auth/sign-up">Start Playing Free</a>
-                  </Button>
-                  <Button asChild variant="outline" size="lg" className="border-white/40 text-white hover:bg-white/10">
-                    <a href="/auth/login">Sign In</a>
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="hidden md:block">
-              <div className="relative">
-                <div className="w-full h-64 bg-white/10 rounded-2xl backdrop-blur-sm border border-white/20 p-6 flex flex-col justify-center">
-                  <div className="text-center space-y-4">
-                    <div className="w-16 h-16 bg-yellow-300/20 rounded-full flex items-center justify-center mx-auto">
-                      <Film className="w-8 h-8 text-yellow-300" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-white mb-1">Today's Challenge</h3>
-                      <p className="text-white/80 text-sm">
-                        {new Date().toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })}
-                      </p>
-                    </div>
-                    <div className="flex justify-center gap-4 text-xs text-white/60">
-                      <span>💰 Budget Bracket</span>
-                      <span>🌍 Retitled</span>
-                      <span>🎬 Cast Climb</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      {/* Main Games Section */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <GamesList isAuthenticated={!!user} />
       </main>
 
-      {/* Daily Stats */}
-      <DailyStats />
+      {/* Footer */}
+      <footer className="border-t border-neutral-200 bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
+              © 2025 CinaMini. Daily movie puzzles for film enthusiasts.
+            </div>
+            <div className="flex items-center space-x-6 text-sm text-neutral-500">
+              <a href="/stats" className="hover:text-cinema-red transition-colors">
+                Statistics
+              </a>
+              <a href="/profile" className="hover:text-cinema-red transition-colors">
+                Profile
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

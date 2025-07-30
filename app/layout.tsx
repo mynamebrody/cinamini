@@ -1,7 +1,6 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist } from "next/font/google"
-import { CinaMiniThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const geist = Geist({
@@ -10,11 +9,16 @@ const geist = Geist({
 
 export const metadata: Metadata = {
   title: "CinaMini - Daily Movie Puzzles",
-  description: "Daily movie puzzle games inspired by Wordle. Test your film knowledge with Retitled, Budget Bracket, and more!",
+  description: "Daily movie puzzle games for cinema enthusiasts. Test your film knowledge with Retitled, Budget Bracket, and more!",
   generator: 'CinaMini',
-  keywords: "movie games, daily puzzles, film trivia, wordle for movies, cinema games",
+  keywords: "movie games, daily puzzles, film trivia, cinema games, movie challenges",
   authors: [{ name: "CinaMini Team" }],
-  viewport: "width=device-width, initial-scale=1, user-scalable=no",
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -23,15 +27,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <body className={geist.className}>
-        <CinaMiniThemeProvider
-          defaultTheme="system"
-          defaultContrast="normal"
-          storageKey="cinamini-theme"
-        >
-          {children}
-        </CinaMiniThemeProvider>
+        {children}
       </body>
     </html>
   )

@@ -28,41 +28,58 @@ export async function GET(request: NextRequest) {
         (games || []).map(async (game) => {
           let hasPlayedToday = false
 
-          if (game.game_id === 'retitled') {
-            const { data: todaysPuzzle } = await supabase
-              .from("retitled_puzzles")
-              .select("id")
-              .eq("puzzle_date", today)
-              .single()
-
-            if (todaysPuzzle) {
-              const { data: hasPlayed } = await supabase
-                .from("retitled_guesses")
+                      if (game.game_id === 'retitled') {
+              const { data: todaysPuzzle } = await supabase
+                .from("retitled_puzzles")
                 .select("id")
-                .eq("user_id", user.id)
-                .eq("puzzle_id", todaysPuzzle.id)
+                .eq("puzzle_date", today)
                 .single()
 
-              hasPlayedToday = !!hasPlayed
-            }
-          } else if (game.game_id === 'budget-bracket') {
-            const { data: todaysPuzzle } = await supabase
-              .from("budget_bracket_puzzles")
-              .select("id")
-              .eq("puzzle_date", today)
-              .single()
+              if (todaysPuzzle) {
+                const { data: hasPlayed } = await supabase
+                  .from("retitled_guesses")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .eq("puzzle_id", todaysPuzzle.id)
+                  .single()
 
-            if (todaysPuzzle) {
-              const { data: hasPlayed } = await supabase
-                .from("budget_bracket_games")
+                hasPlayedToday = !!hasPlayed
+              }
+            } else if (game.game_id === 'budget-bracket') {
+              const { data: todaysPuzzle } = await supabase
+                .from("budget_bracket_puzzles")
                 .select("id")
-                .eq("user_id", user.id)
-                .eq("puzzle_id", todaysPuzzle.id)
+                .eq("puzzle_date", today)
                 .single()
 
-              hasPlayedToday = !!hasPlayed
-            }
-          } else if (game.game_id === 'cast-climb') {
+              if (todaysPuzzle) {
+                const { data: hasPlayed } = await supabase
+                  .from("budget_bracket_games")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .eq("puzzle_id", todaysPuzzle.id)
+                  .single()
+
+                hasPlayedToday = !!hasPlayed
+              }
+            } else if (game.game_id === 'poster-pixels') {
+              const { data: todaysPuzzle } = await supabase
+                .from("poster_pixels_puzzles")
+                .select("id")
+                .eq("puzzle_date", today)
+                .single()
+
+              if (todaysPuzzle) {
+                const { data: hasPlayed } = await supabase
+                  .from("poster_pixels_games")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .eq("puzzle_id", todaysPuzzle.id)
+                  .single()
+
+                hasPlayedToday = !!hasPlayed
+              }
+            } else if (game.game_id === 'cast-climb') {
             const { data: todaysPuzzle } = await supabase
               .from("cast_climb_puzzles")
               .select("id")
@@ -80,7 +97,6 @@ export async function GET(request: NextRequest) {
               hasPlayedToday = !!hasPlayed
             }
           }
-
           return {
             ...game,
             hasPlayedToday

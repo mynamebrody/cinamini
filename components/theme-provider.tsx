@@ -1,151 +1,93 @@
 'use client'
 
 import * as React from 'react'
-import {
-  ThemeProvider as NextThemesProvider,
-  type ThemeProviderProps,
-} from 'next-themes'
 import { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark' | 'system'
-type Contrast = 'normal' | 'high'
+type Theme = 'light' | 'dark'
 
-interface CinaMiniThemeContextType {
+interface ThemeContextType {
   theme: Theme
-  contrast: Contrast
   setTheme: (theme: Theme) => void
-  setContrast: (contrast: Contrast) => void
-  resolvedTheme: 'light' | 'dark'
+  toggleTheme: () => void
+  isHydrated: boolean
 }
 
-const CinaMiniThemeContext = createContext<CinaMiniThemeContextType | undefined>(undefined)
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
-export function useCinaMiniTheme() {
-  const context = useContext(CinaMiniThemeContext)
+export function useTheme() {
+  const context = useContext(ThemeContext)
   if (context === undefined) {
-    throw new Error('useCinaMiniTheme must be used within a CinaMiniThemeProvider')
+    throw new Error('useTheme must be used within a ThemeProvider')
   }
   return context
 }
 
-interface CinaMiniThemeProviderProps {
+interface ThemeProviderProps {
   children: React.ReactNode
   defaultTheme?: Theme
-  defaultContrast?: Contrast
   storageKey?: string
 }
 
-export function CinaMiniThemeProvider({
+export function ThemeProvider({
   children,
-  defaultTheme = 'system',
-  defaultContrast = 'normal',
+  defaultTheme = 'light',
   storageKey = 'cinamini-theme',
-  ...props
-}: CinaMiniThemeProviderProps) {
+}: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(defaultTheme)
-  const [contrast, setContrastState] = useState<Contrast>(defaultContrast)
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
+  const [isHydrated, setIsHydrated] = useState(false)
 
-  // Load saved preferences on mount
+  // Load saved theme preference on mount
   useEffect(() => {
+    setIsHydrated(true)
+    
     try {
-      const savedTheme = localStorage.getItem(`${storageKey}-theme`) as Theme
-      const savedContrast = localStorage.getItem(`${storageKey}-contrast`) as Contrast
-      
-      if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+      const savedTheme = localStorage.getItem(storageKey) as Theme
+      if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
         setThemeState(savedTheme)
       }
-      
-      if (savedContrast && ['normal', 'high'].includes(savedContrast)) {
-        setContrastState(savedContrast)
-      }
     } catch {
-      // Fallback to defaults if localStorage fails
+      // Fallback to default if localStorage fails
+      console.warn('Failed to load theme from localStorage, using default')
     }
   }, [storageKey])
 
-  // Update resolved theme based on theme and system preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    
-    const updateResolvedTheme = () => {
-      if (theme === 'system') {
-        setResolvedTheme(mediaQuery.matches ? 'dark' : 'light')
-      } else {
-        setResolvedTheme(theme as 'light' | 'dark')
-      }
-    }
-
-    updateResolvedTheme()
-    
-    if (theme === 'system') {
-      mediaQuery.addEventListener('change', updateResolvedTheme)
-      return () => mediaQuery.removeEventListener('change', updateResolvedTheme)
-    }
-  }, [theme])
-
-  // Apply theme classes to document
+  // Apply theme class to document
   useEffect(() => {
     const root = document.documentElement
     
     // Remove existing theme classes
-    root.classList.remove('light', 'dark', 'high-contrast')
+    root.classList.remove('light', 'dark')
     
     // Apply current theme
-    root.classList.add(resolvedTheme)
+    root.classList.add(theme)
     
-    // Apply contrast if needed
-    if (contrast === 'high') {
-      root.classList.add('high-contrast')
-    }
-  }, [resolvedTheme, contrast])
+    // Also update body for immediate visual feedback
+    document.body.className = document.body.className.replace(/\b(light|dark)\b/g, '').trim() + ` ${theme}`
+  }, [theme])
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
     try {
-      localStorage.setItem(`${storageKey}-theme`, newTheme)
+      localStorage.setItem(storageKey, newTheme)
     } catch {
-      // Fail silently if localStorage is not available
+      console.warn('Failed to save theme to localStorage')
     }
   }
 
-  const setContrast = (newContrast: Contrast) => {
-    setContrastState(newContrast)
-    try {
-      localStorage.setItem(`${storageKey}-contrast`, newContrast)
-    } catch {
-      // Fail silently if localStorage is not available
-    }
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light')
   }
 
   const value = {
     theme,
-    contrast,
     setTheme,
-    setContrast,
-    resolvedTheme,
+    toggleTheme,
+    isHydrated,
   }
 
   return (
-    <CinaMiniThemeContext.Provider value={value}>
-      <NextThemesProvider 
-        attribute="class"
-        defaultTheme={defaultTheme}
-        enableSystem
-        disableTransitionOnChange
-        {...props}
-      >
-        {children}
-      </NextThemesProvider>
-    </CinaMiniThemeContext.Provider>
-  )
-}
-
-// Legacy ThemeProvider for compatibility
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
-  return (
-    <CinaMiniThemeProvider>
-      <NextThemesProvider {...props}>{children}</NextThemesProvider>
-    </CinaMiniThemeProvider>
+    <ThemeContext.Provider value={value}>
+      {children}
+    </ThemeContext.Provider>
   )
 }

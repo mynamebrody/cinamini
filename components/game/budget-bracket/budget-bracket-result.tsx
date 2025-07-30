@@ -1,19 +1,16 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ShareSection } from "@/components/game/share-section"
 import { 
   Trophy, 
-  Share2, 
-  BarChart3, 
   DollarSign, 
   Clock,
   CheckCircle,
   XCircle,
-  Copy,
-  Check
+  BarChart3
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 
@@ -63,12 +60,9 @@ interface GameResult {
 interface BudgetBracketResultProps {
   result: GameResult
   puzzle: PuzzleData
-  onShowStats: () => void
 }
 
-export default function BudgetBracketResult({ result, puzzle, onShowStats }: BudgetBracketResultProps) {
-  const [copiedToClipboard, setCopiedToClipboard] = useState(false)
-
+export default function BudgetBracketResult({ result, puzzle }: BudgetBracketResultProps) {
   const shareText = generateShareText()
   
   function generateShareText(): string {
@@ -86,34 +80,7 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
       ? "Perfect Producer! 🎬" 
       : `${result.rounds_completed}/5 rounds`
     
-    return `Budget Bracket #${seedDisplay} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s\nCinaMini.app`
-  }
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Budget Bracket',
-          text: shareText,
-          url: 'https://CinaMini.app'
-        })
-      } catch (error) {
-        // Fallback to clipboard
-        copyToClipboard()
-      }
-    } else {
-      copyToClipboard()
-    }
-  }
-
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shareText)
-      setCopiedToClipboard(true)
-      setTimeout(() => setCopiedToClipboard(false), 2000)
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
-    }
+    return `Budget Bracket #${seedDisplay} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s`
   }
 
   const formatTime = (ms: number) => {
@@ -184,27 +151,10 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleShare} 
-                className="flex-1"
-                variant="default"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Result
-              </Button>
-              <Button 
-                onClick={copyToClipboard} 
-                variant="outline"
-                size="icon"
-              >
-                {copiedToClipboard ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
+            <ShareSection 
+              shareText={shareText}
+              shareUrl="https://cinamini.app"
+            />
           </div>
         </CardContent>
       </Card>
@@ -242,10 +192,10 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
                   <div className={`text-center p-2 rounded ${
                     chosenMovie === 'A' 
                       ? roundData.correct 
-                        ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800'
-                        : 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-red-50 border border-red-200'
                       : roundData.correct_choice === 'A' && chosenMovie !== 'A'
-                        ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800'
+                        ? 'bg-green-50 border border-green-200'
                         : 'opacity-60'
                   }`}>
                     <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
@@ -276,10 +226,10 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
                   <div className={`text-center p-2 rounded ${
                     chosenMovie === 'B' 
                       ? roundData.correct 
-                        ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800'
-                        : 'bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-red-50 border border-red-200'
                       : roundData.correct_choice === 'B' && chosenMovie !== 'B'
-                        ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800'
+                        ? 'bg-green-50 border border-green-200'
                         : 'opacity-60'
                   }`}>
                     <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
@@ -325,15 +275,6 @@ export default function BudgetBracketResult({ result, puzzle, onShowStats }: Bud
         </CardContent>
       </Card>
 
-      {/* Stats CTA */}
-      <Button 
-        onClick={onShowStats} 
-        variant="outline" 
-        className="w-full"
-      >
-        <BarChart3 className="w-4 h-4 mr-2" />
-        View Your Stats
-      </Button>
     </div>
   )
 }
