@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase/client"
 import BudgetBracketRound from "./budget-bracket-round"
 import BudgetBracketResult from "./budget-bracket-result"
 import BudgetBracketStats from "./budget-bracket-stats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Trophy, Play, BarChart3 } from "lucide-react"
-import { GameSettingsButton } from "@/components/game-settings"
+import { Trophy, Play, BarChart3 } from "lucide-react"
+import { GameHeader } from "../game-header"
+import { HowToPlayModal } from "../how-to-play-modal"
+import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { type GameChoice } from "@/lib/budget-bracket-client"
 
 interface PuzzleMovie {
@@ -62,17 +63,17 @@ interface GameResult {
   updated_stats: any
 }
 
-type GameState = 'loading' | 'start' | 'playing' | 'paused' | 'completed' | 'already_played' | 'stats' | 'error'
+type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
+type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function BudgetBracketGame() {
-  const router = useRouter()
   const [gameState, setGameState] = useState<GameState>('loading')
+  const [modalState, setModalState] = useState<ModalState>('none')
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null)
   const [currentRound, setCurrentRound] = useState(1)
   const [gameChoices, setGameChoices] = useState<GameChoice[]>([])
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [gameStartTime, setGameStartTime] = useState<number>(0)
-  const [pausedTime, setPausedTime] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -92,9 +93,14 @@ export default function BudgetBracketGame() {
       setPuzzle(puzzleData)
 
       if (puzzleData.has_played) {
-        setGameState('already_played')
+        setGameState('completed')
       } else {
-        setGameState('start')
+        // Check if this is the user's first time playing
+        const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
+        setGameState('ready')
+        if (!hasPlayedBefore) {
+          setModalState('howtoplay')
+        }
       }
     } catch (error) {
       console.error('Error loading puzzle:', error)
@@ -104,10 +110,15 @@ export default function BudgetBracketGame() {
   }
 
   const startGame = () => {
+    // Mark that the user has played before if coming from how to play
+    if (modalState === 'howtoplay') {
+      localStorage.setItem('budget-bracket-played', 'true')
+    }
     setGameState('playing')
     setCurrentRound(1)
     setGameChoices([])
     setGameStartTime(Date.now())
+    setModalState('none')
   }
 
   const handleRoundChoice = (chosenMovieTmdbId: number, timeTaken: number) => {
@@ -218,156 +229,150 @@ export default function BudgetBracketGame() {
   }
 
   const showStats = () => {
-    setGameState('stats')
+    setModalState('stats')
   }
 
-  const backToGame = () => {
-    if (puzzle?.has_played) {
-      setGameState('already_played')
-    } else {
-      setGameState('start')
-    }
+  const showHowToPlay = () => {
+    setModalState('howtoplay')
   }
 
-  const goHome = () => {
-    router.push('/')
-  }
-
-  const pauseGame = () => {
-    if (gameState === 'playing') {
-      setPausedTime(Date.now())
-      setGameState('paused')
-    }
-  }
-
-  const resumeGame = () => {
-    if (gameState === 'paused') {
-      // Adjust start time to account for pause duration
-      const pauseDuration = Date.now() - pausedTime
-      setGameStartTime(gameStartTime + pauseDuration)
-      setGameState('playing')
-    }
-  }
-
-  if (gameState === 'loading') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <div></div>
-          <h1 className="game-title">Budget Bracket</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="animate-pulse text-lg">Loading today's puzzle...</div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'error') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <div></div>
-          <h1 className="game-title">Budget Bracket</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-red-500 mb-4">{error}</p>
-              <Button onClick={loadTodaysPuzzle} className="w-full">
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'stats') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={backToGame}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+  // Render the game
+  return (
+    <div className="game-container">
+      <GameHeader 
+        title="Budget Bracket" 
+        onHelpClick={showHowToPlay}
+      >
+        {(gameState === 'ready' || gameState === 'completed') && (
+          <Button variant="ghost" size="sm" onClick={showStats}>
+            <BarChart3 className="w-4 h-4" />
           </Button>
-          <h1 className="game-title">Stats</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto">
-            <BudgetBracketStats />
-          </div>
-        </main>
-      </div>
-    )
-  }
+        )}
+      </GameHeader>
 
-  if (gameState === 'completed') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={goHome}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
-          <h1 className="game-title">Budget Bracket</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={showStats}>
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-            <GameSettingsButton />
+      {/* How to Play Modal */}
+      <HowToPlayModal
+        open={modalState === 'howtoplay'}
+        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        title="Budget Bracket"
+        instructions={
+          <div className="space-y-4">
+            <p className="text-neutral-600">
+              Test your movie budget knowledge in this elimination bracket challenge!
+            </p>
+            <div className="bg-neutral-50 rounded-lg p-4">
+              <h3 className="font-semibold mb-2">How to Play:</h3>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li>• See two movie posters side-by-side</li>
+                <li>• Pick the one with the higher production budget</li>
+                <li>• Complete 5 rounds to become a "Perfect Producer"</li>
+                <li>• One wrong guess ends the game</li>
+              </ul>
+            </div>
           </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto">
-            <BudgetBracketResult 
-              result={gameResult!} 
-              puzzle={puzzle!}
-              onShowStats={showStats}
-            />
-          </div>
-        </main>
-      </div>
-    )
-  }
+        }
+        onStart={startGame}
+      />
 
-  if (gameState === 'already_played') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={goHome}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
-          <h1 className="game-title">Budget Bracket</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={showStats}>
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-            <GameSettingsButton />
+      {/* Stats Modal */}
+      <GameModal
+        open={modalState === 'stats'}
+        onOpenChange={(open) => setModalState(open ? 'stats' : 'none')}
+        className="max-w-lg"
+      >
+        <GameModalHeader>
+          <GameModalTitle>Statistics</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <BudgetBracketStats />
+        </GameModalBody>
+      </GameModal>
+
+      <main className="flex-1 overflow-auto p-4">
+        {gameState === 'loading' && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+            </div>
           </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4">
+        )}
+
+        {gameState === 'error' && (
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6 text-center">
+                <p className="text-red-500 mb-4">{error}</p>
+                <Button onClick={loadTodaysPuzzle} className="w-full">
+                  Try Again
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {gameState === 'ready' && (
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  Already Played Today!
-                </CardTitle>
+                <CardTitle>Budget Bracket #{puzzle?.puzzle_number}</CardTitle>
+                <p className="text-muted-foreground">
+                  Pick the movie with the higher production budget
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="text-center text-muted-foreground">
-                  You've completed today's Budget Bracket puzzle.
+                <div className="bg-muted rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Can you pick the bigger budget film in all 5 rounds?
+                  </p>
                 </div>
-                
-                {puzzle?.user_result && (
+
+                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Playing
+                </Button>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  Daily puzzle • {new Date().toLocaleDateString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {gameState === 'playing' && puzzle && (
+          <div className="max-w-md mx-auto">
+            <div className="mb-4 text-center">
+              <div className="text-sm text-muted-foreground">
+                Round {currentRound} of 5
+              </div>
+            </div>
+            <BudgetBracketRound
+              pair={puzzle.pairs[currentRound - 1]}
+              round={currentRound}
+              onChoice={handleRoundChoice}
+              onGameEnd={handleGameEnd}
+              gameChoices={gameChoices}
+              puzzle={puzzle}
+            />
+          </div>
+        )}
+
+        {gameState === 'completed' && (
+          <div className="max-w-md mx-auto">
+            {puzzle?.has_played && puzzle.user_result ? (
+              <Card>
+                <CardHeader className="text-center">
+                  <CardTitle className="flex items-center justify-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    Already Played Today!
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-center text-muted-foreground">
+                    You've completed today's Budget Bracket puzzle.
+                  </div>
+                  
                   <div className="bg-muted rounded-lg p-4">
                     <div className="text-sm font-medium mb-2">Your Result:</div>
                     <div className="text-lg">
@@ -381,147 +386,25 @@ export default function BudgetBracketGame() {
                       Time: {Math.round(puzzle.user_result.total_duration_ms / 1000)}s
                     </div>
                   </div>
-                )}
 
-                <div className="flex gap-2">
-                  <Button variant="outline" onClick={showStats} className="flex-1">
+                  <Button variant="outline" onClick={showStats} className="w-full">
                     <BarChart3 className="w-4 h-4 mr-2" />
                     View Stats
                   </Button>
-                  <Button onClick={goHome} className="flex-1">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Home
-                  </Button>
-                </div>
 
-                <div className="text-center text-sm text-muted-foreground">
-                  Come back tomorrow for a new puzzle!
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="text-center text-sm text-muted-foreground">
+                    Come back tomorrow for a new puzzle!
+                  </div>
+                </CardContent>
+              </Card>
+            ) : gameResult && (
+              <BudgetBracketResult 
+                result={gameResult} 
+                puzzle={puzzle!}
+              />
+            )}
           </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'paused') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            End Game
-          </Button>
-          <h1 className="game-title">Budget Bracket</h1>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              Round {currentRound}/5 • Paused
-            </div>
-          </div>
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle>Game Paused</CardTitle>
-              <p className="text-muted-foreground">
-                Round {currentRound} of 5
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button onClick={resumeGame} className="w-full" size="lg">
-                <Play className="w-4 h-4 mr-2" />
-                Resume Game
-              </Button>
-              <Button onClick={() => setGameState('start')} variant="outline" className="w-full">
-                End Game
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === 'playing') {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-          <h1 className="game-title">Budget Bracket</h1>
-          <div className="flex items-center gap-2">
-            <div className="text-sm text-muted-foreground">
-              Round {currentRound}/5
-            </div>
-            <GameSettingsButton onPause={pauseGame} isPaused={false} />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto">
-            <BudgetBracketRound
-              pair={puzzle!.pairs[currentRound - 1]}
-              round={currentRound}
-              onChoice={handleRoundChoice}
-              onGameEnd={handleGameEnd}
-              gameChoices={gameChoices}
-              puzzle={puzzle!}
-            />
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  // Start screen
-  return (
-    <div className="game-container">
-      <header className="game-header">
-        <Button variant="ghost" size="sm" onClick={goHome}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Home
-        </Button>
-        <h1 className="game-title">Budget Bracket</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={showStats}>
-            <BarChart3 className="w-4 h-4" />
-          </Button>
-          <GameSettingsButton />
-        </div>
-      </header>
-      <main className="flex-1 overflow-auto p-4">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Budget Bracket #{puzzle?.puzzle_number}</CardTitle>
-              <p className="text-muted-foreground">
-                Pick the movie with the higher production budget
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-muted rounded-lg p-4">
-                <h3 className="font-semibold mb-2">How to Play:</h3>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• See two movie posters side-by-side</li>
-                  <li>• Pick the one with the higher production budget</li>
-                  <li>• Complete 5 rounds to become a "Perfect Producer"</li>
-                  <li>• One wrong guess ends the game</li>
-                </ul>
-              </div>
-
-              <Button onClick={startGame} className="w-full" size="lg">
-                <Play className="w-4 h-4 mr-2" />
-                Start Playing
-              </Button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                Daily puzzle • {new Date().toLocaleDateString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        )}
       </main>
     </div>
   )

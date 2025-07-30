@@ -1,13 +1,9 @@
 'use client'
 
 import * as React from 'react'
-import { Settings, X, Sun, Moon, Monitor, Eye } from 'lucide-react'
-import { useCinaMiniTheme } from './theme-provider'
+import { Settings } from 'lucide-react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Label } from './ui/label'
-import { RadioGroup, RadioGroupItem } from './ui/radio-group'
-import { Switch } from './ui/switch'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 
 interface GameSettingsProps {
@@ -18,7 +14,6 @@ interface GameSettingsProps {
 }
 
 export function GameSettings({ children, triggerClassName = '', onPause, isPaused }: GameSettingsProps) {
-  const { theme, contrast, setTheme, setContrast } = useCinaMiniTheme()
   const [open, setOpen] = React.useState(false)
   
   const handlePause = () => {
@@ -27,12 +22,6 @@ export function GameSettings({ children, triggerClassName = '', onPause, isPause
       setOpen(false) // Close settings when pausing
     }
   }
-
-  const themeOptions = [
-    { value: 'light', label: 'Light', icon: Sun },
-    { value: 'dark', label: 'Dark', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
-  ] as const
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,63 +58,6 @@ export function GameSettings({ children, triggerClassName = '', onPause, isPause
               </CardContent>
             </Card>
           )}
-          
-          {/* Theme Selection */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Theme</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup
-                value={theme}
-                onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
-                className="grid grid-cols-3 gap-2"
-              >
-                {themeOptions.map(({ value, label, icon: Icon }) => (
-                  <div
-                    key={value}
-                    className="flex items-center space-x-2 rounded-lg border p-3 cursor-pointer hover:bg-accent/50 has-[input:checked]:bg-accent has-[input:checked]:border-primary"
-                  >
-                    <RadioGroupItem value={value} id={value} className="sr-only" />
-                    <Label 
-                      htmlFor={value} 
-                      className="flex flex-col items-center gap-2 cursor-pointer w-full"
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-xs font-medium">{label}</span>
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          {/* High Contrast Toggle */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Accessibility</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Eye className="h-4 w-4" />
-                  <div>
-                    <Label htmlFor="high-contrast" className="text-sm font-medium">
-                      High Contrast
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Enhanced colors for better visibility
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  id="high-contrast"
-                  checked={contrast === 'high'}
-                  onCheckedChange={(checked) => setContrast(checked ? 'high' : 'normal')}
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Game Info */}
           <Card>
@@ -135,7 +67,7 @@ export function GameSettings({ children, triggerClassName = '', onPause, isPause
             <CardContent className="space-y-2">
               <div className="text-sm">
                 <p className="text-muted-foreground">
-                  Daily movie puzzle games inspired by Wordle
+                  Daily movie puzzle games for cinema enthusiasts
                 </p>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -180,14 +112,6 @@ export function GameSettingsButton({
 
 // Full settings panel for dedicated settings pages
 export function GameSettingsPanel() {
-  const { theme, contrast, setTheme, setContrast } = useCinaMiniTheme()
-
-  const themeOptions = [
-    { value: 'light', label: 'Light', icon: Sun, description: 'Clean and bright interface' },
-    { value: 'dark', label: 'Dark', icon: Moon, description: 'Easy on the eyes in low light' },
-    { value: 'system', label: 'System', icon: Monitor, description: 'Match your device preference' },
-  ] as const
-
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -197,62 +121,48 @@ export function GameSettingsPanel() {
         </p>
       </div>
 
-      {/* Theme Selection */}
+      {/* Game Info */}
       <Card>
         <CardHeader>
-          <CardTitle>Appearance</CardTitle>
+          <CardTitle>About CinaMini</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="text-sm font-medium">Theme</Label>
-            <RadioGroup
-              value={theme}
-              onValueChange={(value) => setTheme(value as 'light' | 'dark' | 'system')}
-              className="mt-2"
-            >
-              {themeOptions.map(({ value, label, icon: Icon, description }) => (
-                <div
-                  key={value}
-                  className="flex items-center space-x-3 rounded-lg border p-4 cursor-pointer hover:bg-accent/50 has-[input:checked]:bg-accent has-[input:checked]:border-primary"
-                >
-                  <RadioGroupItem value={value} id={`theme-${value}`} />
-                  <Icon className="h-5 w-5" />
-                  <div className="flex-1">
-                    <Label htmlFor={`theme-${value}`} className="cursor-pointer">
-                      <div className="font-medium">{label}</div>
-                      <div className="text-sm text-muted-foreground">{description}</div>
-                    </Label>
-                  </div>
-                </div>
-              ))}
-            </RadioGroup>
+            <p className="text-muted-foreground">
+              CinaMini brings you daily movie puzzle games designed for cinema enthusiasts. 
+              Test your film knowledge with our variety of challenging and fun games.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Version</span>
+              <span>1.0.0</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Today's Puzzle</span>
+              <span>{new Date().toLocaleDateString()}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Accessibility */}
+      {/* Support */}
       <Card>
         <CardHeader>
-          <CardTitle>Accessibility</CardTitle>
+          <CardTitle>Support</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Eye className="h-5 w-5" />
-              <div>
-                <Label htmlFor="high-contrast-panel" className="font-medium">
-                  High Contrast Mode
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Enhances color contrast for better visibility and accessibility
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="high-contrast-panel"
-              checked={contrast === 'high'}
-              onCheckedChange={(checked) => setContrast(checked ? 'high' : 'normal')}
-            />
+        <CardContent className="space-y-4">
+          <div>
+            <h4 className="font-medium text-sm mb-1">Need Help?</h4>
+            <p className="text-sm text-muted-foreground">
+              If you encounter any issues or have suggestions, please contact us.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm mb-1">Feedback</h4>
+            <p className="text-sm text-muted-foreground">
+              We'd love to hear your thoughts on how we can improve CinaMini.
+            </p>
           </div>
         </CardContent>
       </Card>

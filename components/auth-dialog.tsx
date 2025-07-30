@@ -15,7 +15,7 @@ interface AuthDialogProps {
 export default function AuthDialog({ isOpen, onClose, gameName }: AuthDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-[#1c1c1c] border-white/20 text-white">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-center text-2xl font-bold">
             Ready to Play {gameName}?
@@ -23,51 +23,62 @@ export default function AuthDialog({ isOpen, onClose, gameName }: AuthDialogProp
         </DialogHeader>
         
         <div className="space-y-6 py-4">
-          <div className="text-center space-y-2">
-            <div className="w-16 h-16 bg-[#B31B1B]/20 rounded-full flex items-center justify-center mx-auto">
-              <Film className="w-8 h-8 text-[#B31B1B]" />
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 bg-cinema-red/10 rounded-full flex items-center justify-center mx-auto">
+              <Film className="w-8 h-8 text-cinema-red" />
             </div>
-            <p className="text-gray-300">
-              Create an account to play daily puzzles, track your progress, and compete with other movie fans!
+            <p className="text-neutral-600">
+              Join thousands of movie fans testing their cinema knowledge daily!
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <Card className="bg-[#2a2a2a] border-white/10 p-3 text-center">
-              <Trophy className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-              <div className="text-white/90">Track Progress</div>
-            </Card>
-            <Card className="bg-[#2a2a2a] border-white/10 p-3 text-center">
-              <Users className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-              <div className="text-white/90">Join Community</div>
-            </Card>
+          {/* Benefits */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900">Track Your Progress</p>
+                <p className="text-sm text-neutral-600">Build streaks and earn achievements</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                <Users className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900">Compare with Friends</p>
+                <p className="text-sm text-neutral-600">Share results and compete</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-100 rounded flex items-center justify-center">
+                <Clock className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <p className="font-medium text-neutral-900">Daily Challenges</p>
+                <p className="text-sm text-neutral-600">Fresh puzzles every day</p>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Button 
-              asChild 
-              className="w-full bg-[#B31B1B] hover:bg-[#9A1A1A] text-white"
-              size="lg"
-            >
-              <a href="/auth/sign-up">Create Account</a>
+          {/* Action buttons */}
+          <div className="space-y-3 pt-2">
+            <Button asChild variant="primary" size="lg" className="w-full">
+              <a href="/auth/sign-up">Create Free Account</a>
             </Button>
-            <Button 
-              asChild 
-              variant="outline" 
-              className="w-full border-white/20 text-white hover:bg-white/10"
-            >
-              <a href="/auth/login">Already have an account? Sign In</a>
+            
+            <Button asChild variant="ghost" size="lg" className="w-full">
+              <a href="/auth/login">Already have an account? Sign in</a>
             </Button>
           </div>
 
-          <div className="text-center">
-            <button
-              onClick={onClose}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
-              Maybe later
-            </button>
-          </div>
+          <p className="text-xs text-center text-neutral-500">
+            Free forever • No ads • Cancel anytime
+          </p>
         </div>
       </DialogContent>
     </Dialog>

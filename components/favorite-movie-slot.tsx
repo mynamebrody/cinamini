@@ -39,18 +39,18 @@ export function FavoriteMovieSlot({
         onClick={onAddClick}
         className={cn(
           "relative aspect-[2/3] w-full rounded-lg border-2 border-dashed",
-          "bg-gray-50 dark:bg-gray-900/50 transition-all duration-200",
+          "bg-gray-50 transition-all duration-200",
           "flex flex-col items-center justify-center gap-2",
-          "hover:border-gray-400 dark:hover:border-gray-500",
-          "hover:bg-gray-100 dark:hover:bg-gray-900",
+          "hover:border-gray-400",
+          "hover:bg-gray-100",
           "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
           isDragOver && "border-primary bg-primary/10 scale-105",
-          "border-gray-300 dark:border-gray-700"
+          "border-gray-300"
         )}
         aria-label={`Add movie to position ${position}`}
       >
         <Plus className="h-8 w-8 text-gray-400" />
-        <span className="text-sm text-gray-500 dark:text-gray-400">Add Favorite</span>
+        <span className="text-sm text-gray-500">Add Favorite</span>
       </button>
     )
   }
@@ -59,7 +59,7 @@ export function FavoriteMovieSlot({
     <div
       className={cn(
         "relative aspect-[2/3] w-full rounded-lg overflow-hidden",
-        "bg-gray-100 dark:bg-gray-800 transition-all duration-200",
+        "bg-gray-100 transition-all duration-200",
         "group cursor-move",
         isDragging && "opacity-50 scale-95",
         isDragOver && "ring-2 ring-primary ring-offset-2 scale-105",
@@ -80,8 +80,8 @@ export function FavoriteMovieSlot({
           priority={position <= 2}
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
-          <span className="text-gray-400 dark:text-gray-500 text-center px-4">
+        <div className="w-full h-full flex items-center justify-center bg-gray-200">
+          <span className="text-gray-400 text-center px-4">
             {title || 'No poster'}
           </span>
         </div>
@@ -122,7 +122,7 @@ export function FavoriteMovieSlot({
 
       {/* Loading Skeleton */}
       {!posterPath && !imageError && (
-        <div className="absolute inset-0 animate-pulse bg-gray-300 dark:bg-gray-700" />
+        <div className="absolute inset-0 animate-pulse bg-gray-300" />
       )}
     </div>
   )

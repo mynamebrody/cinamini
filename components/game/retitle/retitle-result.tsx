@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Check, X, Share2, Flame, Copy } from "lucide-react"
+import { ShareSection } from "@/components/game/share-section"
+import { Check, X, Flame } from "lucide-react"
+import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -15,11 +17,17 @@ interface GuessResult {
     originalTitle: string
     releaseYear: string
     translationNote: string
+    posterPath?: string
   }
   stats: {
     gamesPlayed: number
     accuracy: number
     currentStreak: number
+  }
+  puzzle?: {
+    localizedTitle: string
+    countryCode: string
+    flagEmoji: string
   }
 }
 
@@ -29,36 +37,37 @@ interface RetitleResultProps {
 }
 
 export default function RetitleResult({ result, puzzleId }: RetitleResultProps) {
-  const [sharing, setSharing] = useState(false)
-
-  const handleShare = async () => {
-    try {
-      setSharing(true)
-      const response = await fetch(`/api/retitled/share/${puzzleId}`)
-      
-      if (!response.ok) {
-        throw new Error("Failed to generate share text")
-      }
-      
-      const { shareText } = await response.json()
-      
-      // Try to use the Web Share API first
-      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
-        await navigator.share({
-          text: shareText,
-        })
-      } else {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(shareText)
-        toast.success("Copied to clipboard!")
-      }
-    } catch (err) {
-      console.error("Error sharing:", err)
-      toast.error("Failed to share. Please try again.")
-    } finally {
-      setSharing(false)
-    }
+  const [shareText, setShareText] = useState<string | null>(null)
+  const [loadingShare, setLoadingShare] = useState(true)
+  
+  const generateFallbackShareText = () => {
+    const resultEmoji = result.correct ? "🟩" : "🟥"
+    const flagEmoji = result.puzzle?.flagEmoji || "🎬"
+    return `Retitled ${flagEmoji} ${resultEmoji}⬜⬜⬜`
   }
+
+  useEffect(() => {
+    // Fetch share text when component mounts
+    const fetchShareText = async () => {
+      try {
+        const response = await fetch(`/api/retitled/share/${puzzleId}`)
+        
+        if (!response.ok) {
+          throw new Error("Failed to generate share text")
+        }
+        
+        const { shareText } = await response.json()
+        setShareText(shareText)
+      } catch (err) {
+        console.error("Error fetching share text:", err)
+        toast.error("Failed to generate share text")
+      } finally {
+        setLoadingShare(false)
+      }
+    }
+
+    fetchShareText()
+  }, [puzzleId])
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -90,14 +99,39 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
           </p>
         </div>
 
+        {/* Movie Poster */}
+        {result.correctAnswer.posterPath && (
+          <div className="flex justify-center mb-4">
+            <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-lg">
+              <Image
+                src={`https://image.tmdb.org/t/p/w342${result.correctAnswer.posterPath}`}
+                alt={`${result.correctAnswer.title} poster`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 192px, 192px"
+              />
+            </div>
+          </div>
+        )}
+
         {/* Movie Details */}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h3 className="text-xl font-semibold text-foreground">
             {result.correctAnswer.title} ({result.correctAnswer.releaseYear})
           </h3>
-          <p className="text-sm text-muted-foreground italic">
-            {result.correctAnswer.translationNote}
-          </p>
+          
+          {/* Localized Title Display */}
+          {result.puzzle && (
+            <div className="bg-muted rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-2xl">{result.puzzle.flagEmoji}</span>
+                <span className="text-lg font-medium">{result.puzzle.localizedTitle}</span>
+              </div>
+              <p className="text-sm text-muted-foreground text-center italic">
+                {result.correctAnswer.translationNote}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Stats */}
@@ -122,20 +156,10 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
 
       {/* Actions */}
       <div className="space-y-3">
-        <Button
-          onClick={handleShare}
-          disabled={sharing}
-          className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {sharing ? (
-            "Sharing..."
-          ) : (
-            <>
-              <Share2 className="w-4 h-4 mr-2" />
-              Share Result
-            </>
-          )}
-        </Button>
+        <ShareSection 
+          shareText={shareText || generateFallbackShareText()}
+          shareUrl="https://cinamini.app"
+        />
         
         <p className="text-center text-muted-foreground text-sm">
           Come back tomorrow for a new puzzle!

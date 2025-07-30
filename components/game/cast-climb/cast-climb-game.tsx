@@ -4,8 +4,11 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Play, BarChart3, Share2, Copy, Check } from "lucide-react"
-import { GameSettingsButton } from "@/components/game-settings"
+import { Play, BarChart3 } from "lucide-react"
+import { GameHeader } from "../game-header"
+import { HowToPlayModal } from "../how-to-play-modal"
+import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
+import { ShareSection } from "../share-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import Image from "next/image"
@@ -64,7 +67,8 @@ interface CastClimbResult {
   game_completed?: boolean
 }
 
-type GameState = "loading" | "start" | "playing" | "completed" | "stats" | "error"
+type GameState = "loading" | "ready" | "playing" | "completed" | "error"
+type ModalState = "none" | "howtoplay" | "stats"
 
 // ============================================================================
 // MAIN COMPONENT
@@ -73,6 +77,7 @@ type GameState = "loading" | "start" | "playing" | "completed" | "stats" | "erro
 export default function CastClimbGame() {
   const router = useRouter()
   const [gameState, setGameState] = useState<GameState>("loading")
+  const [modalState, setModalState] = useState<ModalState>("none")
   const [puzzle, setPuzzle] = useState<CastClimbPuzzle | null>(null)
   const [userGuesses, setUserGuesses] = useState<CastClimbGuess[]>([])
   const [revealedIndex, setRevealedIndex] = useState(0)
@@ -80,7 +85,6 @@ export default function CastClimbGame() {
   const [startTime, setStartTime] = useState<number>(0)
   const [result, setResult] = useState<CastClimbResult | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copying, setCopying] = useState(false)
 
   // ============================================================================
   // EFFECTS AND DATA LOADING
@@ -130,7 +134,12 @@ export default function CastClimbGame() {
         })
         setGameState("completed")
       } else {
-        setGameState("start")
+        // Check if this is the user's first time playing
+        const hasPlayedBefore = localStorage.getItem('cast-climb-played')
+        setGameState("ready")
+        if (!hasPlayedBefore) {
+          setModalState("howtoplay")
+        }
       }
     } catch (err) {
       console.error("Error loading puzzle:", err)
@@ -144,10 +153,15 @@ export default function CastClimbGame() {
   // ============================================================================
 
   const startGame = () => {
+    // Mark that the user has played before if coming from how to play
+    if (modalState === 'howtoplay') {
+      localStorage.setItem('cast-climb-played', 'true')
+    }
     setGameState("playing")
     setStartTime(Date.now())
     setRevealedIndex(0)
     setUserGuesses([])
+    setModalState("none")
   }
 
   const handleGuess = async (movie: MovieSearchResult) => {
@@ -243,203 +257,121 @@ export default function CastClimbGame() {
   }
 
   const showStats = () => {
-    setGameState('stats')
+    setModalState('stats')
   }
 
-  const backToGame = () => {
-    if (result) {
-      setGameState('completed')
-    } else {
-      setGameState('start')
-    }
-  }
-
-  const handleShare = async () => {
-    if (!result) return
-    
-    try {
-      setCopying(true)
-      const shareText = result.share_text + "\n\nPlay Cast Climb at cinamini.app"
-      
-      // Try to use the Web Share API first
-      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
-        await navigator.share({
-          text: shareText,
-          url: 'https://cinamini.app'
-        })
-      } else {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(shareText)
-        // Show success feedback for a moment
-        setTimeout(() => setCopying(false), 2000)
-        return
-      }
-    } catch (error) {
-      console.error('Sharing failed:', error)
-      // If clipboard fails, try manual fallback
-      try {
-        await navigator.clipboard.writeText(result.share_text)
-        setTimeout(() => setCopying(false), 2000)
-      } catch (clipboardError) {
-        console.error('Clipboard failed:', clipboardError)
-      }
-    } finally {
-      if (!copying) setCopying(false)
-    }
+  const showHowToPlay = () => {
+    setModalState('howtoplay')
   }
 
   // ============================================================================
-  // RENDER STATES
+  // RENDER
   // ============================================================================
 
-  if (gameState === "stats") {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={backToGame}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+  return (
+    <div className="game-container">
+      <GameHeader 
+        title="Cast Climb" 
+        onHelpClick={showHowToPlay}
+      >
+        {(gameState === 'ready' || gameState === 'completed') && (
+          <Button variant="ghost" size="sm" onClick={showStats}>
+            <BarChart3 className="w-4 h-4" />
           </Button>
-          <h1 className="game-title">Stats</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 overflow-auto p-4">
+        )}
+      </GameHeader>
+
+      {/* How to Play Modal */}
+      <HowToPlayModal
+        open={modalState === 'howtoplay'}
+        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        title="Cast Climb"
+        instructions={
+          <div className="space-y-4">
+            <p className="text-neutral-600">
+              Guess the movie by its cast. Wrong guesses reveal more actors!
+            </p>
+            <div className="bg-neutral-50 rounded-lg p-4">
+              <h3 className="font-semibold mb-2">How to Play:</h3>
+              <ul className="space-y-2 text-sm text-neutral-600">
+                <li>• See actors from a mystery movie one by one</li>
+                <li>• Search and guess the movie title after each hint</li>
+                <li>• Wrong guesses reveal the next actor in the cast</li>
+                <li>• Try to guess with as few hints as possible!</li>
+              </ul>
+            </div>
+          </div>
+        }
+        onStart={startGame}
+      />
+
+      {/* Stats Modal */}
+      <GameModal
+        open={modalState === 'stats'}
+        onOpenChange={(open) => setModalState(open ? 'stats' : 'none')}
+        className="max-w-lg"
+      >
+        <GameModalHeader>
+          <GameModalTitle>Statistics</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
           <CastClimbStats />
-        </main>
-      </div>
-    )
-  }
+        </GameModalBody>
+      </GameModal>
 
-  if (gameState === "loading") {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <div></div>
-          <h1 className="game-title">Cast Climb</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="animate-pulse text-lg text-white">Loading today's puzzle...</div>
+      <main className="flex-1 overflow-auto p-4">
+        {gameState === "loading" && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+            </div>
           </div>
-        </main>
-      </div>
-    )
-  }
+        )}
 
-  if (gameState === "error" || !puzzle) {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
-          <h1 className="game-title">Cast Climb</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-red-500 mb-4">{error || "An error occurred"}</p>
-              <Button onClick={loadTodaysPuzzle} className="w-full">
-                Try Again
-              </Button>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-    )
-  }
-
-  if (gameState === "completed" && result) {
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Home
-          </Button>
-          <h1 className="game-title">Cast Climb</h1>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={showStats}>
-              <BarChart3 className="w-4 h-4" />
-            </Button>
-            <GameSettingsButton />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4">
-          <div className="max-w-md mx-auto space-y-4">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle className={result.correct ? "text-green-600" : "text-red-600"}>
-                  {result.correct ? "Congratulations!" : "Better luck tomorrow!"}
-                </CardTitle>
-                <p className="text-muted-foreground">
-                  {puzzle.filmTitle} ({puzzle.filmReleaseYear})
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4 text-center">
-                {puzzle.filmPosterUrl && (
-                  <Image 
-                    src={puzzle.filmPosterUrl} 
-                    alt={`${puzzle.filmTitle} poster`}
-                    width={200} 
-                    height={300} 
-                    className="mx-auto rounded-lg"
-                  />
-                )}
-                {puzzle.funFact && (
-                  <p className="text-sm text-muted-foreground italic">
-                    {puzzle.funFact}
-                  </p>
-                )}
-                <div className="bg-muted rounded-lg p-4">
-                  <p className="font-mono text-lg">{result.share_text}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Solved in {result.user_guesses.length} guess{result.user_guesses.length !== 1 ? 'es' : ''}
-                  </p>
-                </div>
-                <Button 
-                  onClick={handleShare}
-                  disabled={copying}
-                  className="w-full"
-                  variant="outline"
-                >
-                  {copying ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share Result
-                    </>
-                  )}
+        {gameState === "error" && (
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6 text-center">
+                <p className="text-red-500 mb-4">{error || "An error occurred"}</p>
+                <Button onClick={loadTodaysPuzzle} className="w-full">
+                  Try Again
                 </Button>
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
-    )
-  }
+        )}
 
-  if (gameState === "playing") {
-    const currentActor = puzzle.actors[revealedIndex]
-    
-    return (
-      <div className="game-container">
-        <header className="game-header">
-          <Button variant="ghost" size="sm" onClick={() => setGameState('start')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            End
-          </Button>
-          <h1 className="game-title">Cast Climb</h1>
-          <GameSettingsButton />
-        </header>
-        <main className="flex-1 overflow-auto p-4">
+        {gameState === "ready" && puzzle && (
+          <div className="max-w-md mx-auto">
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle>Cast Climb #{puzzle.puzzleNumber}</CardTitle>
+                <p className="text-muted-foreground">
+                  Guess the movie by its cast. Wrong guesses reveal more actors.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-muted rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Can you guess the movie with just one actor hint?
+                  </p>
+                </div>
+
+                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
+                  <Play className="w-4 h-4 mr-2" />
+                  Start Playing
+                </Button>
+
+                <div className="text-center text-sm text-muted-foreground">
+                  Daily puzzle • {new Date().toLocaleDateString()}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {gameState === "playing" && puzzle && (
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader className="text-center">
@@ -451,7 +383,7 @@ export default function CastClimbGame() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="font-semibold text-lg">{currentActor.name}</p>
+                  <p className="font-semibold text-lg">{puzzle.actors[revealedIndex].name}</p>
                 </div>
 
                 {/* Show previous wrong guesses */}
@@ -486,58 +418,48 @@ export default function CastClimbGame() {
               </CardContent>
             </Card>
           </div>
-        </main>
-      </div>
-    )
-  }
+        )}
 
-  // Start screen
-  return (
-    <div className="game-container">
-      <header className="game-header">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Home
-        </Button>
-        <h1 className="game-title">Cast Climb</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={showStats}>
-            <BarChart3 className="w-4 h-4" />
-          </Button>
-          <GameSettingsButton />
-        </div>
-      </header>
-      <main className="flex-1 overflow-auto p-4">
-        <div className="max-w-md mx-auto">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle>Cast Climb #{puzzle.puzzleNumber}</CardTitle>
-              <p className="text-muted-foreground">
-                Guess the movie by its cast. Wrong guesses reveal more actors.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="bg-muted rounded-lg p-4">
-                <h3 className="font-semibold mb-2">How to Play:</h3>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• See actors from a mystery movie one by one</li>
-                  <li>• Search and guess the movie title after each hint</li>
-                  <li>• Wrong guesses reveal the next actor in the cast</li>
-                  <li>• Try to guess with as few hints as possible!</li>
-                </ul>
-              </div>
-
-              <Button onClick={startGame} className="w-full" size="lg">
-                <Play className="w-4 h-4 mr-2" />
-                Start Playing
-              </Button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                Daily puzzle • {new Date().toLocaleDateString()}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {gameState === "completed" && result && puzzle && (
+          <div className="max-w-md mx-auto space-y-4">
+            <Card>
+              <CardHeader className="text-center">
+                <CardTitle className={result.correct ? "text-green-600" : "text-red-600"}>
+                  {result.correct ? "Congratulations!" : "Better luck tomorrow!"}
+                </CardTitle>
+                <p className="text-muted-foreground">
+                  {puzzle.filmTitle} ({puzzle.filmReleaseYear})
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4 text-center">
+                {puzzle.filmPosterUrl && (
+                  <Image 
+                    src={puzzle.filmPosterUrl} 
+                    alt={`${puzzle.filmTitle} poster`}
+                    width={200} 
+                    height={300} 
+                    className="mx-auto rounded-lg"
+                  />
+                )}
+                {puzzle.funFact && (
+                  <p className="text-sm text-muted-foreground italic">
+                    {puzzle.funFact}
+                  </p>
+                )}
+                <div className="bg-muted rounded-lg p-4">
+                  <p className="font-mono text-lg">{result.share_text}</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Solved in {result.user_guesses.length} guess{result.user_guesses.length !== 1 ? 'es' : ''}
+                  </p>
+                </div>
+                <ShareSection 
+                  shareText={result.share_text}
+                  shareUrl="https://cinamini.app"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   )

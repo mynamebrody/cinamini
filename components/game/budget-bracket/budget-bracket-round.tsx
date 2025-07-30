@@ -155,11 +155,11 @@ export default function BudgetBracketRound({
               ? chosenMovie === 'A' 
                 ? showingFeedback && isCorrect !== null
                   ? isCorrect 
-                    ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' 
-                    : 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950'
-                  : 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950'
+                    ? 'ring-2 ring-green-500 bg-green-50' 
+                    : 'ring-2 ring-red-500 bg-red-50'
+                  : 'ring-2 ring-blue-500 bg-blue-50'
                 : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                  ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950'
+                  ? 'ring-2 ring-green-500 bg-green-50'
                   : 'opacity-60'
               : 'hover:scale-105 hover:shadow-lg'
           }`}
@@ -202,11 +202,11 @@ export default function BudgetBracketRound({
               ? chosenMovie === 'B' 
                 ? showingFeedback && isCorrect !== null
                   ? isCorrect 
-                    ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950' 
-                    : 'ring-2 ring-red-500 bg-red-50 dark:bg-red-950'
-                  : 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950'
+                    ? 'ring-2 ring-green-500 bg-green-50' 
+                    : 'ring-2 ring-red-500 bg-red-50'
+                  : 'ring-2 ring-blue-500 bg-blue-50'
                 : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                  ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-950'
+                  ? 'ring-2 ring-green-500 bg-green-50'
                   : 'opacity-60'
               : 'hover:scale-105 hover:shadow-lg'
           }`}
