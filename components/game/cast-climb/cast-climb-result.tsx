@@ -1,25 +1,21 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { ShareDrawer } from "@/components/ui/share-drawer"
 import { 
   Trophy, 
-  Share2, 
   BarChart3, 
   Users,
   Clock,
   CheckCircle,
   XCircle,
-  Copy,
-  Check,
   Star,
   Target,
   Flame
 } from "lucide-react"
 import Image from "next/image"
-import { toast } from "sonner"
 
 interface CastClimbActor {
   name: string
@@ -76,33 +72,7 @@ interface CastClimbResultProps {
 }
 
 export default function CastClimbResult({ result, onPlayAgain, onViewStats }: CastClimbResultProps) {
-  const [copying, setCopying] = useState(false)
-
   const { correct, puzzle, user_guesses, stats, share_text } = result
-
-  const handleShare = async () => {
-    try {
-      setCopying(true)
-      
-      // Try to use the Web Share API first
-      if (navigator.share && /mobile/i.test(navigator.userAgent)) {
-        await navigator.share({
-          text: share_text,
-          url: 'https://cinamini.app'
-        })
-      } else {
-        // Fallback to clipboard
-        await navigator.clipboard.writeText(share_text)
-        toast.success("Copied to clipboard!")
-      }
-    } catch (error) {
-      // If clipboard fails, show the text to copy manually
-      console.error('Sharing failed:', error)
-      toast.error("Could not share. Try copying manually.")
-    } finally {
-      setCopying(false)
-    }
-  }
 
   const formatTime = (ms: number | null) => {
     if (!ms) return "N/A"
@@ -214,19 +184,12 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
       {/* Action Buttons */}
       <div className="space-y-2">
-        <Button 
-          onClick={handleShare}
-          disabled={copying}
-          className="w-full"
-          variant="outline"
-        >
-          {copying ? (
-            <Check className="w-4 h-4 mr-2" />
-          ) : (
-            <Share2 className="w-4 h-4 mr-2" />
-          )}
-          {copying ? "Copied!" : "Share Result"}
-        </Button>
+        <ShareDrawer 
+          shareText={share_text}
+          shareUrl="https://cinamini.app"
+          title="Share Your Cast Climb Results"
+          description="Show off your movie knowledge!"
+        />
 
         <div className="grid grid-cols-2 gap-2">
           {onViewStats && (

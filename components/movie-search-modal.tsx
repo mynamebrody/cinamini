@@ -93,9 +93,9 @@ export function MovieSearchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-[#1c1c1c] border-gray-800">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-white border-neutral-200">
         <DialogHeader>
-          <DialogTitle className="text-white">
+          <DialogTitle className="text-neutral-900">
             Add Movie to Favorites
           </DialogTitle>
         </DialogHeader>
@@ -112,7 +112,7 @@ export function MovieSearchModal({
           {/* Error Message */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
@@ -122,8 +122,8 @@ export function MovieSearchModal({
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-[2/3] bg-gray-200 dark:bg-gray-700 rounded-lg" />
-                    <div className="mt-2 h-4 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="aspect-[2/3] bg-neutral-200 rounded-lg" />
+                    <div className="mt-2 h-4 bg-neutral-200 rounded" />
                   </div>
                 ))}
               </div>
@@ -148,7 +148,7 @@ export function MovieSearchModal({
                                 : "hover:scale-105"
                             )}
                           >
-                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-neutral-100">
                               {movie.posterUrl ? (
                                 <Image
                                   src={movie.posterUrl}
@@ -159,7 +159,7 @@ export function MovieSearchModal({
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <span className="text-gray-400 text-sm">No poster</span>
+                                  <span className="text-neutral-400 text-sm">No poster</span>
                                 </div>
                               )}
                               
@@ -181,7 +181,7 @@ export function MovieSearchModal({
                             </div>
                             
                             <div className="mt-2">
-                              <h3 className="font-medium text-sm line-clamp-1 text-white">
+                              <h3 className="font-medium text-sm line-clamp-1 text-neutral-900">
                                 {displayTitle}
                               </h3>
                             </div>
@@ -189,7 +189,7 @@ export function MovieSearchModal({
                         </TooltipTrigger>
                         <TooltipContent 
                           side="bottom" 
-                          className="bg-[#1c1c1c] border-gray-700 text-white max-w-xs"
+                          className="bg-white border-neutral-200 text-neutral-900 max-w-xs"
                         >
                           <p>{displayTitle}</p>
                         </TooltipContent>
@@ -200,13 +200,13 @@ export function MovieSearchModal({
               </TooltipProvider>
             ) : currentQuery && !loading ? (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-neutral-500">
                   No movies found for "{currentQuery}"
                 </p>
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-neutral-500">
                   Search for a movie to add to your favorites
                 </p>
               </div>

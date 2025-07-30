@@ -79,8 +79,7 @@ export async function GET(request: NextRequest) {
 
                 hasPlayedToday = !!hasPlayed
               }
-            }
-          } else if (game.game_id === 'cast-climb') {
+            } else if (game.game_id === 'cast-climb') {
             const { data: todaysPuzzle } = await supabase
               .from("cast_climb_puzzles")
               .select("id")

@@ -78,7 +78,7 @@ export function GameStyleDemo() {
             <CardContent className="space-y-2 text-sm">
               <p>✓ Light/Dark/System theme support</p>
               <p>✓ High contrast mode for accessibility</p>
-              <p>✓ Consistent Wordle-inspired design</p>
+              <p>✓ Consistent daily puzzle design</p>
               <p>✓ Mobile-first responsive layout</p>
               <p>✓ Unified game header with settings</p>
               <p>✓ CSS custom properties for easy theming</p>

@@ -21,13 +21,17 @@ export async function POST(request: NextRequest) {
     // Check if user has already played this puzzle
     const { data: existingGame } = await supabase
       .from("poster_pixels_games")
-      .select("id")
+      .select("*")
       .eq("user_id", user.id)
       .eq("puzzle_id", puzzle_id)
       .single()
 
     if (existingGame) {
-      return NextResponse.json({ error: "You have already played this puzzle" }, { status: 400 })
+      return NextResponse.json({ 
+        gameId: existingGame.id,
+        startTime: existingGame.start_time,
+        alreadyExists: true
+      })
     }
 
     // Create new game

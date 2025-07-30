@@ -1,305 +1,346 @@
 @import "tailwindcss";
 
+/* CinaMini Design System - NYT Games Inspired */
 @layer base {
-  /* CinaMini Design System - Inspired by Wordle's approach */
+  /* Light theme (default) */
   :root {
-    /* Core Game Colors */
-    --game-correct: 104 72% 56%;      /* Green for correct answers */
-    --game-correct-dark: 104 66% 48%; /* Darker green for dark mode */
-    --game-present: 51 100% 50%;      /* Yellow for partial matches */
-    --game-present-dark: 49 88% 42%;  /* Darker yellow for dark mode */
-    --game-absent: 0 0% 53%;          /* Gray for incorrect/absent */
-    --game-absent-dark: 0 0% 26%;     /* Darker gray for dark mode */
-
-    /* Cinema Theme Colors */
-    --cinema-red: 0 84% 50%;          /* Classic cinema red */
-    --cinema-gold: 48 100% 50%;       /* Golden accents for wins/streaks */
+    /* Cinema brand colors */
+    --cinema-red: 179 27 27;        /* #B31B1B */
+    --cinema-red-dark: 154 26 26;   /* #9A1A1A */
+    --cinema-gold: 255 215 0;       /* #FFD700 */
+    --cinema-gold-dark: 230 194 0;  /* #E6C200 */
     
-    /* Tone Scale (Light Theme) */
-    --tone-1: 210 11% 11%;            /* Darkest text */
-    --tone-2: 210 9% 47%;             /* Secondary text */
-    --tone-3: 210 8% 53%;             /* Tertiary text */
-    --tone-4: 210 14% 83%;            /* Light borders */
-    --tone-5: 210 20% 92%;            /* Light backgrounds */
-    --tone-6: 210 25% 96%;            /* Lighter backgrounds */
-    --tone-7: 0 0% 100%;              /* Pure white */
-
-    /* Game UI Variables */
-    --game-max-width: 500px;
-    --header-height: 60px;
-    --game-tile-size: 62px;
-    --game-gap: 5px;
-    --radius: 6px;
-
-    /* Semantic mappings for light theme */
-    --background: var(--tone-7);
-    --foreground: var(--tone-1);
-    --card: var(--tone-7);
-    --card-foreground: var(--tone-1);
-    --popover: var(--tone-7);
-    --popover-foreground: var(--tone-1);
-    --primary: var(--tone-1);
-    --primary-foreground: var(--tone-7);
-    --secondary: var(--tone-5);
-    --secondary-foreground: var(--tone-1);
-    --muted: var(--tone-5);
-    --muted-foreground: var(--tone-2);
-    --accent: var(--tone-5);
-    --accent-foreground: var(--tone-1);
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: var(--tone-4);
-    --input: var(--tone-4);
-    --ring: var(--tone-1);
+    /* Game state colors */
+    --game-correct: 106 170 100;    /* #6AAA64 */
+    --game-present: 201 180 88;     /* #C9B458 */ 
+    --game-absent: 120 124 126;     /* #787C7E */
+    
+    /* Light theme colors */
+    --background: 255 255 255;       /* Pure white */
+    --foreground: 33 33 33;          /* Near black text */
+    --muted: 245 245 245;            /* Light gray backgrounds */
+    --muted-foreground: 117 117 117; /* Medium gray text */
+    --card: 255 255 255;             /* White cards */
+    --card-foreground: 33 33 33;     /* Dark card text */
+    --border: 224 224 224;           /* Light borders */
+    --input: 238 238 238;            /* Input backgrounds */
+    --primary: 179 27 27;            /* Cinema red primary */
+    --primary-foreground: 255 255 255; /* White on red */
+    --secondary: 245 245 245;        /* Light secondary */
+    --secondary-foreground: 33 33 33; /* Dark secondary text */
+    --accent: 250 250 250;           /* Very light accent */
+    --accent-foreground: 33 33 33;   /* Dark accent text */
+    --destructive: 239 68 68;        /* Red for errors */
+    --destructive-foreground: 255 255 255; /* White on red */
+    --ring: 179 27 27;               /* Cinema red focus rings */
+    --popover: 255 255 255;          /* White popovers */
+    --popover-foreground: 33 33 33;  /* Dark popover text */
   }
 
-  .dark {
-    /* Dark Theme Tone Scale */
-    --tone-1: 210 11% 87%;            /* Light text */
-    --tone-2: 210 9% 51%;             /* Secondary text */
-    --tone-3: 210 8% 34%;             /* Tertiary text */
-    --tone-4: 210 14% 23%;            /* Dark borders */
-    --tone-5: 210 20% 16%;            /* Dark backgrounds */
-    --tone-6: 210 25% 11%;            /* Darker backgrounds */
-    --tone-7: 210 30% 7%;             /* Darkest background */
 
-    /* Semantic mappings for dark theme */
-    --background: var(--tone-7);
-    --foreground: var(--tone-1);
-    --card: var(--tone-6);
-    --card-foreground: var(--tone-1);
-    --popover: var(--tone-6);
-    --popover-foreground: var(--tone-1);
-    --primary: var(--tone-1);
-    --primary-foreground: var(--tone-7);
-    --secondary: var(--tone-5);
-    --secondary-foreground: var(--tone-1);
-    --muted: var(--tone-5);
-    --muted-foreground: var(--tone-2);
-    --accent: var(--tone-5);
-    --accent-foreground: var(--tone-1);
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: var(--tone-4);
-    --input: var(--tone-4);
-    --ring: var(--tone-1);
-  }
-
-  /* High Contrast Mode */
-  .high-contrast {
-    --game-correct: 120 100% 25%;     /* Darker green */
-    --game-present: 39 100% 35%;      /* Darker orange */
-    --game-absent: 0 0% 20%;          /* Darker gray */
-    --tone-1: 0 0% 0%;                /* Pure black text */
-    --tone-4: 0 0% 40%;               /* Higher contrast borders */
-    --border: 0 0% 40%;
-  }
-
-  .dark.high-contrast {
-    --game-correct: 120 100% 50%;     /* Brighter green */
-    --game-present: 39 100% 60%;      /* Brighter orange */
-    --game-absent: 0 0% 60%;          /* Lighter gray */
-    --tone-1: 0 0% 100%;              /* Pure white text */
-    --tone-7: 0 0% 0%;                /* Pure black background */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-  }
-
-}
-
-@layer base {
+  /* Base styles */
   * {
-    border-color: hsl(var(--border));
+    border-color: rgb(var(--border));
   }
-  
+
   html {
     height: 100%;
+    scroll-behavior: smooth;
   }
-  
+
   body {
     height: 100%;
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    overflow-y: auto;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+    font-family: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography inspired by NYT */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-family: 'Georgia', 'Times', serif;
+  }
+
+  h2 {
+    font-size: 2rem;
+    font-family: 'Georgia', 'Times', serif;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  /* Game-specific styles */
+  .game-tile {
+    width: 62px;
+    height: 62px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    font-weight: 700;
+    border: 2px solid rgb(var(--border));
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+    text-transform: uppercase;
+    user-select: none;
+    transition: all 0.2s ease;
+    border-radius: 0.25rem;
+  }
+
+  .game-tile[data-state='correct'] {
+    background-color: rgb(var(--game-correct));
+    border-color: rgb(var(--game-correct));
+    color: white;
+  }
+
+  .game-tile[data-state='present'] {
+    background-color: rgb(var(--game-present));
+    border-color: rgb(var(--game-present));
+    color: white;
+  }
+
+  .game-tile[data-state='absent'] {
+    background-color: rgb(var(--game-absent));
+    border-color: rgb(var(--game-absent));
+    color: white;
+  }
+
+  /* NYT-inspired button styles */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    focus-visible: outline-none;
+    focus-visible: ring-2;
+    focus-visible: ring-rgb(var(--ring));
+    focus-visible: ring-offset-2;
+    disabled: pointer-events-none;
+    disabled: opacity-50;
+  }
+
+  .btn-primary {
+    background-color: rgb(var(--primary));
+    color: rgb(var(--primary-foreground));
+    border: 1px solid rgb(var(--primary));
+  }
+
+  .btn-primary:hover {
+    background-color: rgb(var(--cinema-red-dark));
+    border-color: rgb(var(--cinema-red-dark));
+  }
+
+  .btn-secondary {
+    background-color: rgb(var(--secondary));
+    color: rgb(var(--secondary-foreground));
+    border: 1px solid rgb(var(--border));
+  }
+
+  .btn-secondary:hover {
+    background-color: rgb(var(--accent));
+  }
+
+  .btn-ghost {
+    background-color: transparent;
+    color: rgb(var(--foreground));
+    border: 1px solid transparent;
+  }
+
+  .btn-ghost:hover {
+    background-color: rgb(var(--accent));
+  }
+
+  .btn-outline {
+    background-color: transparent;
+    color: rgb(var(--foreground));
+    border: 1px solid rgb(var(--border));
+  }
+
+  .btn-outline:hover {
+    background-color: rgb(var(--accent));
+  }
+
+  /* Button sizes */
+  .btn-sm {
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-md {
+    height: 2.5rem;  
+    padding: 0 1rem;
+  }
+
+  .btn-lg {
+    height: 2.75rem;
+    padding: 0 2rem;
+    font-size: 0.9375rem;
+  }
+
+  /* Card styles inspired by NYT */
+  .card {
+    background-color: rgb(var(--card));
+    color: rgb(var(--card-foreground));
+    border: 1px solid rgb(var(--border));
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-hover {
+    transition: all 0.2s ease;
+  }
+
+  .card-hover:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-1px);
+  }
+
+  /* Featured game cards */
+  .featured-card {
+    background: linear-gradient(135deg, rgb(var(--card)) 0%, rgb(var(--muted)) 100%);
+    border: 2px solid rgb(var(--border));
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+  }
+
+  .featured-card:hover {
+    border-color: rgb(var(--cinema-red));
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+  }
+
+  /* Banner styles */
+  .banner {
+    background: linear-gradient(90deg, rgb(var(--cinema-red)) 0%, rgb(var(--cinema-red-dark)) 100%);
+    color: rgb(var(--primary-foreground));
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    h1 {
+      font-size: 2rem;
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+    }
+
+    .game-tile {
+      width: 52px;
+      height: 52px;
+      font-size: 1.5rem;
+    }
+  }
+
+  /* Focus styles for accessibility */
+  .focus-visible {
+    outline: 2px solid rgb(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { 
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes bounceSubtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounceSubtle 0.6s ease-in-out;
   }
 
   /* Game Layout Styles */
   .game-container {
-    width: 100%;
-    max-width: var(--game-max-width);
-    margin: 0 auto;
-    height: 100vh;
+    min-height: 100vh;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
     display: flex;
     flex-direction: column;
   }
 
   .game-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    height: var(--header-height);
-    border-bottom: 1px solid hsl(var(--border));
-    padding: 0 16px;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgb(var(--border));
+    background-color: rgb(var(--background));
+    backdrop-filter: blur(8px);
     position: sticky;
     top: 0;
-    background-color: hsl(var(--background));
-    z-index: 50;
+    z-index: 10;
   }
 
   .game-title {
-    font-weight: 700;
+    font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 1.5rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: hsl(var(--foreground));
+    font-weight: 700;
+    color: rgb(var(--foreground));
+    letter-spacing: -0.025em;
+    margin: 0;
   }
 
-  /* Game Tiles */
-  .game-tile {
-    width: var(--game-tile-size);
-    height: var(--game-tile-size);
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 2rem;
-    font-weight: bold;
-    border-radius: var(--radius);
-    border: 2px solid hsl(var(--border));
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    text-transform: uppercase;
-    user-select: none;
-    transition: all 0.2s ease;
-  }
-
-  .game-tile[data-state='empty'] {
-    border-color: hsl(var(--tone-4));
-  }
-
-  .game-tile[data-state='filled'] {
-    border-color: hsl(var(--tone-3));
-    color: hsl(var(--tone-1));
-  }
-
-  .game-tile[data-state='correct'] {
-    background-color: hsl(var(--game-correct));
-    border-color: hsl(var(--game-correct));
-    color: white;
-  }
-
-  .game-tile[data-state='present'] {
-    background-color: hsl(var(--game-present));
-    border-color: hsl(var(--game-present));
-    color: white;
-  }
-
-  .game-tile[data-state='absent'] {
-    background-color: hsl(var(--game-absent));
-    border-color: hsl(var(--game-absent));
-    color: white;
-  }
-
-  /* Game Buttons */
-  .game-button {
-    padding: 12px 24px;
-    border-radius: var(--radius);
-    border: 2px solid hsl(var(--border));
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-  }
-
-  .game-button:hover {
-    background-color: hsl(var(--tone-5));
-  }
-
-  .game-button:active {
-    transform: scale(0.98);
-  }
-
-  .game-button.primary {
-    background-color: hsl(var(--tone-1));
-    color: hsl(var(--tone-7));
-    border-color: hsl(var(--tone-1));
-  }
-
-  .game-button.primary:hover {
-    background-color: hsl(var(--tone-2));
-    border-color: hsl(var(--tone-2));
-  }
-
-  .game-button.correct {
-    background-color: hsl(var(--game-correct));
-    color: white;
-    border-color: hsl(var(--game-correct));
-  }
-
-  .game-button.incorrect {
-    background-color: hsl(var(--game-absent));
-    color: white;
-    border-color: hsl(var(--game-absent));
-  }
-
-  /* Animations */
-  @keyframes tile-flip {
-    0% { transform: rotateY(0deg); }
-    50% { transform: rotateY(-90deg); }
-    100% { transform: rotateY(0deg); }
-  }
-
-  @keyframes tile-pop {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-  }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-    20%, 40%, 60%, 80% { transform: translateX(2px); }
-  }
-
-  @keyframes bounce {
-    0%, 20% { transform: translateY(0); }
-    40% { transform: translateY(-30px); }
-    50% { transform: translateY(5px); }
-    60% { transform: translateY(-15px); }
-    80% { transform: translateY(2px); }
-    100% { transform: translateY(0); }
-  }
-
-  .animate-flip { animation: tile-flip 0.5s ease-in-out; }
-  .animate-pop { animation: tile-pop 0.2s ease-in-out; }
-  .animate-shake { animation: shake 0.6s ease-in-out; }
-  .animate-bounce { animation: bounce 1s ease-in-out; }
-
-  /* Mobile Optimizations */
-  @media (max-width: 480px) {
-    .game-tile {
-      width: calc(var(--game-tile-size) * 0.85);
-      height: calc(var(--game-tile-size) * 0.85);
-      font-size: 1.5rem;
+  /* Mobile responsive adjustments */
+  @media (max-width: 640px) {
+    .game-header {
+      padding: 0.75rem 1rem;
     }
     
     .game-title {
       font-size: 1.25rem;
     }
-    
-    .game-header {
-      height: calc(var(--header-height) * 0.85);
-      padding: 0 12px;
-    }
   }
 
-  @media (max-height: 600px) {
-    .game-tile {
-      font-size: 1.5rem;
+  /* Loading states */
+  .loading-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: .5;
     }
   }
 }

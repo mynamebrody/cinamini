@@ -97,7 +97,7 @@ export default function PosterPixelsSearch({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           disabled={disabled}
-          className="pl-10 pr-10 py-2 bg-[#2a2a2a] border-white/10 text-white placeholder-gray-500 focus:border-purple-500"
+          className="pl-10 pr-10 py-2 bg-[#1a1a1a] border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20"
         />
         {searchQuery && (
           <button
@@ -111,12 +111,12 @@ export default function PosterPixelsSearch({
 
       {/* Search Results Dropdown */}
       {showDropdown && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-[#2a2a2a] border border-white/10 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-10 w-full mt-1 bg-[#1a1a1a] border border-white/20 rounded-lg shadow-lg max-h-96 overflow-y-auto backdrop-blur-sm">
           {searchResults.map((movie) => (
             <button
               key={movie.id}
               onClick={() => handleMovieSelect(movie)}
-              className="w-full px-4 py-3 hover:bg-white/10 transition-colors text-left flex items-center gap-3"
+              className="w-full px-4 py-3 hover:bg-white/20 transition-colors text-left flex items-center gap-3"
             >
               {movie.poster_path ? (
                 <img

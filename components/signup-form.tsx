@@ -15,7 +15,9 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-[#2b725e] hover:bg-[#235e4c] text-white py-6 text-lg font-medium rounded-lg h-[60px]"
+      variant="primary"
+      size="lg"
+      className="w-full h-12"
     >
       {pending ? (
         <>
@@ -36,24 +38,24 @@ export default function SignUpForm() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="space-y-2 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight text-white">Create an account</h1>
-        <p className="text-lg text-gray-400">Sign up to get started</p>
+        <h1 className="font-nyt text-4xl font-bold tracking-tight text-neutral-900">Create an account</h1>
+        <p className="text-lg text-neutral-600">Sign up to get started</p>
       </div>
 
       <form action={formAction} className="space-y-6">
         {state?.error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-700 px-4 py-3 rounded">{state.error}</div>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{state.error}</div>
         )}
 
         {state?.success && (
-          <div className="bg-green-500/10 border border-green-500/50 text-green-700 px-4 py-3 rounded">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
             {state.success}
           </div>
         )}
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="email" className="block text-sm font-medium text-neutral-700">
               Email
             </label>
             <Input
@@ -62,11 +64,11 @@ export default function SignUpForm() {
               type="email"
               placeholder="you@example.com"
               required
-              className="bg-[#1c1c1c] border-gray-800 text-white placeholder:text-gray-500"
+              className="bg-white border-neutral-300 text-neutral-900 placeholder:text-neutral-500"
             />
           </div>
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="password" className="block text-sm font-medium text-neutral-700">
               Password
             </label>
             <Input
@@ -74,16 +76,16 @@ export default function SignUpForm() {
               name="password"
               type="password"
               required
-              className="bg-[#1c1c1c] border-gray-800 text-white"
+              className="bg-white border-neutral-300 text-neutral-900"
             />
           </div>
         </div>
 
         <SubmitButton />
 
-        <div className="text-center text-gray-400">
+        <div className="text-center text-neutral-600">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-white hover:underline">
+          <Link href="/auth/login" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
             Log in
           </Link>
         </div>

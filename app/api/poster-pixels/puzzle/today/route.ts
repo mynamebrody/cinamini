@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
 
 
@@ -30,6 +30,7 @@ function seededRandom(seed: number): () => number {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const supabaseService = createServiceClient()
     
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0]
     
-    // Check if we already have today's puzzle
+    // Check if we already have today's puzzle (using regular client)
     const { data: existingPuzzle, error: puzzleError } = await supabase
       .from("poster_pixels_puzzles")
       .select("*")
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     let puzzle = existingPuzzle
 
-    // If no puzzle exists for today, create one
+    // If no puzzle exists for today, create one (using service client)
     if (!puzzle) {
       try {
         // Get blended movie pool (trending + popular)
@@ -68,8 +69,8 @@ export async function GET(request: NextRequest) {
         const selectedIndex = Math.floor(random() * moviesWithPosters.length)
         const selectedMovie = moviesWithPosters[selectedIndex]
 
-        // Create the puzzle
-        const { data: newPuzzle, error: insertError } = await supabase
+        // Create the puzzle (using service client to bypass RLS)
+        const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
@@ -123,7 +124,7 @@ export async function GET(request: NextRequest) {
         const selectedIndex = Math.floor(random() * fallbackMovies.length)
         const selectedMovie = fallbackMovies[selectedIndex]
 
-        const { data: newPuzzle, error: insertError } = await supabase
+        const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,

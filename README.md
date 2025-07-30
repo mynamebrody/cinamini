@@ -2,7 +2,7 @@
 
 > *Snack-size movie challenges, every single day.*
 
-A daily movie puzzle platform featuring multiple games, starting with **Retitled** - a quick, mobile-first game where players identify English films from their localized titles. Think "Wordle for movie buffs" with spoiler-free sharing.
+A daily movie puzzle platform featuring multiple games, starting with **Retitled** - a quick, mobile-first game where players identify English films from their localized titles. Daily cinema challenges with spoiler-free sharing.
 
 ![CinaMini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=CinaMini+Game+Demo)
 
@@ -344,7 +344,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🎬 About
 
-CinaMini is inspired by the daily puzzle phenomenon popularized by Wordle, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
+CinaMini is inspired by the daily puzzle phenomenon, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
 
 **Team**: Built with ❤️ for movie lovers everywhere.
 
