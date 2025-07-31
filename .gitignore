@@ -42,3 +42,13 @@ next-env.d.ts
 *.key
 *.pem
 *.crt
+
+# Admin reports and sensitive documentation
+*security-report*.md
+*SECURITY-REPORT*.md
+*performance-report*.md
+*PERFORMANCE-REPORT*.md
+*vulnerability*.md
+*VULNERABILITY*.md
+admin-audit*.md
+ADMIN-AUDIT*.md

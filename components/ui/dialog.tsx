@@ -135,4 +135,19 @@ const DialogTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttrib
 )
 DialogTrigger.displayName = "DialogTrigger"
 
-export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger }
+const DialogDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, children, ...props }, ref) => {
+    return (
+      <p
+        ref={ref}
+        className={cn("text-sm text-muted-foreground", className)}
+        {...props}
+      >
+        {children}
+      </p>
+    )
+  }
+)
+DialogDescription.displayName = "DialogDescription"
+
+export { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription }

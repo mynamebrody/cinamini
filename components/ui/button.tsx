@@ -1,7 +1,7 @@
 import * as React from "react"
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive'
-type ButtonSize = 'sm' | 'md' | 'lg'
+type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -32,6 +32,8 @@ const getSizeClasses = (size: ButtonSize) => {
       return 'btn-sm'
     case 'lg':
       return 'btn-lg'
+    case 'icon':
+      return 'h-10 w-10 p-0'
     case 'md':
     default:
       return 'btn-md'
@@ -67,5 +69,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 
 Button.displayName = "Button"
+
+// Export buttonVariants helper function for use in other components
+export const buttonVariants = ({ variant = 'primary', size = 'md' }: { variant?: ButtonVariant; size?: ButtonSize } = {}) => {
+  const baseClasses = 'btn'
+  const variantClasses = getVariantClasses(variant)
+  const sizeClasses = getSizeClasses(size)
+  return `${baseClasses} ${variantClasses} ${sizeClasses}`.trim()
+}
 
 export { Button }
