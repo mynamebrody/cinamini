@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract movie pairs and choices
-    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const moviePairs = puzzle.pairs as MoviePair[]
     const userChoices = game.choices as Array<{
       round: number
       chosen_movie: number

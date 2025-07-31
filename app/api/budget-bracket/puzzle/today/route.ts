@@ -110,7 +110,7 @@ export async function GET() {
           .insert({
             puzzle_date: todayStr,
             seed_value: seed,
-            movie_pairs: pairs,
+            pairs: pairs,
             difficulty_progression: DIFFICULTY_TARGETS,
             is_published: true
           })
@@ -309,7 +309,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
       .insert({
         puzzle_date: todayStr,
         seed_value: seed,
-        movie_pairs: pairs,
+        pairs: pairs,
         difficulty_progression: DIFFICULTY_TARGETS,
         is_published: true
       })
@@ -332,7 +332,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
  * Create consistent puzzle response
  */
 function createPuzzleResponse(puzzle: any, existingGame: any) {
-  const pairs = (puzzle.movie_pairs as MoviePair[]).map(pair => ({
+  const pairs = (puzzle.pairs as MoviePair[]).map(pair => ({
     round: pair.round,
     movieA: {
       tmdb_id: pair.movieA.tmdb_id,

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract all unique movie IDs from the puzzle pairs
-    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const moviePairs = puzzle.pairs as MoviePair[]
     const allMovieIds = new Set<number>()
     
     moviePairs.forEach(pair => {

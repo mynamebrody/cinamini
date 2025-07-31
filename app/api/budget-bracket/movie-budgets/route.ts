@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0]
     const { data: puzzle, error: puzzleError } = await supabaseService
       .from('budget_bracket_puzzles')
-      .select('movie_pairs')
+      .select('pairs')
       .eq('puzzle_date', today)
       .single()
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find the pair containing these movies
-    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const moviePairs = puzzle.pairs as MoviePair[]
     const targetPair = moviePairs.find(pair => 
       (pair.movieA.tmdb_id === movieA_tmdb_id && pair.movieB.tmdb_id === movieB_tmdb_id) ||
       (pair.movieA.tmdb_id === movieB_tmdb_id && pair.movieB.tmdb_id === movieA_tmdb_id)

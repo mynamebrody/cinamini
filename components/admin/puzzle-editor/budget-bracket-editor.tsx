@@ -165,7 +165,7 @@ export default function BudgetBracketEditor() {
       const puzzleData = {
         puzzle_date: puzzleDate || null,
         seed_value: seedValue,
-        movie_pairs: moviePairs.map((pair, index) => ({
+        pairs: moviePairs.map((pair, index) => ({
           round: index + 1,
           movieA: {
             id: pair.movieA!.id,

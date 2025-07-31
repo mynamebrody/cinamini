@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Puzzle not found' }, { status: 404 })
     }
 
-    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const moviePairs = puzzle.pairs as MoviePair[]
     const currentPair = moviePairs.find(p => p.round === round)
 
     if (!currentPair) {

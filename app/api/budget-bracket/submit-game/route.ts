@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify all answers and calculate final results
-    const moviePairs = puzzle.movie_pairs as MoviePair[]
+    const moviePairs = puzzle.pairs as MoviePair[]
     const verifiedChoices: GameChoice[] = []
     let gameEnded = false
 
