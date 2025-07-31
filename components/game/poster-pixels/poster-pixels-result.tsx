@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 
 interface PosterPixelsResultProps {
+  puzzleNumber: number
   won: boolean
   timeElapsed: number
   clarityLevel: number
@@ -23,6 +24,7 @@ interface PosterPixelsResultProps {
 }
 
 export default function PosterPixelsResult({ 
+  puzzleNumber,
   won, 
   timeElapsed, 
   clarityLevel, 
@@ -45,7 +47,7 @@ export default function PosterPixelsResult({
     const clarity = formatClarity(clarityLevel)
     const time = formatTime(timeElapsed)
     
-    return `Poster Pixels ${result}\nGuessed at ${clarity} clarity in ${time}`
+    return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time}`
   }
 
   return (
@@ -113,7 +115,7 @@ export default function PosterPixelsResult({
           <div className="border-t pt-4">
             <div className="text-center mb-3">
               <div className="text-lg font-mono tracking-wider mb-2">
-                Poster Pixels {won ? "✅" : "❌"}
+                Poster Pixels #{puzzleNumber} {won ? "✅" : "❌"}
               </div>
               <div className="text-sm text-muted-foreground">
                 {formatClarity(clarityLevel)} clarity • {formatTime(timeElapsed)}

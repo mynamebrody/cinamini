@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if guess is correct
-    const correctMovieId = game.poster_pixels_puzzles.movie_data.id
+    const correctMovieId = game.poster_pixels_puzzles.film_id || game.poster_pixels_puzzles.movie_data?.id
     const isCorrect = guessed_movie_id === correctMovieId
 
     // Get current guess count

@@ -41,8 +41,8 @@ export async function GET(request: NextRequest) {
 
     const today = new Date().toISOString().split('T')[0]
     
-    // Check if we already have today's puzzle (using regular client)
-    const { data: existingPuzzle, error: puzzleError } = await supabase
+    // Check if we already have today's puzzle (using service client to bypass RLS)
+    const { data: existingPuzzle, error: puzzleError } = await supabaseService
       .from("poster_pixels_puzzles")
       .select("*")
       .eq("puzzle_date", today)
@@ -74,6 +74,15 @@ export async function GET(request: NextRequest) {
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
+            is_published: true,
+            film_id: selectedMovie.id,
+            film_title: selectedMovie.title,
+            film_poster_url: selectedMovie.poster_path,
+            film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
+            seed_value: `pp_${today}`,
+            difficulty_level: 1,
+            clarity_levels: [5, 15, 35, 65, 100],
+            // Keep movie_data for backward compatibility
             movie_data: {
               id: selectedMovie.id,
               title: selectedMovie.title,
@@ -128,6 +137,15 @@ export async function GET(request: NextRequest) {
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
+            is_published: true,
+            film_id: selectedMovie.id,
+            film_title: selectedMovie.title,
+            film_poster_url: selectedMovie.poster_path,
+            film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
+            seed_value: `pp_fallback_${today}`,
+            difficulty_level: 1,
+            clarity_levels: [5, 15, 35, 65, 100],
+            // Keep movie_data for backward compatibility
             movie_data: selectedMovie,
           })
           .select()
@@ -155,11 +173,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       puzzle: {
         id: puzzle.id,
-        movie_data: puzzle.movie_data,
+        puzzle_number: puzzle.puzzle_number,
+        // New admin structure fields
+        film_id: puzzle.film_id,
+        film_title: puzzle.film_title,
+        film_poster_url: puzzle.film_poster_url,
+        film_release_year: puzzle.film_release_year,
+        // Legacy movie_data for backward compatibility
+        movie_data: puzzle.movie_data || {
+          id: puzzle.film_id,
+          title: puzzle.film_title,
+          poster_path: puzzle.film_poster_url,
+          release_date: puzzle.film_release_year ? `${puzzle.film_release_year}-01-01` : null,
+        },
       },
       hasPlayedToday: !!todaysGame,
       previousGame: todaysGame ? {
         won: todaysGame.won,
+        total_time_ms: todaysGame.total_time_ms,
+        final_clarity_level: todaysGame.final_clarity_level,
         guesses: todaysGame.poster_pixels_guesses.map((g: any) => ({
           movieId: g.guessed_movie_id,
           movieTitle: g.guessed_movie_title,

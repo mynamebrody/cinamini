@@ -13,16 +13,22 @@ import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 
 interface MovieData {
-  id: number
-  title: string
-  poster_path: string
-  release_date: string
-  overview: string
+  id?: number
+  title?: string
+  poster_path?: string
+  release_date?: string
+  overview?: string
 }
 
 interface PuzzleData {
   id: number
-  movie_data: MovieData
+  puzzle_number?: number
+  movie_data?: MovieData
+  // New admin system fields
+  film_id?: number
+  film_title?: string
+  film_poster_url?: string
+  film_release_year?: number
 }
 
 interface GameState {
@@ -125,6 +131,12 @@ export default function PosterPixelsGame() {
         puzzle: data.puzzle,
         hasPlayedToday: data.hasPlayedToday,
         won: data.hasPlayedToday && data.previousGame?.won,
+        timeElapsed: data.hasPlayedToday && data.previousGame?.total_time_ms 
+          ? data.previousGame.total_time_ms / 1000 // Convert ms to seconds
+          : prev.timeElapsed,
+        clarityLevel: data.hasPlayedToday && data.previousGame?.final_clarity_level 
+          ? data.previousGame.final_clarity_level
+          : prev.clarityLevel,
         guesses: data.previousGame?.guesses || [],
       }))
 
@@ -191,40 +203,63 @@ export default function PosterPixelsGame() {
 
   const drawPixelatedPoster = () => {
     const canvas = canvasRef.current
-    const ctx = canvas?.getContext("2d")
-    if (!canvas || !ctx || !state.puzzle) return
+    if (!canvas || !state.puzzle) return
+    
+    // Handle both old and new data structures
+    const posterPath = state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
+    if (!posterPath) {
+      console.error("No poster path found in puzzle data")
+      return
+    }
+    
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
 
     const img = new Image()
     img.crossOrigin = "anonymous"
-    img.src = `https://image.tmdb.org/t/p/w500${state.puzzle.movie_data.poster_path}`
+    // Handle both full URLs and path-only formats
+    img.src = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`
     
     img.onload = () => {
-      // Calculate pixelation based on clarity level
-      const pixelSize = Math.max(1, Math.floor((1 - state.clarityLevel) * 50) + 1)
-      
-      // Set canvas size
-      canvas.width = 300
-      canvas.height = 450
-      
-      // Enable image smoothing for better quality
-      ctx.imageSmoothingEnabled = false
-      
-      // Draw pixelated version
-      const tempCanvas = document.createElement("canvas")
-      const tempCtx = tempCanvas.getContext("2d")!
-      
-      // Calculate dimensions for pixelation
-      const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
-      const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
-      
-      tempCanvas.width = scaledWidth
-      tempCanvas.height = scaledHeight
-      
-      // Draw small version
-      tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
-      
-      // Draw scaled up version (pixelated)
-      ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
+      try {
+        // Calculate pixelation based on clarity level
+        const pixelSize = Math.max(1, Math.floor((1 - state.clarityLevel) * 50) + 1)
+        
+        // Set canvas size
+        canvas.width = 300
+        canvas.height = 450
+        
+        // Enable image smoothing for better quality
+        ctx.imageSmoothingEnabled = false
+        
+        // Draw pixelated version
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        
+        if (!tempCtx) {
+          console.error("Failed to get 2D context for temporary canvas")
+          return
+        }
+        
+        // Calculate dimensions for pixelation
+        const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
+        const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
+        
+        tempCanvas.width = scaledWidth
+        tempCanvas.height = scaledHeight
+        
+        // Draw small version
+        tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+        
+        // Draw scaled up version (pixelated)
+        ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
+      } catch (error) {
+        console.error("Error drawing pixelated poster:", error)
+      }
+    }
+    
+    img.onerror = () => {
+      console.error("Failed to load poster image:", img.src)
     }
   }
 
@@ -232,7 +267,11 @@ export default function PosterPixelsGame() {
     if (!selectedMovie || !state.gameId || gameState !== 'playing') return
 
     const timeTaken = Math.round(Date.now() - (startTimeRef.current || Date.now()))
-    const isCorrect = selectedMovie.id === state.puzzle!.movie_data.id
+    const guessClarityLevel = state.clarityLevel // Capture clarity level at guess time
+    
+    // Handle both old and new data structures
+    const correctMovieId = state.puzzle!.movie_data?.id || state.puzzle!.film_id
+    const isCorrect = selectedMovie.id === correctMovieId
 
     try {
       const response = await fetch("/api/poster-pixels/guess", {
@@ -244,7 +283,7 @@ export default function PosterPixelsGame() {
           guessed_movie_id: selectedMovie.id,
           guessed_movie_title: selectedMovie.title,
           time_taken_ms: timeTaken,
-          clarity_level: state.clarityLevel,
+          clarity_level: guessClarityLevel,
         }),
       })
 
@@ -258,7 +297,7 @@ export default function PosterPixelsGame() {
         movieId: selectedMovie.id,
         movieTitle: selectedMovie.title,
         isCorrect,
-        clarityLevel: state.clarityLevel,
+        clarityLevel: guessClarityLevel,
       }
 
       setState(prev => ({
@@ -269,7 +308,7 @@ export default function PosterPixelsGame() {
       setSelectedMovie(null)
 
       // End game immediately after single guess
-      handleGameOver(isCorrect)
+      handleGameOver(isCorrect, guessClarityLevel)
     } catch (error) {
       console.error("Error submitting guess:", error)
       setState(prev => ({
@@ -280,8 +319,11 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const handleGameOver = async (won: boolean) => {
+  const handleGameOver = async (won: boolean, guessClarityLevel?: number) => {
     if (intervalRef.current) clearInterval(intervalRef.current)
+
+    // Use the clarity level from the guess, or current clarity if no guess was made (time up)
+    const finalClarityLevel = guessClarityLevel || state.clarityLevel
 
     try {
       await fetch("/api/poster-pixels/complete", {
@@ -291,7 +333,7 @@ export default function PosterPixelsGame() {
           game_id: state.gameId,
           won,
           total_time_ms: Math.round(state.timeElapsed * 1000),
-          final_clarity_level: state.clarityLevel,
+          final_clarity_level: finalClarityLevel,
         }),
       })
     } catch (error) {
@@ -301,7 +343,7 @@ export default function PosterPixelsGame() {
     setState(prev => ({
       ...prev,
       won,
-      clarityLevel: 1, // Show full clarity at the end
+      clarityLevel: finalClarityLevel, // Preserve the clarity level from when guess was made
     }))
     setGameState('completed')
 
@@ -483,16 +525,27 @@ export default function PosterPixelsGame() {
 
         {gameState === 'completed' && state.puzzle && (
           <PosterPixelsResult
+            puzzleNumber={state.puzzle.puzzle_number || 1}
             won={state.won}
             timeElapsed={state.timeElapsed}
             clarityLevel={state.clarityLevel}
-            movieTitle={state.puzzle.movie_data.title}
-            movieYear={state.puzzle.movie_data.release_date ? 
-              new Date(state.puzzle.movie_data.release_date).getFullYear().toString() : 
-              "Unknown"}
-            moviePosterUrl={state.puzzle.movie_data.poster_path ? 
-              `https://image.tmdb.org/t/p/w342${state.puzzle.movie_data.poster_path}` : 
-              undefined}
+            movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
+            movieYear={
+              state.puzzle.movie_data?.release_date ? 
+                new Date(state.puzzle.movie_data.release_date).getFullYear().toString() :
+              state.puzzle.film_release_year ?
+                state.puzzle.film_release_year.toString() :
+                "Unknown"
+            }
+            moviePosterUrl={
+              state.puzzle.movie_data?.poster_path ? 
+                `https://image.tmdb.org/t/p/w342${state.puzzle.movie_data.poster_path}` :
+              state.puzzle.film_poster_url ?
+                (state.puzzle.film_poster_url.startsWith('http') ? 
+                  state.puzzle.film_poster_url : 
+                  `https://image.tmdb.org/t/p/w342${state.puzzle.film_poster_url}`) :
+                undefined
+            }
             guesses={state.guesses}
           />
         )}

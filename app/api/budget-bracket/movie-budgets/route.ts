@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { type MoviePair, type BudgetBracketMovie } from '@/lib/budget-bracket'
 
 interface BudgetRequest {
@@ -10,6 +10,7 @@ interface BudgetRequest {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const supabaseService = createServiceClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -25,9 +26,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Movie IDs are required' }, { status: 400 })
     }
 
-    // Get today's puzzle to extract budget data from movie pairs
+    // Get today's puzzle to extract budget data from movie pairs (using service client to bypass RLS)
     const today = new Date().toISOString().split('T')[0]
-    const { data: puzzle, error: puzzleError } = await supabase
+    const { data: puzzle, error: puzzleError } = await supabaseService
       .from('budget_bracket_puzzles')
       .select('movie_pairs')
       .eq('puzzle_date', today)

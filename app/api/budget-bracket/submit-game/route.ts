@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { 
   calculateFinalResult,
   type GameChoice,
@@ -15,6 +15,7 @@ interface SubmitGameRequest {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const supabaseService = createServiceClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -30,8 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
     }
 
-    // Get the puzzle data to verify answers
-    const { data: puzzle, error: puzzleError } = await supabase
+    // Get the puzzle data to verify answers (using service client to bypass RLS)
+    const { data: puzzle, error: puzzleError } = await supabaseService
       .from('budget_bracket_puzzles')
       .select('*')
       .eq('id', puzzle_id)

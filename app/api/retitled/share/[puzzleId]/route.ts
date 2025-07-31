@@ -19,7 +19,7 @@ export async function GET(
     // Get the puzzle info
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("puzzle_date, country_code")
+      .select("puzzle_date, country_code, puzzle_number")
       .eq("id", puzzleId)
       .single()
 
@@ -39,17 +39,15 @@ export async function GET(
       return NextResponse.json({ error: "No guess found for this puzzle" }, { status: 404 })
     }
 
-    // Calculate puzzle number (days since launch)
-    const launchDate = new Date('2024-01-01') // Arbitrary launch date
-    const puzzleDate = new Date(puzzle.puzzle_date)
-    const daysDiff = Math.floor((puzzleDate.getTime() - launchDate.getTime()) / (1000 * 60 * 60 * 24))
-    const puzzleNumber = daysDiff + 1
+    // Use puzzle number from database
+    const puzzleNumber = puzzle.puzzle_number || 1
 
     // Get flag emoji
     const FLAG_EMOJIS: Record<string, string> = {
       'FR': '🇫🇷',
       'ES': '🇪🇸',
       'DE': '🇩🇪',
+      'DK': '🇩🇰',
       'IT': '🇮🇹',
       'JP': '🇯🇵',
       'KR': '🇰🇷',
@@ -64,8 +62,8 @@ export async function GET(
     const resultGrid = guess.is_correct ? '🟩⬜⬜⬜' : '🟥⬜⬜⬜'
 
     // Generate share text
-    const shareText = `CinaMini Retitle #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nCinaMini.app`
-    const shareUrl = `https://CinaMini.app/retitled/${puzzleNumber}`
+    const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\ncinamini.app`
+    const shareUrl = `https://cinamini.app/game/retitled`
 
     return NextResponse.json({
       shareText,

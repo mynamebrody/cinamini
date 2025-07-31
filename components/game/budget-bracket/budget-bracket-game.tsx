@@ -80,6 +80,28 @@ export default function BudgetBracketGame() {
     loadTodaysPuzzle()
   }, [])
 
+  const fetchCompletedGameResult = async (puzzleId: number) => {
+    try {
+      const response = await fetch('/api/budget-bracket/completed-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ puzzle_id: puzzleId })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch completed game result')
+      }
+
+      const result: GameResult = await response.json()
+      setGameResult(result)
+      setGameState('completed')
+    } catch (error) {
+      console.error('Error fetching completed game result:', error)
+      // Fallback to completed state without detailed result
+      setGameState('completed')
+    }
+  }
+
   const loadTodaysPuzzle = async () => {
     try {
       setGameState('loading')
@@ -93,7 +115,8 @@ export default function BudgetBracketGame() {
       setPuzzle(puzzleData)
 
       if (puzzleData.has_played) {
-        setGameState('completed')
+        // Fetch complete game result for users who have already played
+        await fetchCompletedGameResult(puzzleData.id)
       } else {
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
@@ -342,11 +365,6 @@ export default function BudgetBracketGame() {
 
         {gameState === 'playing' && puzzle && (
           <div className="max-w-md mx-auto">
-            <div className="mb-4 text-center">
-              <div className="text-sm text-muted-foreground">
-                Round {currentRound} of 5
-              </div>
-            </div>
             <BudgetBracketRound
               pair={puzzle.pairs[currentRound - 1]}
               round={currentRound}
@@ -360,7 +378,13 @@ export default function BudgetBracketGame() {
 
         {gameState === 'completed' && (
           <div className="max-w-md mx-auto">
-            {puzzle?.has_played && puzzle.user_result ? (
+            {gameResult && puzzle ? (
+              <BudgetBracketResult 
+                result={gameResult} 
+                puzzle={puzzle}
+              />
+            ) : puzzle?.has_played && puzzle.user_result ? (
+              // Fallback for when detailed result couldn't be fetched
               <Card>
                 <CardHeader className="text-center">
                   <CardTitle className="flex items-center justify-center gap-2">
@@ -397,11 +421,13 @@ export default function BudgetBracketGame() {
                   </div>
                 </CardContent>
               </Card>
-            ) : gameResult && (
-              <BudgetBracketResult 
-                result={gameResult} 
-                puzzle={puzzle!}
-              />
+            ) : (
+              // Loading or error state
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground">Loading your results...</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         )}

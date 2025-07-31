@@ -69,6 +69,7 @@ export interface CastClimbGuess {
   puzzle_id: string;
   guess_film_id: number;
   guess_film_title: string;
+  guess_film_year?: string | null;
   is_correct: boolean;
   actors_revealed: number;
   solve_time_ms: number | null;

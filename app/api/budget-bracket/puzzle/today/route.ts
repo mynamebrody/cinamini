@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { 
   generateBudgetBracketSeed,
   generatePuzzlePairs, 
@@ -13,6 +13,7 @@ import { getBlendedMoviePool } from '@/lib/tmdb-trending'
 export async function GET() {
   try {
     const supabase = await createClient()
+    const supabaseService = createServiceClient()
     
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -24,8 +25,8 @@ export async function GET() {
     const todayStr = today.toISOString().split('T')[0] // YYYY-MM-DD
     const seed = generateBudgetBracketSeed(today)
 
-    // Check if today's puzzle already exists
-    const { data: existingPuzzle, error: puzzleError } = await supabase
+    // Check if today's puzzle already exists (using service client to bypass RLS)
+    const { data: existingPuzzle, error: puzzleError } = await supabaseService
       .from('budget_bracket_puzzles')
       .select('*, puzzle_number')
       .eq('puzzle_date', todayStr)
@@ -58,7 +59,23 @@ export async function GET() {
         const budgetMovies: BudgetBracketMovie[] = enrichedMovies
           .filter(movie => {
             // ONLY use movies with real TMDB budget data (no estimations)
-            return movie.budget && movie.budget > 5_000_000
+            const hasValidBudget = movie.budget && movie.budget > 5_000_000
+            
+            // Check for valid release date
+            const hasValidReleaseDate = movie.release_date && 
+              movie.release_date.trim() !== '' &&
+              !isNaN(new Date(movie.release_date).getFullYear()) &&
+              new Date(movie.release_date).getFullYear() >= 1900
+            
+            if (!hasValidReleaseDate) {
+              console.log('Filtering out movie with invalid release date:', {
+                title: movie.title,
+                release_date: movie.release_date,
+                type: typeof movie.release_date
+              })
+            }
+            
+            return hasValidBudget && hasValidReleaseDate
           })
           .map(movie => ({
             id: movie.id,
@@ -82,17 +99,20 @@ export async function GET() {
         
         console.log(`Budget pool created: ${budgetMovies.length} movies (all with real TMDB budgets)`)
         
+        
         // Generate puzzle pairs using client-safe function
         const pairs = generatePuzzlePairs(budgetMovies, seed)
         
-        // Store the puzzle
-        const { data: newPuzzle, error: insertError } = await supabase
+        
+        // Store the puzzle (using service client to bypass RLS)
+        const { data: newPuzzle, error: insertError } = await supabaseService
           .from('budget_bracket_puzzles')
           .insert({
             puzzle_date: todayStr,
             seed_value: seed,
             movie_pairs: pairs,
-            difficulty_progression: DIFFICULTY_TARGETS
+            difficulty_progression: DIFFICULTY_TARGETS,
+            is_published: true
           })
           .select('*, puzzle_number')
           .single()
@@ -112,7 +132,7 @@ export async function GET() {
         // If it's a trending movie error, fall back to database
         if (errorMessage.includes('trending') || errorMessage.includes('TMDB')) {
           console.error('Trending movies failed, falling back to database movies...')
-          return await generateFallbackPuzzle(supabase, todayStr, seed)
+          return await generateFallbackPuzzle(supabaseService, todayStr, seed)
         }
         
         return NextResponse.json({ 
@@ -129,6 +149,7 @@ export async function GET() {
       .eq('user_id', user.id)
       .eq('puzzle_id', puzzle.id)
       .single()
+
 
     return createPuzzleResponse(puzzle, existingGame)
   } catch (error) {
@@ -289,7 +310,8 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
         puzzle_date: todayStr,
         seed_value: seed,
         movie_pairs: pairs,
-        difficulty_progression: DIFFICULTY_TARGETS
+        difficulty_progression: DIFFICULTY_TARGETS,
+        is_published: true
       })
       .select('*, puzzle_number')
       .single()
@@ -310,26 +332,29 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
  * Create consistent puzzle response
  */
 function createPuzzleResponse(puzzle: any, existingGame: any) {
+  const pairs = (puzzle.movie_pairs as MoviePair[]).map(pair => ({
+    round: pair.round,
+    movieA: {
+      tmdb_id: pair.movieA.tmdb_id,
+      title: pair.movieA.title,
+      poster_path: pair.movieA.poster_path,
+      release_date: pair.movieA.release_date
+    },
+    movieB: {
+      tmdb_id: pair.movieB.tmdb_id,
+      title: pair.movieB.title,
+      poster_path: pair.movieB.poster_path,
+      release_date: pair.movieB.release_date
+    }
+  }))
+
+
   const puzzleData = {
     id: puzzle.id,
     puzzle_date: puzzle.puzzle_date,
     puzzle_number: puzzle.puzzle_number,
     seed_value: puzzle.seed_value,
-    pairs: (puzzle.movie_pairs as MoviePair[]).map(pair => ({
-      round: pair.round,
-      movieA: {
-        tmdb_id: pair.movieA.tmdb_id,
-        title: pair.movieA.title,
-        poster_path: pair.movieA.poster_path,
-        release_date: pair.movieA.release_date
-      },
-      movieB: {
-        tmdb_id: pair.movieB.tmdb_id,
-        title: pair.movieB.title,
-        poster_path: pair.movieB.poster_path,
-        release_date: pair.movieB.release_date
-      }
-    })),
+    pairs,
     has_played: !!existingGame,
     user_result: existingGame ? {
       rounds_completed: existingGame.rounds_completed,
