@@ -129,11 +129,30 @@ export default function BudgetBracketRound({
   }
 
   const getMovieYear = (releaseDate: string) => {
-    return new Date(releaseDate).getFullYear()
+    // Handle null, undefined, or empty string
+    if (!releaseDate || releaseDate.trim() === '') {
+      return 'Unknown'
+    }
+    
+    // Handle invalid date formats
+    try {
+      const date = new Date(releaseDate)
+      const year = date.getFullYear()
+      
+      // Check if date is valid and year is reasonable
+      if (isNaN(year) || year < 1900 || year > new Date().getFullYear() + 10) {
+        return 'Unknown'
+      }
+      
+      return year
+    } catch (error) {
+      console.error('Error parsing release date:', { releaseDate, error })
+      return 'Unknown'
+    }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Round indicator */}
       <div className="text-center">
         <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -147,7 +166,7 @@ export default function BudgetBracketRound({
       </div>
 
       {/* Movie comparison */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-6">
         {/* Movie A */}
         <Card 
           className={`cursor-pointer transition-all duration-300 ${
@@ -165,7 +184,7 @@ export default function BudgetBracketRound({
           }`}
           onClick={() => handleMovieChoice('A')}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-3">
               <img
                 src={getPosterUrl(pair.movieA.poster_path, 'w342')}
@@ -178,7 +197,7 @@ export default function BudgetBracketRound({
               <h3 className="font-semibold text-sm leading-tight mb-1">
                 {pair.movieA.title}
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-bold">
                 {getMovieYear(pair.movieA.release_date)}
               </p>
               
@@ -212,7 +231,7 @@ export default function BudgetBracketRound({
           }`}
           onClick={() => handleMovieChoice('B')}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-3">
               <img
                 src={getPosterUrl(pair.movieB.poster_path, 'w342')}
@@ -225,7 +244,7 @@ export default function BudgetBracketRound({
               <h3 className="font-semibold text-sm leading-tight mb-1">
                 {pair.movieB.title}
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-bold">
                 {getMovieYear(pair.movieB.release_date)}
               </p>
               
@@ -243,12 +262,6 @@ export default function BudgetBracketRound({
         </Card>
       </div>
 
-      {/* VS indicator */}
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 bg-primary text-primary-foreground rounded-full font-bold">
-          VS
-        </div>
-      </div>
 
       {/* Choice feedback */}
       {hasChosen && !showingFeedback && (

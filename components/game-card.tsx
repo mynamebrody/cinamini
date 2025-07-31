@@ -73,34 +73,38 @@ export default function GameCard({
   if (featured) {
     return (
       <Card className={cn(
-        "featured-card p-8 relative overflow-hidden group cursor-pointer",
+        "featured-card px-8 pt-8 pb-8 relative overflow-hidden group cursor-pointer h-64 flex flex-col",
         getFeatureStyles()
       )}>
-        <div className="space-y-6">
+        {/* Content Area - takes available space */}
+        <div className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start space-x-4 flex-1">
               {getGameIcon()}
-              <div>
-                <h3 className="font-nyt text-2xl font-bold text-neutral-900 mb-2">
-                  {name}
-                </h3>
-                <p className="text-neutral-600 text-lg leading-relaxed">
+              <div className="flex-1">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="font-nyt text-2xl font-bold text-neutral-900 mb-2">
+                      {name}
+                    </h3>
+                  </div>
+                  {hasPlayedToday && (
+                    <div className="flex items-center ml-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-neutral-600 text-lg leading-relaxed line-clamp-3">
                   {description}
                 </p>
               </div>
             </div>
-            {hasPlayedToday && (
-              <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-700">
-                  Completed
-                </span>
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* Play Button */}
+        {/* Play Button - positioned with consistent padding from bottom */}
+        <div className="mt-auto">
           <Button
             onClick={handlePlay}
             size="lg"

@@ -94,7 +94,11 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: true })
 
     if (!guessError && existingGuesses && existingGuesses.length > 0) {
-      hasPlayed = true
+      // Check if game is completed: either correct guess or max attempts reached
+      const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
+      const maxAttempts = puzzle.total_actors || 4
+      const hasReachedMaxAttempts = existingGuesses.length >= maxAttempts
+      hasPlayed = hasCorrectGuess || hasReachedMaxAttempts
       userGuesses = existingGuesses
     }
 
@@ -118,6 +122,7 @@ export async function GET(request: NextRequest) {
         id: guess.id,
         guessFilmId: guess.guess_film_id,
         guessFilmTitle: guess.guess_film_title,
+        guessFilmYear: guess.guess_film_year,
         isCorrect: guess.is_correct,
         actorsRevealed: guess.actors_revealed,
         solveTimeMs: guess.solve_time_ms,

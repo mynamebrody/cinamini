@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+    const supabaseService = createServiceClient()
     
     // Get current user (but don't require authentication)
     const { data: { user } } = await supabase.auth.getUser()
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
           let hasPlayedToday = false
 
                       if (game.game_id === 'retitled') {
-              const { data: todaysPuzzle } = await supabase
+              const { data: todaysPuzzle } = await supabaseService
                 .from("retitled_puzzles")
                 .select("id")
                 .eq("puzzle_date", today)
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
                 hasPlayedToday = !!hasPlayed
               }
             } else if (game.game_id === 'budget-bracket') {
-              const { data: todaysPuzzle } = await supabase
+              const { data: todaysPuzzle } = await supabaseService
                 .from("budget_bracket_puzzles")
                 .select("id")
                 .eq("puzzle_date", today)
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
                 hasPlayedToday = !!hasPlayed
               }
             } else if (game.game_id === 'poster-pixels') {
-              const { data: todaysPuzzle } = await supabase
+              const { data: todaysPuzzle } = await supabaseService
                 .from("poster_pixels_puzzles")
                 .select("id")
                 .eq("puzzle_date", today)
@@ -80,21 +81,27 @@ export async function GET(request: NextRequest) {
                 hasPlayedToday = !!hasPlayed
               }
             } else if (game.game_id === 'cast-climb') {
-            const { data: todaysPuzzle } = await supabase
+            const { data: todaysPuzzle } = await supabaseService
               .from("cast_climb_puzzles")
-              .select("id")
+              .select("id, total_actors")
               .eq("puzzle_date", today)
               .single()
 
             if (todaysPuzzle) {
-              const { data: hasPlayed } = await supabase
+              const { data: guesses } = await supabase
                 .from("cast_climb_guesses")
-                .select("id")
+                .select("is_correct")
                 .eq("user_id", user.id)
                 .eq("puzzle_id", todaysPuzzle.id)
-                .single()
+                .order("created_at", { ascending: true })
 
-              hasPlayedToday = !!hasPlayed
+              if (guesses && guesses.length > 0) {
+                // Check if game is completed: either correct guess or max attempts reached
+                const hasCorrectGuess = guesses.some(g => g.is_correct)
+                const maxAttempts = todaysPuzzle.total_actors || 4
+                const hasReachedMaxAttempts = guesses.length >= maxAttempts
+                hasPlayedToday = hasCorrectGuess || hasReachedMaxAttempts
+              }
             }
           }
           return {

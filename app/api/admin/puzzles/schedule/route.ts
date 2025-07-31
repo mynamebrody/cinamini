@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const serviceSupabase = await createServiceClient()
 
     // Fetch all puzzles in date range for all games
-    const [retitledPuzzles, budgetBracketPuzzles, castClimbPuzzles] = await Promise.all([
+    const [retitledPuzzles, budgetBracketPuzzles, castClimbPuzzles, posterPixelsPuzzles] = await Promise.all([
       serviceSupabase
         .from('retitled_puzzles')
         .select('*')
@@ -52,6 +52,13 @@ export async function GET(request: Request) {
       
       serviceSupabase
         .from('cast_climb_puzzles')
+        .select('*')
+        .gte('puzzle_date', startDate)
+        .lte('puzzle_date', endDate)
+        .order('puzzle_date', { ascending: true }),
+      
+      serviceSupabase
+        .from('poster_pixels_puzzles')
         .select('*')
         .gte('puzzle_date', startDate)
         .lte('puzzle_date', endDate)
@@ -59,7 +66,7 @@ export async function GET(request: Request) {
     ])
 
     // Also fetch draft puzzles (null puzzle_date)
-    const [retitledDrafts, budgetBracketDrafts, castClimbDrafts] = await Promise.all([
+    const [retitledDrafts, budgetBracketDrafts, castClimbDrafts, posterPixelsDrafts] = await Promise.all([
       serviceSupabase
         .from('retitled_puzzles')
         .select('*')
@@ -74,6 +81,12 @@ export async function GET(request: Request) {
       
       serviceSupabase
         .from('cast_climb_puzzles')
+        .select('*')
+        .is('puzzle_date', null)
+        .order('created_at', { ascending: false }),
+      
+      serviceSupabase
+        .from('poster_pixels_puzzles')
         .select('*')
         .is('puzzle_date', null)
         .order('created_at', { ascending: false })
@@ -84,12 +97,14 @@ export async function GET(request: Request) {
       scheduled: [
         ...(retitledPuzzles.data || []).map(p => ({ ...p, game_type: 'retitled' })),
         ...(budgetBracketPuzzles.data || []).map(p => ({ ...p, game_type: 'budget_bracket' })),
-        ...(castClimbPuzzles.data || []).map(p => ({ ...p, game_type: 'cast_climb' }))
+        ...(castClimbPuzzles.data || []).map(p => ({ ...p, game_type: 'cast_climb' })),
+        ...(posterPixelsPuzzles.data || []).map(p => ({ ...p, game_type: 'poster_pixels' }))
       ],
       drafts: [
         ...(retitledDrafts.data || []).map(p => ({ ...p, game_type: 'retitled' })),
         ...(budgetBracketDrafts.data || []).map(p => ({ ...p, game_type: 'budget_bracket' })),
-        ...(castClimbDrafts.data || []).map(p => ({ ...p, game_type: 'cast_climb' }))
+        ...(castClimbDrafts.data || []).map(p => ({ ...p, game_type: 'cast_climb' })),
+        ...(posterPixelsDrafts.data || []).map(p => ({ ...p, game_type: 'poster_pixels' }))
       ]
     }
 

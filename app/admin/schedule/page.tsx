@@ -17,7 +17,7 @@ interface Puzzle {
   id: string
   puzzle_date: string | null
   film_title: string
-  game_type: 'retitled' | 'budget_bracket' | 'cast_climb'
+  game_type: 'retitled' | 'budget_bracket' | 'cast_climb' | 'poster_pixels'
   difficulty_level?: number
   created_at: string
   [key: string]: any
@@ -36,7 +36,8 @@ export default function SchedulePage() {
     gamesWithPuzzles: {
       retitled: 0,
       budget_bracket: 0,
-      cast_climb: 0
+      cast_climb: 0,
+      poster_pixels: 0
     }
   })
 
@@ -65,7 +66,8 @@ export default function SchedulePage() {
         const gamesWithPuzzles = {
           retitled: 0,
           budget_bracket: 0,
-          cast_climb: 0
+          cast_climb: 0,
+          poster_pixels: 0
         }
         
         data.scheduled.forEach((puzzle: Puzzle) => {
@@ -204,6 +206,15 @@ export default function SchedulePage() {
                   className="text-xs bg-violet-500/10 text-violet-600 border-violet-500/30"
                 >
                   {stats.gamesWithPuzzles.cast_climb}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">Poster Pixels</span>
+                <Badge 
+                  variant="outline" 
+                  className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30"
+                >
+                  {stats.gamesWithPuzzles.poster_pixels}
                 </Badge>
               </div>
             </div>

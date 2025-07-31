@@ -8,8 +8,8 @@ import { useDebounce } from "@/hooks/use-debounce"
 interface Movie {
   id: number
   title: string
-  release_date: string
-  poster_path: string | null
+  releaseYear: string
+  posterUrl: string | null
 }
 
 interface PosterPixelsSearchProps {
@@ -83,8 +83,8 @@ export default function PosterPixelsSearch({
     setShowDropdown(false)
   }
 
-  const getReleaseYear = (releaseDate: string) => {
-    return releaseDate ? new Date(releaseDate).getFullYear() : ""
+  const getReleaseYear = (releaseYear: string) => {
+    return releaseYear || "Unknown"
   }
 
   return (
@@ -97,12 +97,12 @@ export default function PosterPixelsSearch({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           disabled={disabled}
-          className="pl-10 pr-10 py-2 bg-[#1a1a1a] border-white/20 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20"
+          className="pl-10 pr-10 py-2 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20"
         />
         {searchQuery && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
             <X className="w-5 h-5" />
           </button>
@@ -111,16 +111,16 @@ export default function PosterPixelsSearch({
 
       {/* Search Results Dropdown */}
       {showDropdown && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-[#1a1a1a] border border-white/20 rounded-lg shadow-lg max-h-96 overflow-y-auto backdrop-blur-sm">
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto backdrop-blur-sm">
           {searchResults.map((movie) => (
             <button
               key={movie.id}
               onClick={() => handleMovieSelect(movie)}
-              className="w-full px-4 py-3 hover:bg-white/20 transition-colors text-left flex items-center gap-3"
+              className="w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left flex items-center gap-3"
             >
-              {movie.poster_path ? (
+              {movie.posterUrl ? (
                 <img
-                  src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                  src={movie.posterUrl}
                   alt={movie.title}
                   className="w-10 h-14 object-cover rounded"
                 />
@@ -130,10 +130,12 @@ export default function PosterPixelsSearch({
                 </div>
               )}
               <div className="flex-1">
-                <p className="text-white font-medium">{movie.title}</p>
-                {movie.release_date && (
-                  <p className="text-gray-400 text-sm">{getReleaseYear(movie.release_date)}</p>
-                )}
+                <p className="text-gray-900 font-medium">
+                  {movie.title} 
+                  {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
+                    <span className="text-gray-600"> ({movie.releaseYear})</span>
+                  )}
+                </p>
               </div>
             </button>
           ))}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths } from "date-fns"
-import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +16,7 @@ interface Puzzle {
   id: string
   puzzle_date: string | null
   film_title: string
-  game_type: 'retitled' | 'budget_bracket' | 'cast_climb'
+  game_type: 'retitled' | 'budget_bracket' | 'cast_climb' | 'poster_pixels'
   difficulty_level?: number
   created_at: string
 }
@@ -42,6 +42,11 @@ const gameConfig = {
     color: "bg-violet-500/10 text-violet-600 border-violet-500/30 hover:bg-violet-500/20",
     icon: Users,
     label: "Cast Climb"
+  },
+  poster_pixels: {
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/30 hover:bg-purple-500/20",
+    icon: Image,
+    label: "Poster Pixels"
   }
 }
 

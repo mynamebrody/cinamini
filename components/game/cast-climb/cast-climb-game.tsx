@@ -44,6 +44,7 @@ interface CastClimbGuess {
   id: string
   guessFilmId: number
   guessFilmTitle: string
+  guessFilmYear?: string | null
   isCorrect: boolean
   actorsRevealed: number
   solveTimeMs: number | null
@@ -83,6 +84,7 @@ export default function CastClimbGame() {
   const [revealedIndex, setRevealedIndex] = useState(0)
   const [isGuessing, setIsGuessing] = useState(false)
   const [startTime, setStartTime] = useState<number>(0)
+  const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [result, setResult] = useState<CastClimbResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -93,6 +95,21 @@ export default function CastClimbGame() {
   useEffect(() => {
     loadTodaysPuzzle()
   }, [])
+
+  // Elapsed time effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (gameState === "playing" && startTime > 0) {
+      interval = setInterval(() => {
+        setElapsedTime(Date.now() - startTime)
+      }, 1000)
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [gameState, startTime])
 
   const loadTodaysPuzzle = async () => {
     try {
@@ -181,6 +198,7 @@ export default function CastClimbGame() {
           puzzleId: puzzle.id,
           guessFilmId: movie.id,
           guessFilmTitle: movie.title,
+          guessFilmYear: movie.releaseYear,
           actorsRevealed,
           solveTimeMs
         })
@@ -203,7 +221,7 @@ export default function CastClimbGame() {
         // Game is completed (either correct or max attempts reached)
         setResult(data)
         setGameState("completed")
-      } else {
+      } else if (!isCorrect) {
         // Wrong guess but can continue - reveal next actor
         setRevealedIndex(revealedIndex + 1)
       }
@@ -216,25 +234,130 @@ export default function CastClimbGame() {
     }
   }
 
+  const handleNextHint = async () => {
+    if (!puzzle) return
+    
+    // Submit an empty/invalid guess to mark this as a missed attempt
+    const invalidMovie = {
+      id: -1,
+      title: "_NEXT_HINT_SKIP_",
+      releaseYear: "Unknown"
+    }
+    
+    setIsGuessing(true)
+    const actorsRevealed = revealedIndex + 1
+    const solveTimeMs = Date.now() - startTime
+
+    try {
+      const response = await fetch("/api/cast-climb/guess", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          puzzleId: puzzle.id,
+          guessFilmId: invalidMovie.id,
+          guessFilmTitle: invalidMovie.title,
+          guessFilmYear: invalidMovie.releaseYear,
+          actorsRevealed,
+          solveTimeMs
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit hint skip")
+      }
+
+      const data = await response.json()
+      const isGameCompleted = data.game_completed
+      const newGuesses = data.user_guesses
+      
+      // Update user guesses
+      setUserGuesses(newGuesses)
+
+      if (isGameCompleted) {
+        // Game is completed (reached max attempts)
+        setResult(data)
+        setGameState("completed")
+      } else {
+        // Reveal next actor since this was a skip
+        setRevealedIndex(revealedIndex + 1)
+      }
+    } catch (err) {
+      console.error("Error skipping to next hint:", err)
+      // Don't create additional records on error - just show error to user
+      setError("Failed to skip hint. Please try again.")
+    } finally {
+      setIsGuessing(false)
+    }
+  }
+
   const handleGiveUp = async () => {
     if (!puzzle) return
     
-    // Create a "give up" result by showing what would happen if they exhausted all actors
-    setResult({
-      correct: false,
-      puzzle,
-      user_guesses: userGuesses,
-      stats: {
-        games_played: 0,
-        games_won: 0,
-        current_streak: 0,
-        longest_streak: 0,
-        perfect_games: 0,
-        average_actors_revealed: 0
-      },
-      share_text: generateClientShareText(puzzle.puzzleNumber, userGuesses, false)
-    })
-    setGameState("completed")
+    setIsGuessing(true)
+    
+    try {
+      // Calculate how many empty guesses we need to reach 4 total
+      const currentGuessCount = userGuesses.length
+      const maxAttempts = puzzle.totalActors || 4
+      const emptyGuessesNeeded = Math.max(1, maxAttempts - currentGuessCount) // Ensure at least 1 request
+      
+      // Submit empty guesses to fill up to max attempts
+      for (let i = 0; i < emptyGuessesNeeded; i++) {
+        const actorsRevealed = Math.min(revealedIndex + 1 + i, maxAttempts)
+        const solveTimeMs = Date.now() - startTime
+        
+        const response = await fetch("/api/cast-climb/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
+            guessFilmId: -1,
+            guessFilmTitle: "_GIVE_UP_",
+            guessFilmYear: null,
+            actorsRevealed,
+            solveTimeMs
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to submit give up")
+        }
+        
+        // Only get the final result from the last API call
+        if (i === emptyGuessesNeeded - 1) {
+          const data: CastClimbResult = await response.json()
+          setResult(data)
+          setUserGuesses(data.user_guesses)
+          setGameState("completed")
+        }
+      }
+    } catch (err) {
+      console.error("Error giving up:", err)
+      // Fallback to local state if API fails
+      setResult({
+        correct: false,
+        puzzle,
+        user_guesses: userGuesses,
+        stats: {
+          games_played: 0,
+          games_won: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          perfect_games: 0,
+          average_actors_revealed: 0
+        },
+        share_text: generateClientShareText(puzzle.puzzleNumber, userGuesses, false),
+        game_completed: true
+      })
+      setGameState("completed")
+    } finally {
+      setIsGuessing(false)
+    }
   }
 
   // ============================================================================
@@ -380,22 +503,63 @@ export default function CastClimbGame() {
                   Actor {revealedIndex + 1} of {puzzle.actors.length}
                   {userGuesses.length > 0 && ` • ${userGuesses.length} guess${userGuesses.length !== 1 ? 'es' : ''}`}
                 </p>
+                {elapsedTime > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Time: {Math.floor(elapsedTime / 1000)}s
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="font-semibold text-lg">{puzzle.actors[revealedIndex].name}</p>
+                <div className="bg-muted rounded-lg p-6 text-center space-y-4">
+                  {/* Actor Photo */}
+                  <div className="flex justify-center">
+                    <div className="w-32 h-40 bg-muted-foreground/10 rounded-lg overflow-hidden shadow-md">
+                      {puzzle.actors[revealedIndex] && puzzle.actors[revealedIndex].profile_path ? (
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${puzzle.actors[revealedIndex].profile_path}`}
+                          alt={`${puzzle.actors[revealedIndex].name} photo`}
+                          width={128}
+                          height={160}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                          <div className="text-center">
+                            <div className="text-2xl mb-2">🎭</div>
+                            <div className="text-xs">No Photo</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Actor Name */}
+                  <div>
+                    <p className="font-semibold text-xl">{puzzle.actors[revealedIndex]?.name || 'Unknown Actor'}</p>
+                  </div>
                 </div>
 
                 {/* Show previous wrong guesses */}
                 {userGuesses.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">Previous guesses:</p>
-                    {userGuesses.map((guess, index) => (
-                      <div key={guess.id} className="flex items-center gap-2 text-sm">
-                        <span className="text-red-500">❌</span>
-                        <span className="text-muted-foreground">{guess.guessFilmTitle}</span>
-                      </div>
-                    ))}
+                    <div className="space-y-1">
+                      {userGuesses.map((guess) => (
+                        <div key={guess.id} className="text-sm">
+                          <span className="text-red-500 font-medium">
+                            ❌ {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" ? (
+                              <strong>Skipped</strong>
+                            ) : guess.guessFilmTitle === "_GIVE_UP_" ? (
+                              <strong>Skipped</strong>
+                            ) : guess.guessFilmTitle ? (
+                              `${guess.guessFilmTitle}${guess.guessFilmYear && guess.guessFilmYear !== 'Unknown' ? ` (${guess.guessFilmYear})` : ''}`
+                            ) : (
+                              <strong>No Title Found</strong>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -405,10 +569,18 @@ export default function CastClimbGame() {
                   placeholder="Start typing a movie title..."
                   disabled={isGuessing}
                 />
-                <div className="flex gap-2">
+                <div className="space-y-2">
                   <Button 
                     variant="outline" 
-                    className="flex-1" 
+                    className="w-full" 
+                    onClick={handleNextHint} 
+                    disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
+                  >
+                    {revealedIndex >= puzzle.actors.length - 1 ? "No More Hints" : "Next Hint"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
                     onClick={handleGiveUp} 
                     disabled={isGuessing}
                   >
@@ -434,13 +606,27 @@ export default function CastClimbGame() {
               <CardContent className="space-y-4 text-center">
                 {puzzle.filmPosterUrl && (
                   <Image 
-                    src={puzzle.filmPosterUrl} 
+                    src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
                     alt={`${puzzle.filmTitle} poster`}
                     width={200} 
                     height={300} 
                     className="mx-auto rounded-lg"
                   />
                 )}
+                
+                {/* Show complete cast now that game is over */}
+                <div className="bg-muted rounded-lg p-4">
+                  <h3 className="font-semibold mb-3">Cast</h3>
+                  <div className="space-y-2 text-left">
+                    {puzzle.actors.map((actor, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="font-medium">{actor.name}</span>
+                        <span className="text-sm text-muted-foreground">as {actor.character}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {puzzle.funFact && (
                   <p className="text-sm text-muted-foreground italic">
                     {puzzle.funFact}
@@ -449,7 +635,10 @@ export default function CastClimbGame() {
                 <div className="bg-muted rounded-lg p-4">
                   <p className="font-mono text-lg">{result.share_text}</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Solved in {result.user_guesses.length} guess{result.user_guesses.length !== 1 ? 'es' : ''}
+                    {result.correct ? 
+                      `Solved in ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}` :
+                      `Failed after ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}`
+                    }
                   </p>
                 </div>
                 <ShareSection 

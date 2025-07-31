@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { puzzleId, guessFilmId, guessFilmTitle, actorsRevealed, solveTimeMs } = body
+    const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs } = body
 
     // Validate input
     if (!puzzleId || !guessFilmId || !guessFilmTitle || !actorsRevealed) {
@@ -57,13 +57,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Determine if this is a correct guess
+    // Determine if this is a correct guess, skip, or give up
     const isCorrect = guessFilmId === puzzle.film_id
+    const isSkip = guessFilmTitle === "_NEXT_HINT_SKIP_" || guessFilmTitle === "_GIVE_UP_"
     const attemptNumber = (existingGuesses?.length || 0) + 1
 
     // Don't allow more guesses if they've reached max attempts (4 actors) or already won
     const hasWon = existingGuesses?.some(g => g.is_correct) || false
     const maxAttempts = puzzle.total_actors || 4
+    
+    // Count only non-skip attempts toward the max attempts limit
+    const realAttempts = existingGuesses?.filter(g => 
+      g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
+    ) || []
 
     if (hasWon) {
       return NextResponse.json(
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (existingGuesses && existingGuesses.length >= maxAttempts && !isCorrect) {
+    if (!isSkip && realAttempts.length >= maxAttempts && !isCorrect) {
       return NextResponse.json(
         { error: "You have reached the maximum number of attempts" },
         { status: 400 }
@@ -87,6 +93,7 @@ export async function POST(request: NextRequest) {
         puzzle_id: puzzleId,
         guess_film_id: guessFilmId,
         guess_film_title: guessFilmTitle,
+        guess_film_year: guessFilmYear,
         is_correct: isCorrect,
         actors_revealed: actorsRevealed,
         solve_time_ms: isCorrect ? solveTimeMs : null,
@@ -106,8 +113,11 @@ export async function POST(request: NextRequest) {
     // Get all user guesses for this puzzle (including the new one)
     const allGuesses = [...(existingGuesses || []), newGuess]
 
-    // Check if game is completed (either correct guess or max attempts reached)
-    const isGameCompleted = isCorrect || allGuesses.length >= maxAttempts
+    // Check if game is completed (either correct guess or max real attempts reached)
+    const allRealAttempts = allGuesses.filter(g => 
+      g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
+    )
+    const isGameCompleted = isCorrect || allRealAttempts.length >= maxAttempts || guessFilmTitle === "_GIVE_UP_"
     let newStats = null
 
     if (isGameCompleted) {
@@ -150,29 +160,30 @@ export async function POST(request: NextRequest) {
       correct: isCorrect,
       puzzle: {
         id: puzzle.id,
-        puzzle_date: puzzle.puzzle_date,
-        puzzle_number: puzzle.puzzle_number,
-        seed_value: '', // Don't expose seed
-        film_id: puzzle.film_id,
-        film_title: puzzle.film_title,
-        film_poster_url: puzzle.film_poster_url,
-        film_release_year: puzzle.film_release_year,
+        puzzleDate: puzzle.puzzle_date,
+        puzzleNumber: puzzle.puzzle_number,
+        seedValue: '', // Don't expose seed
+        filmId: puzzle.film_id,
+        filmTitle: puzzle.film_title,
+        filmPosterUrl: puzzle.film_poster_url,
+        filmReleaseYear: puzzle.film_release_year,
         actors: puzzle.actors,
-        total_actors: puzzle.total_actors,
-        difficulty_level: puzzle.difficulty_level,
-        fun_fact: puzzle.fun_fact
+        totalActors: puzzle.total_actors,
+        difficultyLevel: puzzle.difficulty_level,
+        funFact: puzzle.fun_fact
       },
       user_guesses: allGuesses.map(guess => ({
         id: guess.id,
-        user_id: guess.user_id,
-        puzzle_id: guess.puzzle_id,
-        guess_film_id: guess.guess_film_id,
-        guess_film_title: guess.guess_film_title,
-        is_correct: guess.is_correct,
-        actors_revealed: guess.actors_revealed,
-        solve_time_ms: guess.solve_time_ms,
-        attempt_number: guess.attempt_number,
-        created_at: guess.created_at
+        userId: guess.user_id,
+        puzzleId: guess.puzzle_id,
+        guessFilmId: guess.guess_film_id,
+        guessFilmTitle: guess.guess_film_title,
+        guessFilmYear: guess.guess_film_year,
+        isCorrect: guess.is_correct,
+        actorsRevealed: guess.actors_revealed,
+        solveTimeMs: guess.solve_time_ms,
+        attemptNumber: guess.attempt_number,
+        createdAt: guess.created_at
       })),
       stats: newStats ? {
         games_played: newStats.games_played,

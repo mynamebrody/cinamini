@@ -61,7 +61,8 @@ export async function GET(
         title: correctMovie.title,
         originalTitle: correctMovie.original_title,
         releaseYear: getReleaseYear(correctMovie.release_date),
-        translationNote: puzzle.translation_note
+        translationNote: puzzle.translation_note,
+        posterPath: correctMovie.poster_path
       },
       stats: {
         gamesPlayed: stats?.games_played || 1,

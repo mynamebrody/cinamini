@@ -43,6 +43,7 @@ interface CastClimbGuess {
   id: string
   guessFilmId: number
   guessFilmTitle: string
+  guessFilmYear?: string | null
   isCorrect: boolean
   actorsRevealed: number
   solveTimeMs: number | null
@@ -110,7 +111,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
           {/* Movie Poster */}
           {puzzle.filmPosterUrl && (
             <Image 
-              src={puzzle.filmPosterUrl} 
+              src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
               alt={`${puzzle.filmTitle} poster`}
               width={200} 
               height={300} 
@@ -230,7 +231,13 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
                   ) : (
                     <XCircle className="w-4 h-4 text-red-600" />
                   )}
-                  <span className="truncate max-w-32">{guess.guessFilmTitle}</span>
+                  <span className="truncate max-w-32">
+                    {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" || guess.guessFilmTitle === "_GIVE_UP_" ? (
+                      <strong>Skipped</strong>
+                    ) : (
+                      `${guess.guessFilmTitle}${guess.guessFilmYear && guess.guessFilmYear !== 'Unknown' ? ` (${guess.guessFilmYear})` : ''}`
+                    )}
+                  </span>
                 </div>
                 <div className="text-muted-foreground text-xs">
                   {guess.actorsRevealed} actor{guess.actorsRevealed !== 1 ? 's' : ''}

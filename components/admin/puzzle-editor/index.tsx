@@ -3,10 +3,11 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { DollarSign, Film, Users } from "lucide-react"
+import { DollarSign, Film, Users, Palette } from "lucide-react"
 import RetitledEditor from "./retitled-editor"
 import BudgetBracketEditor from "./budget-bracket-editor"
 import CastClimbEditor from "./cast-climb-editor"
+import PosterPixelsEditor from "./poster-pixels-editor"
 
 export default function PuzzleEditor() {
   const [activeTab, setActiveTab] = useState("retitled")
@@ -19,7 +20,7 @@ export default function PuzzleEditor() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto p-1 bg-gray-100">
+        <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-gray-100">
           <TabsTrigger 
             value="retitled" 
             className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -41,6 +42,13 @@ export default function PuzzleEditor() {
             <Users className="w-4 h-4" />
             <span>Cast Climb</span>
           </TabsTrigger>
+          <TabsTrigger 
+            value="poster-pixels" 
+            className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+          >
+            <Palette className="w-4 h-4" />
+            <span>Poster Pixels</span>
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -59,6 +67,12 @@ export default function PuzzleEditor() {
           <TabsContent value="cast-climb" className="space-y-6 mt-0">
             <Card className="p-6">
               <CastClimbEditor />
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="poster-pixels" className="space-y-6 mt-0">
+            <Card className="p-6">
+              <PosterPixelsEditor />
             </Card>
           </TabsContent>
         </div>

@@ -94,15 +94,16 @@ export async function GET(request: NextRequest) {
 
     const tmdbData: TMDBSearchResponse = await tmdbResponse.json()
 
-    // Transform TMDB response to match the Movie interface expected by the admin page
-    const searchResponse = {
+    // Transform TMDB response to match the MovieSearchResult interface
+    const searchResponse: MovieSearchResponse = {
       results: tmdbData.results.map(movie => ({
         id: movie.id,
         title: movie.title,
-        poster_path: movie.poster_path,
-        release_date: movie.release_date,
-        vote_average: movie.vote_average,
-        overview: movie.overview || 'No overview available.'
+        overview: movie.overview || 'No overview available.',
+        posterUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+        releaseYear: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : 'Unknown',
+        rating: movie.vote_average,
+        voteCount: movie.vote_count
       })),
       totalResults: tmdbData.total_results,
       page: tmdbData.page,

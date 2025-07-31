@@ -17,7 +17,7 @@ interface StatsData {
 }
 
 interface RetitleStatsProps {
-  onClose: () => void
+  onClose?: () => void
 }
 
 // Country flag emojis mapping
@@ -25,6 +25,7 @@ const FLAG_EMOJIS: Record<string, string> = {
   'FR': '🇫🇷',
   'ES': '🇪🇸',
   'DE': '🇩🇪',
+  'DK': '🇩🇰',
   'IT': '🇮🇹',
   'JP': '🇯🇵',
   'KR': '🇰🇷',
@@ -68,28 +69,17 @@ export default function RetitleStats({ onClose }: RetitleStatsProps) {
     return (
       <div className="text-center text-foreground">
         <p>No stats available yet. Play your first game!</p>
-        <Button onClick={onClose} variant="outline" className="mt-4">
-          Close
-        </Button>
+        {onClose && (
+          <Button onClick={onClose} variant="outline" className="mt-4">
+            Close
+          </Button>
+        )}
       </div>
     )
   }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-foreground">Your Stats</h2>
-        <Button
-          onClick={onClose}
-          variant="ghost"
-          size="icon"
-          className="text-foreground hover:bg-muted"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-4">
         {/* Games Played */}

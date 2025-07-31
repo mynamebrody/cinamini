@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { puzzleId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
@@ -14,17 +11,17 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const puzzleId = params.puzzleId
-
-    // Get the puzzle info
+    // Get today's puzzle - this is likely what's needed when puzzleId is missing
+    const today = new Date().toISOString().split('T')[0]
+    
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("puzzle_date, country_code, puzzle_number")
-      .eq("id", puzzleId)
+      .select("id, puzzle_date, country_code, puzzle_number")
+      .eq("puzzle_date", today)
       .single()
 
     if (puzzleError || !puzzle) {
-      return NextResponse.json({ error: "Invalid puzzle" }, { status: 404 })
+      return NextResponse.json({ error: "No puzzle found for today" }, { status: 404 })
     }
 
     // Get user's guess for this puzzle
@@ -32,7 +29,7 @@ export async function GET(
       .from("retitled_guesses")
       .select("is_correct, guess_film_id")
       .eq("user_id", user.id)
-      .eq("puzzle_id", puzzleId)
+      .eq("puzzle_id", puzzle.id)
       .single()
 
     if (guessError || !guess) {

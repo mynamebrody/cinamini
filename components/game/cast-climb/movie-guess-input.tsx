@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Search, Loader2, X } from 'lucide-react'
+import Image from 'next/image'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import type { MovieSearchResult, MovieSearchResponse, APIErrorResponse } from '@/lib/types/tmdb'
@@ -197,7 +198,7 @@ export function MovieGuessInput({
       {showResults && (
         <div
           ref={resultsRef}
-          className="absolute top-full left-0 right-0 z-50 mt-1 bg-card border rounded-md shadow-lg max-h-80 overflow-y-auto"
+          className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-sm"
         >
           {error ? (
             <div className="p-3 text-sm text-red-500">
@@ -210,18 +211,37 @@ export function MovieGuessInput({
                   key={movie.id}
                   onClick={() => handleMovieSelect(movie)}
                   className={cn(
-                    "w-full text-left px-3 py-2 text-sm hover:bg-muted/50 transition-colors",
+                    "w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors",
                     "flex items-center gap-3",
                     selectedIndex === index && "bg-muted"
                   )}
                 >
+                  {/* Movie Poster */}
+                  <div className="flex-shrink-0 w-12 h-16 bg-muted rounded overflow-hidden">
+                    {movie.posterUrl ? (
+                      <Image
+                        src={movie.posterUrl}
+                        alt={`${movie.title} poster`}
+                        width={48}
+                        height={64}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                        No Poster
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Movie Info */}
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">
                       {movie.title}
                     </div>
                     {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
                       <div className="text-xs text-muted-foreground">
-                        {movie.releaseYear}
+                        ({movie.releaseYear})
                       </div>
                     )}
                   </div>

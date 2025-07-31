@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Film, DollarSign, Users, Calendar } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import PosterClarityPreview from "./poster-clarity-preview"
 
 interface BasePreviewProps {
   puzzleDate: string
@@ -50,7 +51,16 @@ interface CastClimbPreviewProps extends BasePreviewProps {
   }
 }
 
-type PuzzlePreviewProps = RetitledPreviewProps | BudgetBracketPreviewProps | CastClimbPreviewProps
+interface PosterPixelsPreviewProps extends BasePreviewProps {
+  type: "poster-pixels"
+  data: {
+    movie: { title: string; poster_path: string; release_date: string }
+    clarityLevels: number[]
+    funFact?: string
+  }
+}
+
+type PuzzlePreviewProps = RetitledPreviewProps | BudgetBracketPreviewProps | CastClimbPreviewProps | PosterPixelsPreviewProps
 
 export default function PuzzlePreview(props: PuzzlePreviewProps) {
   const { puzzleDate, isPublished } = props
@@ -63,6 +73,8 @@ export default function PuzzlePreview(props: PuzzlePreviewProps) {
         return <BudgetBracketPreview {...props.data} />
       case "cast-climb":
         return <CastClimbPreview {...props.data} />
+      case "poster-pixels":
+        return <PosterPixelsPreview {...props.data} />
     }
   }
 
@@ -260,6 +272,59 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
               </Badge>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PosterPixelsPreview({ movie, clarityLevels, funFact }: PosterPixelsPreviewProps["data"]) {
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-xl font-bold mb-2">Poster Pixels</h3>
+        <p className="text-gray-600">Guess the movie from the pixelated poster</p>
+      </div>
+
+      <div className="flex flex-col items-center space-y-4">
+        {/* Movie Info */}
+        <div className="text-center space-y-1">
+          <p className="text-lg font-semibold">{movie.title}</p>
+          <p className="text-sm text-gray-500">
+            {new Date(movie.release_date).getFullYear()}
+          </p>
+        </div>
+
+        {/* Poster Clarity Preview */}
+        <div className="w-full max-w-md">
+          <PosterClarityPreview
+            posterPath={movie.poster_path}
+            movieTitle={movie.title}
+            clarityLevels={clarityLevels}
+            currentLevel={clarityLevels[0]} // Start with the lowest clarity level
+          />
+        </div>
+
+        {/* Fun Fact */}
+        {funFact && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-md">
+            <div className="flex items-start gap-2">
+              <Badge variant="secondary" className="text-xs mt-0.5">Fun Fact</Badge>
+              <p className="text-sm text-gray-700 flex-1">{funFact}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Clarity Levels Info */}
+        <div className="text-center space-y-2">
+          <p className="text-sm font-medium text-gray-600">Clarity Progression:</p>
+          <div className="flex gap-2 justify-center">
+            {clarityLevels.map((level, idx) => (
+              <Badge key={level} variant="outline" className="text-xs">
+                {idx + 1}: {level}%
+              </Badge>
+            ))}
+          </div>
         </div>
       </div>
     </div>

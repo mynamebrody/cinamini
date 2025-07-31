@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { Calendar, Film, DollarSign, Users, Trash2, Save, X } from "lucide-react"
+import { Calendar, Film, DollarSign, Users, Trash2, Save, X, Image } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,7 +24,7 @@ interface PuzzleDetailDialogProps {
     id: string
     puzzle_date: string | null
     film_title: string
-    game_type: 'retitled' | 'budget_bracket' | 'cast_climb'
+    game_type: 'retitled' | 'budget_bracket' | 'cast_climb' | 'poster_pixels'
     difficulty_level?: number
     created_at: string
     [key: string]: any
@@ -51,6 +51,12 @@ const gameConfig = {
     bgColor: "bg-violet-50",
     icon: Users,
     label: "Cast Climb"
+  },
+  poster_pixels: {
+    color: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+    bgColor: "bg-purple-50",
+    icon: Image,
+    label: "Poster Pixels"  
   }
 }
 
