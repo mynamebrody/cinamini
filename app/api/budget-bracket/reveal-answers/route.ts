@@ -47,22 +47,29 @@ export async function POST(request: NextRequest) {
       movieArray.push(pair.movieA, pair.movieB)
     })
 
-    // Remove duplicates based on tmdb_id
+    // Remove duplicates based on tmdb_id and filter out movies with undefined tmdb_id
     const uniqueMovies = movieArray.reduce((acc, movie) => {
-      if (!acc.find(m => m.tmdb_id === movie.tmdb_id)) {
+      if (movie.tmdb_id && !acc.find(m => m.tmdb_id === movie.tmdb_id)) {
         acc.push(movie)
       }
       return acc
     }, [] as BudgetBracketMovie[])
 
-    // Fetch budget details from TMDB for all movies
-    const enrichedMovies = await enrichMoviesWithDetails(uniqueMovies.map(m => ({
-      id: m.tmdb_id,
-      title: m.title,
-      poster_path: m.poster_path,
-      release_date: m.release_date,
-      popularity: m.popularity_score
-    })))
+    console.log('Unique movies for enrichment:', uniqueMovies.map(m => ({ id: m.tmdb_id, title: m.title })))
+
+    // Fetch budget details from TMDB for all movies (filter out any with undefined tmdb_id)
+    const moviesForEnrichment = uniqueMovies
+      .filter(m => m.tmdb_id && m.title) // Ensure both id and title are present
+      .map(m => ({
+        id: m.tmdb_id,
+        title: m.title,
+        poster_path: m.poster_path,
+        release_date: m.release_date,
+        popularity: m.popularity_score
+      }))
+
+    console.log('Movies being sent to TMDB enrichment:', moviesForEnrichment)
+    const enrichedMovies = await enrichMoviesWithDetails(moviesForEnrichment)
 
     // Create a lookup map for enriched movie data
     const enrichedMovieMap = new Map()

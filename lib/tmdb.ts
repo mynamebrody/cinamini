@@ -345,6 +345,8 @@ export async function enrichMovieWithDetails(movie: TMDBMovie): Promise<any> {
     budget: details?.budget || 0,
     revenue: details?.revenue || 0,
     runtime: details?.runtime || 0,
+    // Preserve release_date from original movie data, but use detailed version if available
+    release_date: details?.release_date || movie.release_date,
     alternativeTitles: altTitles,
     budgetSource: details?.budget && details.budget > 0 ? 'tmdb' : 'unknown'
   }

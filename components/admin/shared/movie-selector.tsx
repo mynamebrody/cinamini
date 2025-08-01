@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Film, Calendar, AlertCircle, Check, X, Loader2, Shuffle } from "lucide-react"
-import { format } from "date-fns"
+import { Search, Film, AlertCircle, Check, X, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -74,6 +73,7 @@ export default function MovieSelector({
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsage, setMovieUsage] = useState<MovieUsage | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(false)
+  const [componentReady, setComponentReady] = useState(true)
 
   const fetchMovieUsage = async (movieId: number) => {
     setLoadingUsage(true)
@@ -88,6 +88,15 @@ export default function MovieSelector({
     } finally {
       setLoadingUsage(false)
     }
+  }
+
+  const hasValidBudget = (movie: any): boolean => {
+    // For Budget Bracket games, enforce minimum $100 budget requirement
+    if (showBudget) {
+      return movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
+    }
+    // For other games, just ensure budget exists and is > 0
+    return movie.budget && typeof movie.budget === 'number' && movie.budget > 0
   }
 
   const searchMovies = async (query: string) => {
@@ -141,7 +150,31 @@ export default function MovieSelector({
             }
           })
         )
-        setSearchResults(moviesWithDetails.filter(m => !excludeIds.includes(m.id)))
+        
+        // Filter movies based on budget requirements and exclude IDs
+        const excludedByIds = moviesWithDetails.filter(m => excludeIds.includes(m.id))
+        const afterExcludeFilter = moviesWithDetails.filter(m => !excludeIds.includes(m.id))
+        
+        const filteredMovies = afterExcludeFilter.filter(m => {
+          if (showBudget) {
+            const isValid = hasValidBudget(m)
+            if (!isValid) {
+              console.log(`Filtered out "${m.title}" - Budget: $${(m.budget || 0).toLocaleString()} (minimum required: $100)`)
+            }
+            return isValid
+          }
+          return true
+        })
+        
+        console.log(`Search results for "${query}":`, {
+          totalFetched: moviesWithDetails.length,
+          excludedByIds: excludedByIds.length,
+          filteredByBudget: afterExcludeFilter.length - filteredMovies.length,
+          finalResults: filteredMovies.length,
+          showBudget
+        })
+          
+        setSearchResults(filteredMovies)
       }
     } catch (error) {
       console.error("Error searching movies:", error)
@@ -150,74 +183,8 @@ export default function MovieSelector({
     }
   }
 
-  const loadRandomMovies = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch('/api/movies/trending?time_window=week')
-      if (response.ok) {
-        const data = await response.json()
-        const trendingMovies = (data.results || [])
-          .filter((m: any) => !excludeIds.includes(m.id))
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 10)
-        
-        // Fetch additional details for trending movies
-        const moviesWithDetails = await Promise.all(
-          trendingMovies.map(async (movie: any) => {
-            try {
-              const detailsResponse = await fetch(`/api/movies/${movie.id}/details`)
-              if (detailsResponse.ok) {
-                const details = await detailsResponse.json()
-                return {
-                  id: movie.id,
-                  title: movie.title,
-                  poster_path: movie.poster_path || details.poster_path,
-                  release_date: movie.release_date || details.release_date,
-                  overview: movie.overview || details.overview,
-                  budget: details.budget,
-                  revenue: details.revenue,
-                  vote_average: movie.vote_average || details.vote_average,
-                  runtime: details.runtime,
-                  director: details.director,
-                  writer: details.writer,
-                  tagline: details.tagline,
-                  status: details.status,
-                  genres: details.genres,
-                  production_companies: details.production_companies,
-                  main_cast: details.main_cast
-                }
-              }
-            } catch (error) {
-              console.error(`Error fetching details for movie ${movie.id}:`, error)
-            }
-            return {
-              id: movie.id,
-              title: movie.title,
-              poster_path: movie.poster_path,
-              release_date: movie.release_date,
-              overview: movie.overview,
-              vote_average: movie.vote_average
-            }
-          })
-        )
-        
-        setSearchResults(moviesWithDetails)
-        setSearchQuery("")
-      }
-    } catch (error) {
-      console.error("Error loading random movies:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
-  useEffect(() => {
-    // Auto-load trending movies on mount
-    if (searchResults.length === 0 && searchQuery === "") {
-      loadRandomMovies()
-    }
-  }, [])
-
+  // Search with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       searchMovies(searchQuery)
@@ -225,6 +192,7 @@ export default function MovieSelector({
 
     return () => clearTimeout(timeoutId)
   }, [searchQuery])
+
 
   const handleSelectMovie = (movie: Movie) => {
     setSelectedMovie(movie)
@@ -318,8 +286,23 @@ export default function MovieSelector({
           <div className="text-center py-8 text-gray-500">
             <Film className="w-12 h-12 mx-auto mb-2 opacity-20" />
             <p>No movies found</p>
+            {showBudget && (
+              <p className="text-sm mt-2">
+                Only movies with budgets ≥$100 are shown for Budget Bracket
+              </p>
+            )}
           </div>
-        ) : null}
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Search className="w-12 h-12 mx-auto mb-2 opacity-20" />
+            <p>Start typing to search for movies</p>
+            {showBudget && (
+              <p className="text-sm mt-2">
+                Only movies with budgets ≥$100 will be shown
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Selected Movie Usage & Selection - Fixed at bottom */}

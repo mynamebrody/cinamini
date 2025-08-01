@@ -64,7 +64,7 @@ export default function PosterPixelsGame() {
     gameStarted: false,
     won: false,
     timeElapsed: 0,
-    clarityLevel: 0.20, // Start at 20% clarity
+    clarityLevel: 0.75, // Start at 75% clarity
     guesses: [],
     error: null,
   })
@@ -88,7 +88,7 @@ export default function PosterPixelsGame() {
       intervalRef.current = setInterval(() => {
         setState(prev => {
           const newTimeElapsed = prev.timeElapsed + 0.1
-          const newClarityLevel = Math.min(1, 0.20 + (newTimeElapsed / GAME_DURATION) * 0.80)
+          const newClarityLevel = Math.min(1, 0.75 + (newTimeElapsed / GAME_DURATION) * 0.25)
           
           // Check if time is up
           if (newTimeElapsed >= GAME_DURATION) {
@@ -319,6 +319,60 @@ export default function PosterPixelsGame() {
     }
   }
 
+  const handleAutoSubmit = async (movie: { id: number; title: string }) => {
+    if (!state.gameId || gameState !== 'playing') return
+
+    const timeTaken = Math.round(Date.now() - (startTimeRef.current || Date.now()))
+    const guessClarityLevel = state.clarityLevel // Capture clarity level at guess time
+    
+    // Handle both old and new data structures
+    const correctMovieId = state.puzzle!.movie_data?.id || state.puzzle!.film_id
+    const isCorrect = movie.id === correctMovieId
+
+    try {
+      const response = await fetch("/api/poster-pixels/guess", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          game_id: state.gameId,
+          puzzle_id: state.puzzle!.id,
+          guessed_movie_id: movie.id,
+          guessed_movie_title: movie.title,
+          time_taken_ms: timeTaken,
+          clarity_level: guessClarityLevel,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit guess")
+      }
+
+      const newGuess = {
+        movieId: movie.id,
+        movieTitle: movie.title,
+        isCorrect,
+        clarityLevel: guessClarityLevel,
+      }
+
+      setState(prev => ({
+        ...prev,
+        guesses: [...prev.guesses, newGuess],
+      }))
+
+      // End game immediately after single guess
+      handleGameOver(isCorrect, guessClarityLevel)
+    } catch (error) {
+      console.error("Error submitting guess:", error)
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Failed to submit guess",
+      }))
+      setGameState('error')
+    }
+  }
+
   const handleGameOver = async (won: boolean, guessClarityLevel?: number) => {
     if (intervalRef.current) clearInterval(intervalRef.current)
 
@@ -508,15 +562,8 @@ export default function PosterPixelsGame() {
                     onMovieSelect={setSelectedMovie}
                     selectedMovie={selectedMovie}
                     disabled={false}
+                    onAutoSubmit={handleAutoSubmit}
                   />
-                  <Button
-                    onClick={handleGuess}
-                    disabled={!selectedMovie}
-                    variant="primary"
-                    className="w-full"
-                  >
-                    Submit Guess
-                  </Button>
                 </div>
               </div>
             </Card>

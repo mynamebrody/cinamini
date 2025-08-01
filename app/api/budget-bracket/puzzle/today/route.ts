@@ -4,10 +4,13 @@ import {
   generateBudgetBracketSeed,
   generatePuzzlePairs, 
   DIFFICULTY_TARGETS,
+  SeededRandom,
+  calculateDifficultyRatio,
   type BudgetBracketMovie,
   type MoviePair 
 } from '@/lib/budget-bracket'
-import { enrichMoviesWithDetails } from '@/lib/tmdb'
+import { enrichMoviesWithDetails, getMovieDetails } from '@/lib/tmdb'
+import { hydrateMoviesFromTmdbIds, createUnifiedMoviePair, validateBudgetBracketMovie } from '@/lib/movie-hydration'
 import { getBlendedMoviePool } from '@/lib/tmdb-trending'
 
 export async function GET() {
@@ -51,57 +54,29 @@ export async function GET() {
           throw new Error('Insufficient trending movie data available')
         }
         
-        // Enrich movies with real TMDB budget data
-        console.log(`Enriching ${blendedMovies.length} movies with budget data...`)
-        const enrichedMovies = await enrichMoviesWithDetails(blendedMovies)
+        // Extract TMDB IDs from blended movies
+        const tmdbIds = blendedMovies.map(movie => movie.id)
+        console.log(`Hydrating ${tmdbIds.length} movies using unified hydration system...`)
         
-        // Filter movies with REAL TMDB budget data only for Budget Bracket
-        const budgetMovies: BudgetBracketMovie[] = enrichedMovies
-          .filter(movie => {
-            // ONLY use movies with real TMDB budget data (no estimations)
-            const hasValidBudget = movie.budget && movie.budget > 5_000_000
-            
-            // Check for valid release date
-            const hasValidReleaseDate = movie.release_date && 
-              movie.release_date.trim() !== '' &&
-              !isNaN(new Date(movie.release_date).getFullYear()) &&
-              new Date(movie.release_date).getFullYear() >= 1900
-            
-            if (!hasValidReleaseDate) {
-              console.log('Filtering out movie with invalid release date:', {
-                title: movie.title,
-                release_date: movie.release_date,
-                type: typeof movie.release_date
-              })
-            }
-            
-            return hasValidBudget && hasValidReleaseDate
-          })
-          .map(movie => ({
-            id: movie.id,
-            tmdb_id: movie.id,
-            title: movie.title,
-            production_budget: movie.budget,
-            budget_source: 'tmdb',
-            is_budget_estimated: false,
-            poster_path: movie.poster_path,
-            release_date: movie.release_date,
-            popularity_score: movie.popularity,
-            // SeedableGameItem properties
-            seedValue: movie.id.toString(),
-            gameRelevanceScore: movie.popularity / 100
-          }))
-          .slice(0, 60) // Limit to manageable size for pair generation
+        // Use unified hydration system to get consistent BudgetBracketMovie structure
+        const hydratedMovies = await hydrateMoviesFromTmdbIds(tmdbIds)
         
-        if (budgetMovies.length < 15) {
-          throw new Error(`Insufficient movies with real TMDB budget data: ${budgetMovies.length} found, need at least 15`)
+        if (hydratedMovies.length < 15) {
+          throw new Error(`Insufficient movies with valid budget data: ${hydratedMovies.length} found, need at least 15`)
         }
         
-        console.log(`Budget pool created: ${budgetMovies.length} movies (all with real TMDB budgets)`)
+        // Validate all movies meet Budget Bracket requirements
+        const validMovies = hydratedMovies.filter(movie => validateBudgetBracketMovie(movie))
         
+        if (validMovies.length < 10) {
+          throw new Error(`Insufficient valid Budget Bracket movies: ${validMovies.length} found, need at least 10`)
+        }
         
-        // Generate puzzle pairs using client-safe function
-        const pairs = generatePuzzlePairs(budgetMovies, seed)
+        console.log(`Budget pool created: ${validMovies.length} movies (all with unified structure)`)
+        
+        // Generate puzzle pairs using the traditional algorithm but with unified structure
+        const pairs = generatePairsWithUnifiedStructure(validMovies, seed)
+        
         
         
         // Store the puzzle (using service client to bypass RLS)
@@ -302,7 +277,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
       }
     ]
 
-    const pairs = generatePuzzlePairs(fallbackMovies, seed)
+    const pairs = generatePairsWithUnifiedStructure(fallbackMovies, seed)
     
     const { data: newPuzzle, error: insertError } = await supabase
       .from('budget_bracket_puzzles')
@@ -366,3 +341,58 @@ function createPuzzleResponse(puzzle: any, existingGame: any) {
 
   return NextResponse.json(puzzleData)
 }
+
+/**
+ * Generate pairs using traditional algorithm but with unified structure
+ * This ensures compatibility with existing logic while using unified hydration
+ */
+function generatePairsWithUnifiedStructure(movies: BudgetBracketMovie[], seed: string) {
+  const rng = new SeededRandom(seed)
+  const pairs = []
+  const usedMovies = new Set<number>()
+
+  for (let round = 0; round < 5; round++) {
+    const targetDifficulty = DIFFICULTY_TARGETS[round]
+    let attempts = 0
+    const maxAttempts = 1000
+
+    while (attempts < maxAttempts) {
+      // Get two random unused movies
+      const availableMovies = movies.filter(m => !usedMovies.has(m.tmdb_id))
+      if (availableMovies.length < 2) break
+
+      const movieA = availableMovies[rng.nextInt(0, availableMovies.length - 1)]
+      let movieB = availableMovies[rng.nextInt(0, availableMovies.length - 1)]
+      
+      // Ensure different movies
+      while (movieB.tmdb_id === movieA.tmdb_id) {
+        movieB = availableMovies[rng.nextInt(0, availableMovies.length - 1)]
+      }
+
+      // Check if it's a valid pair based on difficulty
+      const ratio = calculateDifficultyRatio(movieA.production_budget, movieB.production_budget)
+      const isValid = targetDifficulty >= 1.5 
+        ? ratio >= (targetDifficulty - 0.3) 
+        : ratio <= (targetDifficulty + 0.3)
+
+      if (isValid) {
+        // Create unified movie pair using the helper function
+        const unifiedPair = createUnifiedMoviePair(movieA, movieB, round + 1)
+        pairs.push(unifiedPair)
+
+        usedMovies.add(movieA.tmdb_id)
+        usedMovies.add(movieB.tmdb_id)
+        break
+      }
+
+      attempts++
+    }
+
+    if (attempts >= maxAttempts) {
+      throw new Error(`Could not generate valid pair for round ${round + 1}`)
+    }
+  }
+
+  return pairs
+}
+

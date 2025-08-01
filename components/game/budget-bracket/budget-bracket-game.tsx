@@ -363,7 +363,7 @@ export default function BudgetBracketGame() {
           </div>
         )}
 
-        {gameState === 'playing' && puzzle && (
+        {gameState === 'playing' && puzzle && puzzle.pairs && puzzle.pairs[currentRound - 1] && (
           <div className="max-w-md mx-auto">
             <BudgetBracketRound
               pair={puzzle.pairs[currentRound - 1]}
@@ -373,6 +373,19 @@ export default function BudgetBracketGame() {
               gameChoices={gameChoices}
               puzzle={puzzle}
             />
+          </div>
+        )}
+
+        {gameState === 'playing' && puzzle && (!puzzle.pairs || !puzzle.pairs[currentRound - 1]) && (
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6 text-center">
+                <p className="text-red-500 mb-4">Error: Missing puzzle data for round {currentRound}</p>
+                <Button onClick={loadTodaysPuzzle} className="w-full">
+                  Reload Puzzle
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         )}
 

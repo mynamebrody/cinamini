@@ -273,7 +273,7 @@ export default function CastClimbEditor() {
 
       const nextPuzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
 
-      const puzzleData: Omit<CastClimbPuzzle, "id"> = {
+      const puzzleData = {
         puzzle_date: puzzleDate || null,
         puzzle_number: nextPuzzleNumber,
         film_id: selectedMovie.id,
@@ -290,29 +290,36 @@ export default function CastClimbEditor() {
         is_published: isPublished
       }
 
-      const { error } = await supabase
-        .from('cast_climb_puzzles')
-        .insert(puzzleData)
+      // Use admin API to save the puzzle
+      const response = await fetch('/api/admin/puzzles/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          gameType: 'cast_climb',
+          puzzleData
+        }),
+      })
 
-      if (!error) {
-        alert("Puzzle created successfully!")
-        // Reset form
-        setPuzzleDate("")
-        setSelectedMovie(null)
-        setActors([])
-        setFunFact("")
-        setDifficultyLevel(1)
-        setIsPublished(false)
-      } else {
-        throw error
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save puzzle')
       }
+
+      alert("Puzzle created successfully!")
+      // Reset form
+      setPuzzleDate("")
+      setSelectedMovie(null)
+      setActors([])
+      setFunFact("")
+      setDifficultyLevel(1)
+      setIsPublished(false)
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
       
-      // Check for specific database constraints
-      if (error?.code === '23505' && error?.message?.includes('puzzle_date')) {
-        alert("Cannot save multiple draft puzzles without dates due to database constraints. Please assign a future date to this puzzle.")
-      } else if (error?.message) {
+      if (error?.message) {
         alert(`Failed to save puzzle: ${error.message}`)
       } else {
         alert("Failed to save puzzle")

@@ -11,7 +11,7 @@ interface PuzzleMovie {
   tmdb_id: number
   title: string
   poster_path: string | null
-  release_date: string
+  release_date: string | null | undefined
 }
 
 interface PuzzlePair {
@@ -52,6 +52,23 @@ export default function BudgetBracketRound({
   gameChoices, 
   puzzle 
 }: BudgetBracketRoundProps) {
+  // Safety check for pair data
+  if (!pair || !pair.movieA || !pair.movieB) {
+    return (
+      <div className="text-center text-red-500">
+        Error: Missing pair data for round {round}
+      </div>
+    )
+  }
+
+  // Debug: Log the actual release_date values we receive
+  console.log('Budget Bracket pair release dates:', {
+    movieA: pair.movieA.release_date,
+    movieB: pair.movieB.release_date,
+    movieA_type: typeof pair.movieA.release_date,
+    movieB_type: typeof pair.movieB.release_date
+  })
+  
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
   const [roundStartTime, setRoundStartTime] = useState<number>(0)
@@ -59,6 +76,8 @@ export default function BudgetBracketRound({
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [budgetA, setBudgetA] = useState<number | null>(null)
   const [budgetB, setBudgetB] = useState<number | null>(null)
+  const [releaseDateA, setReleaseDateA] = useState<string | null>(null)
+  const [releaseDateB, setReleaseDateB] = useState<string | null>(null)
 
   useEffect(() => {
     // Reset state for new round
@@ -69,6 +88,8 @@ export default function BudgetBracketRound({
     setIsCorrect(null)
     setBudgetA(null)
     setBudgetB(null)
+    setReleaseDateA(null)
+    setReleaseDateB(null)
   }, [round])
 
   const handleMovieChoice = async (movie: 'A' | 'B') => {
@@ -96,6 +117,10 @@ export default function BudgetBracketRound({
         const budgetData = await response.json()
         setBudgetA(budgetData.movieA.budget)
         setBudgetB(budgetData.movieB.budget)
+        
+        // Set hydrated release dates
+        setReleaseDateA(budgetData.movieA.release_date)
+        setReleaseDateB(budgetData.movieB.release_date)
         
         // Determine if choice was correct
         const movieABudget = budgetData.movieA.budget
@@ -128,15 +153,18 @@ export default function BudgetBracketRound({
     return isEstimated ? `${formatted} est.` : formatted
   }
 
-  const getMovieYear = (releaseDate: string) => {
+  const getMovieYear = (releaseDate: string | undefined | null) => {
     // Handle null, undefined, or empty string
-    if (!releaseDate || releaseDate.trim() === '') {
+    if (!releaseDate || (typeof releaseDate === 'string' && releaseDate.trim() === '')) {
       return 'Unknown'
     }
     
+    // Convert to string if it's not already
+    const dateStr = String(releaseDate)
+    
     // Handle invalid date formats
     try {
-      const date = new Date(releaseDate)
+      const date = new Date(dateStr)
       const year = date.getFullYear()
       
       // Check if date is valid and year is reasonable
@@ -198,7 +226,7 @@ export default function BudgetBracketRound({
                 {pair.movieA.title}
               </h3>
               <p className="text-xs text-muted-foreground font-bold">
-                {getMovieYear(pair.movieA.release_date)}
+                {getMovieYear(releaseDateA || pair.movieA.release_date) || 'Missing Date'}
               </p>
               
               {/* Budget reveal */}
@@ -245,7 +273,7 @@ export default function BudgetBracketRound({
                 {pair.movieB.title}
               </h3>
               <p className="text-xs text-muted-foreground font-bold">
-                {getMovieYear(pair.movieB.release_date)}
+                {getMovieYear(releaseDateB || pair.movieB.release_date) || 'Missing Date'}
               </p>
               
               {/* Budget reveal */}

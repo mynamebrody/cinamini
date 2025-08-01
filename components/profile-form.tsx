@@ -210,11 +210,11 @@ export default function ProfileForm() {
 
   if (isLoading) {
     return (
-      <Card className="bg-[#1c1c1c] border-gray-800">
+      <Card className="bg-white border-gray-200">
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-2 text-gray-400">Loading profile...</span>
+            <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+            <span className="ml-2 text-gray-600">Loading profile...</span>
           </div>
         </CardContent>
       </Card>
@@ -223,14 +223,14 @@ export default function ProfileForm() {
 
   if (!profile) {
     return (
-      <Card className="bg-[#1c1c1c] border-gray-800">
+      <Card className="bg-white border-gray-200">
         <CardContent className="pt-6">
           <div className="text-center py-8">
-            <p className="text-red-400">Failed to load profile</p>
+            <p className="text-red-600">Failed to load profile</p>
             <Button 
               onClick={fetchProfile} 
               variant="outline" 
-              className="mt-4 border-white/20 text-white hover:bg-white/10"
+              className="mt-4 border-gray-300 text-gray-700 hover:bg-gray-50"
             >
               Try Again
             </Button>
@@ -242,9 +242,9 @@ export default function ProfileForm() {
 
   return (
     <>
-      <Card className="bg-[#1c1c1c] border-gray-800">
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-gray-900 flex items-center gap-2">
             <User className="h-5 w-5" />
             Account Information
           </CardTitle>
@@ -252,28 +252,28 @@ export default function ProfileForm() {
       <CardContent className="space-y-6">
         {/* Success Message */}
         {success && (
-          <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
             {success}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
           </div>
         )}
 
         {/* Username Suggestions */}
         {suggestions.length > 0 && (
-          <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 px-4 py-3 rounded-lg">
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
             <p className="text-sm font-medium mb-2">Try these available usernames:</p>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => applySuggestion(suggestion)}
-                  className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-md text-blue-300 hover:text-blue-200 transition-colors text-sm"
+                  className="px-3 py-1 bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-md text-blue-700 hover:text-blue-800 transition-colors text-sm"
                 >
                   {suggestion}
                 </button>
@@ -284,7 +284,7 @@ export default function ProfileForm() {
 
         {/* Email Field (Read-only) */}
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-300 flex items-center gap-2">
+          <Label htmlFor="email" className="text-gray-700 flex items-center gap-2">
             <Mail className="h-4 w-4" />
             Email Address
           </Label>
@@ -293,7 +293,7 @@ export default function ProfileForm() {
             type="email"
             value={profile.email}
             disabled
-            className="bg-gray-800/50 border-gray-700 text-gray-400 cursor-not-allowed"
+            className="bg-gray-50 border-gray-300 text-gray-600 cursor-not-allowed"
           />
           <p className="text-xs text-gray-500">
             Email cannot be changed. Contact support if you need to update your email.
@@ -302,7 +302,7 @@ export default function ProfileForm() {
 
         {/* Username Field */}
         <div className="space-y-2">
-          <Label htmlFor="username" className="text-gray-300 flex items-center gap-2">
+          <Label htmlFor="username" className="text-gray-700 flex items-center gap-2">
             <User className="h-4 w-4" />
             Username
           </Label>
@@ -316,14 +316,14 @@ export default function ProfileForm() {
                 onChange={(e) => handleUsernameChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter username (3-20 characters)"
-                className="bg-[#161616] border-gray-700 text-white placeholder:text-gray-500"
+                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
                 disabled={isSaving}
                 autoFocus
               />
               
               {/* Real-time Validation Error */}
               {validationError && (
-                <p className="text-red-400 text-sm">{validationError}</p>
+                <p className="text-red-600 text-sm">{validationError}</p>
               )}
               
               {/* Character Count */}
@@ -336,7 +336,7 @@ export default function ProfileForm() {
                 <Button
                   onClick={handleSave}
                   disabled={!!validationError || isSaving || !editedUsername.trim()}
-                  className="bg-[#2b725e] hover:bg-[#235e4c] text-white"
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   {isSaving ? (
                     <>
@@ -354,7 +354,7 @@ export default function ProfileForm() {
                   onClick={handleCancel}
                   variant="outline"
                   disabled={isSaving}
-                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -367,13 +367,13 @@ export default function ProfileForm() {
                 <Input
                   value={profile.username || "Not set"}
                   disabled
-                  className="bg-gray-800/50 border-gray-700 text-white flex-1"
+                  className="bg-gray-50 border-gray-300 text-gray-900 flex-1"
                 />
                 <Button
                   onClick={handleEdit}
                   variant="outline"
                   size="sm"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
@@ -381,7 +381,7 @@ export default function ProfileForm() {
               </div>
               
               {!profile.username && (
-                <p className="text-sm text-yellow-400">
+                <p className="text-sm text-amber-600">
                   You haven't set a username yet. Click "Edit" to add one.
                 </p>
               )}
@@ -394,9 +394,9 @@ export default function ProfileForm() {
         </div>
 
         {/* Account Details */}
-        <div className="pt-4 border-t border-gray-700 space-y-2">
-          <h4 className="text-sm font-medium text-gray-300">Account Details</h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-500">
+        <div className="pt-4 border-t border-gray-200 space-y-2">
+          <h4 className="text-sm font-medium text-gray-700">Account Details</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-600">
             <div>
               <span className="font-medium">Member since:</span>
               <br />
@@ -421,9 +421,9 @@ export default function ProfileForm() {
     </Card>
     
     {/* Favorite Films Section */}
-    <Card className="mt-6 bg-[#1c1c1c] border-gray-800">
+    <Card className="mt-6 bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-white">Favorite Films</CardTitle>
+        <CardTitle className="text-gray-900">Favorite Films</CardTitle>
       </CardHeader>
       <CardContent>
         <FavoriteFilmsSection />

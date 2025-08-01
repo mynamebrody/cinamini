@@ -1,5 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { generateCastClimbSeed } from "@/lib/cast-climb"
+import { generateDailySeed } from "@/lib/game-seeding"
 
 export async function POST(request: Request) {
   try {
@@ -14,7 +16,7 @@ export async function POST(request: Request) {
     }
 
     // Validate supported game types
-    const supportedGameTypes = ['retitled', 'budget_bracket', 'poster_pixels']
+    const supportedGameTypes = ['retitled', 'budget_bracket', 'poster_pixels', 'cast_climb']
     if (!supportedGameTypes.includes(gameType)) {
       return NextResponse.json(
         { error: `Unsupported game type: ${gameType}` },
@@ -52,6 +54,18 @@ export async function POST(request: Request) {
 
     // Use service role client to bypass RLS
     const serviceSupabase = await createServiceClient()
+    
+    // Generate seed_value if not provided (based on puzzle_date or current date)
+    if (!puzzleData.seed_value) {
+      const seedDate = puzzleData.puzzle_date ? new Date(puzzleData.puzzle_date) : new Date()
+      
+      if (gameType === 'cast_climb') {
+        puzzleData.seed_value = generateCastClimbSeed(seedDate)
+      } else {
+        // Generic seed generation for other game types
+        puzzleData.seed_value = generateDailySeed(seedDate, { gameId: gameType })
+      }
+    }
     
     // Insert the puzzle
     const tableName = `${gameType}_puzzles`
@@ -96,6 +110,8 @@ function validatePuzzleData(gameType: string, puzzleData: any): string | null {
       return validateBudgetBracketPuzzle(puzzleData)
     case 'poster_pixels':
       return validatePosterPixelsPuzzle(puzzleData)
+    case 'cast_climb':
+      return validateCastClimbPuzzle(puzzleData)
     default:
       return `Unknown game type: ${gameType}`
   }
@@ -162,6 +178,60 @@ function validatePosterPixelsPuzzle(data: any): string | null {
       if (typeof level !== 'number' || level < 0 || level > 100) {
         return 'clarity_levels must contain numbers between 0 and 100'
       }
+    }
+  }
+  
+  // Validate difficulty_level if provided
+  if (data.difficulty_level !== undefined) {
+    if (typeof data.difficulty_level !== 'number' || data.difficulty_level < 1 || data.difficulty_level > 5) {
+      return 'difficulty_level must be a number between 1 and 5'
+    }
+  }
+  
+  // Validate is_published if provided
+  if (data.is_published !== undefined && typeof data.is_published !== 'boolean') {
+    return 'is_published must be a boolean'
+  }
+  
+  return null
+}
+
+function validateCastClimbPuzzle(data: any): string | null {
+  const required = ['film_id', 'film_title', 'actors', 'total_actors']
+  for (const field of required) {
+    if (data[field] === undefined || data[field] === null) {
+      return `Missing required field for cast climb puzzle: ${field}`
+    }
+  }
+  
+  // Validate film_id is a number
+  if (typeof data.film_id !== 'number') {
+    return 'film_id must be a number'
+  }
+  
+  // Validate actors is an array
+  if (!Array.isArray(data.actors)) {
+    return 'actors must be an array'
+  }
+  
+  // Validate total_actors is a number
+  if (typeof data.total_actors !== 'number' || data.total_actors < 1) {
+    return 'total_actors must be a positive number'
+  }
+  
+  // Validate actors array has the right length
+  if (data.actors.length !== data.total_actors) {
+    return `actors array length (${data.actors.length}) must match total_actors (${data.total_actors})`
+  }
+  
+  // Validate each actor object
+  for (let i = 0; i < data.actors.length; i++) {
+    const actor = data.actors[i]
+    if (!actor.id || !actor.name || !actor.character) {
+      return `Actor at index ${i} missing required fields (id, name, character)`
+    }
+    if (typeof actor.id !== 'number') {
+      return `Actor at index ${i} has invalid id (must be number)`
     }
   }
   

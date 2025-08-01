@@ -43,7 +43,6 @@ Cast member guessing game with progressive reveals:
 - `npm run db:reset` - Reset database to latest migration state
 - `npm run db:pull` - Pull schema changes from remote database
 - `npm run db:push` - Push local migrations to remote database
-- `npm run db:studio` - Open Supabase Studio GUI
 - `npm run db:start` - Start local Supabase instance
 - `npm run db:stop` - Stop local Supabase instance
 

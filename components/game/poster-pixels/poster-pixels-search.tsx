@@ -16,12 +16,14 @@ interface PosterPixelsSearchProps {
   onMovieSelect: (movie: { id: number; title: string } | null) => void
   selectedMovie: { id: number; title: string } | null
   disabled?: boolean
+  onAutoSubmit?: (movie: { id: number; title: string }) => void
 }
 
 export default function PosterPixelsSearch({
   onMovieSelect,
   selectedMovie,
   disabled = false,
+  onAutoSubmit,
 }: PosterPixelsSearchProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Movie[]>([])
@@ -71,9 +73,18 @@ export default function PosterPixelsSearch({
   }
 
   const handleMovieSelect = (movie: Movie) => {
-    onMovieSelect({ id: movie.id, title: movie.title })
+    const selectedMovieData = { id: movie.id, title: movie.title }
+    onMovieSelect(selectedMovieData)
     setSearchQuery(movie.title)
     setShowDropdown(false)
+    
+    // Auto-submit the guess if callback is provided, passing the movie data directly
+    if (onAutoSubmit) {
+      // Small delay to allow UI to update
+      setTimeout(() => {
+        onAutoSubmit(selectedMovieData)
+      }, 50)
+    }
   }
 
   const handleClear = () => {
@@ -116,19 +127,8 @@ export default function PosterPixelsSearch({
             <button
               key={movie.id}
               onClick={() => handleMovieSelect(movie)}
-              className="w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left flex items-center gap-3"
+              className="w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left"
             >
-              {movie.posterUrl ? (
-                <img
-                  src={movie.posterUrl}
-                  alt={movie.title}
-                  className="w-10 h-14 object-cover rounded"
-                />
-              ) : (
-                <div className="w-10 h-14 bg-gray-700 rounded flex items-center justify-center">
-                  <Search className="w-5 h-5 text-gray-500" />
-                </div>
-              )}
               <div className="flex-1">
                 <p className="text-gray-900 font-medium">
                   {movie.title} 

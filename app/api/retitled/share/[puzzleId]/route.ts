@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { puzzleId: string } }
+  { params }: { params: Promise<{ puzzleId: string }> }
 ) {
   try {
     const supabase = await createClient()
@@ -14,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const puzzleId = params.puzzleId
+    const { puzzleId } = await params
 
     // Get the puzzle info
     const { data: puzzle, error: puzzleError } = await supabase

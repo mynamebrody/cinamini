@@ -93,31 +93,31 @@ export async function GET(request: NextRequest) {
     }
     
     // Check budget_bracket_puzzles (JSONB field)
-    // We need to search within the movie_pairs JSONB array for movies with matching id
+    // We need to search within the pairs JSONB array for movies with matching id
     const { data: budgetBracketPuzzles, error: budgetBracketError } = await supabase
       .from("budget_bracket_puzzles")
-      .select("id, puzzle_date, movie_pairs")
+      .select("id, puzzle_date, pairs")
       .gte("puzzle_date", thirtyDaysAgo.toISOString().split('T')[0])
       .order("puzzle_date", { ascending: false })
     
     if (budgetBracketError) {
       console.error("Error fetching budget bracket puzzles:", budgetBracketError)
     } else if (budgetBracketPuzzles) {
-      // Filter puzzles that contain the movieId in their movie_pairs
+      // Filter puzzles that contain the movieId in their pairs
       usage.usageByGame.budgetBracket = budgetBracketPuzzles
         .filter(puzzle => {
-          // Each puzzle has a movie_pairs array with movie pair objects
-          if (!puzzle.movie_pairs || !Array.isArray(puzzle.movie_pairs)) return false
+          // Each puzzle has a pairs array with movie pair objects
+          if (!puzzle.pairs || !Array.isArray(puzzle.pairs)) return false
           
-          return puzzle.movie_pairs.some((pair: any) => {
+          return puzzle.pairs.some((pair: any) => {
             // Check both movieA and movieB for the matching id
             return (pair.movieA?.id === movieIdNum) || (pair.movieB?.id === movieIdNum)
           })
         })
         .map(puzzle => {
-          // Find the movie title from the movie_pairs
+          // Find the movie title from the pairs
           let filmTitle = ""
-          puzzle.movie_pairs.forEach((pair: any) => {
+          puzzle.pairs.forEach((pair: any) => {
             if (pair.movieA?.id === movieIdNum) {
               filmTitle = pair.movieA.title
             } else if (pair.movieB?.id === movieIdNum) {

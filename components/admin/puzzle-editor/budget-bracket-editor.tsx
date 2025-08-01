@@ -147,10 +147,67 @@ export default function BudgetBracketEditor() {
 
     setLoading(true)
     try {
-      // Generate seed value - must match the regex constraint: ^[a-zA-Z0-9_-]+$
+      // Step 1: Create minimal pairs structure for hydration
+      const minimalPairs = moviePairs.map((pair, index) => ({
+        round: index + 1,
+        movieA: {
+          id: pair.movieA!.id
+        },
+        movieB: {
+          id: pair.movieB!.id
+        }
+      }))
+
+      console.log('Hydrating pairs with unified structure...')
+      
+      // Step 2: Hydrate pairs using unified hydration API
+      const hydrationResponse = await fetch('/api/admin/puzzles/hydrate-budget-bracket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pairs: minimalPairs
+        })
+      })
+
+      const hydrationResult = await hydrationResponse.json()
+      
+      if (!hydrationResponse.ok) {
+        console.error("Hydration error:", hydrationResult)
+        
+        // Handle validation errors with detailed messaging
+        if (hydrationResult.validationErrors && hydrationResult.validationErrors.length > 0) {
+          const errorMessages = hydrationResult.validationErrors.map((err: any) => {
+            if (err.error === 'insufficient_budget') {
+              return `${err.message}`
+            }
+            return err.message
+          }).join('\n\n')
+          
+          const fullMessage = `${hydrationResult.error}\n\n${errorMessages}\n\nPlease replace the invalid movies with ones that have budgets ≥$100.`
+          throw new Error(fullMessage)
+        }
+        
+        throw new Error(hydrationResult.error || 'Failed to hydrate movie data')
+      }
+      
+      // Check if hydration succeeded but with warnings (partial validation failures)
+      if (hydrationResult.validationErrors && hydrationResult.validationErrors.length > 0) {
+        const errorMessages = hydrationResult.validationErrors.map((err: any) => err.message).join('\n\n')
+        const warningMessage = `Some movie pairs were dropped due to validation issues:\n\n${errorMessages}\n\nPlease fix these issues before saving the puzzle.`
+        
+        // Show warning and prevent saving
+        alert(warningMessage)
+        throw new Error('Cannot save puzzle with validation errors')
+      }
+
+      console.log('Movies hydrated successfully:', hydrationResult.stats)
+
+      // Step 3: Generate puzzle metadata
       const timestamp = Date.now().toString(36)
       const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
-      const seedValue = `bb_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
+      const seedValue = `bb_${dateStr}_${timestamp}`.substring(0, 32)
 
       // Get the highest puzzle number and increment
       const { data: latestPuzzle } = await supabase
@@ -162,32 +219,26 @@ export default function BudgetBracketEditor() {
 
       const puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
       
+      // Step 4: Create puzzle data with hydrated pairs
       const puzzleData = {
         puzzle_date: puzzleDate || null,
         seed_value: seedValue,
-        pairs: moviePairs.map((pair, index) => ({
-          round: index + 1,
-          movieA: {
-            id: pair.movieA!.id,
-            title: pair.movieA!.title,
-            poster_path: pair.movieA!.poster_path,
-            budget: pair.movieA!.budget || 0
-          },
-          movieB: {
-            id: pair.movieB!.id,
-            title: pair.movieB!.title,
-            poster_path: pair.movieB!.poster_path,
-            budget: pair.movieB!.budget || 0
-          }
-        })),
-        difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2], // Default progression
+        pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure
+        difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
         puzzle_number: puzzleNumber,
         is_published: isPublished
       }
 
-      console.log('Saving puzzle with data:', puzzleData)
+      console.log('Saving puzzle with hydrated data:', {
+        ...puzzleData,
+        pairs: puzzleData.pairs.map(p => ({
+          ...p,
+          movieA: { ...p.movieA, keys: Object.keys(p.movieA) },
+          movieB: { ...p.movieB, keys: Object.keys(p.movieB) }
+        }))
+      })
 
-      // Use API endpoint to save with service role permissions
+      // Step 5: Save the puzzle with unified structure
       const response = await fetch('/api/admin/puzzles/save', {
         method: 'POST',
         headers: {
@@ -206,8 +257,9 @@ export default function BudgetBracketEditor() {
         throw new Error(result.error || 'Failed to save puzzle')
       }
       
-      console.log("Puzzle saved successfully:", result)
-      alert("Puzzle created successfully!")
+      console.log("Puzzle saved successfully with unified structure:", result)
+      alert("Puzzle created successfully with complete movie data!")
+      
       // Reset form
       setPuzzleDate("")
       setMoviePairs(Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null })))
@@ -216,10 +268,17 @@ export default function BudgetBracketEditor() {
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
       
-      // The error message from the API is already user-friendly
       if (error?.message) {
-        // Check for specific constraint messages
-        if (error.message.includes('puzzle_date')) {
+        if (error.message.includes('validation errors')) {
+          // Validation error messages are already shown in alert above
+          // Just log the error for debugging
+          console.error("Validation errors prevented puzzle save:", error.message)
+        } else if (error.message.includes('minimum budget requirement')) {
+          // Show budget validation errors in a more user-friendly way
+          alert(error.message)
+        } else if (error.message.includes('hydrate')) {
+          alert("Failed to fetch complete movie data from TMDB. Please try again.")
+        } else if (error.message.includes('puzzle_date')) {
           alert("Cannot save multiple draft puzzles without dates due to database constraints. Please assign a future date to this puzzle.")
         } else if (error.message.includes('seed_value')) {
           alert("A puzzle with this configuration already exists. Please try again.")
