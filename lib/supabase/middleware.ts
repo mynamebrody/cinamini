@@ -56,16 +56,16 @@ export async function updateSession(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     // Protected routes that require authentication
-    const isGameRoute = request.nextUrl.pathname.startsWith("/game/") || 
-                       request.nextUrl.pathname.startsWith("/profile")
+    const isProtectedRoute = request.nextUrl.pathname.startsWith("/profile") ||
+                            request.nextUrl.pathname.startsWith("/stats")
     
     const isAuthRoute =
       request.nextUrl.pathname.startsWith("/auth/login") ||
       request.nextUrl.pathname.startsWith("/auth/sign-up") ||
       request.nextUrl.pathname === "/auth/callback"
 
-    // Only redirect to login for protected routes (games, profile) if not authenticated
-    if (isGameRoute && !user) {
+    // Only redirect to login for protected routes (profile, stats, admin) if not authenticated
+    if (isProtectedRoute && !user) {
       const redirectUrl = new URL("/auth/login", request.url)
       return NextResponse.redirect(redirectUrl)
     }

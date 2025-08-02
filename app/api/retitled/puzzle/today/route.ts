@@ -14,11 +14,8 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user for authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Get current user (optional - no longer required)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const today = new Date()
     const todayString = today.toISOString().split('T')[0]
@@ -35,13 +32,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No puzzle available today" }, { status: 404 })
     }
 
-    // Check if user has already played today
-    const { data: userGuess, error: guessError } = await supabase
-      .from("retitled_guesses")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("puzzle_id", puzzle.id)
-      .single()
+    // Check if user has already played today (only if authenticated)
+    let userGuess = null
+    let hasPlayed = false
+    
+    if (user) {
+      const { data: userGuessData, error: guessError } = await supabase
+        .from("retitled_guesses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("puzzle_id", puzzle.id)
+        .single()
+      
+      userGuess = userGuessData
+      hasPlayed = !!userGuessData
+    }
 
     // Get all movie IDs for this puzzle
     const allMovieIds = [puzzle.film_id, ...puzzle.distractor_ids]
@@ -73,7 +78,7 @@ export async function GET(request: NextRequest) {
         seedValue: puzzle.seed_value,
         options: shuffledOptions
       },
-      hasPlayed: !!userGuess,
+      hasPlayed,
       userGuess: userGuess ? {
         guessFilmId: userGuess.guess_film_id,
         isCorrect: userGuess.is_correct,

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { LogOut, Settings, User, BarChart3, Trophy } from "lucide-react"
+import { LogOut, Settings, User, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
 import { localGameStorage } from "@/lib/local-game-storage"
@@ -46,14 +46,6 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
 
           {/* Navigation items */}
           <div className="flex items-center space-x-4">
-            {/* Stats link - available for all users */}
-            <Button asChild variant="ghost" size="sm">
-              <a href="/stats" className="flex items-center space-x-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Stats</span>
-              </a>
-            </Button>
-            
             {user ? (
               <>
                 <Button asChild variant="ghost" size="sm">

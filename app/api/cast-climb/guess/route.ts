@@ -10,10 +10,15 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (optional for anonymous support)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    
+    if (!user) {
+      // For anonymous users, return a basic response since the game logic is handled client-side
+      return NextResponse.json({ 
+        error: "Anonymous mode not supported for Cast Climb API", 
+        message: "Game logic should be handled client-side for anonymous users"
+      }, { status: 400 })
     }
 
     const body = await request.json()

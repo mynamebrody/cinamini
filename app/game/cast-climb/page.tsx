@@ -1,6 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import CastClimb from "@/components/game/cast-climb/cast-climb"
+import CastClimbGame from "@/components/game/cast-climb/cast-climb-game"
 import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
 export const metadata = constructMetadata({
@@ -21,5 +21,5 @@ export default async function CastClimbPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  return <CastClimb />
+  return <CastClimbGame />
 }

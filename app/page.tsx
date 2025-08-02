@@ -92,20 +92,9 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-center">
             <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
-              © 2025 CinaMini. Made with lots of{" "}
-              <Image
-                src="/cinamini/Logomark.webp"
-                alt="love"
-                width={16}
-                height={16}
-                className="inline-block"
-              />{" "}
-              in Grand Rapids, MI
+              © 2025 cinamini. Made with 🍿 in Grand Rapids, MI
             </div>
             <div className="flex items-center space-x-6 text-sm text-neutral-500">
-              <a href="/stats" className="hover:text-cinema-red transition-colors">
-                Statistics
-              </a>
               <a href="/profile" className="hover:text-cinema-red transition-colors">
                 Profile
               </a>

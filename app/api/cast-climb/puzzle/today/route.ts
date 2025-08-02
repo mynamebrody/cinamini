@@ -10,16 +10,13 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user for authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Get current user (optional - no longer required)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const today = new Date()
     const todayString = today.toISOString().split('T')[0]
     
-    // Check if user has already played today
+    // Check if user has already played today (only if authenticated)
     let hasPlayed = false
     let userGuesses = []
 
@@ -85,21 +82,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if user has played this puzzle
-    const { data: existingGuesses, error: guessError } = await supabase
-      .from("cast_climb_guesses")
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("puzzle_id", puzzle.id)
-      .order("created_at", { ascending: true })
+    // Check if user has played this puzzle (only if authenticated)
+    if (user) {
+      const { data: existingGuesses, error: guessError } = await supabase
+        .from("cast_climb_guesses")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("puzzle_id", puzzle.id)
+        .order("created_at", { ascending: true })
 
-    if (!guessError && existingGuesses && existingGuesses.length > 0) {
-      // Check if game is completed: either correct guess or max attempts reached
-      const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
-      const maxAttempts = puzzle.total_actors || 4
-      const hasReachedMaxAttempts = existingGuesses.length >= maxAttempts
-      hasPlayed = hasCorrectGuess || hasReachedMaxAttempts
-      userGuesses = existingGuesses
+      if (!guessError && existingGuesses && existingGuesses.length > 0) {
+        // Check if game is completed: either correct guess or max attempts reached
+        const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
+        const maxAttempts = puzzle.total_actors || 4
+        const hasReachedMaxAttempts = existingGuesses.length >= maxAttempts
+        hasPlayed = hasCorrectGuess || hasReachedMaxAttempts
+        userGuesses = existingGuesses
+      }
     }
 
     // Prepare response

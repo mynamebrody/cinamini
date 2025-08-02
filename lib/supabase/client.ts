@@ -27,3 +27,6 @@ export const getSupabaseClient = () => {
 
 // For backward compatibility
 export const supabase = getSupabaseClient()
+
+// Export createClient for components that expect this naming
+export const createClient = getSupabaseClient

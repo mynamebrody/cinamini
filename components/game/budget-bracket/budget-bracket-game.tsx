@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
 import BudgetBracketRound from "./budget-bracket-round"
 import BudgetBracketResult from "./budget-bracket-result"
 import BudgetBracketStats from "./budget-bracket-stats"
@@ -218,33 +217,49 @@ export default function BudgetBracketGame() {
         const otherBudget = chosenMovieA ? movieBBudget : movieABudget
         const isCorrect = chosenBudget > otherBudget
         
+        // Update the last choice with the correct result
+        const updatedChoices = choices.map((choice, index) => 
+          index === choices.length - 1 ? { ...choice, correct: isCorrect } : choice
+        )
+        setGameChoices(updatedChoices)
+        
         if (isCorrect) {
           // Correct answer - continue to next round or finish game
           if (currentRound < 5) {
             setCurrentRound(currentRound + 1)
           } else {
             // Game complete with perfect score
-            submitGame(choices)
+            submitGame(updatedChoices)
           }
         } else {
           // Wrong answer - end game immediately
-          submitGame(choices)
+          submitGame(updatedChoices)
         }
       } else {
-        // API error - just continue for now
+        // API error - assume correct for now and continue
+        const updatedChoices = choices.map((choice, index) => 
+          index === choices.length - 1 ? { ...choice, correct: true } : choice
+        )
+        setGameChoices(updatedChoices)
+        
         if (currentRound < 5) {
           setCurrentRound(currentRound + 1)
         } else {
-          submitGame(choices)
+          submitGame(updatedChoices)
         }
       }
     } catch (error) {
       console.error('Error fetching budget data for game logic:', error)
-      // Error - just continue for now
+      // Error - assume correct for now and continue
+      const updatedChoices = choices.map((choice, index) => 
+        index === choices.length - 1 ? { ...choice, correct: true } : choice
+      )
+      setGameChoices(updatedChoices)
+      
       if (currentRound < 5) {
         setCurrentRound(currentRound + 1)
       } else {
-        submitGame(choices)
+        submitGame(updatedChoices)
       }
     }
   }
@@ -256,17 +271,53 @@ export default function BudgetBracketGame() {
       if (isAnonymous) {
         // For anonymous users, calculate results locally
         const rounds_completed = choices.length
-        const lastChoice = choices[choices.length - 1]
-        const final_result = rounds_completed === 5 ? 'perfect' : 'lost'
         
-        // Create a simplified game result for anonymous users
+        // Determine the correct final result
+        let final_result: string
+        if (rounds_completed === 5) {
+          final_result = 'perfect'
+        } else {
+          // Player was eliminated at this round
+          final_result = `eliminated_round_${rounds_completed}`
+        }
+        
+        // Create a detailed game result for anonymous users
+        const revealedPairs = choices.map((choice, index) => {
+          const pair = puzzle!.pairs[index]
+          return {
+            round: choice.round,
+            chosen_movie: choice.chosen_movie,
+            correct: choice.correct,
+            time_taken_ms: choice.time_taken_ms,
+            revealed_budgets: {
+              movieA: { 
+                tmdb_id: pair.movieA.tmdb_id, 
+                title: pair.movieA.title, 
+                budget: 0, // Will be populated by the result component if needed
+                budget_source: 'unknown', 
+                is_estimated: false 
+              },
+              movieB: { 
+                tmdb_id: pair.movieB.tmdb_id, 
+                title: pair.movieB.title, 
+                budget: 0, // Will be populated by the result component if needed
+                budget_source: 'unknown', 
+                is_estimated: false 
+              }
+            },
+            correct_choice: (choice.chosen_movie === pair.movieA.tmdb_id ? 'A' : 'B') as 'A' | 'B',
+            budget_difference: 0, // Will be populated by the result component if needed
+            difficulty_ratio: 1.0
+          }
+        })
+
         const anonymousResult: GameResult = {
           game_id: Date.now(), // Temporary ID
           rounds_completed,
           final_result,
           is_perfect_game: final_result === 'perfect',
           total_duration_ms: totalDuration,
-          revealed_pairs: [], // We'll need to populate this if needed
+          revealed_pairs: revealedPairs,
           updated_stats: null
         }
         
@@ -317,7 +368,7 @@ export default function BudgetBracketGame() {
         title="Budget Bracket" 
         onHelpClick={showHowToPlay}
       >
-        {(gameState === 'ready' || gameState === 'completed') && (
+        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>

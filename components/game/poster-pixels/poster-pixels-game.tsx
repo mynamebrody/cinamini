@@ -8,6 +8,8 @@ import { GameHeader } from "../game-header"
 import { HowToPlayModal } from "../how-to-play-modal"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import confetti from "canvas-confetti"
+import { useGameMode } from "@/hooks/use-game-mode"
+import { localGameStorage } from "@/lib/local-game-storage"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
@@ -52,9 +54,9 @@ type GameStateType = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 const GAME_DURATION = 30 // seconds
-const MAX_GUESSES = 1
 
 export default function PosterPixelsGame() {
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [state, setState] = useState<GameState>({
@@ -64,7 +66,7 @@ export default function PosterPixelsGame() {
     gameStarted: false,
     won: false,
     timeElapsed: 0,
-    clarityLevel: 0.75, // Start at 75% clarity
+    clarityLevel: 0.50, // Start at 50% clarity
     guesses: [],
     error: null,
   })
@@ -79,8 +81,10 @@ export default function PosterPixelsGame() {
 
   // Load today's puzzle
   useEffect(() => {
-    loadTodaysPuzzle()
-  }, [])
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading])
 
   // Timer effect
   useEffect(() => {
@@ -88,7 +92,7 @@ export default function PosterPixelsGame() {
       intervalRef.current = setInterval(() => {
         setState(prev => {
           const newTimeElapsed = prev.timeElapsed + 0.1
-          const newClarityLevel = Math.min(1, 0.75 + (newTimeElapsed / GAME_DURATION) * 0.25)
+          const newClarityLevel = Math.min(1, 0.50 + (newTimeElapsed / GAME_DURATION) * 0.50)
           
           // Check if time is up
           if (newTimeElapsed >= GAME_DURATION) {
@@ -113,41 +117,85 @@ export default function PosterPixelsGame() {
   // Draw pixelated poster
   useEffect(() => {
     if (canvasRef.current && state.puzzle && state.gameStarted) {
-      drawPixelatedPoster()
+      try {
+        drawPixelatedPoster()
+      } catch (error) {
+        console.error("Error calling drawPixelatedPoster:", error)
+        // Set error state if drawing fails consistently
+        setState(prev => ({
+          ...prev,
+          error: "Failed to load poster image. Please try again."
+        }))
+      }
     }
   }, [state.clarityLevel, state.puzzle, state.gameStarted])
 
   const loadTodaysPuzzle = async () => {
     try {
-      const response = await fetch("/api/poster-pixels/puzzle/today")
-      const data = await response.json()
+      if (isAnonymous) {
+        // For anonymous users, check local storage for today's game
+        const localResult = localGameStorage.getTodayResult('poster-pixels')
+        
+        // Still need to fetch the puzzle data from the API
+        const response = await fetch("/api/poster-pixels/puzzle/today")
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to load puzzle")
-      }
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load puzzle")
+        }
 
-      setState(prev => ({
-        ...prev,
-        puzzle: data.puzzle,
-        hasPlayedToday: data.hasPlayedToday,
-        won: data.hasPlayedToday && data.previousGame?.won,
-        timeElapsed: data.hasPlayedToday && data.previousGame?.total_time_ms 
-          ? data.previousGame.total_time_ms / 1000 // Convert ms to seconds
-          : prev.timeElapsed,
-        clarityLevel: data.hasPlayedToday && data.previousGame?.final_clarity_level 
-          ? data.previousGame.final_clarity_level
-          : prev.clarityLevel,
-        guesses: data.previousGame?.guesses || [],
-      }))
+        setState(prev => ({
+          ...prev,
+          puzzle: data.puzzle,
+          hasPlayedToday: localResult !== null,
+          won: localResult?.result?.won || false,
+          timeElapsed: localResult?.result?.timeElapsed || 0,
+          clarityLevel: localResult?.result?.clarityLevel || 0.75,
+          guesses: localResult?.result?.guesses || [],
+        }))
 
-      if (data.hasPlayedToday) {
-        setGameState('completed')
+        if (localResult) {
+          setGameState('completed')
+        } else {
+          // Check if this is the user's first time playing
+          const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
+          setGameState('ready')
+          if (!hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
+        }
       } else {
-        // Check if this is the user's first time playing
-        const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
-        setGameState('ready')
-        if (!hasPlayedBefore) {
-          setModalState('howtoplay')
+        // Authenticated user - use existing API logic
+        const response = await fetch("/api/poster-pixels/puzzle/today")
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load puzzle")
+        }
+
+        setState(prev => ({
+          ...prev,
+          puzzle: data.puzzle,
+          hasPlayedToday: data.hasPlayedToday,
+          won: data.hasPlayedToday && data.previousGame?.won,
+          timeElapsed: data.hasPlayedToday && data.previousGame?.total_time_ms 
+            ? data.previousGame.total_time_ms / 1000 // Convert ms to seconds
+            : prev.timeElapsed,
+          clarityLevel: data.hasPlayedToday && data.previousGame?.final_clarity_level 
+            ? data.previousGame.final_clarity_level
+            : prev.clarityLevel,
+          guesses: data.previousGame?.guesses || [],
+        }))
+
+        if (data.hasPlayedToday) {
+          setGameState('completed')
+        } else {
+          // Check if this is the user's first time playing
+          const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
+          setGameState('ready')
+          if (!hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
         }
       }
     } catch (error) {
@@ -167,30 +215,45 @@ export default function PosterPixelsGame() {
     }
 
     try {
-      const response = await fetch("/api/poster-pixels/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          puzzle_id: state.puzzle!.id,
-        }),
-      })
+      if (isAnonymous) {
+        // For anonymous users, handle game start locally
+        startTimeRef.current = Date.now()
+        setState(prev => ({
+          ...prev,
+          gameId: `anonymous-${Date.now()}`, // Generate local game ID
+          gameStarted: true,
+          timeElapsed: 0,
+          clarityLevel: 0.20,
+        }))
+        setGameState('playing')
+        setModalState('none')
+      } else {
+        // Authenticated user - use API
+        const response = await fetch("/api/poster-pixels/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            puzzle_id: state.puzzle!.id,
+          }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to start game")
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to start game")
+        }
+
+        startTimeRef.current = Date.now()
+        setState(prev => ({
+          ...prev,
+          gameId: data.gameId,
+          gameStarted: true,
+          timeElapsed: 0,
+          clarityLevel: 0.20,
+        }))
+        setGameState('playing')
+        setModalState('none')
       }
-
-      startTimeRef.current = Date.now()
-      setState(prev => ({
-        ...prev,
-        gameId: data.gameId,
-        gameStarted: true,
-        timeElapsed: 0,
-        clarityLevel: 0.20,
-      }))
-      setGameState('playing')
-      setModalState('none')
     } catch (error) {
       console.error("Error starting game:", error)
       setState(prev => ({
@@ -205,20 +268,24 @@ export default function PosterPixelsGame() {
     const canvas = canvasRef.current
     if (!canvas || !state.puzzle) return
     
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    
     // Handle both old and new data structures
     const posterPath = state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
     if (!posterPath) {
       console.error("No poster path found in puzzle data")
+      drawFallbackPoster(ctx, canvas)
       return
     }
-    
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
+
+    try {
 
     const img = new Image()
     img.crossOrigin = "anonymous"
     // Handle both full URLs and path-only formats
-    img.src = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`
+    const imageUrl = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`
+    img.src = imageUrl
     
     img.onload = () => {
       try {
@@ -255,12 +322,43 @@ export default function PosterPixelsGame() {
         ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
       } catch (error) {
         console.error("Error drawing pixelated poster:", error)
+        // Draw a fallback placeholder
+        drawFallbackPoster(ctx, canvas)
       }
     }
     
-    img.onerror = () => {
-      console.error("Failed to load poster image:", img.src)
+    img.onerror = (error) => {
+      console.error("Failed to load poster image:", error)
+      // Draw a fallback placeholder instead of throwing an error
+      drawFallbackPoster(ctx, canvas)
     }
+    } catch (error) {
+      console.error("Error in drawPixelatedPoster:", error)
+      // Draw fallback if any error occurs
+      drawFallbackPoster(ctx, canvas)
+    }
+  }
+  
+  const drawFallbackPoster = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+    // Set canvas size
+    canvas.width = 300
+    canvas.height = 450
+    
+    // Draw a gray placeholder with text
+    ctx.fillStyle = '#f3f4f6'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    
+    // Draw border
+    ctx.strokeStyle = '#d1d5db'
+    ctx.lineWidth = 2
+    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2)
+    
+    // Draw text
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '16px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('Poster Loading...', canvas.width / 2, canvas.height / 2)
+    ctx.fillText('Please check your connection', canvas.width / 2, canvas.height / 2 + 25)
   }
 
   const handleGuess = async () => {
@@ -274,41 +372,62 @@ export default function PosterPixelsGame() {
     const isCorrect = selectedMovie.id === correctMovieId
 
     try {
-      const response = await fetch("/api/poster-pixels/guess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          game_id: state.gameId,
-          puzzle_id: state.puzzle!.id,
-          guessed_movie_id: selectedMovie.id,
-          guessed_movie_title: selectedMovie.title,
-          time_taken_ms: timeTaken,
-          clarity_level: guessClarityLevel,
-        }),
-      })
+      if (isAnonymous) {
+        // Handle guess locally for anonymous users
+        const newGuess = {
+          movieId: selectedMovie.id,
+          movieTitle: selectedMovie.title,
+          isCorrect,
+          clarityLevel: guessClarityLevel,
+        }
 
-      const data = await response.json()
+        setState(prev => ({
+          ...prev,
+          guesses: [...prev.guesses, newGuess],
+        }))
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit guess")
+        setSelectedMovie(null)
+
+        // End game immediately after single guess
+        handleGameOver(isCorrect, guessClarityLevel)
+      } else {
+        // Authenticated user - use API
+        const response = await fetch("/api/poster-pixels/guess", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            game_id: state.gameId,
+            puzzle_id: state.puzzle!.id,
+            guessed_movie_id: selectedMovie.id,
+            guessed_movie_title: selectedMovie.title,
+            time_taken_ms: timeTaken,
+            clarity_level: guessClarityLevel,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to submit guess")
+        }
+
+        const newGuess = {
+          movieId: selectedMovie.id,
+          movieTitle: selectedMovie.title,
+          isCorrect,
+          clarityLevel: guessClarityLevel,
+        }
+
+        setState(prev => ({
+          ...prev,
+          guesses: [...prev.guesses, newGuess],
+        }))
+
+        setSelectedMovie(null)
+
+        // End game immediately after single guess
+        handleGameOver(isCorrect, guessClarityLevel)
       }
-
-      const newGuess = {
-        movieId: selectedMovie.id,
-        movieTitle: selectedMovie.title,
-        isCorrect,
-        clarityLevel: guessClarityLevel,
-      }
-
-      setState(prev => ({
-        ...prev,
-        guesses: [...prev.guesses, newGuess],
-      }))
-
-      setSelectedMovie(null)
-
-      // End game immediately after single guess
-      handleGameOver(isCorrect, guessClarityLevel)
     } catch (error) {
       console.error("Error submitting guess:", error)
       setState(prev => ({
@@ -330,39 +449,58 @@ export default function PosterPixelsGame() {
     const isCorrect = movie.id === correctMovieId
 
     try {
-      const response = await fetch("/api/poster-pixels/guess", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          game_id: state.gameId,
-          puzzle_id: state.puzzle!.id,
-          guessed_movie_id: movie.id,
-          guessed_movie_title: movie.title,
-          time_taken_ms: timeTaken,
-          clarity_level: guessClarityLevel,
-        }),
-      })
+      if (isAnonymous) {
+        // Handle auto-submit locally for anonymous users
+        const newGuess = {
+          movieId: movie.id,
+          movieTitle: movie.title,
+          isCorrect,
+          clarityLevel: guessClarityLevel,
+        }
 
-      const data = await response.json()
+        setState(prev => ({
+          ...prev,
+          guesses: [...prev.guesses, newGuess],
+        }))
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit guess")
+        // End game immediately after single guess
+        handleGameOver(isCorrect, guessClarityLevel)
+      } else {
+        // Authenticated user - use API
+        const response = await fetch("/api/poster-pixels/guess", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            game_id: state.gameId,
+            puzzle_id: state.puzzle!.id,
+            guessed_movie_id: movie.id,
+            guessed_movie_title: movie.title,
+            time_taken_ms: timeTaken,
+            clarity_level: guessClarityLevel,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to submit guess")
+        }
+
+        const newGuess = {
+          movieId: movie.id,
+          movieTitle: movie.title,
+          isCorrect,
+          clarityLevel: guessClarityLevel,
+        }
+
+        setState(prev => ({
+          ...prev,
+          guesses: [...prev.guesses, newGuess],
+        }))
+
+        // End game immediately after single guess
+        handleGameOver(isCorrect, guessClarityLevel)
       }
-
-      const newGuess = {
-        movieId: movie.id,
-        movieTitle: movie.title,
-        isCorrect,
-        clarityLevel: guessClarityLevel,
-      }
-
-      setState(prev => ({
-        ...prev,
-        guesses: [...prev.guesses, newGuess],
-      }))
-
-      // End game immediately after single guess
-      handleGameOver(isCorrect, guessClarityLevel)
     } catch (error) {
       console.error("Error submitting guess:", error)
       setState(prev => ({
@@ -380,16 +518,31 @@ export default function PosterPixelsGame() {
     const finalClarityLevel = guessClarityLevel || state.clarityLevel
 
     try {
-      await fetch("/api/poster-pixels/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          game_id: state.gameId,
+      if (isAnonymous) {
+        // Save result to local storage for anonymous users
+        const anonymousResult = {
           won,
-          total_time_ms: Math.round(state.timeElapsed * 1000),
-          final_clarity_level: finalClarityLevel,
-        }),
-      })
+          timeElapsed: state.timeElapsed,
+          clarityLevel: finalClarityLevel,
+          guesses: state.guesses,
+          puzzleId: state.puzzle!.id,
+          movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
+        }
+        
+        localGameStorage.saveDailyResult('poster-pixels', anonymousResult)
+      } else {
+        // Authenticated user - use API
+        await fetch("/api/poster-pixels/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            game_id: state.gameId,
+            won,
+            total_time_ms: Math.round(state.timeElapsed * 1000),
+            final_clarity_level: finalClarityLevel,
+          }),
+        })
+      }
     } catch (error) {
       console.error("Error completing game:", error)
     }
@@ -430,7 +583,7 @@ export default function PosterPixelsGame() {
         title="Poster Pixels" 
         onHelpClick={showHowToPlay}
       >
-        {(gameState === 'ready' || gameState === 'completed') && (
+        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>
@@ -564,6 +717,20 @@ export default function PosterPixelsGame() {
                     disabled={false}
                     onAutoSubmit={handleAutoSubmit}
                   />
+                  
+                  {/* Guess Button */}
+                  {selectedMovie && (
+                    <div className="flex justify-center">
+                      <Button 
+                        onClick={handleGuess}
+                        size="lg"
+                        variant="primary"
+                        className="px-8"
+                      >
+                        Submit Guess
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
