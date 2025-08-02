@@ -6,8 +6,8 @@ export const runtime = 'edge'
 const games = {
   retitled: {
     title: 'Retitled',
-    subtitle: '🎬 ?',
-    description: 'Can you guess the movie from its reimagined title?',
+    subtitle: '🎬 🏳️ ?',
+    description: 'Can you guess the movie from its alternative title?',
     titleColor: '#ffcc00',
   },
   'budget-bracket': {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const subtitle = isGame ? games[game].subtitle : 'Daily Movie Puzzles'
     const description = isGame 
       ? games[game].description 
-      : 'Test your film knowledge with our collection of daily games'
+      : 'Test your film knowledge with our collection of daily games!'
     const titleColor = isGame ? games[game].titleColor : '#ffffff'
 
     return new ImageResponse(
