@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.app"
 
 /**
  * Get the OG image URL for a specific page
