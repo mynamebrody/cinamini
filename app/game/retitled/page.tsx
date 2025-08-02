@@ -1,11 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import RetitleGame from "@/components/game/retitled/retitle-game"
+import RetitleGame from "@/components/game/retitle/retitle-game"
+import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
-export const metadata = {
-  title: "Retitled - CinaMini",
-  description: "Can you guess today's movie from international titles? Test your cinema knowledge across languages and cultures!",
-}
+export const metadata = constructMetadata({
+  title: gameMetadata.retitled.title,
+  description: gameMetadata.retitled.description,
+  image: gameMetadata.retitled.ogImage,
+})
 
 export default async function RetitledPage() {
   // If Supabase is not configured, redirect to home

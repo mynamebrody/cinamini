@@ -102,7 +102,7 @@ interface MovieAnalytics {
   }>;
 }
 
-const COLORS = ['#B31B1B', '#2b725e', '#FFD700', '#4A90E2', '#E94B3C', '#6B5B95'];
+const COLORS = ['#6c0311', '#2b725e', '#b28c49', '#4A90E2', '#E94B3C', '#6B5B95'];
 
 export default function AnalyticsPage() {
   const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
@@ -277,8 +277,8 @@ export default function AnalyticsPage() {
                       type="monotone" 
                       dataKey="users" 
                       stackId="1"
-                      stroke="#B31B1B" 
-                      fill="#B31B1B" 
+                      stroke="#6c0311" 
+                      fill="#6c0311" 
                       name="Active Users"
                     />
                     <Area 
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
                   <XAxis dataKey="streakLength" />
                   <YAxis />
                   <Tooltip />
-                  <Bar dataKey="users" fill="#FFD700" />
+                  <Bar dataKey="users" fill="#b28c49" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -384,7 +384,7 @@ export default function AnalyticsPage() {
                   <PolarGrid />
                   <PolarAngleAxis dataKey="displayName" />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                  <Radar name="Completion Rate" dataKey="completionRate" stroke="#B31B1B" fill="#B31B1B" fillOpacity={0.6} />
+                  <Radar name="Completion Rate" dataKey="completionRate" stroke="#6c0311" fill="#6c0311" fillOpacity={0.6} />
                   <Legend />
                 </RadarChart>
               </ResponsiveContainer>
@@ -407,7 +407,7 @@ export default function AnalyticsPage() {
                     <XAxis type="number" />
                     <YAxis dataKey="genre" type="category" width={80} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="#B31B1B" />
+                    <Bar dataKey="count" fill="#6c0311" />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -427,7 +427,7 @@ export default function AnalyticsPage() {
                     <YAxis yAxisId="right" orientation="right" />
                     <Tooltip />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="count" stroke="#B31B1B" name="Movies Used" />
+                    <Line yAxisId="left" type="monotone" dataKey="count" stroke="#6c0311" name="Movies Used" />
                     <Line yAxisId="right" type="monotone" dataKey="avgEngagement" stroke="#2b725e" name="Avg Engagement" />
                   </LineChart>
                 </ResponsiveContainer>
@@ -468,7 +468,7 @@ export default function AnalyticsPage() {
                       return null;
                     }}
                   />
-                  <Scatter name="Movies" data={movieAnalytics.budgetEngagement} fill="#FFD700" />
+                  <Scatter name="Movies" data={movieAnalytics.budgetEngagement} fill="#b28c49" />
                 </ScatterChart>
               </ResponsiveContainer>
             </CardContent>

@@ -5,6 +5,7 @@ import { LogOut, Settings, User, BarChart3, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
 import { localGameStorage } from "@/lib/local-game-storage"
+import Image from "next/image"
 
 interface SiteHeaderProps {
   user: any
@@ -28,10 +29,15 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo and title */}
           <div className="flex items-center">
-            <a href="/" className="flex items-center hover:opacity-80 transition-opacity">
-              <h1 className="font-nyt text-2xl font-bold text-neutral-900">
-                CinaMini
-              </h1>
+            <a href="/" className="flex items-center">
+              <Image
+                src="/cinamini/Wordmark.webp"
+                alt="CinaMini"
+                width={140}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
             </a>
             <span className="ml-3 text-sm text-neutral-500 hidden sm:block">
               Daily Movie Puzzles

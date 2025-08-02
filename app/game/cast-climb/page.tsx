@@ -1,11 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import CastClimbGame from "@/components/game/cast-climb/cast-climb-game"
+import CastClimb from "@/components/game/cast-climb/cast-climb"
+import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
-export const metadata = {
-  title: "Cast Climb - CinaMini",
-  description: "Guess all the actors in today's movie! Start with the lead and work your way through the cast.",
-}
+export const metadata = constructMetadata({
+  title: gameMetadata["cast-climb"].title,
+  description: gameMetadata["cast-climb"].description,
+  image: gameMetadata["cast-climb"].ogImage,
+})
 
 export default async function CastClimbPage() {
   // If Supabase is not configured, redirect to home
@@ -19,5 +21,5 @@ export default async function CastClimbPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  return <CastClimbGame />
+  return <CastClimb />
 }
