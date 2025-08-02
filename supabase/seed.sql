@@ -14,7 +14,7 @@ ON CONFLICT (game_id) DO UPDATE SET
   updated_at = NOW();
 
 -- Create a super admin user (You'll need to create this user via Supabase Auth first)
--- Email: admin@cinamini.com
+-- Email: admin@cinamini.app
 -- Password: [Set a secure password when creating the user]
 DO $$
 DECLARE
@@ -23,7 +23,7 @@ BEGIN
   -- Check if admin user exists in auth.users
   SELECT id INTO admin_user_id 
   FROM auth.users 
-  WHERE email = 'admin@cinamini.com' 
+  WHERE email = 'admin@cinamini.app' 
   LIMIT 1;
 
   -- If admin user exists, create/update their profile
@@ -45,9 +45,9 @@ BEGIN
       is_super_admin = TRUE,
       updated_at = NOW();
 
-    RAISE NOTICE 'Super admin profile created/updated for admin@cinamini.com';
+    RAISE NOTICE 'Super admin profile created/updated for admin@cinamini.app';
   ELSE
-    RAISE NOTICE 'Admin user not found. Please create user admin@cinamini.com via Supabase Auth first.';
+    RAISE NOTICE 'Admin user not found. Please create user admin@cinamini.app via Supabase Auth first.';
   END IF;
 END $$;
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.com"
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.app"
 
 export const siteConfig = {
   name: "CinaMini",
