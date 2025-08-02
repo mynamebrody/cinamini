@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { LogOut, Settings, User } from "lucide-react"
 import { signOut } from "@/lib/actions"
+import Image from "next/image"
 
 interface SiteHeaderProps {
   user: any
@@ -16,9 +17,16 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo and title */}
           <div className="flex items-center">
-            <h1 className="font-nyt text-2xl font-bold text-neutral-900">
-              CinaMini
-            </h1>
+            <a href="/" className="flex items-center">
+              <Image
+                src="/cinamini/Wordmark.webp"
+                alt="CinaMini"
+                width={140}
+                height={40}
+                className="h-10 w-auto"
+                priority
+              />
+            </a>
             <span className="ml-3 text-sm text-neutral-500 hidden sm:block">
               Daily Movie Puzzles
             </span>

@@ -1,11 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import BudgetBracketGame from "@/components/game/budget-bracket/budget-bracket-game"
+import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
-export const metadata = {
-  title: "Budget Bracket - CinaMini",
-  description: "Daily movie budget guessing game. Compare two movies and pick the one with the higher production budget!",
-}
+export const metadata = constructMetadata({
+  title: gameMetadata["budget-bracket"].title,
+  description: gameMetadata["budget-bracket"].description,
+  image: gameMetadata["budget-bracket"].ogImage,
+})
 
 export default async function BudgetBracketPage() {
   // If Supabase is not configured, redirect to home
