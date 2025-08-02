@@ -227,8 +227,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
           {/* Performance Summary */}
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold">{result.rounds_completed}</div>
-              <div className="text-sm text-muted-foreground">Rounds</div>
+              <div className="text-2xl font-bold">
+                {result.revealed_pairs.filter(p => p.correct).length}/{result.rounds_completed}
+              </div>
+              <div className="text-sm text-muted-foreground">Correct</div>
             </div>
             <div>
               <div className="text-2xl font-bold">{formatTime(result.total_duration_ms)}</div>

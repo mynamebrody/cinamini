@@ -32,7 +32,6 @@ interface BudgetBracketRoundProps {
   pair: PuzzlePair
   round: number
   onChoice: (chosenMovieTmdbId: number, timeTaken: number) => void
-  onGameEnd: (choices: GameChoice[]) => void
   gameChoices: GameChoice[]
   puzzle: PuzzleData
 }
@@ -48,7 +47,6 @@ export default function BudgetBracketRound({
   pair, 
   round, 
   onChoice, 
-  onGameEnd, 
   gameChoices, 
   puzzle 
 }: BudgetBracketRoundProps) {
@@ -319,7 +317,10 @@ export default function BudgetBracketRound({
           )}
 
           <div className="text-sm text-muted-foreground">
-            {isCorrect && round < 5 ? 'Moving to next round...' : isCorrect && round === 5 ? 'Perfect Producer!' : 'Game Over'}
+            {isCorrect && round < 5 ? 'Moving to next round...' : 
+             isCorrect && round === 5 ? 'Perfect Producer!' : 
+             round < 5 ? 'Moving to next round...' : 
+             'Game Complete!'}
           </div>
         </div>
       )}

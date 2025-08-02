@@ -57,7 +57,6 @@ export async function POST(request: NextRequest) {
     // Verify all answers and calculate final results
     const moviePairs = puzzle.pairs as MoviePair[]
     const verifiedChoices: GameChoice[] = []
-    let gameEnded = false
 
     for (const choice of choices) {
       const pair = moviePairs.find(p => p.round === choice.round)
@@ -72,17 +71,12 @@ export async function POST(request: NextRequest) {
         ...choice,
         correct: isCorrect
       })
-
-      // If this choice was wrong, the game ends here
-      if (!isCorrect) {
-        gameEnded = true
-        break
-      }
     }
 
     const roundsCompleted = verifiedChoices.length
+    const correctAnswers = verifiedChoices.filter(c => c.correct).length
     const finalResult = calculateFinalResult(verifiedChoices)
-    const isPerfectGame = roundsCompleted === 5
+    const isPerfectGame = correctAnswers === 5 && roundsCompleted === 5
 
     // Save the game result
     const { data: gameResult, error: gameError } = await supabase
@@ -163,6 +157,7 @@ async function updateUserStats(
   try {
     const today = new Date().toISOString().split('T')[0]
     const roundsCompleted = choices.length
+    const correctRounds = choices.filter(c => c.correct).length
     
     // Get current stats
     const { data: currentStats } = await supabase
@@ -184,9 +179,9 @@ async function updateUserStats(
         perfect_games: currentStats.perfect_games + (isPerfectGame ? 1 : 0),
         current_streak: newStreak,
         best_streak: Math.max(currentStats.best_streak, newStreak),
-        total_rounds_won: currentStats.total_rounds_won + roundsCompleted,
+        total_rounds_won: currentStats.total_rounds_won + correctRounds,
         average_round_reached: 
-          (currentStats.total_rounds_won + roundsCompleted) / (currentStats.games_played + 1),
+          (currentStats.total_rounds_won + correctRounds) / (currentStats.games_played + 1),
         last_played_date: today
       }
 
@@ -206,8 +201,8 @@ async function updateUserStats(
         perfect_games: isPerfectGame ? 1 : 0,
         current_streak: 1,
         best_streak: 1,
-        total_rounds_won: roundsCompleted,
-        average_round_reached: roundsCompleted,
+        total_rounds_won: correctRounds,
+        average_round_reached: correctRounds,
         last_played_date: today
       }
 

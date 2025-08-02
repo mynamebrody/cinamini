@@ -164,11 +164,6 @@ export default function BudgetBracketGame() {
     }, 2000) // 2 second delay to show feedback
   }
 
-  const handleGameEnd = (choices: GameChoice[]) => {
-    // Game ended early due to wrong answer
-    submitGame(choices)
-  }
-
   const fetchMovieBudgetsAndContinue = async (choices: GameChoice[], chosenMovieTmdbId: number) => {
     try {
       const currentPair = puzzle!.pairs[currentRound - 1]
@@ -192,17 +187,18 @@ export default function BudgetBracketGame() {
         const otherBudget = chosenMovieA ? movieBBudget : movieABudget
         const isCorrect = chosenBudget > otherBudget
         
-        if (isCorrect) {
-          // Correct answer - continue to next round or finish game
-          if (currentRound < 5) {
-            setCurrentRound(currentRound + 1)
-          } else {
-            // Game complete with perfect score
-            submitGame(choices)
-          }
+        // Update the choice with the correct status
+        const updatedChoices = choices.map((choice, index) => 
+          index === choices.length - 1 ? { ...choice, correct: isCorrect } : choice
+        )
+        setGameChoices(updatedChoices)
+        
+        // Always continue to next round or finish game after all 5 rounds
+        if (currentRound < 5) {
+          setCurrentRound(currentRound + 1)
         } else {
-          // Wrong answer - end game immediately
-          submitGame(choices)
+          // Game complete after 5 rounds
+          submitGame(updatedChoices)
         }
       } else {
         // API error - just continue for now
@@ -288,8 +284,8 @@ export default function BudgetBracketGame() {
               <ul className="space-y-2 text-sm text-neutral-600">
                 <li>• See two movie posters side-by-side</li>
                 <li>• Pick the one with the higher production budget</li>
-                <li>• Complete 5 rounds to become a "Perfect Producer"</li>
-                <li>• One wrong guess ends the game</li>
+                <li>• Play through all 5 rounds</li>
+                <li>• Get all 5 correct to become a "Perfect Producer"</li>
               </ul>
             </div>
           </div>
@@ -369,7 +365,7 @@ export default function BudgetBracketGame() {
               pair={puzzle.pairs[currentRound - 1]}
               round={currentRound}
               onChoice={handleRoundChoice}
-              onGameEnd={handleGameEnd}
+              onGameEnd={() => {}} // No longer needed
               gameChoices={gameChoices}
               puzzle={puzzle}
             />
