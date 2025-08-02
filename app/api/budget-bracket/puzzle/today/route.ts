@@ -18,11 +18,8 @@ export async function GET() {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Check if user is authenticated (optional now)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0] // YYYY-MM-DD
@@ -121,7 +118,7 @@ export async function GET() {
     const { data: existingGame } = await supabase
       .from('budget_bracket_games')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', user?.id) // Use optional chaining for user.id
       .eq('puzzle_id', puzzle.id)
       .single()
 

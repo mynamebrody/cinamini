@@ -1,12 +1,10 @@
 "use client"
 
-import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { CheckCircle, Play, DollarSign, Globe, Film, Image, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
-import AuthDialog from "./auth-dialog"
 
 interface GameCardProps {
   id: string
@@ -26,14 +24,9 @@ export default function GameCard({
   isAuthenticated = false 
 }: GameCardProps) {
   const router = useRouter()
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
 
   const handlePlay = () => {
-    if (isAuthenticated) {
-      router.push(`/game/${id}`)
-    } else {
-      setShowAuthDialog(true)
-    }
+    router.push(`/game/${id}`)
   }
 
   const getGameIcon = () => {
@@ -119,17 +112,11 @@ export default function GameCard({
             ) : (
               <>
                 <Play className="w-5 h-5 mr-2" />
-                {isAuthenticated ? "Play Today's Puzzle" : "Start Playing"}
+                Play Today's Puzzle
               </>
             )}
           </Button>
         </div>
-        
-        <AuthDialog
-          isOpen={showAuthDialog}
-          onClose={() => setShowAuthDialog(false)}
-          gameName={name}
-        />
       </Card>
     )
   }
@@ -174,12 +161,6 @@ export default function GameCard({
           )}
         </Button>
       </div>
-      
-      <AuthDialog
-        isOpen={showAuthDialog}
-        onClose={() => setShowAuthDialog(false)}
-        gameName={name}
-      />
     </Card>
   )
 }

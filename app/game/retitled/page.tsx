@@ -1,23 +1,23 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import RetitleGame from "@/components/game/retitle/retitle-game"
+import RetitleGame from "@/components/game/retitled/retitle-game"
 
-export default async function RetitlePage() {
+export const metadata = {
+  title: "Retitled - CinaMini",
+  description: "Can you guess today's movie from international titles? Test your cinema knowledge across languages and cultures!",
+}
+
+export default async function RetitledPage() {
   // If Supabase is not configured, redirect to home
   if (!isSupabaseConfigured) {
     redirect("/")
   }
 
-  // Get the user from the server
+  // Get the user from the server (optional - no longer required)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // If no user, redirect to login
-  if (!user) {
-    redirect("/auth/login")
-  }
 
   return <RetitleGame />
 }

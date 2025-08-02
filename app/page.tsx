@@ -61,19 +61,19 @@ export default async function Home() {
               <h1 className="font-nyt text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-4">
                 The Cinema Challenge
               </h1>
-              <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed mb-2">
                 Test your movie knowledge with daily puzzles. From budget battles to cast climbs, 
                 discover new depths of cinema trivia every day.
+              </p>
+              <p className="text-base text-neutral-500 max-w-2xl mx-auto">
+                Play instantly - no sign-up required! Create an account to save your progress and compete with friends.
               </p>
             </div>
 
             {!user && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button asChild variant="primary" size="lg">
-                  <a href="/auth/sign-up">Start Playing Free</a>
-                </Button>
-                <Button asChild variant="ghost" size="lg">
-                  <a href="/auth/login">Sign In</a>
+              <div className="flex justify-center items-center">
+                <Button asChild variant="ghost" size="md">
+                  <a href="/auth/login">Sign in to save progress</a>
                 </Button>
               </div>
             )}

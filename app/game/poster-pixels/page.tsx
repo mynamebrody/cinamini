@@ -4,7 +4,7 @@ import PosterPixelsGame from "@/components/game/poster-pixels/poster-pixels-game
 
 export const metadata = {
   title: "Poster Pixels - CinaMini",
-  description: "Daily movie poster guessing game. Guess the movie from its pixelated poster as it becomes clearer over 30 seconds!",
+  description: "Can you guess the movie from a pixelated poster? Test your visual movie knowledge!",
 }
 
 export default async function PosterPixelsPage() {
@@ -13,16 +13,11 @@ export default async function PosterPixelsPage() {
     redirect("/")
   }
 
-  // Get the user from the server
+  // Get the user from the server (optional - no longer required)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // If no user, redirect to login
-  if (!user) {
-    redirect("/auth/login")
-  }
 
   return <PosterPixelsGame />
 }

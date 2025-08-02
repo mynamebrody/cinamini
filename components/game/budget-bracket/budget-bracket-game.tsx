@@ -12,6 +12,9 @@ import { GameHeader } from "../game-header"
 import { HowToPlayModal } from "../how-to-play-modal"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { type GameChoice } from "@/lib/budget-bracket-client"
+import { useGameMode } from "@/hooks/use-game-mode"
+import { localGameStorage } from "@/lib/local-game-storage"
+import AnonymousResultNudge from "../anonymous-result-nudge"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -67,6 +70,7 @@ type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function BudgetBracketGame() {
+  const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null)
@@ -77,8 +81,10 @@ export default function BudgetBracketGame() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadTodaysPuzzle()
-  }, [])
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading])
 
   const fetchCompletedGameResult = async (puzzleId: number) => {
     try {
@@ -114,8 +120,28 @@ export default function BudgetBracketGame() {
       const puzzleData: PuzzleData = await response.json()
       setPuzzle(puzzleData)
 
-      if (puzzleData.has_played) {
-        // Fetch complete game result for users who have already played
+      // Check if already played today
+      if (isAnonymous) {
+        // Check local storage for anonymous users
+        const hasPlayedToday = localGameStorage.hasPlayedToday('budget-bracket')
+        if (hasPlayedToday) {
+          const localResult = localGameStorage.getTodayResult('budget-bracket')
+          if (localResult?.result) {
+            setGameResult(localResult.result)
+            setGameState('completed')
+          } else {
+            setGameState('ready')
+          }
+        } else {
+          // Check if this is the user's first time playing
+          const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
+          setGameState('ready')
+          if (!hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
+        }
+      } else if (user && puzzleData.has_played) {
+        // Fetch complete game result for authenticated users who have already played
         await fetchCompletedGameResult(puzzleData.id)
       } else {
         // Check if this is the user's first time playing
@@ -227,23 +253,48 @@ export default function BudgetBracketGame() {
     try {
       const totalDuration = Date.now() - gameStartTime
 
-      const response = await fetch('/api/budget-bracket/submit-game', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          puzzle_id: puzzle!.id,
-          choices,
-          total_duration_ms: totalDuration
+      if (isAnonymous) {
+        // For anonymous users, calculate results locally
+        const rounds_completed = choices.length
+        const lastChoice = choices[choices.length - 1]
+        const final_result = rounds_completed === 5 ? 'perfect' : 'lost'
+        
+        // Create a simplified game result for anonymous users
+        const anonymousResult: GameResult = {
+          game_id: Date.now(), // Temporary ID
+          rounds_completed,
+          final_result,
+          is_perfect_game: final_result === 'perfect',
+          total_duration_ms: totalDuration,
+          revealed_pairs: [], // We'll need to populate this if needed
+          updated_stats: null
+        }
+        
+        // Save to local storage
+        localGameStorage.saveDailyResult('budget-bracket', anonymousResult)
+        
+        setGameResult(anonymousResult)
+        setGameState('completed')
+      } else {
+        // For authenticated users, submit to server
+        const response = await fetch('/api/budget-bracket/submit-game', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            puzzle_id: puzzle!.id,
+            choices,
+            total_duration_ms: totalDuration
+          })
         })
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to submit game')
+        if (!response.ok) {
+          throw new Error('Failed to submit game')
+        }
+
+        const result: GameResult = await response.json()
+        setGameResult(result)
+        setGameState('completed')
       }
-
-      const result: GameResult = await response.json()
-      setGameResult(result)
-      setGameState('completed')
     } catch (error) {
       console.error('Error submitting game:', error)
       setError('Failed to submit game. Please try again.')
@@ -390,12 +441,20 @@ export default function BudgetBracketGame() {
         )}
 
         {gameState === 'completed' && (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto space-y-4">
             {gameResult && puzzle ? (
-              <BudgetBracketResult 
-                result={gameResult} 
-                puzzle={puzzle}
-              />
+              <>
+                <BudgetBracketResult 
+                  result={gameResult} 
+                  puzzle={puzzle}
+                />
+                {isAnonymous && (
+                  <AnonymousResultNudge 
+                    gameResult={gameResult}
+                    gameName="Budget Bracket"
+                  />
+                )}
+              </>
             ) : puzzle?.has_played && puzzle.user_result ? (
               // Fallback for when detailed result couldn't be fetched
               <Card>

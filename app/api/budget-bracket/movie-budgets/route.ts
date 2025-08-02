@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { type MoviePair, type BudgetBracketMovie } from '@/lib/budget-bracket'
 import { getMovieDetails } from '@/lib/tmdb'
 
@@ -10,16 +10,7 @@ interface BudgetRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const supabaseService = createServiceClient()
-    
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const body: BudgetRequest = await request.json()
+    const body = await request.json()
     const { movieA_tmdb_id, movieB_tmdb_id } = body
 
     // Enhanced debugging
@@ -36,9 +27,12 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // No authentication required - this is public data
+    const supabase = await createClient()
+
     // Get today's puzzle to extract budget data from movie pairs (using service client to bypass RLS)
     const today = new Date().toISOString().split('T')[0]
-    const { data: puzzle, error: puzzleError } = await supabaseService
+    const { data: puzzle, error: puzzleError } = await supabase
       .from('budget_bracket_puzzles')
       .select('pairs')
       .eq('puzzle_date', today)
