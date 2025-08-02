@@ -5,17 +5,22 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const { puzzle_id } = await request.json()
 
     if (!puzzle_id) {
       return NextResponse.json({ error: "Puzzle ID is required" }, { status: 400 })
+    }
+
+    if (!user) {
+      // For anonymous users, return a temporary game session
+      return NextResponse.json({
+        gameId: `anonymous-${Date.now()}`,
+        startTime: new Date().toISOString(),
+        isAnonymous: true
+      })
     }
 
     // Check if user has already played this puzzle

@@ -46,9 +46,7 @@ export function MovieGuessInput({
       const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`)
       
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('You must be logged in to search for movies.')
-        } else if (response.status === 500) {
+        if (response.status === 500) {
           const errorData: APIErrorResponse = await response.json()
           throw new Error(errorData.error || 'Server error occurred.')
         } else {

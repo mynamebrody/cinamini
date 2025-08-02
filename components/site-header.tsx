@@ -1,8 +1,10 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { LogOut, Settings, User } from "lucide-react"
+import { LogOut, Settings, User, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
+import { useState, useEffect } from "react"
+import { localGameStorage } from "@/lib/local-game-storage"
 import Image from "next/image"
 
 interface SiteHeaderProps {
@@ -11,6 +13,16 @@ interface SiteHeaderProps {
 }
 
 export function SiteHeader({ user, displayName }: SiteHeaderProps) {
+  const [streakCount, setStreakCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) {
+      // Show streak count for anonymous users as a nudge
+      const stats = localGameStorage.getStats()
+      setStreakCount(stats.streakData.current)
+    }
+  }, [user])
+
   return (
     <header className="border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,7 +46,6 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
 
           {/* Navigation items */}
           <div className="flex items-center space-x-4">
-            
             {user ? (
               <>
                 <Button asChild variant="ghost" size="sm">
@@ -52,11 +63,21 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
               </>
             ) : (
               <>
+                {streakCount > 0 && (
+                  <div className="flex items-center text-sm text-neutral-600">
+                    <Trophy className="h-4 w-4 mr-1 text-orange-500" />
+                    <span className="font-medium">{streakCount}</span>
+                    <span className="hidden sm:inline ml-1">day streak</span>
+                  </div>
+                )}
                 <Button asChild variant="ghost" size="sm">
                   <a href="/auth/login">Sign In</a>
                 </Button>
                 <Button asChild variant="primary" size="sm">
-                  <a href="/auth/sign-up">Get Started</a>
+                  <a href="/auth/sign-up">
+                    <span className="hidden sm:inline">Save Progress</span>
+                    <span className="sm:hidden">Sign Up</span>
+                  </a>
                 </Button>
               </>
             )}

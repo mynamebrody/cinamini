@@ -5,11 +5,16 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // For anonymous users, return a simple completion response
+      return NextResponse.json({
+        success: true,
+        anonymous: true,
+        message: "Game completed - results not saved"
+      })
     }
 
     const { game_id, won, total_time_ms, final_clarity_level } = await request.json()

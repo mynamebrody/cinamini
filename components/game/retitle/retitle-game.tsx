@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
+import { useGameMode } from "@/hooks/use-game-mode"
+import { localGameStorage } from "@/lib/local-game-storage"
+import AnonymousResultNudge from "../anonymous-result-nudge"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
@@ -43,6 +46,7 @@ type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function RetitleGame() {
+  const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null)
@@ -51,8 +55,10 @@ export default function RetitleGame() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadTodaysPuzzle()
-  }, [])
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading])
 
   const loadTodaysPuzzle = async () => {
     try {
@@ -66,32 +72,89 @@ export default function RetitleGame() {
       
       const data = await response.json()
       
-      if (data.hasPlayed && data.userGuess) {
+      // Check if already played today
+      if (isAnonymous) {
+        // Check local storage for anonymous users
+        const hasPlayedToday = localGameStorage.hasPlayedToday('retitled')
+        if (hasPlayedToday) {
+          const localResult = localGameStorage.getTodayResult('retitled')
+          if (localResult?.result) {
+            setResult(localResult.result)
+            setGameState('completed')
+          } else {
+            setPuzzle(data.puzzle)
+            setGameState('ready')
+          }
+        } else {
+          setPuzzle(data.puzzle)
+          // Check if this is the user's first time playing
+          const hasPlayedBefore = localStorage.getItem('retitled-played')
+          setGameState('ready')
+          if (!hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
+        }
+      } else if (user && data.hasPlayed) {
         // User has already played today, show the result
-        // Fetch the result data using the new result API
+        setPuzzle(data.puzzle) // Set puzzle data for the result display
+        
+        // Try the result API first for full result data
         const resultResponse = await fetch(`/api/retitled/result/${data.puzzle.id}`)
         
         if (resultResponse.ok) {
           const resultData = await resultResponse.json()
           setResult(resultData)
         } else {
-          // Fallback: fetch stats and create a basic result
+          // Fallback: use the guess data and stats API
           const statsResponse = await fetch("/api/retitled/stats")
+          let statsData = null
           if (statsResponse.ok) {
-            const statsData = await statsResponse.json()
+            statsData = await statsResponse.json()
+          }
+          
+          // Create result from userGuess data if available
+          if (data.userGuess) {
             setResult({
               correct: data.userGuess.isCorrect,
               correctAnswer: {
-                id: 562, // Default to Die Hard
-                title: "Die Hard",
-                originalTitle: "Die Hard",
-                releaseYear: "1988",
-                translationNote: "The French title translates to 'Crystal Trap'"
+                id: data.puzzle.filmId || 562, // Use puzzle data or fallback
+                title: "See results for details",
+                originalTitle: "See results for details",
+                releaseYear: "Unknown",
+                translationNote: data.puzzle.translationNote || ""
+              },
+              puzzle: {
+                localizedTitle: data.puzzle.localizedTitle,
+                countryCode: data.puzzle.countryCode,
+                flagEmoji: data.puzzle.flagEmoji
               },
               stats: {
-                gamesPlayed: statsData.stats.gamesPlayed,
-                accuracy: statsData.stats.accuracy,
-                currentStreak: statsData.stats.currentStreak
+                gamesPlayed: statsData?.stats?.gamesPlayed || 0,
+                accuracy: statsData?.stats?.accuracy || 0,
+                currentStreak: statsData?.stats?.currentStreak || 0
+              }
+            })
+          } else {
+            // No guess data available, but user has played - try to get result another way
+            console.warn("User has played but no guess data available")
+            setResult({
+              correct: false,
+              correctAnswer: {
+                id: data.puzzle.filmId || 562,
+                title: "Result data unavailable",
+                originalTitle: "Result data unavailable",
+                releaseYear: "Unknown",
+                translationNote: ""
+              },
+              puzzle: {
+                localizedTitle: data.puzzle.localizedTitle,
+                countryCode: data.puzzle.countryCode,
+                flagEmoji: data.puzzle.flagEmoji
+              },
+              stats: {
+                gamesPlayed: statsData?.stats?.gamesPlayed || 0,
+                accuracy: statsData?.stats?.accuracy || 0,
+                currentStreak: statsData?.stats?.currentStreak || 0
               }
             })
           }
@@ -129,26 +192,55 @@ export default function RetitleGame() {
     const solveTimeMs = Date.now() - startTime
 
     try {
-      const response = await fetch("/api/retitled/guess", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          puzzleId: puzzle.id,
-          guessFilmId,
-          solveTimeMs
+      if (isAnonymous) {
+        // For anonymous users, use the guess API to get the correct answer details
+        const response = await fetch("/api/retitled/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
+            guessFilmId,
+            solveTimeMs
+          })
         })
-      })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to submit guess")
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to submit guess")
+        }
+
+        const data = await response.json()
+        
+        // Save to local storage for anonymous users
+        localGameStorage.saveDailyResult('retitled', data)
+        
+        setResult(data)
+        setGameState('completed')
+      } else {
+        // For authenticated users, submit to server
+        const response = await fetch("/api/retitled/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
+            guessFilmId,
+            solveTimeMs
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to submit guess")
+        }
+
+        const data = await response.json()
+        setResult(data)
+        setGameState('completed')
       }
-
-      const data = await response.json()
-      setResult(data)
-      setGameState('completed')
     } catch (err) {
       console.error("Error submitting guess:", err)
       setError("Failed to submit your guess. Please try again.")
@@ -171,7 +263,7 @@ export default function RetitleGame() {
         title="Retitled" 
         onHelpClick={showHowToPlay}
       >
-        {(gameState === 'ready' || gameState === 'completed') && (
+        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>
@@ -279,11 +371,17 @@ export default function RetitleGame() {
         )}
 
         {gameState === 'completed' && result && (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md mx-auto space-y-4">
             <RetitleResult 
               result={result} 
               puzzleId={puzzle?.id || ""}
             />
+            {isAnonymous && (
+              <AnonymousResultNudge 
+                gameResult={result}
+                gameName="Retitled"
+              />
+            )}
           </div>
         )}
       </main>

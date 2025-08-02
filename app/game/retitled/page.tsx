@@ -9,22 +9,17 @@ export const metadata = constructMetadata({
   image: gameMetadata.retitled.ogImage,
 })
 
-export default async function RetitlePage() {
+export default async function RetitledPage() {
   // If Supabase is not configured, redirect to home
   if (!isSupabaseConfigured) {
     redirect("/")
   }
 
-  // Get the user from the server
+  // Get the user from the server (optional - no longer required)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // If no user, redirect to login
-  if (!user) {
-    redirect("/auth/login")
-  }
 
   return <RetitleGame />
 }

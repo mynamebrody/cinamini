@@ -15,16 +15,11 @@ export default async function BudgetBracketPage() {
     redirect("/")
   }
 
-  // Get the user from the server
+  // Get the user from the server (optional - no longer required)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // If no user, redirect to login
-  if (!user) {
-    redirect("/auth/login")
-  }
 
   return <BudgetBracketGame />
 }
