@@ -114,7 +114,7 @@ export async function signUp(prevState: any, formData: FormData) {
 
 export async function signOut() {
   if (!isSupabaseConfigured) {
-    redirect("/auth/login")
+    redirect("/")
     return
   }
 
@@ -125,5 +125,5 @@ export async function signOut() {
     console.error("Sign out error:", error)
   }
 
-  redirect("/auth/login")
+  redirect("/")
 }
