@@ -44,11 +44,18 @@ export async function updateSession(request: NextRequest) {
     // Check if this is an auth callback
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get("code")
+    const type = requestUrl.searchParams.get("type")
 
     if (code) {
       // Exchange the code for a session
       await supabase.auth.exchangeCodeForSession(code)
-      // Redirect to home page after successful auth
+      
+      // If this is a password recovery flow, redirect to reset password page
+      if (type === "recovery") {
+        return NextResponse.redirect(new URL("/auth/reset-password", request.url))
+      }
+      
+      // Otherwise redirect to home page after successful auth
       return NextResponse.redirect(new URL("/", request.url))
     }
 
@@ -62,6 +69,8 @@ export async function updateSession(request: NextRequest) {
     const isAuthRoute =
       request.nextUrl.pathname.startsWith("/auth/login") ||
       request.nextUrl.pathname.startsWith("/auth/sign-up") ||
+      request.nextUrl.pathname.startsWith("/auth/forgot-password") ||
+      request.nextUrl.pathname.startsWith("/auth/reset-password") ||
       request.nextUrl.pathname === "/auth/callback"
 
     // Only redirect to login for protected routes (games, profile) if not authenticated
@@ -71,7 +80,8 @@ export async function updateSession(request: NextRequest) {
     }
 
     // If user is authenticated and trying to access auth pages, redirect to home
-    if (isAuthRoute && user) {
+    // Exception: Allow access to reset-password page during recovery flow
+    if (isAuthRoute && user && !request.nextUrl.pathname.startsWith("/auth/reset-password")) {
       return NextResponse.redirect(new URL("/", request.url))
     }
 
