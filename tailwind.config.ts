@@ -17,10 +17,10 @@ const config = {
       colors: {
         // CinaMini Cinema Theme Colors
         cinema: {
-          red: '#B31B1B',
-          'red-dark': '#9A1A1A',
-          gold: '#FFD700',
-          'gold-dark': '#E6C200',
+          red: '#6c0311',
+          'red-dark': '#56020e',
+          gold: '#b28c49',
+          'gold-dark': '#9a7b40',
         },
         // Game State Colors
         game: {
