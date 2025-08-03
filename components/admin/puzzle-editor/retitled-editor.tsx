@@ -4,8 +4,6 @@ import { useState, useEffect } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle } from "lucide-react"
 import { format } from "date-fns"
-// @ts-ignore
-import translate from "open-google-translator"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -107,9 +105,32 @@ export default function RetitledEditor() {
   useEffect(() => {
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
-      translate(selectedTitle.title, 'en', (translated: string) => {
-        setEnglishTranslation(translated)
-      })
+      // Translate the title to English
+      const translateTitle = async () => {
+        try {
+          const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: selectedTitle.title,
+              targetLang: 'en'
+            })
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setEnglishTranslation(data.translatedText)
+          }
+        } catch (error) {
+          console.error('Translation error:', error)
+          // Fallback to the original title if translation fails
+          setEnglishTranslation(selectedTitle.title)
+        }
+      }
+      
+      translateTitle()
     }
   }, [selectedTitle])
 
