@@ -25,7 +25,8 @@ export async function GET(
       const flagEmoji = getCountryFlag(puzzle?.country_code || "US")
       
       return NextResponse.json({
-        shareText: `Retitled ${flagEmoji} #${puzzleNumber} 🎬`,
+        shareText: `Retitled #${puzzleNumber} ${flagEmoji} 🎬\n1/1 rounds • 0s • #cinamini\n\nhttps://cinamini.app/game/retitled`,
+        shareUrl: `https://cinamini.app/game/retitled`
       })
     }
 
@@ -42,12 +43,16 @@ export async function GET(
       return NextResponse.json({ error: "Invalid puzzle" }, { status: 404 })
     }
 
-    // Get user's guess for this puzzle
+    // Get user's guess for this puzzle - add guess.solve_time_ms to query  
     const { data: guess, error: guessError } = await supabase
       .from("retitled_guesses")
-      .select("is_correct, guess_film_id")
+      .select(`
+        is_correct,
+        guess_film_id,
+        solve_time_ms
+      `)
       .eq("user_id", user.id)
-      .eq("puzzle_id", puzzleId)
+      .eq("puzzle_id", puzzle.id)
       .single()
 
     if (guessError || !guess) {
@@ -200,8 +205,19 @@ export async function GET(
     // Generate result grid (simplified for single guess)
     const resultGrid = guess.is_correct ? '✅' : '❌'
 
+    // Calculate time in seconds
+    const totalSeconds = guess.solve_time_ms ? Math.round(guess.solve_time_ms / 1000) : 0
+
     // Generate share text
-    const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nhttps://cinamini.app`
+    let shareText = ''
+    if (guess.is_correct) {
+      shareText = 'Perfect Producer!\n\n'
+    }
+    
+    shareText += `Retitled #${puzzleNumber} ${flagEmoji} ${resultGrid}\n`
+    shareText += `1/1 rounds • ${totalSeconds}s • #cinamini\n\n`
+    shareText += `https://cinamini.app/game/retitled`
+    
     const shareUrl = `https://cinamini.app/game/retitled`
 
     return NextResponse.json({

@@ -82,12 +82,18 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     }))
 
     const pattern = generateSharePattern(choices)
+    const totalSeconds = Math.round(result.total_duration_ms / 1000)
     
-    let resultText = result.is_perfect_game 
-      ? "Perfect Producer! 🎬" 
-      : `${result.rounds_completed}/5 rounds`
+    let shareText = ''
+    if (result.is_perfect_game) {
+      shareText = 'Perfect Producer!\n\n'
+    }
     
-    return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s`
+    shareText += `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n`
+    shareText += `${result.rounds_completed}/5 rounds • ${totalSeconds}s • #cinamini\n\n`
+    shareText += `https://cinamini.app/game/budget-bracket`
+    
+    return shareText
   }
 
   const formatTime = (ms: number) => {

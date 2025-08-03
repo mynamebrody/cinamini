@@ -411,6 +411,7 @@ export function getPosterPixelsShareText(
   let pattern = '';
   let finalScore = 0;
   let clarityWon: ClarityLevel | null = null;
+  let isWin = false;
   
   if (attempts.length === 0) {
     pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(POSTER_PIXELS_CONFIG.MAX_ATTEMPTS);
@@ -424,22 +425,26 @@ export function getPosterPixelsShareText(
       pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(incorrectAttempts) + 
                 POSTER_PIXELS_CONFIG.SHARE_EMOJIS.CORRECT;
       clarityWon = getCurrentClarityLevel(attempts.length);
+      isWin = true;
     } else {
       // All failed attempts
       pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(attempts.length);
     }
   }
   
-  let shareText = `Poster Pixels #${puzzle.puzzle_number} ${pattern}`;
+  // Calculate total time
+  const totalTimeMs = attempts.reduce((sum, attempt) => sum + (attempt.time_taken_ms || 0), 0);
+  const totalSeconds = Math.round(totalTimeMs / 1000);
   
-  if (finalScore > 0) {
-    shareText += `\n${finalScore} points`;
-    if (clarityWon) {
-      shareText += ` (${clarityWon}% clarity)`;
-    }
-    }
-
-  shareText += `\nhttps://cinamini.app`;
+  // Add achievement for perfect game (1 guess win with 100% clarity)
+  let shareText = '';
+  if (isWin && attempts.length === 1) {
+    shareText = 'Perfect Producer!\n\n';
+  }
+  
+  shareText += `Poster Pixels #${puzzle.puzzle_number} ${pattern}\n`;
+  shareText += `${attempts.length}/${POSTER_PIXELS_CONFIG.MAX_ATTEMPTS} rounds • ${totalSeconds}s • #cinamini\n\n`;
+  shareText += `https://cinamini.app/game/poster-pixels`;
 
   return shareText;
 }

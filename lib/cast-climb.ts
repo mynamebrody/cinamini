@@ -345,7 +345,21 @@ export function generateShareText(
     pattern = CAST_CLIMB_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(guesses.length);
   }
   
-  return `Cast Climb #${puzzleNumber} ${pattern}`;
+  // Calculate total time
+  const totalTimeMs = guesses.reduce((sum, guess) => sum + (guess.time_taken_ms || 0), 0);
+  const totalSeconds = Math.round(totalTimeMs / 1000);
+  
+  // Add achievement for perfect game (1 guess win)
+  let shareText = '';
+  if (isWin && guesses.length === 1) {
+    shareText = 'Perfect Producer!\n\n';
+  }
+  
+  shareText += `Cast Climb #${puzzleNumber} ${pattern}\n`;
+  shareText += `${guesses.length}/${CAST_CLIMB_CONFIG.MAX_GUESSES} rounds • ${totalSeconds}s • #cinamini\n\n`;
+  shareText += `https://cinamini.app/game/cast-climb`;
+  
+  return shareText;
 }
 
 /**

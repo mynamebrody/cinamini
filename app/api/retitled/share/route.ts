@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     // Get user's guess for this puzzle
     const { data: guess, error: guessError } = await supabase
       .from("retitled_guesses")
-      .select("is_correct, guess_film_id")
+      .select("is_correct, guess_film_id, solve_time_ms")
       .eq("user_id", user.id)
       .eq("puzzle_id", puzzle.id)
       .single()
@@ -57,9 +57,20 @@ export async function GET(request: NextRequest) {
 
     // Generate result grid (simplified for single guess)
     const resultGrid = guess.is_correct ? '🟩⬜⬜⬜' : '🟥⬜⬜⬜'
+    
+    // Calculate time in seconds
+    const totalSeconds = guess.solve_time_ms ? Math.round(guess.solve_time_ms / 1000) : 0
 
     // Generate share text
-    const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nhttps://cinamini.app`
+    let shareText = ''
+    if (guess.is_correct) {
+      shareText = 'Perfect Producer!\n\n'
+    }
+    
+    shareText += `Retitled #${puzzleNumber} ${flagEmoji} ${resultGrid}\n`
+    shareText += `1/1 rounds • ${totalSeconds}s • #cinamini\n\n`
+    shareText += `https://cinamini.app/game/retitled`
+    
     const shareUrl = `https://cinamini.app/game/retitled`
 
     return NextResponse.json({
