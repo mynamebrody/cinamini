@@ -4,6 +4,8 @@ import { useState, useEffect } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle } from "lucide-react"
 import { format } from "date-fns"
+// @ts-ignore
+import translate from "open-google-translator"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -74,6 +76,7 @@ export default function RetitledEditor() {
   const [loadingTitles, setLoadingTitles] = useState(false)
   const [customTitle, setCustomTitle] = useState("")
   const [loadingRandom, setLoadingRandom] = useState(false)
+  const [englishTranslation, setEnglishTranslation] = useState("")
 
   const supabase = getSupabaseClient()
 
@@ -104,6 +107,9 @@ export default function RetitledEditor() {
   useEffect(() => {
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
+      translate(selectedTitle.title, 'en', (translated: string) => {
+        setEnglishTranslation(translated)
+      })
     }
   }, [selectedTitle])
 
@@ -229,7 +235,8 @@ export default function RetitledEditor() {
         distractor_ids: distractors.map(d => d.id),
         is_published: isPublished,
         seed_value: seedValue,
-        puzzle_number: puzzleNumber
+        puzzle_number: puzzleNumber,
+        english_translation: englishTranslation.trim()
       }
 
       console.log('Saving puzzle with data:', puzzleData)
@@ -263,6 +270,7 @@ export default function RetitledEditor() {
       setIsPublished(false)
       setAlternativeTitles([])
       setCustomTitle("")
+      setEnglishTranslation("")
       
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
@@ -355,6 +363,7 @@ export default function RetitledEditor() {
                 setAlternativeTitles([])
                 setSelectedTitle(null)
                 setCustomTitle("")
+                setEnglishTranslation("")
               }}
             />
           ) : (
@@ -425,16 +434,29 @@ export default function RetitledEditor() {
             
             {/* Editable Title Field */}
             {selectedTitle && (
-              <div className="mt-3">
-                <Label htmlFor="custom-title" className="text-sm text-gray-600">Edit Title (optional)</Label>
-                <Input
-                  id="custom-title"
-                  type="text"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  placeholder="Customize the title..."
-                  className="mt-1"
-                />
+              <div className="mt-3 space-y-3">
+                <div>
+                  <Label htmlFor="custom-title" className="text-sm text-gray-600">Edit Title (optional)</Label>
+                  <Input
+                    id="custom-title"
+                    type="text"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    placeholder="Customize the title..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="english-translation" className="text-sm text-gray-600">English Translation</Label>
+                  <Input
+                    id="english-translation"
+                    type="text"
+                    value={englishTranslation}
+                    onChange={(e) => setEnglishTranslation(e.target.value)}
+                    placeholder="English translation of the title..."
+                    className="mt-1"
+                  />
+                </div>
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
+import { getCountryFlag } from "@/lib/retitled"
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +51,9 @@ export async function POST(request: NextRequest) {
         },
         puzzle: {
           localizedTitle: puzzle.localized_title,
+          englishTranslation: puzzle.english_translation || '',
           countryCode: puzzle.country_code,
-          flagEmoji: puzzle.flag_emoji
+          flagEmoji: getCountryFlag(puzzle.country_code)
         },
         stats: {
           gamesPlayed: 1,
@@ -118,8 +120,9 @@ export async function POST(request: NextRequest) {
         },
         puzzle: {
           localizedTitle: puzzle.localized_title,
+          englishTranslation: puzzle.english_translation || '',
           countryCode: puzzle.country_code,
-          flagEmoji: puzzle.flag_emoji
+          flagEmoji: getCountryFlag(puzzle.country_code)
         },
         stats: {
           gamesPlayed: currentStats?.games_played || 0,
@@ -226,8 +229,9 @@ export async function POST(request: NextRequest) {
       },
       puzzle: {
         localizedTitle: puzzle.localized_title,
+        englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
-        flagEmoji: puzzle.flag_emoji
+        flagEmoji: getCountryFlag(puzzle.country_code)
       },
       stats: {
         gamesPlayed: newStats.games_played,
