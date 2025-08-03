@@ -92,7 +92,9 @@ export default function PosterPixelsGame() {
       intervalRef.current = setInterval(() => {
         setState(prev => {
           const newTimeElapsed = prev.timeElapsed + 0.1
-          const newClarityLevel = Math.min(1, 0.50 + (newTimeElapsed / GAME_DURATION) * 0.50)
+          // Reach 100% clarity at 25 seconds (5 seconds before the end)
+          const TARGET_TIME = 25 // Time to reach 100% clarity
+          const newClarityLevel = Math.min(1, 0.50 + (Math.min(newTimeElapsed, TARGET_TIME) / TARGET_TIME) * 0.50)
           
           // Check if time is up
           if (newTimeElapsed >= GAME_DURATION) {
