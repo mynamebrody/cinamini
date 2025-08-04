@@ -38,18 +38,43 @@ export default function ResetPasswordForm() {
   const [state, formAction] = useActionState(updatePassword, null)
   const [showSuccess, setShowSuccess] = useState(false)
   const [isValidRecovery, setIsValidRecovery] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()
 
-  // Listen for PASSWORD_RECOVERY event as per Supabase docs
+  // Check if user has a valid recovery session
   useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false)
+      return
+    }
+
+    const checkRecoverySession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        // Check if there's a valid session (user will be authenticated after clicking the reset link)
+        if (session?.user) {
+          setIsValidRecovery(true)
+        }
+      } catch (error) {
+        console.error("Error checking recovery session:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // Also listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "PASSWORD_RECOVERY") {
+      if (event === "PASSWORD_RECOVERY" || (event === "SIGNED_IN" && session)) {
         setIsValidRecovery(true)
+        setIsLoading(false)
       }
     })
 
+    checkRecoverySession()
+
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase])
 
   // Handle redirect on success with proper cleanup
   useEffect(() => {
@@ -62,6 +87,18 @@ export default function ResetPasswordForm() {
       return () => clearTimeout(timeoutId)
     }
   }, [state?.success, showSuccess, router])
+
+  // Show loading state while checking recovery session
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-md space-y-8">
+        <div className="space-y-2 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-cinema-red" />
+          <p className="text-lg text-neutral-600">Verifying reset link...</p>
+        </div>
+      </div>
+    )
+  }
 
   // Show error if not a valid password recovery session
   if (!isValidRecovery) {
@@ -93,13 +130,13 @@ export default function ResetPasswordForm() {
           </div>
           <h1 className="font-nyt text-3xl font-bold tracking-tight text-neutral-900">Password updated!</h1>
           <p className="text-lg text-neutral-600">
-            Your password has been successfully updated. Redirecting to sign in...
+            Your password has been successfully updated. Signing you in now...
           </p>
         </div>
 
         <div className="text-center">
           <Link href="/auth/login" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
-            Go to sign in now
+            Go play some games now!
           </Link>
         </div>
       </div>

@@ -150,10 +150,12 @@ export async function resetPasswordForEmail(prevState: any, formData: FormData) 
   try {
     const supabase = await createServerActionClient()
 
+    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`
+    console.log("Password reset redirectTo:", redirectTo)
     const { error } = await supabase.auth.resetPasswordForEmail(
       email.toString(),
       {
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`,
+        redirectTo,
       }
     )
 

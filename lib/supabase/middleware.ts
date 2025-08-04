@@ -41,23 +41,8 @@ export async function updateSession(request: NextRequest) {
       }
     )
 
-    // Check if this is an auth callback
-    const requestUrl = new URL(request.url)
-    const code = requestUrl.searchParams.get("code")
-    const type = requestUrl.searchParams.get("type")
-
-    if (code) {
-      // Exchange the code for a session
-      await supabase.auth.exchangeCodeForSession(code)
-      
-      // If this is a password recovery flow, redirect to reset password page
-      if (type === "recovery") {
-        return NextResponse.redirect(new URL("/auth/reset-password", request.url))
-      }
-      
-      // Otherwise redirect to home page after successful auth
-      return NextResponse.redirect(new URL("/", request.url))
-    }
+    // Note: Auth callbacks with codes are now handled by /auth/confirm route for PKCE flow
+    // This middleware no longer handles exchangeCodeForSession
 
     // This will refresh session if expired - required for Server Components
     const { data: { user } } = await supabase.auth.getUser()
