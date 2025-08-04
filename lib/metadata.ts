@@ -42,13 +42,19 @@ export function constructMetadata({
   title = siteConfig.name,
   description = siteConfig.description,
   image = siteConfig.ogImage,
-  icons = "/favicon.ico",
+  icons = [
+    { rel: "icon", url: "/favicon.ico", sizes: "any" },
+    { rel: "icon", url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    { rel: "icon", url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    { rel: "apple-touch-icon", url: "/favicon/apple-touch-icon.png" },
+    { rel: "manifest", url: "/favicon/site.webmanifest" },
+  ],
   noIndex = false,
 }: {
   title?: string
   description?: string
   image?: string
-  icons?: string
+  icons?: any
   noIndex?: boolean
 } = {}): Metadata {
   return {
