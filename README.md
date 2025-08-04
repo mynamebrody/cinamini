@@ -53,6 +53,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
+# App URL (for password reset emails)
+NEXT_PUBLIC_APP_URL=http://localhost:3000  # Change to your production URL in production
+
 # TMDB API (get from https://www.themoviedb.org/settings/api)
 TMDB_API_KEY=your_tmdb_api_key
 TMDB_BASE_URL=https://api.themoviedb.org/3
