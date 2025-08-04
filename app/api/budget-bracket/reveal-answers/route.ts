@@ -8,11 +8,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
-    // Check if user is authenticated
+    // User authentication is optional for reveal answers
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
 
     const body = await request.json()
     const { puzzle_id } = body

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getCountryFlag } from "@/lib/retitled"
 
 export async function GET(
   request: NextRequest,
@@ -8,10 +9,24 @@ export async function GET(
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (optional for anonymous support)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    
+    if (!user) {
+      // For anonymous users, get basic puzzle info for share text
+      const { puzzleId } = await params
+      const { data: puzzle } = await supabase
+        .from("retitled_puzzles")
+        .select("puzzle_number, country_code")
+        .eq("id", puzzleId)
+        .single()
+        
+      const puzzleNumber = puzzle?.puzzle_number || "???"
+      const flagEmoji = getCountryFlag(puzzle?.country_code || "US")
+      
+      return NextResponse.json({
+        shareText: `Retitled ${flagEmoji} #${puzzleNumber} 🎬`,
+      })
     }
 
     const { puzzleId } = await params
@@ -44,6 +59,8 @@ export async function GET(
 
     // Get flag emoji
     const FLAG_EMOJIS: Record<string, string> = {
+      'US': '🇺🇸',
+      'GB': '🇬🇧',
       'FR': '🇫🇷',
       'ES': '🇪🇸',
       'DE': '🇩🇪',
@@ -54,15 +71,137 @@ export async function GET(
       'CN': '🇨🇳',
       'BR': '🇧🇷',
       'RU': '🇷🇺',
-      'IN': '🇮🇳'
+      'IN': '🇮🇳',
+      'CA': '🇨🇦',
+      'AU': '🇦🇺',
+      'MX': '🇲🇽',
+      'AR': '🇦🇷',
+      'SE': '🇸🇪',
+      'FI': '🇫🇮',
+      'NO': '🇳🇴',
+      'NL': '🇳🇱',
+      'BE': '🇧🇪',
+      'CH': '🇨🇭',
+      'PL': '🇵🇱',
+      'TR': '🇹🇷',
+      'GR': '🇬🇷',
+      'PT': '🇵🇹',
+      'IE': '🇮🇪',
+      'IL': '🇮🇱',
+      'EG': '🇪🇬',
+      'ZA': '🇿🇦',
+      'NZ': '🇳🇿',
+      'HU': '🇭🇺',
+      'CZ': '🇨🇿',
+      'AT': '🇦🇹',
+      'TH': '🇹🇭',
+      'ID': '🇮🇩',
+      'PH': '🇵🇭',
+      'SG': '🇸🇬',
+      'MY': '🇲🇾',
+      'RO': '🇷🇴',
+      'BG': '🇧🇬',
+      'UA': '🇺🇦',
+      'SK': '🇸🇰',
+      'HR': '🇭🇷',
+      'RS': '🇷🇸',
+      'SA': '🇸🇦',
+      'AE': '🇦🇪',
+      'CL': '🇨🇱',
+      'CO': '🇨🇴',
+      'PE': '🇵🇪',
+      'VE': '🇻🇪',
+      'PK': '🇵🇰',
+      'BD': '🇧🇩',
+      'VN': '🇻🇳',
+      'TW': '🇹🇼',
+      'HK': '🇭🇰',
+      'LU': '🇱🇺',
+      'IS': '🇮🇸',
+      'EE': '🇪🇪',
+      'LT': '🇱🇹',
+      'LV': '🇱🇻',
+      'SI': '🇸🇮',
+      'MT': '🇲🇹',
+      'CY': '🇨🇾',
+      'MA': '🇲🇦',
+      'TN': '🇹🇳',
+      'DZ': '🇩🇿',
+      'NG': '🇳🇬',
+      'KE': '🇰🇪',
+      'GH': '🇬🇭',
+      'SN': '🇸🇳',
+      'CI': '🇨🇮',
+      'CM': '🇨🇲',
+      'ET': '🇪🇹',
+      'SD': '🇸🇩',
+      'IR': '🇮🇷',
+      'IQ': '🇮🇶',
+      'SY': '🇸🇾',
+      'JO': '🇯🇴',
+      'LB': '🇱🇧',
+      'QA': '🇶🇦',
+      'KW': '🇰🇼',
+      'OM': '🇴🇲',
+      'BH': '🇧🇭',
+      'AZ': '🇦🇿',
+      'GE': '🇬🇪',
+      'AM': '🇦🇲',
+      'KZ': '🇰🇿',
+      'UZ': '🇺🇿',
+      'KG': '🇰🇬',
+      'TJ': '🇹🇯',
+      'TM': '🇹🇲',
+      'AF': '🇦🇫',
+      'NP': '🇳🇵',
+      'LK': '🇱🇰',
+      'MM': '🇲🇲',
+      'KH': '🇰🇭',
+      'LA': '🇱🇦',
+      'MN': '🇲🇳',
+      'MO': '🇲🇴',
+      'PA': '🇵🇦',
+      'CR': '🇨🇷',
+      'CU': '🇨🇺',
+      'DO': '🇩🇴',
+      'EC': '🇪🇨',
+      'GT': '🇬🇹',
+      'HN': '🇭🇳',
+      'JM': '🇯🇲',
+      'NI': '🇳🇮',
+      'PY': '🇵🇾',
+      'SV': '🇸🇻',
+      'UY': '🇺🇾',
+      'BO': '🇧🇴',
+      'BA': '🇧🇦',
+      'ME': '🇲🇪',
+      'MK': '🇲🇰',
+      'AL': '🇦🇱',
+      'MD': '🇲🇩',
+      'BY': '🇧🇾',
+      'LT': '🇱🇹',
+      'LV': '🇱🇻',
+      'EE': '🇪🇪',
+      'MC': '🇲🇨',
+      'LI': '🇱🇮',
+      'SM': '🇸🇲',
+      'VA': '🇻🇦',
+      'AD': '🇦🇩',
+      'FO': '🇫🇴',
+      'GL': '🇬🇱',
+      'GI': '🇬🇮',
+      'GG': '🇬🇬',
+      'JE': '🇯🇪',
+      'IM': '🇮🇲',
+      'AX': '🇦🇽',
     }
     const flagEmoji = FLAG_EMOJIS[puzzle.country_code] || '🏳️'
 
     // Generate result grid (simplified for single guess)
-    const resultGrid = guess.is_correct ? '🟩⬜⬜⬜' : '🟥⬜⬜⬜'
+    const resultGrid = guess.is_correct ? '✅' : '❌'
 
     // Generate share text
-    const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\ncinamini.app`
+    const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nhttps://cinamini.app`
     const shareUrl = `https://cinamini.app/game/retitled`
 
     return NextResponse.json({

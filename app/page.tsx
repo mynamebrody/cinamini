@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import GamesList from "@/components/games-list"
 import { SiteHeader } from "@/components/site-header"
 import { Banner } from "@/components/banner"
+import Image from "next/image"
 
 export default async function Home() {
   // If Supabase is not configured, show setup message directly
@@ -61,19 +62,19 @@ export default async function Home() {
               <h1 className="font-nyt text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-4">
                 The Cinema Challenge
               </h1>
-              <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-lg sm:text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed mb-2">
                 Test your movie knowledge with daily puzzles. From budget battles to cast climbs, 
                 discover new depths of cinema trivia every day.
+              </p>
+              <p className="text-base text-neutral-500 max-w-2xl mx-auto">
+                Play instantly - no sign-up required! Create an account to save your progress and compete with friends.
               </p>
             </div>
 
             {!user && (
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button asChild variant="primary" size="lg">
-                  <a href="/auth/sign-up">Start Playing Free</a>
-                </Button>
-                <Button asChild variant="ghost" size="lg">
-                  <a href="/auth/login">Sign In</a>
+              <div className="flex justify-center items-center">
+                <Button asChild variant="ghost" size="md">
+                  <a href="/auth/login">Sign in to save progress</a>
                 </Button>
               </div>
             )}
@@ -91,12 +92,9 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row justify-between items-center">
             <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
-              © 2025 CinaMini. Daily movie puzzles for film enthusiasts.
+              © 2025 cinamini. Made with 🍿 in Grand Rapids, MI
             </div>
             <div className="flex items-center space-x-6 text-sm text-neutral-500">
-              <a href="/stats" className="hover:text-cinema-red transition-colors">
-                Statistics
-              </a>
               <a href="/profile" className="hover:text-cinema-red transition-colors">
                 Profile
               </a>

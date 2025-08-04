@@ -5,11 +5,22 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // For anonymous users, return empty/default stats
+      return NextResponse.json({
+        stats: {
+          games_played: 0,
+          games_won: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          average_clarity_level: 0,
+          best_time_ms: null,
+          anonymous: true
+        }
+      })
     }
 
     // Get or create user stats

@@ -73,7 +73,7 @@ SHARE_CARD_SECRET=your-secret-key
 ### Step 2: Create Super Admin User
 
 #### Option A: Automatic Setup (Recommended)
-1. Create account with email `admin@cinamini.com`
+1. Create account with email `admin@cinamini.app`
 2. System automatically grants admin privileges via seed file
 
 #### Option B: Manual Setup

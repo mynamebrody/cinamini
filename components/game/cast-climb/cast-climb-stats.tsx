@@ -1,6 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useGameMode } from "@/hooks/use-game-mode"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { 
@@ -32,13 +35,21 @@ interface CastClimbStats {
 }
 
 export default function CastClimbStats() {
+  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const router = useRouter()
   const [stats, setStats] = useState<CastClimbStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadStats()
-  }, [])
+    if (!authLoading) {
+      if (isAnonymous) {
+        setLoading(false)
+      } else {
+        loadStats()
+      }
+    }
+  }, [isAnonymous, authLoading])
 
   const loadStats = async () => {
     try {
@@ -73,6 +84,43 @@ export default function CastClimbStats() {
           </Card>
         ))}
       </div>
+    )
+  }
+
+  // Show sign-up CTA for anonymous users
+  if (isAnonymous) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center space-y-4">
+          <div className="space-y-2">
+            <BarChart3 className="w-12 h-12 text-cinema-red mx-auto" />
+            <h3 className="text-lg font-semibold text-neutral-900">
+              Interested in Seeing Your Stats?
+            </h3>
+            <p className="text-neutral-600 text-sm">
+              Sign up for an account to track your progress, compare with friends, and see detailed statistics!
+            </p>
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button 
+                onClick={() => router.push('/auth/sign-up')}
+                variant="primary"
+                size="sm"
+              >
+                Create Account
+              </Button>
+              <Button 
+                onClick={() => router.push('/auth/login')}
+                variant="outline"
+                size="sm"
+              >
+                Sign In
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 

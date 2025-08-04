@@ -437,10 +437,10 @@ export function getPosterPixelsShareText(
     if (clarityWon) {
       shareText += ` (${clarityWon}% clarity)`;
     }
-  }
-  
-  shareText += `\ncinamini.app`;
-  
+    }
+
+  shareText += `\nhttps://cinamini.app`;
+
   return shareText;
 }
 

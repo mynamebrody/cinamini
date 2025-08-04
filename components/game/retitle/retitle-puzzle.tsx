@@ -8,6 +8,7 @@ interface PuzzleData {
   id: string
   puzzleDate: string
   localizedTitle: string
+  englishTranslation: string
   countryCode: string
   countryName: string
   flagEmoji: string
@@ -58,6 +59,9 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
         <div className="text-6xl">{puzzle.flagEmoji}</div>
         <div className="text-sm text-muted-foreground">{puzzle.countryName}</div>
         <h2 className="text-3xl font-bold text-foreground">"{puzzle.localizedTitle}"</h2>
+        {puzzle.englishTranslation && (
+          <p className="text-lg text-muted-foreground italic">"{puzzle.englishTranslation}"</p>
+        )}
         <p className="text-muted-foreground">Which movie is this?</p>
       </div>
 

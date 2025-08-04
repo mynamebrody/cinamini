@@ -32,12 +32,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
-    // Get current user
+    // Get current user (optional - no longer required)
     const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const today = new Date().toISOString().split('T')[0]
     
@@ -159,16 +155,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Check if user has played today
-    const { data: todaysGame } = await supabase
-      .from("poster_pixels_games")
-      .select(`
-        *,
-        poster_pixels_guesses(*)
-      `)
-      .eq("user_id", user.id)
-      .eq("puzzle_id", puzzle.id)
-      .single()
+    // Check if user has played today (only if authenticated)
+    let todaysGame = null
+    if (user) {
+      const { data: userGame } = await supabase
+        .from("poster_pixels_games")
+        .select(`
+          *,
+          poster_pixels_guesses(*)
+        `)
+        .eq("user_id", user.id)
+        .eq("puzzle_id", puzzle.id)
+        .single()
+      
+      todaysGame = userGame
+    }
 
     return NextResponse.json({
       puzzle: {
