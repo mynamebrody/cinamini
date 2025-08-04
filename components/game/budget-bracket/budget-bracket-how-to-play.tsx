@@ -51,7 +51,7 @@ export default function BudgetBracketHowToPlay({ onStart }: BudgetBracketHowToPl
               <div className="flex-1">
                 <h3 className="font-semibold mb-1">Progress Through Rounds</h3>
                 <p className="text-sm text-muted-foreground">
-                  Make it through 5 rounds of comparisons. One wrong guess and the game ends!
+                  Play through all 5 rounds of comparisons. Try to get them all correct!
                 </p>
               </div>
             </div>
