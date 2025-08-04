@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
         puzzleDate: puzzle.puzzle_date,
         puzzleNumber: puzzle.puzzle_number,
         localizedTitle: puzzle.localized_title,
+        englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
         countryName: puzzle.country_name || getCountryName(puzzle.country_code),
         flagEmoji: getCountryFlag(puzzle.country_code),

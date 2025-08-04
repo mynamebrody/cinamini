@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
+import { getCountryFlag } from "@/lib/retitled"
 
 export async function GET(
   request: NextRequest,
@@ -63,6 +64,12 @@ export async function GET(
         releaseYear: getReleaseYear(correctMovie.release_date),
         translationNote: puzzle.translation_note,
         posterPath: correctMovie.poster_path
+      },
+      puzzle: {
+        localizedTitle: puzzle.localized_title,
+        englishTranslation: puzzle.english_translation || '',
+        countryCode: puzzle.country_code,
+        flagEmoji: getCountryFlag(puzzle.country_code)
       },
       stats: {
         gamesPlayed: stats?.games_played || 1,

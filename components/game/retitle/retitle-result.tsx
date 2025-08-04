@@ -26,6 +26,7 @@ interface GuessResult {
   }
   puzzle?: {
     localizedTitle: string
+    englishTranslation: string
     countryCode: string
     flagEmoji: string
   }
@@ -130,9 +131,16 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
                 <span className="text-2xl">{result.puzzle.flagEmoji}</span>
                 <span className="text-lg font-medium">{result.puzzle.localizedTitle}</span>
               </div>
-              <p className="text-sm text-muted-foreground text-center italic">
-                {result.correctAnswer.translationNote}
-              </p>
+              {result.puzzle.englishTranslation && (
+                <p className="text-base text-muted-foreground text-center italic">
+                  "{result.puzzle.englishTranslation}"
+                </p>
+              )}
+              {result.correctAnswer.translationNote && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {result.correctAnswer.translationNote}
+                </p>
+              )}
             </div>
           )}
         </div>

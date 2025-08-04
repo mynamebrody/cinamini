@@ -20,6 +20,7 @@ interface PuzzleData {
   puzzleDate: string
   puzzleNumber: number
   localizedTitle: string
+  englishTranslation: string
   countryCode: string
   countryName: string
   flagEmoji: string
