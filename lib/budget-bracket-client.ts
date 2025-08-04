@@ -61,24 +61,12 @@ export function generateSharePattern(choices: GameChoice[]): string {
   const maxRounds = 5;
   const pattern: string[] = [];
 
-  for (let i = 0; i < maxRounds; i++) {
-    if (i < choices.length) {
-      pattern.push(choices[i].correct ? '🟩' : '🟥');
-      // If this was incorrect, break (user failed)
-      if (!choices[i].correct) {
-        break;
-      }
-    } else {
-      // This round wasn't reached
-      break;
-    }
+  // Show results for all rounds played (should be 5 in the new system)
+  for (let i = 0; i < Math.min(maxRounds, choices.length); i++) {
+    pattern.push(choices[i].correct ? '🟩' : '🟥');
   }
 
-  // Pad with empty squares if needed (for visual consistency)
-  while (pattern.length < maxRounds) {
-    pattern.push('⬜');
-  }
-
+  // No padding with grey squares - only show actual results
   return pattern.join('');
 }
 
@@ -86,12 +74,13 @@ export function generateSharePattern(choices: GameChoice[]): string {
  * Calculate final result string based on performance
  */
 export function calculateFinalResult(choices: GameChoice[]): string {
-  if (choices.length === 5 && choices.every(c => c.correct)) {
+  const correctAnswers = choices.filter(c => c.correct).length;
+  
+  if (correctAnswers === 5) {
     return 'perfect';
   }
 
-  const lastRound = choices.length;
-  return `failed_round_${lastRound}`;
+  return `${correctAnswers}_out_of_5`;
 }
 
 /**

@@ -18,6 +18,7 @@ interface RetitledPreviewProps extends BasePreviewProps {
     flagEmoji: string
     countryName: string
     localizedTitle: string
+    englishTranslation?: string
     options: Array<{ id: number; title: string; isCorrect?: boolean }>
   }
 }
@@ -106,6 +107,7 @@ function RetitledPreview({
   flagEmoji, 
   countryName, 
   localizedTitle, 
+  englishTranslation,
   options 
 }: RetitledPreviewProps["data"]) {
   return (
@@ -115,6 +117,9 @@ function RetitledPreview({
         <div className="text-5xl">{flagEmoji}</div>
         <div className="text-sm text-gray-500">{countryName}</div>
         <h3 className="text-2xl font-bold">"{localizedTitle}"</h3>
+        {englishTranslation && (
+          <p className="text-base text-gray-500 italic">"{englishTranslation}"</p>
+        )}
         <p className="text-gray-600">Which movie is this?</p>
       </div>
 

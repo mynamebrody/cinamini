@@ -125,5 +125,94 @@ export async function signOut() {
     console.error("Sign out error:", error)
   }
 
-  redirect("/")
+  redirect("/auth/login")
+}
+
+// Password reset actions
+export async function resetPasswordForEmail(prevState: any, formData: FormData) {
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured) {
+    return { error: "Supabase is not configured. Please set up your environment variables." }
+  }
+
+  // Check if formData is valid
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const email = formData.get("email")
+
+  // Validate required fields
+  if (!email) {
+    return { error: "Email is required" }
+  }
+
+  try {
+    const supabase = await createServerActionClient()
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.toString(),
+      {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password`,
+      }
+    )
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    // Always return success to prevent email enumeration
+    return { success: true }
+  } catch (error) {
+    console.error("Password reset error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
+}
+
+export async function updatePassword(prevState: any, formData: FormData) {
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured) {
+    return { error: "Supabase is not configured. Please set up your environment variables." }
+  }
+
+  // Check if formData is valid
+  if (!formData) {
+    return { error: "Form data is missing" }
+  }
+
+  const password = formData.get("password")
+  const confirmPassword = formData.get("confirmPassword")
+
+  // Validate required fields
+  if (!password || !confirmPassword) {
+    return { error: "Password and confirmation are required" }
+  }
+
+  // Check if passwords match
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match" }
+  }
+
+  // Check password length
+  if (password.toString().length < 6) {
+    return { error: "Password must be at least 6 characters long" }
+  }
+
+  try {
+    const supabase = await createServerActionClient()
+
+    const { error } = await supabase.auth.updateUser({
+      password: password.toString()
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    // Return success
+    return { success: true }
+  } catch (error) {
+    console.error("Password update error:", error)
+    return { error: "An unexpected error occurred. Please try again." }
+  }
 }

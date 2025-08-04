@@ -1,19 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ShareSection } from "@/components/game/share-section"
 import { 
   Trophy, 
-  DollarSign, 
   Clock,
   CheckCircle,
   XCircle,
-  BarChart3,
-  Eye,
-  EyeOff
+  BarChart3
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 
@@ -67,11 +63,15 @@ interface BudgetBracketResultProps {
 }
 
 export default function BudgetBracketResult({ result, puzzle }: BudgetBracketResultProps) {
-  const [showAllAnswers, setShowAllAnswers] = useState(false)
   const [allRoundsData, setAllRoundsData] = useState<any[]>([])
-  const [loadingAnswers, setLoadingAnswers] = useState(false)
+  const [loadingAnswers, setLoadingAnswers] = useState(true)
   
   const shareText = generateShareText()
+  
+  // Automatically fetch all answers when component mounts
+  useEffect(() => {
+    fetchAllAnswers()
+  }, [])
   
   function generateShareText(): string {
     const choices: GameChoice[] = result.revealed_pairs.map(pair => ({
@@ -83,9 +83,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
 
     const pattern = generateSharePattern(choices)
     
+    const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
     let resultText = result.is_perfect_game 
       ? "Perfect Producer! 🎬" 
-      : `${result.rounds_completed}/5 rounds`
+      : `${correctAnswers}/5 correct`
     
     return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s`
   }
@@ -105,8 +106,6 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   }
 
   const fetchAllAnswers = async () => {
-    if (loadingAnswers) return
-    
     setLoadingAnswers(true)
     
     try {
@@ -129,7 +128,6 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
       // Make sure we have valid data
       if (data.all_rounds && Array.isArray(data.all_rounds) && data.all_rounds.length > 0) {
         setAllRoundsData(data.all_rounds)
-        setShowAllAnswers(true)
       } else {
         console.error('Invalid data structure received:', data)
         // Fallback to mock data if API fails
@@ -158,7 +156,6 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
           difficulty_ratio: 2.0
         }))
         setAllRoundsData(mockData)
-        setShowAllAnswers(true)
       }
     } catch (error) {
       console.error('Error fetching answers:', error)
@@ -188,20 +185,11 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         difficulty_ratio: 2.0
       }))
       setAllRoundsData(mockData)
-      setShowAllAnswers(true)
     } finally {
       setLoadingAnswers(false)
     }
   }
 
-  const toggleAnswersVisibility = () => {
-    if (showAllAnswers) {
-      setShowAllAnswers(false)
-      setAllRoundsData([]) // Clear the data when hiding
-    } else {
-      fetchAllAnswers()
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -227,8 +215,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
           {/* Performance Summary */}
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold">{result.rounds_completed}</div>
-              <div className="text-sm text-muted-foreground">Rounds</div>
+              <div className="text-2xl font-bold">
+                {result.revealed_pairs.filter(p => p.correct).length}/{result.rounds_completed}
+              </div>
+              <div className="text-sm text-muted-foreground">Correct</div>
             </div>
             <div>
               <div className="text-2xl font-bold">{formatTime(result.total_duration_ms)}</div>
@@ -260,7 +250,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
             
             <ShareSection 
               shareText={shareText}
-              shareUrl="https://cinamini.app"
+              shareUrl="https://cinamini.app/game/budget-bracket"
             />
           </div>
         </CardContent>
@@ -269,39 +259,19 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
       {/* Round by Round Breakdown */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
-              Round Breakdown {showAllAnswers ? '(All Rounds Shown)' : '(Played Rounds Only)'}
-            </CardTitle>
-            <Button
-              onClick={toggleAnswersVisibility}
-              variant="outline"
-              size="sm"
-              disabled={loadingAnswers}
-            >
-              {loadingAnswers ? (
-                <>
-                  <Clock className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </>
-              ) : showAllAnswers ? (
-                <>
-                  <EyeOff className="w-4 h-4 mr-2" />
-                  Hide All Answers
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 mr-2" />
-                  Reveal All Answers
-                </>
-              )}
-            </Button>
-          </div>
+          <CardTitle className="text-lg">
+            Round Breakdown
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {showAllAnswers && allRoundsData.length > 0 ? (
+          {loadingAnswers ? (
+            <div className="text-center py-8">
+              <Clock className="w-6 h-6 mx-auto animate-spin mb-2" />
+              <p className="text-muted-foreground">Loading round details...</p>
+            </div>
+          ) : allRoundsData.length > 0 ? (
             // Show all rounds with budget data
-            allRoundsData.map((roundData, index) => {
+            allRoundsData.map((roundData) => {
               const wasPlayed = result.revealed_pairs.some(r => r.round === roundData.round)
               const playedRound = result.revealed_pairs.find(r => r.round === roundData.round)
               const chosenMovie = playedRound ? 
@@ -345,7 +315,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         ? playedRound?.correct 
                           ? 'bg-green-50 border border-green-200'
                           : 'bg-red-50 border border-red-200'
-                        : roundData.correct_choice === 'A' && chosenMovie !== 'A'
+                        : roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
@@ -385,7 +355,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         ? playedRound?.correct 
                           ? 'bg-green-50 border border-green-200'
                           : 'bg-red-50 border border-red-200'
-                        : roundData.correct_choice === 'B' && chosenMovie !== 'B'
+                        : roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
@@ -443,7 +413,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
             })
           ) : (
             // Show only played rounds (original behavior)
-            result.revealed_pairs.map((roundData, index) => {
+            result.revealed_pairs.map((roundData) => {
               const pair = puzzle.pairs.find(p => p.round === roundData.round)!
               const chosenMovie = roundData.chosen_movie === roundData.revealed_budgets.movieA.tmdb_id ? 'A' : 'B'
               
@@ -471,7 +441,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         ? roundData.correct 
                           ? 'bg-green-50 border border-green-200'
                           : 'bg-red-50 border border-red-200'
-                        : roundData.correct_choice === 'A' && chosenMovie !== 'A'
+                        : roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
@@ -505,7 +475,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         ? roundData.correct 
                           ? 'bg-green-50 border border-green-200'
                           : 'bg-red-50 border border-red-200'
-                        : roundData.correct_choice === 'B' && chosenMovie !== 'B'
+                        : roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>

@@ -32,7 +32,6 @@ interface BudgetBracketRoundProps {
   pair: PuzzlePair
   round: number
   onChoice: (chosenMovieTmdbId: number, timeTaken: number) => void
-  onGameEnd: (choices: GameChoice[]) => void
   gameChoices: GameChoice[]
   puzzle: PuzzleData
 }
@@ -48,7 +47,6 @@ export default function BudgetBracketRound({
   pair, 
   round, 
   onChoice, 
-  onGameEnd, 
   gameChoices, 
   puzzle 
 }: BudgetBracketRoundProps) {
@@ -181,13 +179,43 @@ export default function BudgetBracketRound({
 
   return (
     <div className="space-y-4">
-      {/* Round indicator */}
-      <div className="text-center">
+      {/* Round indicator with progress dots */}
+      <div className="text-center space-y-3">
         <Badge variant="secondary" className="text-lg px-4 py-2">
           Round {round} of 5
         </Badge>
+        
+        {/* Progress indicator */}
+        <div className="flex justify-center space-x-2">
+          {[1, 2, 3, 4, 5].map((roundNum) => {
+            // Find if this round has been completed
+            const completedChoice = gameChoices.find(choice => choice.round === roundNum)
+            
+            return (
+              <div
+                key={roundNum}
+                className={`w-3 h-3 rounded-full ${
+                  roundNum < round
+                    ? completedChoice?.correct
+                      ? 'bg-green-500'  // Correct answer
+                      : 'bg-red-500'    // Wrong answer
+                    : roundNum === round
+                      ? hasChosen
+                        ? showingFeedback && isCorrect !== null
+                          ? isCorrect
+                            ? 'bg-green-500'  // Current round - correct
+                            : 'bg-red-500'    // Current round - wrong
+                          : 'bg-blue-500'     // Current round - processing
+                        : 'bg-primary'        // Current round - not chosen yet
+                      : 'bg-muted'            // Future rounds
+                }`}
+              />
+            )
+          })}
+        </div>
+        
         {!hasChosen && (
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground">
             Which movie had a higher production budget?
           </p>
         )}
@@ -212,8 +240,8 @@ export default function BudgetBracketRound({
           }`}
           onClick={() => handleMovieChoice('A')}
         >
-          <CardContent className="p-6">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-3">
+          <CardContent className="p-8">
+            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
               <img
                 src={getPosterUrl(pair.movieA.poster_path, 'w342')}
                 alt={`${pair.movieA.title} poster`}
@@ -259,8 +287,8 @@ export default function BudgetBracketRound({
           }`}
           onClick={() => handleMovieChoice('B')}
         >
-          <CardContent className="p-6">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mb-3">
+          <CardContent className="p-8">
+            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
               <img
                 src={getPosterUrl(pair.movieB.poster_path, 'w342')}
                 alt={`${pair.movieB.title} poster`}
@@ -319,32 +347,13 @@ export default function BudgetBracketRound({
           )}
 
           <div className="text-sm text-muted-foreground">
-            {isCorrect && round < 5 ? 'Moving to next round...' : isCorrect && round === 5 ? 'Perfect Producer!' : 'Game Over'}
+            {isCorrect && round < 5 ? 'Moving to next round...' : 
+             isCorrect && round === 5 ? 'Perfect Producer!' : 
+             round < 5 ? 'Moving to next round...' : 
+             'Game Complete!'}
           </div>
         </div>
       )}
-
-                             {/* Progress indicator */}
-         <div className="flex justify-center space-x-2">
-           {[1, 2, 3, 4, 5].map((roundNum) => (
-             <div
-               key={roundNum}
-               className={`w-3 h-3 rounded-full ${
-                 roundNum < round
-                   ? 'bg-green-500'
-                   : roundNum === round
-                     ? hasChosen
-                       ? showingFeedback && isCorrect !== null
-                         ? isCorrect
-                           ? 'bg-green-500'
-                           : 'bg-red-500'
-                         : 'bg-blue-500'
-                       : 'bg-primary'
-                     : 'bg-muted'
-               }`}
-             />
-           ))}
-         </div>
     </div>
   )
 }

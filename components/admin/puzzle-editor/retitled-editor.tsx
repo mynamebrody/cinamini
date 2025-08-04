@@ -74,6 +74,7 @@ export default function RetitledEditor() {
   const [loadingTitles, setLoadingTitles] = useState(false)
   const [customTitle, setCustomTitle] = useState("")
   const [loadingRandom, setLoadingRandom] = useState(false)
+  const [englishTranslation, setEnglishTranslation] = useState("")
 
   const supabase = getSupabaseClient()
 
@@ -104,6 +105,32 @@ export default function RetitledEditor() {
   useEffect(() => {
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
+      // Translate the title to English
+      const translateTitle = async () => {
+        try {
+          const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: selectedTitle.title,
+              targetLang: 'en'
+            })
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setEnglishTranslation(data.translatedText)
+          }
+        } catch (error) {
+          console.error('Translation error:', error)
+          // Fallback to the original title if translation fails
+          setEnglishTranslation(selectedTitle.title)
+        }
+      }
+      
+      translateTitle()
     }
   }, [selectedTitle])
 
@@ -229,7 +256,8 @@ export default function RetitledEditor() {
         distractor_ids: distractors.map(d => d.id),
         is_published: isPublished,
         seed_value: seedValue,
-        puzzle_number: puzzleNumber
+        puzzle_number: puzzleNumber,
+        english_translation: englishTranslation.trim()
       }
 
       console.log('Saving puzzle with data:', puzzleData)
@@ -263,6 +291,7 @@ export default function RetitledEditor() {
       setIsPublished(false)
       setAlternativeTitles([])
       setCustomTitle("")
+      setEnglishTranslation("")
       
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
@@ -296,6 +325,7 @@ export default function RetitledEditor() {
       flagEmoji: flag,
       countryName: selectedTitle?.iso_3166_1 || "...",
       localizedTitle: customTitle.trim() || selectedTitle?.title || "...",
+      englishTranslation: englishTranslation.trim() || "",
       options
     }
   }
@@ -355,6 +385,7 @@ export default function RetitledEditor() {
                 setAlternativeTitles([])
                 setSelectedTitle(null)
                 setCustomTitle("")
+                setEnglishTranslation("")
               }}
             />
           ) : (
@@ -425,16 +456,29 @@ export default function RetitledEditor() {
             
             {/* Editable Title Field */}
             {selectedTitle && (
-              <div className="mt-3">
-                <Label htmlFor="custom-title" className="text-sm text-gray-600">Edit Title (optional)</Label>
-                <Input
-                  id="custom-title"
-                  type="text"
-                  value={customTitle}
-                  onChange={(e) => setCustomTitle(e.target.value)}
-                  placeholder="Customize the title..."
-                  className="mt-1"
-                />
+              <div className="mt-3 space-y-3">
+                <div>
+                  <Label htmlFor="custom-title" className="text-sm text-gray-600">Edit Title (optional)</Label>
+                  <Input
+                    id="custom-title"
+                    type="text"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    placeholder="Customize the title..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="english-translation" className="text-sm text-gray-600">English Translation</Label>
+                  <Input
+                    id="english-translation"
+                    type="text"
+                    value={englishTranslation}
+                    onChange={(e) => setEnglishTranslation(e.target.value)}
+                    placeholder="English translation of the title..."
+                    className="mt-1"
+                  />
+                </div>
               </div>
             )}
           </div>
