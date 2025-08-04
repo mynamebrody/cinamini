@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Magic Link</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background-color: #6c0311;
+      padding: 40px 20px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content h2 {
+      color: #1f2937;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      color: #4b5563;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #6c0311;
+      color: white;
+      padding: 14px 32px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 16px;
+      margin: 20px 0;
+    }
+    .button:hover {
+      background-color: #56020e;
+    }
+    .footer {
+      background-color: #f9fafb;
+      padding: 30px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .footer p {
+      margin: 5px 0;
+    }
+    .url-box {
+      background-color: #f3f4f6;
+      padding: 12px;
+      border-radius: 4px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-size: 14px;
+      color: #4b5563;
+    }
+    .magic-box {
+      background-color: #fef7cd;
+      border: 1px solid #b28c49;
+      padding: 20px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .magic-box h3 {
+      color: #6c0311;
+      margin: 0 0 10px 0;
+      font-size: 18px;
+    }
+    .magic-box p {
+      color: #6c0311;
+      margin: 0;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎬 cinamini</h1>
+    </div>
+    <div class="content">
+      <h2>Your Magic Link 🪄</h2>
+      <p>Hi there,</p>
+      <p>Here's your magic link to sign in to cinamini. No password needed!</p>
+      
+      <div class="magic-box">
+        <h3>✨ One-Click Sign In</h3>
+        <p>Click the button below to instantly access your account and start playing today's movie puzzles.</p>
+      </div>
+      
+      <div style="text-align: center;">
+        <a href="{{ .ConfirmationURL }}" class="button">Sign In to cinamini</a>
+      </div>
+      
+      <p>Or copy and paste this link into your browser:</p>
+      <div class="url-box">
+        {{ .ConfirmationURL }}
+      </div>
+      
+      <p><strong>This magic link will expire in 15 minutes for security reasons.</strong></p>
+      
+      <p>If you didn't request this magic link, you can safely ignore this email. Your account remains secure.</p>
+    </div>
+    <div class="footer">
+      <p>This email was sent by cinamini</p>
+      <p>Need help? Contact us at help@cinamini.app</p>
+    </div>
+  </div>
+</body>
+</html>

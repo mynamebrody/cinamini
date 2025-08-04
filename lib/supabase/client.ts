@@ -7,26 +7,18 @@ export const isSupabaseConfigured =
   typeof process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY === "string" &&
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 0
 
-// Create a singleton instance of the Supabase client for Client Components
-let supabaseInstance: any = null
-
-export const getSupabaseClient = () => {
+// Create a fresh Supabase client for Client Components (following SSR guide)
+export function createClient() {
   if (!isSupabaseConfigured) {
     return null
   }
 
-  if (!supabaseInstance) {
-    supabaseInstance = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  }
-
-  return supabaseInstance
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 }
 
-// For backward compatibility
-export const supabase = getSupabaseClient()
-
-// Export createClient for components that expect this naming
-export const createClient = getSupabaseClient
+// For backward compatibility - but components should use createClient() instead
+export const getSupabaseClient = createClient
+export const supabase = createClient()
