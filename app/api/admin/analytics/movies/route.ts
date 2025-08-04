@@ -160,39 +160,67 @@ async function getMostUsedMovies(supabase: any, startDate: Date) {
 }
 
 async function getGenrePopularity(supabase: any, startDate: Date) {
-  // Get all movies used in puzzles
-  const [retitledMovies, castClimbMovies] = await Promise.all([
+  // Get all movies used in puzzles with their genres
+  const [retitledMovies, budgetBracketPuzzles, castClimbMovies] = await Promise.all([
     supabase
       .from('retitled_puzzles')
-      .select('film_id')
+      .select('film_id, genre_ids')
+      .gte('puzzle_date', startDate.toISOString()),
+    
+    supabase
+      .from('budget_bracket_puzzles')
+      .select('pairs')
       .gte('puzzle_date', startDate.toISOString()),
     
     supabase
       .from('cast_climb_puzzles')
-      .select('film_id')
+      .select('film_id, genre_ids')
       .gte('puzzle_date', startDate.toISOString())
   ]);
 
-  // For this example, we'll use mock genre data
-  // In production, you'd fetch genre_ids from TMDB or store them in the database
   const genreCounts = new Map();
-  const mockGenres = [18, 28, 35, 53, 878, 14, 27, 10749]; // Common genres
 
-  // Simulate genre distribution
-  const allMovieIds = [
-    ...(retitledMovies.data?.map((m: any) => m.film_id) || []),
-    ...(castClimbMovies.data?.map((m: any) => m.film_id) || [])
-  ];
-
-  allMovieIds.forEach((_, index) => {
-    // Assign 1-3 random genres per movie
-    const numGenres = Math.floor(Math.random() * 3) + 1;
-    for (let i = 0; i < numGenres; i++) {
-      const genreId = mockGenres[Math.floor(Math.random() * mockGenres.length)];
-      const genreName = GENRE_MAP[genreId];
-      genreCounts.set(genreName, (genreCounts.get(genreName) || 0) + 1);
+  // Process Retitled movies
+  retitledMovies.data?.forEach((movie: any) => {
+    if (movie.genre_ids && Array.isArray(movie.genre_ids)) {
+      movie.genre_ids.forEach((genreId: number) => {
+        const genreName = GENRE_MAP[genreId] || `Unknown (${genreId})`;
+        genreCounts.set(genreName, (genreCounts.get(genreName) || 0) + 1);
+      });
     }
   });
+
+  // Process Budget Bracket movies
+  budgetBracketPuzzles.data?.forEach((puzzle: any) => {
+    puzzle.pairs?.forEach((pair: any) => {
+      [pair.movie1, pair.movie2].forEach((movie: any) => {
+        if (movie?.genre_ids && Array.isArray(movie.genre_ids)) {
+          movie.genre_ids.forEach((genreId: number) => {
+            const genreName = GENRE_MAP[genreId] || `Unknown (${genreId})`;
+            genreCounts.set(genreName, (genreCounts.get(genreName) || 0) + 1);
+          });
+        }
+      });
+    });
+  });
+
+  // Process Cast Climb movies
+  castClimbMovies.data?.forEach((movie: any) => {
+    if (movie.genre_ids && Array.isArray(movie.genre_ids)) {
+      movie.genre_ids.forEach((genreId: number) => {
+        const genreName = GENRE_MAP[genreId] || `Unknown (${genreId})`;
+        genreCounts.set(genreName, (genreCounts.get(genreName) || 0) + 1);
+      });
+    }
+  });
+
+  // If no genre data found, return empty array instead of mock data
+  if (genreCounts.size === 0) {
+    return [{
+      genre: 'No genre data available',
+      count: 0
+    }];
+  }
 
   return Array.from(genreCounts.entries())
     .map(([genre, count]) => ({ genre, count }))
@@ -201,10 +229,15 @@ async function getGenrePopularity(supabase: any, startDate: Date) {
 
 async function getReleaseYearTrends(supabase: any, startDate: Date) {
   // Get all movies with release years
-  const [retitledMovies, castClimbMovies] = await Promise.all([
+  const [retitledMovies, budgetBracketPuzzles, castClimbMovies] = await Promise.all([
     supabase
       .from('retitled_puzzles')
-      .select('film_id, puzzle_date')
+      .select('film_id, film_release_year, puzzle_date')
+      .gte('puzzle_date', startDate.toISOString()),
+    
+    supabase
+      .from('budget_bracket_puzzles')
+      .select('pairs, puzzle_date')
       .gte('puzzle_date', startDate.toISOString()),
     
     supabase
@@ -226,21 +259,55 @@ async function getReleaseYearTrends(supabase: any, startDate: Date) {
     }
   });
 
-  // For Retitled, we'll simulate some decade distribution
-  const decades = ['1980s', '1990s', '2000s', '2010s', '2020s'];
-  retitledMovies.data?.forEach((movie: any, index: number) => {
-    const decade = decades[index % decades.length];
-    decadeCounts.set(decade, (decadeCounts.get(decade) || 0) + 1);
+  // Process Retitled movies (if they have release year)
+  retitledMovies.data?.forEach((movie: any) => {
+    if (movie.film_release_year) {
+      const decade = Math.floor(movie.film_release_year / 10) * 10;
+      const decadeLabel = `${decade}s`;
+      decadeCounts.set(decadeLabel, (decadeCounts.get(decadeLabel) || 0) + 1);
+    }
   });
 
-  // Simulate engagement data by decade
-  return Array.from(decadeCounts.entries())
-    .map(([decade, count]) => ({
-      decade,
-      count,
-      avgEngagement: 70 + Math.random() * 20 // Mock engagement 70-90%
-    }))
+  // Process Budget Bracket movies
+  budgetBracketPuzzles.data?.forEach((puzzle: any) => {
+    puzzle.pairs?.forEach((pair: any) => {
+      [pair.movie1, pair.movie2].forEach((movie: any) => {
+        if (movie?.release_date) {
+          const year = new Date(movie.release_date).getFullYear();
+          const decade = Math.floor(year / 10) * 10;
+          const decadeLabel = `${decade}s`;
+          decadeCounts.set(decadeLabel, (decadeCounts.get(decadeLabel) || 0) + 1);
+        }
+      });
+    });
+  });
+
+  // Calculate engagement by decade (simplified - in production you'd join with game results)
+  const decades = Array.from(decadeCounts.entries())
+    .map(([decade, count]) => {
+      // For now, use a placeholder engagement calculation
+      // In production, you'd calculate actual engagement rates by joining with game results
+      const baseEngagement = 65; // Base engagement percentage
+      const variance = Math.random() * 20; // Add some variance
+      
+      return {
+        decade,
+        count,
+        avgEngagement: Math.round(baseEngagement + variance)
+      };
+    })
     .sort((a, b) => a.decade.localeCompare(b.decade));
+
+  // If no data, return a message
+  if (decades.length === 0) {
+    return [{
+      decade: 'No data',
+      count: 0,
+      avgEngagement: 0
+    }];
+  }
+
+  return decades;
 }
 
 async function getBudgetEngagement(supabase: any, startDate: Date) {
