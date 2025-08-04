@@ -14,7 +14,7 @@ A daily movie puzzle platform featuring multiple games, starting with **Retitled
 3. Get instant feedback with translation tooltip
 4. Share your result with spoiler-free emoji grid
 
-**Example Share:** `CinaMini #123 🇪🇸 🟩⬜⬜🟩 CinaMini.app`
+**Example Share:** `CinaMini #123 🇪🇸 🟩⬜⬜🟩 https://cinamini.app`
 
 ## 🚀 Quick Start
 
@@ -353,4 +353,4 @@ CinaMini is inspired by the daily puzzle phenomenon, adapted for movie enthusias
 
 ---
 
-*Ready for today's flick-fix?* Start playing at [CinaMini.app](https://CinaMini.app)
+*Ready for today's flick-fix?* Start playing at [cinamini.app](https://cinamini.app)

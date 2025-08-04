@@ -26,6 +26,7 @@ interface GuessResult {
   }
   puzzle?: {
     localizedTitle: string
+    englishTranslation: string
     countryCode: string
     flagEmoji: string
   }
@@ -53,14 +54,17 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
         const response = await fetch(`/api/retitled/share/${puzzleId}`)
         
         if (!response.ok) {
-          throw new Error("Failed to generate share text")
+          // If API fails (e.g., for anonymous users), use fallback
+          setShareText(generateFallbackShareText())
+          return
         }
         
         const { shareText } = await response.json()
         setShareText(shareText)
       } catch (err) {
         console.error("Error fetching share text:", err)
-        toast.error("Failed to generate share text")
+        // Use fallback instead of showing error for anonymous users
+        setShareText(generateFallbackShareText())
       } finally {
         setLoadingShare(false)
       }
@@ -127,31 +131,40 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
                 <span className="text-2xl">{result.puzzle.flagEmoji}</span>
                 <span className="text-lg font-medium">{result.puzzle.localizedTitle}</span>
               </div>
-              <p className="text-sm text-muted-foreground text-center italic">
-                {result.correctAnswer.translationNote}
-              </p>
+              {result.puzzle.englishTranslation && (
+                <p className="text-base text-muted-foreground text-center italic">
+                  "{result.puzzle.englishTranslation}"
+                </p>
+              )}
+              {result.correctAnswer.translationNote && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {result.correctAnswer.translationNote}
+                </p>
+              )}
             </div>
           )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
-          <div>
-            <p className="text-2xl font-bold text-foreground">{result.stats.gamesPlayed}</p>
-            <p className="text-xs text-muted-foreground">Games Played</p>
+        {/* Stats - only show if stats are available */}
+        {result.stats && (
+          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+            <div>
+              <p className="text-2xl font-bold text-foreground">{result.stats.gamesPlayed || 0}</p>
+              <p className="text-xs text-muted-foreground">Games Played</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground">{result.stats.accuracy || 0}%</p>
+              <p className="text-xs text-muted-foreground">Accuracy</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
+                {result.stats.currentStreak || 0}
+                {(result.stats.currentStreak || 0) > 0 && <Flame className="w-4 h-4 text-orange-500" />}
+              </p>
+              <p className="text-xs text-muted-foreground">Streak</p>
+            </div>
           </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground">{result.stats.accuracy}%</p>
-            <p className="text-xs text-muted-foreground">Accuracy</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-              {result.stats.currentStreak}
-              {result.stats.currentStreak > 0 && <Flame className="w-4 h-4 text-orange-500" />}
-            </p>
-            <p className="text-xs text-muted-foreground">Streak</p>
-          </div>
-        </div>
+        )}
       </Card>
 
       {/* Actions */}

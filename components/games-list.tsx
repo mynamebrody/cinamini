@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import GameCard from "./game-card"
 import { Loader2 } from "lucide-react"
+import { localGameStorage } from "@/lib/local-game-storage"
 
 interface Game {
   game_id: string
@@ -38,7 +39,17 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
       }
       
       const data = await response.json()
-      setGames(data.games || [])
+      
+      // For anonymous users, check local storage for has_played status
+      if (!isAuthenticated) {
+        const gamesWithLocalStatus = (data.games || []).map((game: Game) => ({
+          ...game,
+          hasPlayedToday: localGameStorage.hasPlayedToday(game.game_id)
+        }))
+        setGames(gamesWithLocalStatus)
+      } else {
+        setGames(data.games || [])
+      }
     } catch (err) {
       console.error("Error loading games:", err)
       setError("Failed to load games. Please try again.")

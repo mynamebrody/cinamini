@@ -1,15 +1,67 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
+import { getCountryFlag } from "@/lib/retitled"
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Get current user
+    // Get current user (authentication is optional for anonymous support)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    
+    if (!user) {
+      // For anonymous users, we can't save guesses but we can validate and return results
+      const { puzzleId, guessFilmId } = await request.json()
+      
+      if (!puzzleId || !guessFilmId) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      }
+
+      // Get the puzzle to check the correct answer
+      const { data: puzzle, error: puzzleError } = await supabase
+        .from("retitled_puzzles")
+        .select("*")
+        .eq("id", puzzleId)
+        .single()
+
+      if (puzzleError || !puzzle) {
+        return NextResponse.json({ error: "Invalid puzzle" }, { status: 404 })
+      }
+
+      // Determine if guess is correct
+      const isCorrect = guessFilmId === puzzle.film_id
+
+      // Get the correct movie data from TMDB
+      const correctMovie = await getMovieById(puzzle.film_id)
+      
+      if (!correctMovie) {
+        return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        correct: isCorrect,
+        correctAnswer: {
+          id: puzzle.film_id,
+          title: correctMovie.title,
+          originalTitle: correctMovie.original_title,
+          releaseYear: getReleaseYear(correctMovie.release_date),
+          translationNote: puzzle.translation_note,
+          posterPath: correctMovie.poster_path
+        },
+        puzzle: {
+          localizedTitle: puzzle.localized_title,
+          englishTranslation: puzzle.english_translation || '',
+          countryCode: puzzle.country_code,
+          flagEmoji: getCountryFlag(puzzle.country_code)
+        },
+        stats: {
+          gamesPlayed: 1,
+          accuracy: isCorrect ? 100 : 0,
+          currentStreak: isCorrect ? 1 : 0
+        },
+        anonymous: true
+      })
     }
 
     // Parse request body
@@ -33,13 +85,54 @@ export async function POST(request: NextRequest) {
     // Check if user has already played this puzzle
     const { data: existingGuess } = await supabase
       .from("retitled_guesses")
-      .select("id")
+      .select("id, is_correct")
       .eq("user_id", user.id)
       .eq("puzzle_id", puzzleId)
       .single()
 
     if (existingGuess) {
-      return NextResponse.json({ error: "Already played this puzzle" }, { status: 400 })
+      // If user has already played, return their existing result instead of error
+      const isCorrect = existingGuess.is_correct
+      
+      // Get the correct movie data from TMDB
+      const correctMovie = await getMovieById(puzzle.film_id)
+      
+      if (!correctMovie) {
+        return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
+      }
+
+      // Get current stats
+      const { data: currentStats } = await supabase
+        .from("retitled_user_stats")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      return NextResponse.json({
+        correct: isCorrect,
+        correctAnswer: {
+          id: puzzle.film_id,
+          title: correctMovie.title,
+          originalTitle: correctMovie.original_title,
+          releaseYear: getReleaseYear(correctMovie.release_date),
+          translationNote: puzzle.translation_note,
+          posterPath: correctMovie.poster_path
+        },
+        puzzle: {
+          localizedTitle: puzzle.localized_title,
+          englishTranslation: puzzle.english_translation || '',
+          countryCode: puzzle.country_code,
+          flagEmoji: getCountryFlag(puzzle.country_code)
+        },
+        stats: {
+          gamesPlayed: currentStats?.games_played || 0,
+          accuracy: currentStats?.games_played > 0 
+            ? Math.round((currentStats.games_correct / currentStats.games_played) * 100 * 10) / 10
+            : 0,
+          currentStreak: currentStats?.current_streak || 0
+        },
+        alreadyPlayed: true
+      })
     }
 
     // Determine if guess is correct
@@ -136,8 +229,9 @@ export async function POST(request: NextRequest) {
       },
       puzzle: {
         localizedTitle: puzzle.localized_title,
+        englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
-        flagEmoji: puzzle.flag_emoji
+        flagEmoji: getCountryFlag(puzzle.country_code)
       },
       stats: {
         gamesPlayed: newStats.games_played,
