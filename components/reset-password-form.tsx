@@ -130,13 +130,13 @@ export default function ResetPasswordForm() {
           </div>
           <h1 className="font-nyt text-3xl font-bold tracking-tight text-neutral-900">Password updated!</h1>
           <p className="text-lg text-neutral-600">
-            Your password has been successfully updated. Redirecting to sign in...
+            Your password has been successfully updated. Signing you in now...
           </p>
         </div>
 
         <div className="text-center">
           <Link href="/auth/login" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
-            Go to sign in now
+            Go play some games now!
           </Link>
         </div>
       </div>
