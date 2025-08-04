@@ -43,6 +43,11 @@ export default function ResetPasswordForm() {
 
   // Check if user has a valid recovery session
   useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false)
+      return
+    }
+
     const checkRecoverySession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
@@ -69,7 +74,7 @@ export default function ResetPasswordForm() {
     checkRecoverySession()
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase])
 
   // Handle redirect on success with proper cleanup
   useEffect(() => {

@@ -92,12 +92,12 @@
       <p>We received a request to reset your password for your cinamini account. Click the button below to create a new password:</p>
       
       <div style="text-align: center;">
-        <a href="{{ .ConfirmationURL }}" class="button">Reset Password</a>
+        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery" class="button">Reset Password</a>
       </div>
       
       <p>Or copy and paste this link into your browser:</p>
       <div class="url-box">
-        {{ .ConfirmationURL }}
+        {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery
       </div>
       
       <p><strong>This link will expire in 1 hour for security reasons.</strong></p>
