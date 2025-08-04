@@ -1,10 +1,10 @@
-# 🎬 CinaMini
+# 🎬 cinamini
 
 > *Snack-size movie challenges, every single day.*
 
 A daily movie puzzle platform featuring multiple games, starting with **Retitled** - a quick, mobile-first game where players identify English films from their localized titles. Daily cinema challenges with spoiler-free sharing.
 
-![CinaMini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=CinaMini+Game+Demo)
+![cinamini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=cinamini+Game+Demo)
 
 ## 🎯 Game Concept
 
@@ -14,7 +14,7 @@ A daily movie puzzle platform featuring multiple games, starting with **Retitled
 3. Get instant feedback with translation tooltip
 4. Share your result with spoiler-free emoji grid
 
-**Example Share:** `CinaMini #123 🇪🇸 🟩⬜⬜🟩 https://cinamini.app`
+**Example Share:** `cinamini #123 🇪🇸 🟩⬜⬜🟩 https://cinamini.app`
 
 ## 🚀 Quick Start
 
@@ -186,7 +186,7 @@ GET /api/retitled/stats
 ### Typography
 - **Primary**: Inter (clean sans-serif)
 - **Monospace**: For share card previews and code
-- **Logo**: Custom film-reel icon forming the 'C' in CinaMini
+- **Logo**: Custom film-reel icon forming the 'C' in cinamini
 
 ### Mobile-First Principles
 - Minimum 44px touch targets
@@ -347,7 +347,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🎬 About
 
-CinaMini is inspired by the daily puzzle phenomenon, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
+cinamini is inspired by the daily puzzle phenomenon, adapted for movie enthusiasts. Our goal is to create bite-sized entertainment that celebrates global cinema while building daily habits and social sharing.
 
 **Team**: Built with ❤️ for movie lovers everywhere.
 

@@ -52,7 +52,7 @@ export default async function StatsPage() {
           {/* Page Header */}
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-bold text-neutral-900">Game Statistics</h2>
-            <p className="text-neutral-600">Track your progress across all CinaMini games</p>
+            <p className="text-neutral-600">Track your progress across all cinamini games</p>
           </div>
 
           {/* Stats Tabs */}

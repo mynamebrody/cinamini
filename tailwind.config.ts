@@ -15,7 +15,7 @@ const config = {
         'sans': ['Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // CinaMini Cinema Theme Colors
+        // cinamini Cinema Theme Colors
         cinema: {
           red: '#6c0311',
           'red-dark': '#56020e',

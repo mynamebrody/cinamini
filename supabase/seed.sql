@@ -1,4 +1,4 @@
--- Supabase seed file for CinaMini platform
+-- Supabase seed file for cinamini platform
 -- This file is automatically run when using `npx supabase db reset`
 
 -- Insert core game definitions
