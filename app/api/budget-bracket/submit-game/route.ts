@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.log('Budget Bracket submit-game: No authenticated user found')
+      return NextResponse.json({ 
+        error: 'This endpoint requires authentication. Anonymous users should handle game submission locally.' 
+      }, { status: 401 })
     }
 
     const body: SubmitGameRequest = await request.json()

@@ -76,7 +76,6 @@ export default function BudgetBracketGame() {
   const [currentRound, setCurrentRound] = useState(1)
   const [gameChoices, setGameChoices] = useState<GameChoice[]>([])
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
-  const [gameStartTime, setGameStartTime] = useState<number>(0)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -165,7 +164,6 @@ export default function BudgetBracketGame() {
     setGameState('playing')
     setCurrentRound(1)
     setGameChoices([])
-    setGameStartTime(Date.now())
     setModalState('none')
   }
 
@@ -256,19 +254,23 @@ export default function BudgetBracketGame() {
 
   const submitGame = async (choices: GameChoice[]) => {
     try {
-      const totalDuration = Date.now() - gameStartTime
+      // Calculate total duration as sum of individual round times
+      const totalDuration = choices.reduce((sum, choice) => sum + choice.time_taken_ms, 0)
+      
+      console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
 
       if (isAnonymous) {
         // For anonymous users, calculate results locally
-        const rounds_completed = choices.length
+        // Calculate how many answers were correct
+        const correctAnswers = choices.filter(choice => choice.correct).length
         
-        // Determine the correct final result
+        // Determine the final result based on correct answers
         let final_result: string
-        if (rounds_completed === 5) {
+        if (correctAnswers === 5) {
           final_result = 'perfect'
         } else {
-          // Player was eliminated at this round
-          final_result = `eliminated_round_${rounds_completed}`
+          // Show how many out of 5 were correct
+          final_result = `${correctAnswers}_out_of_5`
         }
         
         // Create a detailed game result for anonymous users
@@ -303,12 +305,16 @@ export default function BudgetBracketGame() {
 
         const anonymousResult: GameResult = {
           game_id: Date.now(), // Temporary ID
-          rounds_completed,
+          rounds_completed: 5, // Always 5 rounds now
           final_result,
-          is_perfect_game: final_result === 'perfect',
+          is_perfect_game: correctAnswers === 5,
           total_duration_ms: totalDuration,
           revealed_pairs: revealedPairs,
-          updated_stats: null
+          updated_stats: {
+            current_streak: 1, // First game for anonymous user always starts streak at 1
+            games_played: 1,
+            perfect_games: correctAnswers === 5 ? 1 : 0
+          }
         }
         
         // Save to local storage
@@ -318,6 +324,10 @@ export default function BudgetBracketGame() {
         setGameState('completed')
       } else {
         // For authenticated users, submit to server
+        if (!user) {
+          throw new Error('Cannot submit game for unauthenticated users')
+        }
+        
         const response = await fetch('/api/budget-bracket/submit-game', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -329,7 +339,8 @@ export default function BudgetBracketGame() {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to submit game')
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.error || 'Failed to submit game')
         }
 
         const result: GameResult = await response.json()
@@ -461,7 +472,6 @@ export default function BudgetBracketGame() {
               pair={puzzle.pairs[currentRound - 1]}
               round={currentRound}
               onChoice={handleRoundChoice}
-              onGameEnd={() => {}} // No longer needed
               gameChoices={gameChoices}
               puzzle={puzzle}
             />
