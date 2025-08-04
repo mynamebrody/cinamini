@@ -1,0 +1,88 @@
+SUPABASE PASSWORD RESET CONFIGURATION GUIDE
+==========================================
+
+This guide contains the necessary steps to configure password reset functionality in your Supabase project.
+
+1. EMAIL TEMPLATE CONFIGURATION
+-------------------------------
+The custom email template is already configured in your local project at:
+- supabase/templates/reset_password.html
+- supabase/config.toml (auth.email.template.recovery section)
+
+When you deploy to production, these templates will be used automatically.
+
+2. SUPABASE DASHBOARD CONFIGURATION
+-----------------------------------
+In your Supabase Dashboard (supabase.com), navigate to:
+
+Authentication > Email Templates > Reset Password
+
+### Email Template Settings:
+- Subject: "Reset Your Password"
+- Email content: Copy the content from supabase/templates/reset_password.html
+- Make sure the template includes: {{ .ConfirmationURL }}
+
+### Authentication Settings (Authentication > URL Configuration):
+- Site URL: Your production URL (e.g., https://yourdomain.com)
+- Redirect URLs: Add the following:
+  - http://localhost:3000/auth/callback (for local development)
+  - https://yourdomain.com/auth/callback (for production)
+  - http://localhost:3000/auth/reset-password (for local development)
+  - https://yourdomain.com/auth/reset-password (for production)
+
+3. EMAIL CONFIGURATION
+----------------------
+For local development, Inbucket is already configured (port 54324).
+Access it at: http://localhost:54324
+
+For production, configure SMTP in Supabase Dashboard:
+- Authentication > Email Settings
+- Enable Custom SMTP
+- Configure your SMTP provider (SendGrid, Mailgun, etc.)
+
+4. ENVIRONMENT VARIABLES
+------------------------
+Ensure these are set in your .env.local file:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+- NEXT_PUBLIC_APP_URL (should be http://localhost:3000 for local dev)
+
+5. PASSWORD RESET FLOW
+----------------------
+The implementation follows this flow:
+1. User requests password reset at /auth/forgot-password
+2. Email is sent with reset link containing a recovery token
+3. User clicks link and is redirected to /auth/callback?code=xxx&type=recovery
+4. Callback exchanges code for session and redirects to /auth/reset-password
+5. User enters new password and submits
+6. Password is updated and user is redirected to login
+
+6. TESTING LOCALLY
+------------------
+1. Start Supabase: `npx supabase start`
+2. Access Inbucket at http://localhost:54324
+3. Request password reset
+4. Check Inbucket for the email
+5. Click the reset link
+6. Enter new password
+
+7. IMPORTANT NOTES
+------------------
+- Password reset links expire after 1 hour (configured in Supabase)
+- The minimum password length is 6 characters
+- Users must be logged in (via the recovery token) to access /auth/reset-password
+- The custom email template uses your brand colors and styling
+
+8. TROUBLESHOOTING
+------------------
+If password reset isn't working:
+1. Check Supabase logs: `npx supabase db logs`
+2. Verify redirect URLs are configured correctly
+3. Ensure email templates are properly formatted
+4. Check browser console for any errors
+5. Verify the auth callback route is working
+
+For production issues:
+- Check Supabase Dashboard logs
+- Verify SMTP configuration
+- Ensure environment variables are set correctly
