@@ -325,6 +325,7 @@ export default function RetitledEditor() {
       flagEmoji: flag,
       countryName: selectedTitle?.iso_3166_1 || "...",
       localizedTitle: customTitle.trim() || selectedTitle?.title || "...",
+      englishTranslation: englishTranslation.trim() || "",
       options
     }
   }
