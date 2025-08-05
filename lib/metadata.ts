@@ -3,12 +3,12 @@ import type { Metadata } from "next"
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.app"
 
 export const siteConfig = {
-  name: "CinaMini",
+  name: "cinamini",
   description: "Daily movie puzzle games for cinema enthusiasts. Test your film knowledge with Retitled, Budget Bracket, and more!",
   url: BASE_URL,
   ogImage: `${BASE_URL}/og-images/homepage.png`,
   keywords: "movie games, daily puzzles, film trivia, cinema games, movie challenges",
-  authors: [{ name: "CinaMini Team" }],
+  authors: [{ name: "cinamini Team" }],
 }
 
 export const gameMetadata = {

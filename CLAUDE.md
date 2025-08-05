@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**CinaMini** is a daily movie puzzle platform featuring multiple games for movie enthusiasts. Think "Wordle for movie buffs" with spoiler-free sharing and competitive streaks.
+**cinamini** is a daily movie puzzle platform featuring multiple games for movie enthusiasts. Think "Wordle for movie buffs" with spoiler-free sharing and competitive streaks.
 
 ### Current Games
 
@@ -108,7 +108,7 @@ lib/                         # Utilities and configurations
 
 ### Multi-Game Architecture
 
-The database is designed to support multiple puzzle games under the CinaMini platform. Core tables use `cinamini_` prefix, while game-specific tables use the game name prefix (e.g., `retitled_` for the localized titles game).
+The database is designed to support multiple puzzle games under the cinamini platform. Core tables use `cinamini_` prefix, while game-specific tables use the game name prefix (e.g., `retitled_` for the localized titles game).
 
 ### Core Platform Tables
 ```sql

@@ -10,7 +10,8 @@ import {
   ExternalLink,
   CalendarDays,
   BarChart3,
-  PenTool
+  PenTool,
+  Mailbox
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -38,7 +39,22 @@ export default async function AdminLayout({
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Schedule", href: "/admin/schedule", icon: CalendarDays },
     { name: "Movie Search", href: "/admin/movies", icon: Film },
-    { name: "Supabase Studio", href: process.env.NEXT_PUBLIC_SUPABASE_URL + "/studio", icon: Database, external: true },
+    { 
+      name: "Supabase DB", 
+      href: process.env.NODE_ENV !== "production" 
+        ? "http://127.0.0.1:54323/" 
+        : process.env.NEXT_PUBLIC_SUPABASE_URL , 
+      icon: Database, 
+      external: true 
+    },
+    ...(process.env.NODE_ENV !== "production"
+      ? [{
+          name: "Email (Mailpit)",
+          href: "http://localhost:54324/",
+          icon: Mailbox,
+          external: true
+        }]
+      : []),
   ]
 
   return (

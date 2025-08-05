@@ -62,7 +62,7 @@ export function GameSettings({ children, triggerClassName = '', onPause, isPause
           {/* Game Info */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">About CinaMini</CardTitle>
+              <CardTitle className="text-base">About cinamini</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="text-sm">
@@ -117,19 +117,19 @@ export function GameSettingsPanel() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground">
-          Customize your CinaMini experience
+          Customize your cinamini experience
         </p>
       </div>
 
       {/* Game Info */}
       <Card>
         <CardHeader>
-          <CardTitle>About CinaMini</CardTitle>
+          <CardTitle>About cinamini</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <p className="text-muted-foreground">
-              CinaMini brings you daily movie puzzle games designed for cinema enthusiasts. 
+              cinamini brings you daily movie puzzle games designed for cinema enthusiasts. 
               Test your film knowledge with our variety of challenging and fun games.
             </p>
           </div>
@@ -161,7 +161,7 @@ export function GameSettingsPanel() {
           <div>
             <h4 className="font-medium text-sm mb-1">Feedback</h4>
             <p className="text-sm text-muted-foreground">
-              We'd love to hear your thoughts on how we can improve CinaMini.
+              We'd love to hear your thoughts on how we can improve cinamini.
             </p>
           </div>
         </CardContent>

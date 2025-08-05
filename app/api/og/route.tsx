@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const game = searchParams.get('game') as keyof typeof games
     
     const isGame = game && games[game]
-    const title = isGame ? games[game].title : 'CinaMini'
+    const title = isGame ? games[game].title : 'cinamini'
     const subtitle = isGame ? games[game].subtitle : 'Daily Movie Puzzles'
     const description = isGame 
       ? games[game].description 
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
                 color: '#666666',
               }}
             >
-              Daily puzzle game on CinaMini
+              Daily puzzle game on cinamini
             </div>
           )}
         </div>

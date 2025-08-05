@@ -16,7 +16,7 @@ export default function PuzzleEditor() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Puzzle Editor</h1>
-        <p className="text-gray-600 mt-2">Create and manage puzzles for all CinaMini games</p>
+        <p className="text-gray-600 mt-2">Create and manage puzzles for all cinamini games</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
