@@ -6,6 +6,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type')
+  const confirmed = requestUrl.searchParams.get('confirmed')
 
   if (code) {
     const cookieStore = await cookies()
@@ -40,6 +41,11 @@ export async function GET(request: Request) {
         // If this is a password recovery flow, redirect to reset password page
         if (type === 'recovery') {
           return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin))
+        }
+        
+        // If this is an email confirmation flow, redirect to profile with confirmation message
+        if (confirmed === 'true') {
+          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', requestUrl.origin))
         }
         
         // Otherwise redirect to home page after successful auth

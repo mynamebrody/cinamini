@@ -10,7 +10,8 @@ import {
   ExternalLink,
   CalendarDays,
   BarChart3,
-  PenTool
+  PenTool,
+  Mailbox
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -46,6 +47,14 @@ export default async function AdminLayout({
       icon: Database, 
       external: true 
     },
+    ...(process.env.NODE_ENV !== "production"
+      ? [{
+          name: "Email (Mailpit)",
+          href: "http://localhost:54324/",
+          icon: Mailbox,
+          external: true
+        }]
+      : []),
   ]
 
   return (

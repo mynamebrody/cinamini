@@ -1,8 +1,13 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import ProfileForm from "@/components/profile-form"
+import EmailConfirmationBanner from "@/components/email-confirmation-banner"
 
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -23,6 +28,10 @@ export default async function ProfilePage() {
     redirect("/auth/login")
   }
 
+  // Check if email was just confirmed
+  const params = await searchParams
+  const emailConfirmed = params.emailConfirmed === 'true'
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -40,6 +49,9 @@ export default async function ProfilePage() {
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="space-y-6">
+          {/* Email Confirmation Banner */}
+          {emailConfirmed && <EmailConfirmationBanner />}
+
           {/* Profile Header */}
           <div className="text-center space-y-2">
             <h2 className="text-3xl font-bold text-neutral-900">Your Profile</h2>
