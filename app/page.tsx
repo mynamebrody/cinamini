@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import GamesList from "@/components/games-list"
 import { SiteHeader } from "@/components/site-header"
 import { Banner } from "@/components/banner"
+import AuthHashProcessor from "@/components/auth-hash-processor"
 import Image from "next/image"
 
 export default async function Home() {
@@ -38,6 +39,13 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Auth Hash Processor for invite links */}
+      <AuthHashProcessor 
+        redirectPath="/profile"
+        successMessage="Welcome to cinamini! Redirecting to your profile..."
+        processingMessage="Processing invitation..."
+      />
+      
       {/* Optional Banner */}
       <Banner
         message="🎬 New game coming soon: Poster Pixels! Can you guess the movie from a pixelated poster?"

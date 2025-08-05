@@ -8,6 +8,14 @@ export async function GET(request: Request) {
   const type = requestUrl.searchParams.get('type')
   const confirmed = requestUrl.searchParams.get('confirmed')
 
+  // Helper function to get the correct base URL
+  const getBaseUrl = () => {
+    if (process.env.NODE_ENV === 'production') {
+      return 'https://cinamini.app'
+    }
+    return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  }
+
   if (code) {
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -40,20 +48,16 @@ export async function GET(request: Request) {
       if (!error) {
         // If this is a password recovery flow, redirect to reset password page
         if (type === 'recovery') {
-          return NextResponse.redirect(new URL('/auth/reset-password', requestUrl.origin))
+          return NextResponse.redirect(new URL('/auth/reset-password', getBaseUrl()))
         }
         
         // If this is an email confirmation flow, redirect to profile with confirmation message
         if (confirmed === 'true') {
-          const baseUrl =
-            process.env.NODE_ENV === 'production'
-              ? 'https://cinamini.app'
-              : requestUrl.origin
-          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', baseUrl))
+          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', getBaseUrl()))
         }
         
         // Otherwise redirect to home page after successful auth
-        return NextResponse.redirect(new URL('/', requestUrl.origin))
+        return NextResponse.redirect(new URL('/', getBaseUrl()))
       }
     } catch (error) {
       console.error('Error exchanging code for session:', error)
@@ -61,5 +65,5 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/auth/login', requestUrl.origin))
+  return NextResponse.redirect(new URL('/auth/login', getBaseUrl()))
 }
