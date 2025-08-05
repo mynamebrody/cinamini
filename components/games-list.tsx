@@ -19,6 +19,16 @@ interface GamesListProps {
 // Define which games should be featured (left, center, right)
 const FEATURED_GAMES = ['retitled', 'budget-bracket', 'cast-climb']
 
+// Game emoji and color mappings
+const GAME_STYLES: Record<string, { emoji: string; bgColor: string; textColor?: string }> = {
+  'budget-bracket': { emoji: '💰', bgColor: '#22c55e' }, // Green
+  'retitled': { emoji: '🌍', bgColor: '#3b82f6' }, // Blue
+  'cast-climb': { emoji: '🎭', bgColor: '#f59e0b' }, // Orange
+  'poster-pixels': { emoji: '🖼️', bgColor: '#8b5cf6' }, // Purple
+  // Default for any new games
+  'default': { emoji: '🎬', bgColor: '#6b7280' } // Gray
+}
+
 export default function GamesList({ isAuthenticated }: GamesListProps) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
@@ -110,28 +120,51 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
     return FEATURED_GAMES.indexOf(a.game_id) - FEATURED_GAMES.indexOf(b.game_id)
   })
 
+  const getGameStyle = (gameId: string) => {
+    return GAME_STYLES[gameId] || GAME_STYLES.default
+  }
+
   return (
-    <div className="space-y-16">
-      {/* Featured Games Section */}
+    <div>
+      {/* Featured Games Banner */}
       {sortedFeaturedGames.length > 0 && (
-        <section className="space-y-8">
-          <div className="text-center">
-            <h2 className="font-nyt text-3xl font-bold text-neutral-900 mb-3">
-              Today's Featured Puzzles
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-              Challenge yourself with our most popular movie games. Each puzzle refreshes daily at midnight.
-            </p>
+        <section className="bg-[#6495ed] py-8">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {sortedFeaturedGames.map((game) => {
+                const style = getGameStyle(game.game_id)
+                return (
+                  <div key={game.game_id} className="bg-white rounded-lg p-6 text-center">
+                    <div className="text-6xl mb-4">{style.emoji}</div>
+                    <h3 className="text-xl font-bold text-neutral-900 mb-2">{game.display_name}</h3>
+                    <p className="text-sm text-neutral-500 mb-2">
+                      {new Date().toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="text-center mt-6">
+              <a href="#more-games" className="text-white text-sm hover:underline">
+                READ ABOUT TODAY'S PUZZLE ON WORDPLAY
+              </a>
+            </div>
           </div>
+        </section>
+      )}
+
+      {/* More Games Section */}
+      <section className="py-12" id="more-games">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-8">More Games</h2>
           
-          {/* Featured games grid - responsive layout for 1-3 games */}
-          <div className={`grid gap-8 ${
-            sortedFeaturedGames.length === 1 
-              ? 'max-w-2xl mx-auto' 
-              : sortedFeaturedGames.length === 2 
-                ? 'md:grid-cols-2 max-w-4xl mx-auto' 
-                : 'md:grid-cols-2 lg:grid-cols-3'
-          }`}>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {/* Show all featured games as cards */}
             {sortedFeaturedGames.map((game) => (
               <GameCard
                 key={game.game_id}
@@ -139,27 +172,12 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 name={game.display_name}
                 description={game.description}
                 hasPlayedToday={game.hasPlayedToday}
-                featured={true}
                 isAuthenticated={isAuthenticated}
+                style={getGameStyle(game.game_id)}
               />
             ))}
-          </div>
-        </section>
-      )}
-      
-      {/* All Other Games Section */}
-      {regularGames.length > 0 && (
-        <section className="space-y-8">
-          <div className="text-center">
-            <h2 className="font-nyt text-2xl font-bold text-neutral-900 mb-3">
-              More Games
-            </h2>
-            <p className="text-neutral-600">
-              Additional movie challenges and experiments
-            </p>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            
+            {/* Show regular games */}
             {regularGames.map((game) => (
               <GameCard
                 key={game.game_id}
@@ -167,41 +185,13 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 name={game.display_name}
                 description={game.description}
                 hasPlayedToday={game.hasPlayedToday}
-                featured={false}
                 isAuthenticated={isAuthenticated}
+                style={getGameStyle(game.game_id)}
               />
             ))}
           </div>
-        </section>
-      )}
-
-      {/* Show all games in featured layout if no separation needed */}
-      {sortedFeaturedGames.length === 0 && regularGames.length > 0 && (
-        <section className="space-y-8">
-          <div className="text-center">
-            <h2 className="font-nyt text-3xl font-bold text-neutral-900 mb-3">
-              Today's Movie Puzzles
-            </h2>
-            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-              Test your cinema knowledge with our collection of daily challenges
-            </p>
-          </div>
-          
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {games.map((game) => (
-              <GameCard
-                key={game.game_id}
-                id={game.game_id}
-                name={game.display_name}
-                description={game.description}
-                hasPlayedToday={game.hasPlayedToday}
-                featured={false}
-                isAuthenticated={isAuthenticated}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   )
 }
