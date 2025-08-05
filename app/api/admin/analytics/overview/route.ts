@@ -64,18 +64,66 @@ export async function GET(request: NextRequest) {
     let avgSessionDuration = 180; // Default 3 minutes
     
     try {
-      const { data: sessionData } = await supabase
-        .rpc('calculate_avg_session_duration', { 
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString()
-        })
-        .single();
-      
-      if (sessionData?.avg_duration) {
-        avgSessionDuration = sessionData.avg_duration;
+      // Instead of using the placeholder RPC, calculate from actual game data
+      // Get average solve times from each game type
+      const [retitledAvg, budgetAvg, castClimbAvg] = await Promise.all([
+        // Retitled average solve time
+        supabase
+          .from('retitled_guesses')
+          .select('solve_time_ms')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .not('solve_time_ms', 'is', null)
+          .then(result => {
+            if (result.data && result.data.length > 0) {
+              const totalMs = result.data.reduce((sum, g) => sum + (g.solve_time_ms || 0), 0);
+              return totalMs / result.data.length / 1000; // Convert to seconds
+            }
+            return 0;
+          }),
+        
+        // Budget Bracket average duration
+        supabase
+          .from('budget_bracket_games')
+          .select('total_duration_ms')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .not('total_duration_ms', 'is', null)
+          .then(result => {
+            if (result.data && result.data.length > 0) {
+              const totalMs = result.data.reduce((sum, g) => sum + (g.total_duration_ms || 0), 0);
+              return totalMs / result.data.length / 1000; // Convert to seconds
+            }
+            return 0;
+          }),
+        
+        // Cast Climb average solve time
+        supabase
+          .from('cast_climb_guesses')
+          .select('solve_time_ms')
+          .gte('created_at', startDate.toISOString())
+          .lte('created_at', endDate.toISOString())
+          .eq('is_correct', true)
+          .not('solve_time_ms', 'is', null)
+          .then(result => {
+            if (result.data && result.data.length > 0) {
+              const totalMs = result.data.reduce((sum, g) => sum + (g.solve_time_ms || 0), 0);
+              return totalMs / result.data.length / 1000; // Convert to seconds
+            }
+            return 0;
+          })
+      ]);
+
+      // Calculate weighted average based on actual game plays
+      const avgTimes = [retitledAvg, budgetAvg, castClimbAvg].filter(t => t > 0);
+      if (avgTimes.length > 0) {
+        avgSessionDuration = Math.round(avgTimes.reduce((sum, t) => sum + t, 0) / avgTimes.length);
+        
+        // Ensure reasonable bounds (30 seconds to 10 minutes)
+        avgSessionDuration = Math.max(30, Math.min(600, avgSessionDuration));
       }
     } catch (error) {
-      console.log('Using default session duration');
+      console.log('Using default session duration due to error:', error);
     }
 
     // Calculate week-over-week growth
