@@ -1,7 +1,7 @@
 /**
- * Unified Game Seeding System for CinaMini
+ * Unified Game Seeding System for cinamini
  * 
- * This module provides deterministic seeding functionality for all CinaMini games,
+ * This module provides deterministic seeding functionality for all cinamini games,
  * ensuring that all players receive the same daily puzzle based on the date.
  * Originally extracted from Budget Bracket game logic.
  */

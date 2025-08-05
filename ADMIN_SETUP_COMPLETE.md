@@ -1,4 +1,4 @@
-# CinaMini Admin System - Complete Setup & Documentation Guide
+# cinamini Admin System - Complete Setup & Documentation Guide
 
 ## Table of Contents
 1. [System Architecture Overview](#system-architecture-overview)
@@ -13,7 +13,7 @@
 
 ## System Architecture Overview
 
-The CinaMini admin system is built with:
+The cinamini admin system is built with:
 - **Frontend**: Next.js 15 App Router with React 19
 - **UI Components**: shadcn/ui with Radix UI primitives
 - **Authentication**: Supabase Auth with middleware protection
