@@ -45,7 +45,11 @@ export async function GET(request: Request) {
         
         // If this is an email confirmation flow, redirect to profile with confirmation message
         if (confirmed === 'true') {
-          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', requestUrl.origin))
+          const baseUrl =
+            process.env.NODE_ENV === 'production'
+              ? 'https://cinamini.app'
+              : requestUrl.origin
+          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', baseUrl))
         }
         
         // Otherwise redirect to home page after successful auth
