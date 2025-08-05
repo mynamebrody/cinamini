@@ -11,7 +11,8 @@ import {
   CalendarDays,
   BarChart3,
   PenTool,
-  Mailbox
+  Mailbox,
+  Users
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -39,11 +40,12 @@ export default async function AdminLayout({
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Schedule", href: "/admin/schedule", icon: CalendarDays },
     { name: "Movie Search", href: "/admin/movies", icon: Film },
+    { name: "User Controls", href: "/admin/users", icon: Users },
     { 
       name: "Supabase DB", 
       href: process.env.NODE_ENV !== "production" 
         ? "http://127.0.0.1:54323/" 
-        : process.env.NEXT_PUBLIC_SUPABASE_URL , 
+        : process.env.NEXT_PUBLIC_SUPABASE_URL || "https://supabase.com", 
       icon: Database, 
       external: true 
     },
