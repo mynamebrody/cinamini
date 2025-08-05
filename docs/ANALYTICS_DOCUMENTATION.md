@@ -9,45 +9,48 @@ The Cinamini Admin Panel Analytics system provides comprehensive insights into u
 ### Frontend Components
 
 - **Location**: `/app/admin/analytics/page.tsx`
-- **Key Features**:
-  - Real-time data visualization using Recharts
-  - Date range filtering (7, 30, 90 days)
-  - Four main tabs: Engagement, Games, Movies, Retention
+- **Technologies**: React, Recharts, TypeScript, Tailwind CSS
+- **Features**:
+  - Interactive charts and visualizations
+  - Date range selection
+  - Tab-based navigation
 
-### API Endpoints
+### Backend API Endpoints
 
 All analytics endpoints are located in `/app/api/admin/analytics/`:
 
 1. **Overview** (`/overview/route.ts`)
-   - Total players count
-   - Daily/Monthly Active Users (DAU/MAU)
+   - Total players, DAU/MAU
    - Average session duration
    - Total games played
    - Week-over-week growth
 
 2. **Games** (`/games/route.ts`)
-   - Per-game metrics (Retitled, Budget Bracket, Cast Climb)
+   - Per-game metrics (Retitled, Budget Bracket, Cast Climb, Poster Pixels)
    - Completion rates
    - Average solve times
-   - Difficulty ratings
-   - Perfect game counts
+   - Difficulty levels
+   - Popular puzzles
 
 3. **Engagement** (`/engagement/route.ts`)
-   - Daily active users over time
+   - Daily active users trend
    - Game popularity distribution
-   - User retention cohorts
+   - Retention cohorts
    - Streak distribution
 
 4. **Movies** (`/movies/route.ts`)
-   - Most used movies across games
+   - Most used movies
    - Genre popularity
    - Release year trends
-   - Budget vs engagement correlation
+   - Budget vs engagement analysis
 
-5. **Test** (`/test/route.ts`)
-   - Comprehensive analytics health check
-   - Data integrity validation
-   - Freshness monitoring
+5. **Poster Pixels** (`/poster-pixels/route.ts`)
+   - Total games and completion rates
+   - Win rate analysis
+   - Clarity level distribution
+   - Daily game statistics
+   - Top players leaderboard
+   - Popular movies used in puzzles
 
 ## Data Sources
 

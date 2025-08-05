@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, GamepadIcon, Clock, TrendingUp, Calendar, Award, Film, DollarSign } from 'lucide-react';
+import { Users, GamepadIcon, Clock, TrendingUp, Calendar, Award, Film, DollarSign, Image } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -102,6 +102,42 @@ interface MovieAnalytics {
   }>;
 }
 
+interface PosterPixelsAnalytics {
+  overview: {
+    totalGames: number;
+    completedGames: number;
+    wonGames: number;
+    completionRate: number;
+    winRate: number;
+    avgSolveTime: number;
+    avgClarityLevel: number;
+    avgDifficulty: number;
+    perfectGames: number;
+  };
+  clarityDistribution: Array<{
+    level: string;
+    count: number;
+  }>;
+  dailyStats: Array<{
+    date: string;
+    totalGames: number;
+    completedGames: number;
+    wonGames: number;
+  }>;
+  topPlayers: Array<{
+    userId: string;
+    gamesPlayed: number;
+    gamesWon: number;
+    winRate: string;
+    avgTime: string;
+    bestTime: string;
+  }>;
+  popularMovies: Array<{
+    title: string;
+    count: number;
+  }>;
+}
+
 const COLORS = ['#6c0311', '#2b725e', '#b28c49', '#4A90E2', '#E94B3C', '#6B5B95'];
 
 export default function AnalyticsPage() {
@@ -109,6 +145,7 @@ export default function AnalyticsPage() {
   const [gameMetrics, setGameMetrics] = useState<GameMetrics[]>([]);
   const [engagementData, setEngagementData] = useState<EngagementData | null>(null);
   const [movieAnalytics, setMovieAnalytics] = useState<MovieAnalytics | null>(null);
+  const [posterPixelsAnalytics, setPosterPixelsAnalytics] = useState<PosterPixelsAnalytics | null>(null);
   const [selectedGame, setSelectedGame] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('7d');
   const [loading, setLoading] = useState(true);
@@ -123,17 +160,19 @@ export default function AnalyticsPage() {
       setLoading(true);
       setError(null);
 
-      const [overview, games, engagement, movies] = await Promise.all([
+      const [overview, games, engagement, movies, posterPixels] = await Promise.all([
         fetch(`/api/admin/analytics/overview?range=${dateRange}`).then(res => res.json()),
         fetch(`/api/admin/analytics/games?range=${dateRange}`).then(res => res.json()),
         fetch(`/api/admin/analytics/engagement?range=${dateRange}`).then(res => res.json()),
-        fetch(`/api/admin/analytics/movies?range=${dateRange}`).then(res => res.json())
+        fetch(`/api/admin/analytics/movies?range=${dateRange}`).then(res => res.json()),
+        fetch(`/api/admin/analytics/poster-pixels?range=${dateRange}`).then(res => res.json())
       ]);
 
       setOverviewStats(overview);
       setGameMetrics(games);
       setEngagementData(engagement);
       setMovieAnalytics(movies);
+      setPosterPixelsAnalytics(posterPixels);
     } catch (err) {
       console.error('Failed to fetch analytics:', err);
       setError('Failed to load analytics data');
@@ -245,11 +284,12 @@ export default function AnalyticsPage() {
 
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="engagement" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="engagement">Engagement</TabsTrigger>
           <TabsTrigger value="games">Games</TabsTrigger>
           <TabsTrigger value="movies">Movies</TabsTrigger>
           <TabsTrigger value="retention">Retention</TabsTrigger>
+          <TabsTrigger value="poster-pixels">Poster Pixels</TabsTrigger>
         </TabsList>
 
         {/* Engagement Tab */}
@@ -543,6 +583,177 @@ export default function AnalyticsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Poster Pixels Tab */}
+        <TabsContent value="poster-pixels" className="space-y-4">
+          {posterPixelsAnalytics && (
+            <>
+              {/* Overview Cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Games</CardTitle>
+                    <Image className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatNumber(posterPixelsAnalytics.overview.totalGames)}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {posterPixelsAnalytics.overview.completedGames} completed
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+                    <Award className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{(posterPixelsAnalytics.overview.winRate * 100).toFixed(1)}%</div>
+                    <p className="text-xs text-muted-foreground">
+                      {posterPixelsAnalytics.overview.wonGames} games won
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Clarity</CardTitle>
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{posterPixelsAnalytics.overview.avgClarityLevel.toFixed(1)}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Level reached (1-6)
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Perfect Games</CardTitle>
+                    <GamepadIcon className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{formatNumber(posterPixelsAnalytics.overview.perfectGames)}</div>
+                    <p className="text-xs text-muted-foreground">
+                      Won on first clarity
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Daily Game Stats</CardTitle>
+                    <CardDescription>Games played, completed, and won over time</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height="300">
+                      <LineChart data={posterPixelsAnalytics.dailyStats}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(date) => format(new Date(date), 'MMM d')}
+                        />
+                        <YAxis />
+                        <Tooltip 
+                          labelFormatter={(date) => format(new Date(date), 'MMM d, yyyy')}
+                        />
+                        <Legend />
+                        <Line type="monotone" dataKey="totalGames" stroke="#6c0311" name="Total Games" />
+                        <Line type="monotone" dataKey="completedGames" stroke="#2b725e" name="Completed" />
+                        <Line type="monotone" dataKey="wonGames" stroke="#b28c49" name="Won" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Clarity Level Distribution</CardTitle>
+                    <CardDescription>Number of wins at each clarity level</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height="300">
+                      <BarChart data={posterPixelsAnalytics.clarityDistribution}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="level" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#6c0311" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Popular Movies</CardTitle>
+                    <CardDescription>Most frequently used movies in puzzles</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {posterPixelsAnalytics.popularMovies.slice(0, 10).map((movie, index) => (
+                        <div key={movie.title} className="flex items-center justify-between p-2 hover:bg-muted/50 rounded">
+                          <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground w-6">#{index + 1}</span>
+                            <Film className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{movie.title}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{movie.count} times</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Players</CardTitle>
+                    <CardDescription>Best performing Poster Pixels players</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b text-xs">
+                            <th className="text-left p-2">Player</th>
+                            <th className="text-center p-2">Games</th>
+                            <th className="text-center p-2">Won</th>
+                            <th className="text-center p-2">Win %</th>
+                            <th className="text-center p-2">Avg Time</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {posterPixelsAnalytics.topPlayers.slice(0, 10).map((player, index) => (
+                            <tr key={player.userId} className="border-b hover:bg-muted/50 text-sm">
+                              <td className="p-2">
+                                <span className="text-muted-foreground mr-2">#{index + 1}</span>
+                                {player.userId.substring(0, 8)}...
+                              </td>
+                              <td className="text-center p-2">{player.gamesPlayed}</td>
+                              <td className="text-center p-2">{player.gamesWon}</td>
+                              <td className="text-center p-2">
+                                <span className={`font-medium ${parseFloat(player.winRate) >= 80 ? 'text-green-600' : parseFloat(player.winRate) >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                                  {player.winRate}%
+                                </span>
+                              </td>
+                              <td className="text-center p-2">{player.avgTime}s</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </TabsContent>
       </Tabs>
     </div>

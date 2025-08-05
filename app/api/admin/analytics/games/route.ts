@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
       // Budget Bracket metrics
       getBudgetBracketMetrics(supabase, startDate),
       // Cast Climb metrics
-      getCastClimbMetrics(supabase, startDate)
+      getCastClimbMetrics(supabase, startDate),
+      // Poster Pixels metrics
+      getPosterPixelsMetrics(supabase, startDate)
     ]);
 
     return NextResponse.json(gameMetrics);
@@ -193,5 +195,67 @@ async function getCastClimbMetrics(supabase: any, startDate: Date) {
     totalPlays,
     perfectGames,
     popularPuzzles: []
+  };
+}
+
+async function getPosterPixelsMetrics(supabase: any, startDate: Date) {
+  // Get total games
+  const { data: games, count: totalPlays } = await supabase
+    .from('poster_pixels_games')
+    .select('*', { count: 'exact' })
+    .gte('created_at', startDate.toISOString());
+
+  const completedGames = games?.filter((g: any) => g.is_completed).length || 0;
+  const wonGames = games?.filter((g: any) => g.is_won).length || 0;
+  const completionRate = totalPlays ? completedGames / totalPlays : 0;
+
+  // Get average solve time for won games
+  const solveTimes = games
+    ?.filter((g: any) => g.is_won && g.total_time_ms)
+    .map((g: any) => g.total_time_ms) || [];
+  
+  const avgSolveTime = solveTimes.length > 0
+    ? solveTimes.reduce((a: number, b: number) => a + b, 0) / solveTimes.length / 1000
+    : 0;
+
+  // Calculate average clarity level (1-6 scale, convert to difficulty 1-5)
+  const clarityLevels = games
+    ?.filter((g: any) => g.is_won)
+    .map((g: any) => g.clarity_level_reached) || [];
+  
+  const avgClarityLevel = clarityLevels.length > 0
+    ? clarityLevels.reduce((a: number, b: number) => a + b, 0) / clarityLevels.length
+    : 3;
+
+  // Convert clarity level to difficulty (lower clarity = higher difficulty)
+  const avgDifficulty = avgClarityLevel > 0 ? (6 - avgClarityLevel) * (5/6) + 1 : 3;
+
+  // Count perfect games (won on first clarity level)
+  const perfectGames = games?.filter((g: any) => 
+    g.is_won && g.clarity_level_reached === 1
+  ).length || 0;
+
+  // Get popular puzzles
+  const { data: popularPuzzles } = await supabase
+    .from('poster_pixels_games')
+    .select('puzzle_id, poster_pixels_puzzles(puzzle_date, movie_title)')
+    .gte('created_at', startDate.toISOString())
+    .eq('is_won', true)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  return {
+    gameId: 'poster-pixels',
+    displayName: 'Poster Pixels',
+    completionRate,
+    avgSolveTime,
+    avgDifficulty,
+    totalPlays: totalPlays || 0,
+    perfectGames,
+    popularPuzzles: popularPuzzles?.map((p: any) => ({
+      date: p.poster_pixels_puzzles?.puzzle_date,
+      plays: 1, // Would need aggregation for real counts
+      title: p.poster_pixels_puzzles?.movie_title
+    })) || []
   };
 }
