@@ -2,6 +2,7 @@ import type React from "react"
 import type { Viewport } from "next"
 import { Geist } from "next/font/google"
 import { constructMetadata } from "@/lib/metadata"
+import { Providers } from "@/components/providers"
 import "./globals.css"
 
 const geist = Geist({
@@ -24,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={geist.className}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

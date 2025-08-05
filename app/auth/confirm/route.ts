@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isNewUser } from '@/lib/data-migration'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
@@ -60,6 +61,19 @@ export async function GET(request: Request) {
         })
         
         if (!error) {
+          // Get the authenticated user
+          const { data: { user } } = await supabase.auth.getUser()
+          
+          if (user) {
+            // Check if this is a new user
+            const userIsNew = await isNewUser(user.id)
+            
+            if (userIsNew) {
+              // Add a flag to indicate migration should be checked
+              return NextResponse.redirect(new URL('/?new_user=true&migrate=true', baseUrl))
+            }
+          }
+          
           // Redirect to home page after successful signup confirmation
           return NextResponse.redirect(new URL('/', baseUrl))
         } else {

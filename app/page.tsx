@@ -4,6 +4,8 @@ import GamesList from "@/components/games-list"
 import { SiteHeader } from "@/components/site-header"
 import { Banner } from "@/components/banner"
 import AuthHashProcessor from "@/components/auth-hash-processor"
+import AutoMigrationHandler from "@/components/auto-migration-handler"
+import { Suspense } from "react"
 import Image from "next/image"
 
 export default async function Home() {
@@ -45,6 +47,13 @@ export default async function Home() {
         successMessage="Welcome to cinamini! Redirecting to your profile..."
         processingMessage="Processing invitation..."
       />
+      
+      {/* Auto Migration Handler for new users */}
+      {user && (
+        <Suspense fallback={null}>
+          <AutoMigrationHandler userId={user.id} />
+        </Suspense>
+      )}
       
       {/* Optional Banner */}
       <Banner
