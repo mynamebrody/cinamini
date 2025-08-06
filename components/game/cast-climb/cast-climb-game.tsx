@@ -632,6 +632,7 @@ export default function CastClimbGame() {
               step={1}
               title="Meet the Cast"
               description="See actors from a mystery movie revealed one by one, starting with supporting cast."
+              darkTheme={true}
               example={
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
@@ -648,6 +649,7 @@ export default function CastClimbGame() {
               step={2}
               title="Make Your Guess"
               description="Search for and guess the movie title after each actor reveal. Wrong guesses unlock the next actor."
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground">
@@ -660,6 +662,7 @@ export default function CastClimbGame() {
               step={3}
               title="Climb the Cast"
               description="Try to guess with as few actor hints as possible. You get up to 4 attempts before the game ends."
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm font-mono">
@@ -672,6 +675,7 @@ export default function CastClimbGame() {
               step={4}
               title="Share Your Score"
               description="Perfect games are won with just the first actor. Can you climb to the top?"
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm font-mono">
@@ -823,7 +827,7 @@ export default function CastClimbGame() {
                     onClick={handleNextHint} 
                     disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
                   >
-                    {revealedIndex >= puzzle.actors.length - 1 ? "No More Hints" : "Next Hint"}
+                    {revealedIndex >= puzzle.actors.length - 1 ? "No More Hints" : "Skip Round (Next Hint)"}
                   </Button>
                   <Button 
                     variant="outline" 

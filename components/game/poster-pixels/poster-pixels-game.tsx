@@ -563,14 +563,13 @@ export default function PosterPixelsGame() {
       console.error("Error completing game:", error)
     }
 
-    // Show celebration first, then transition to completed
-    const movieTitle = state.puzzle!.movie_data?.title || state.puzzle!.film_title || "Unknown Movie"
-    setCelebrationData({
+    // Update final game state directly without celebration
+    setState(prev => ({
+      ...prev,
       won,
       clarityLevel: finalClarityLevel,
-      movieTitle
-    })
-    setGameState('celebrating')
+    }))
+    setGameState('completed')
 
     // Still fire confetti for wins and play celebration sound
     if (won) {
@@ -595,16 +594,6 @@ export default function PosterPixelsGame() {
     setModalState('stats')
   }
 
-  const handleCelebrationComplete = () => {
-    // Update final game state after celebration
-    setState(prev => ({
-      ...prev,
-      won: celebrationData?.won || false,
-      clarityLevel: celebrationData?.clarityLevel || prev.clarityLevel,
-    }))
-    setGameState('completed')
-    setCelebrationData(null)
-  }
 
 
   // Don't render the game container UI if we're showing the landing page
@@ -653,30 +642,19 @@ export default function PosterPixelsGame() {
               step={1}
               title="Blurry Movie Poster"
               description="A heavily pixelated movie poster appears on screen. At first, it's almost impossible to make out any details."
-              example={
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <div className="w-16 h-24 mx-auto bg-muted-foreground/40 rounded border-2 border-muted-foreground/30 flex items-center justify-center">
-                    <div className="text-muted-foreground text-xs">Very Blurry</div>
-                  </div>
-                </div>
-              }
+              darkTheme={true}
             />
             <InstructionCard
               step={2}
               title="Gradual Clarity"
               description="Over 30 seconds, the poster slowly becomes clearer and more recognizable. Details start to emerge."
-              example={
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <div className="w-16 h-24 mx-auto bg-muted-foreground/50 rounded border-2 border-muted-foreground/30 flex items-center justify-center">
-                    <div className="text-foreground text-xs">Getting Clearer</div>
-                  </div>
-                </div>
-              }
+              darkTheme={true}
             />
             <InstructionCard
               step={3}
               title="Search & Guess"
               description="Search for movies and make your best guess. You only get one chance, so choose wisely!"
+              darkTheme={true}
               example={
                 <div className="bg-muted rounded-lg px-3 py-2 text-center">
                   <div className="text-foreground text-sm">🔍 Search movies...</div>
@@ -688,6 +666,7 @@ export default function PosterPixelsGame() {
               step={4}
               title="Score Points"
               description="The earlier you guess correctly, the higher your score! Challenge yourself to identify movies from minimal details."
+              darkTheme={true}
               example={
                 <div className="bg-muted rounded-lg p-3 text-center">
                   <div className="text-foreground text-sm font-semibold">🏆 Perfect!</div>
@@ -754,79 +733,33 @@ export default function PosterPixelsGame() {
 
 
         {gameState === 'playing' && (
-          <div className="max-w-6xl mx-auto space-y-6">
-            {/* Art Restoration Studio Header */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-3 text-3xl font-bold text-white bg-gradient-to-r from-purple-600 to-purple-800 px-6 py-3 rounded-2xl shadow-lg">
-                <span className="text-2xl">🎨</span>
-                <span>Restoration in Progress</span>
-                <span className="text-2xl">🖼️</span>
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Timer */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 text-lg font-semibold">
+                <Clock className="w-5 h-5" />
+                <span>Time Remaining: {formatTime(GAME_DURATION - state.timeElapsed)}</span>
               </div>
-              <p className="mt-2 text-gray-600">Carefully reveal the hidden cinematic masterpiece</p>
             </div>
 
-            {/* Clarity Progress Component - The Centerpiece */}
-            <PosterPixelsClarityProgress
-              clarityLevel={state.clarityLevel}
-              timeElapsed={state.timeElapsed}
-              totalTime={GAME_DURATION}
-              isPlaying={true}
-            />
+            {/* Poster Display */}
+            <div className="flex justify-center">
+              <canvas
+                ref={canvasRef}
+                className="border border-gray-300 shadow-3d-grey"
+                width={300}
+                height={450}
+                style={{ borderRadius: 0 }}
+              />
+            </div>
 
-            {/* Main Game Area */}
-            <Card className="p-8 bg-gradient-to-br from-white to-purple-50 border-purple-200 shadow-2xl">
-              <div className="space-y-6">
-                {/* Timer with Art Theme */}
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-3 text-xl font-bold text-white bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-3 rounded-2xl shadow-lg border-2 border-gray-600">
-                    <Clock className="w-5 h-5" />
-                    <span>Time Remaining: {formatTime(GAME_DURATION - state.timeElapsed)}</span>
-                    <span className="text-lg">⏱️</span>
-                  </div>
-                </div>
-
-                {/* Poster Display with Art Gallery Frame */}
-                <div className="flex justify-center mb-8">
-                  <div className="relative">
-                    {/* Ornate Gallery Frame */}
-                    <div className="absolute -inset-4 bg-gradient-to-br from-amber-400 via-amber-300 to-amber-500 rounded-2xl shadow-2xl">
-                      <div className="absolute inset-2 bg-gradient-to-br from-amber-200 to-amber-100 rounded-xl">
-                        <div className="absolute inset-2 bg-white rounded-lg shadow-inner"></div>
-                      </div>
-                      {/* Frame decorations */}
-                      <div className="absolute -top-1 -left-1 w-3 h-3 bg-amber-600 rounded-full"></div>
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-600 rounded-full"></div>
-                      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-amber-600 rounded-full"></div>
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-amber-600 rounded-full"></div>
-                    </div>
-                    
-                    {/* Spotlight Effect */}
-                    <div className="absolute -inset-8 bg-gradient-radial from-yellow-200/20 via-transparent to-transparent rounded-full animate-pulse"></div>
-                    
-                    <canvas
-                      ref={canvasRef}
-                      className="relative z-10 border-4 border-white rounded-lg shadow-2xl cursor-crosshair hover:cursor-zoom-in transition-all duration-300"
-                      width={300}
-                      height={450}
-                      title="Poster restoration in progress - revealing details..."
-                    />
-                    
-                    {/* Restoration Tools Floating Around */}
-                    <div className="absolute -right-12 top-8 text-2xl animate-bounce" style={{ animationDelay: '0s' }}>🔍</div>
-                    <div className="absolute -left-12 top-16 text-2xl animate-bounce" style={{ animationDelay: '0.5s' }}>🖌️</div>
-                    <div className="absolute -right-8 bottom-12 text-2xl animate-bounce" style={{ animationDelay: '1s' }}>✨</div>
-                  </div>
-                </div>
-
-                {/* Search Bar with Artist Theme */}
+            {/* Search Card */}
+            <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+              <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800 flex items-center justify-center gap-2">
-                      <span>🔍</span>
-                      <span>Identify the Masterpiece</span>
-                      <span>🎬</span>
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1">Search for the movie title and make your expert assessment</p>
+                    <h3 className="text-lg font-semibold">Guess the Movie</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Search for the movie title</p>
                   </div>
                   
                   <PosterPixelsSearch
@@ -836,37 +769,24 @@ export default function PosterPixelsGame() {
                     onAutoSubmit={handleAutoSubmit}
                   />
                   
-                  {/* Guess Button with Art Theme */}
                   {selectedMovie && (
                     <div className="flex justify-center">
                       <Button 
                         onClick={handleGuess}
                         onMouseEnter={() => sounds.playInspection()}
                         size="lg"
-                        className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold rounded-2xl shadow-lg border-2 border-purple-500 transform hover:scale-105 transition-all duration-200 hover:shadow-2xl hover:shadow-purple-500/25 active:scale-95"
+                        className="px-8 py-3"
                       >
-                        <span className="mr-2">🎨</span>
-                        Complete Restoration
-                        <span className="ml-2">✨</span>
+                        Submit Guess
                       </Button>
                     </div>
                   )}
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Art Gallery Celebration */}
-        {gameState === 'celebrating' && celebrationData && (
-          <PosterPixelsArtGalleryCelebration
-            isVisible={true}
-            won={celebrationData.won}
-            clarityLevel={celebrationData.clarityLevel}
-            movieTitle={celebrationData.movieTitle}
-            onComplete={handleCelebrationComplete}
-          />
-        )}
 
         {gameState === 'completed' && state.puzzle && (
           <PosterPixelsResult

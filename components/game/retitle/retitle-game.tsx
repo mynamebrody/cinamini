@@ -332,6 +332,7 @@ export default function RetitleGame() {
               step={1}
               title="See the Foreign Title"
               description="You'll see a movie title translated into another language, along with the country flag to give you context."
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="flex items-center justify-center space-x-3 mb-2">
@@ -348,6 +349,7 @@ export default function RetitleGame() {
               step={2}
               title="Choose the English Title"
               description="Pick the correct English movie title from 4-5 carefully selected options. Some might be tricky!"
+              darkTheme={true}
               example={
                 <div className="space-y-2">
                   <div className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground text-center">
@@ -363,6 +365,7 @@ export default function RetitleGame() {
               step={3}
               title="One Chance Only"
               description="You get just one guess per daily puzzle, so think carefully! Consider the literal translation and cultural context."
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm">
@@ -378,6 +381,7 @@ export default function RetitleGame() {
               step={4}
               title="Learn & Share"
               description="Discover fascinating translation trivia and share your success (or educated guess) with friends!"
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm font-mono">

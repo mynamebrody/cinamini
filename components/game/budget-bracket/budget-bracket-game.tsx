@@ -412,6 +412,7 @@ export default function BudgetBracketGame() {
               step={1}
               title="Face the Bracket"
               description="See two movie posters side-by-side in each round. Your mission: pick the one with the higher production budget."
+              darkTheme={true}
               example={
                 <div className="flex items-center justify-center space-x-4">
                   <div className="w-16 h-20 bg-muted rounded-lg flex items-center justify-center">
@@ -428,6 +429,7 @@ export default function BudgetBracketGame() {
               step={2}
               title="Make Your Choice"
               description="Tap the movie you think had the higher budget. Trust your instincts - sometimes the smaller films surprise you!"
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="bg-muted rounded-lg px-4 py-2 text-sm text-muted-foreground">
@@ -440,6 +442,7 @@ export default function BudgetBracketGame() {
               step={3}
               title="Survive 5 Rounds"
               description="Complete all 5 budget comparisons. Each wrong choice brings you closer to elimination, but you can still finish all rounds."
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm">
@@ -455,6 +458,7 @@ export default function BudgetBracketGame() {
               step={4}
               title="Perfect Producer"
               description="Get all 5 rounds correct to earn the coveted 'Perfect Producer' status and ultimate bragging rights!"
+              darkTheme={true}
               example={
                 <div className="text-center">
                   <div className="text-foreground text-sm font-mono">

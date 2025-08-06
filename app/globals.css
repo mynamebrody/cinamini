@@ -200,9 +200,9 @@
   }
 
   .btn-ghost:hover {
-    background-color: white;
+    background-color: transparent;
     color: rgb(var(--cinema-red));
-    border-color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
     box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
                 2px 2px 0px rgb(var(--cinema-red)),
                 3px 3px 0px rgb(var(--cinema-red)),
@@ -212,13 +212,31 @@
   .btn-outline {
     background-color: transparent;
     color: rgb(var(--foreground));
-    border: 1px solid rgb(var(--border));
+    border: 1px solid transparent;
   }
 
   .btn-outline:hover {
-    background-color: white;
+    background-color: transparent;
     color: rgb(var(--cinema-red));
-    border-color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
+  }
+
+  .btn-icon {
+    background-color: transparent;
+    color: rgb(var(--foreground));
+    border: 1px solid transparent;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-icon:hover {
+    background-color: transparent;
+    color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
     box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
                 2px 2px 0px rgb(var(--cinema-red)),
                 3px 3px 0px rgb(var(--cinema-red)),
