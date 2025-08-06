@@ -729,7 +729,7 @@ export default function PosterPixelsGame() {
 
 
         {gameState === 'playing' && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6 pb-40">
             {/* Timer */}
             <div className="text-center">
               <div className="inline-flex items-center gap-2 text-lg font-semibold">
@@ -750,7 +750,7 @@ export default function PosterPixelsGame() {
             </div>
 
             {/* Search Card */}
-            <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+            <Card className="border border-gray-300 shadow-3d-grey mb-40" style={{ borderRadius: 0 }}>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="text-center mb-4">

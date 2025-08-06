@@ -42,7 +42,8 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
             try {
               const response = await fetch('/api/games')
               if (response.ok) {
-                const games = await response.json()
+                const data = await response.json()
+                const games = Array.isArray(data) ? data : []
                 const gameStatus = games.find((g: any) => g.game_id === game.id)
                 statuses[game.id] = gameStatus?.has_played || false
               } else {

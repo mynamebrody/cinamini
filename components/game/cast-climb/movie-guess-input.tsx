@@ -31,6 +31,16 @@ export function MovieGuessInput({
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
+  // Scroll dropdown into view
+  const scrollDropdownIntoView = useCallback(() => {
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
+    }
+  }, [])
+
   // Debounced search function
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 2) {
@@ -60,6 +70,9 @@ export function MovieGuessInput({
       setSelectedIndex(-1)
       setError(null)
       
+      // Scroll dropdown into view after a short delay to ensure it's rendered
+      setTimeout(scrollDropdownIntoView, 100)
+      
     } catch (err) {
       console.error('Movie search error:', err)
       
@@ -74,7 +87,7 @@ export function MovieGuessInput({
     } finally {
       setIsSearching(false)
     }
-  }, [])
+  }, [scrollDropdownIntoView])
 
   // Handle search with debouncing
   useEffect(() => {
@@ -107,6 +120,19 @@ export function MovieGuessInput({
     setSelectedIndex(-1)
   }
 
+  // Scroll selected item into view
+  const scrollSelectedIntoView = useCallback((index: number) => {
+    if (resultsRef.current && index >= 0) {
+      const selectedElement = resultsRef.current.querySelector(`[data-index="${index}"]`) as HTMLElement
+      if (selectedElement) {
+        selectedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        })
+      }
+    }
+  }, [])
+
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!showResults || searchResults.length === 0) return
@@ -114,15 +140,15 @@ export function MovieGuessInput({
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        setSelectedIndex(prev => 
-          prev < searchResults.length - 1 ? prev + 1 : 0
-        )
+        const nextIndex = selectedIndex < searchResults.length - 1 ? selectedIndex + 1 : 0
+        setSelectedIndex(nextIndex)
+        scrollSelectedIntoView(nextIndex)
         break
       case 'ArrowUp':
         e.preventDefault()
-        setSelectedIndex(prev => 
-          prev > 0 ? prev - 1 : searchResults.length - 1
-        )
+        const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : searchResults.length - 1
+        setSelectedIndex(prevIndex)
+        scrollSelectedIntoView(prevIndex)
         break
       case 'Enter':
         e.preventDefault()
@@ -171,7 +197,13 @@ export function MovieGuessInput({
           value={searchQuery}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => searchResults.length > 0 && setShowResults(true)}
+          onFocus={() => {
+            if (searchResults.length > 0) {
+              setShowResults(true)
+              // Scroll dropdown into view when focused
+              setTimeout(scrollDropdownIntoView, 100)
+            }
+          }}
           className="pl-10 pr-10 bg-background text-foreground"
           disabled={loading || disabled}
           maxLength={100}
@@ -207,6 +239,7 @@ export function MovieGuessInput({
               {searchResults.map((movie, index) => (
                 <button
                   key={movie.id}
+                  data-index={index}
                   onClick={() => handleMovieSelect(movie)}
                   className={cn(
                     "w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors",

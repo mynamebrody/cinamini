@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Search, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { useDebounce } from "@/hooks/use-debounce"
 
 interface Movie {
@@ -29,8 +30,32 @@ export default function PosterPixelsSearch({
   const [searchResults, setSearchResults] = useState<Movie[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const debouncedSearchQuery = useDebounce(searchQuery, 300)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Scroll dropdown into view
+  const scrollDropdownIntoView = useCallback(() => {
+    if (dropdownRef.current) {
+      dropdownRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
+    }
+  }, [])
+
+  // Scroll selected item into view
+  const scrollSelectedIntoView = useCallback((index: number) => {
+    if (dropdownRef.current && index >= 0) {
+      const selectedElement = dropdownRef.current.querySelector(`[data-index="${index}"]`) as HTMLElement
+      if (selectedElement) {
+        selectedElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        })
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (debouncedSearchQuery.length >= 2) {
@@ -38,6 +63,7 @@ export default function PosterPixelsSearch({
     } else {
       setSearchResults([])
       setShowDropdown(false)
+      setSelectedIndex(-1)
     }
   }, [debouncedSearchQuery])
 
@@ -45,6 +71,7 @@ export default function PosterPixelsSearch({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
+        setSelectedIndex(-1)
       }
     }
 
@@ -61,6 +88,9 @@ export default function PosterPixelsSearch({
       if (response.ok && data.results) {
         setSearchResults(data.results.slice(0, 8)) // Limit to 8 results
         setShowDropdown(true)
+        setSelectedIndex(-1)
+        // Scroll dropdown into view after a short delay to ensure it's rendered
+        setTimeout(scrollDropdownIntoView, 100)
       } else {
         setSearchResults([])
       }
@@ -92,6 +122,37 @@ export default function PosterPixelsSearch({
     onMovieSelect(null)
     setSearchResults([])
     setShowDropdown(false)
+    setSelectedIndex(-1)
+  }
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || searchResults.length === 0) return
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        const nextIndex = selectedIndex < searchResults.length - 1 ? selectedIndex + 1 : 0
+        setSelectedIndex(nextIndex)
+        scrollSelectedIntoView(nextIndex)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        const prevIndex = selectedIndex > 0 ? selectedIndex - 1 : searchResults.length - 1
+        setSelectedIndex(prevIndex)
+        scrollSelectedIntoView(prevIndex)
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
+          handleMovieSelect(searchResults[selectedIndex])
+        }
+        break
+      case 'Escape':
+        setShowDropdown(false)
+        setSelectedIndex(-1)
+        break
+    }
   }
 
   const getReleaseYear = (releaseYear: string) => {
@@ -107,6 +168,14 @@ export default function PosterPixelsSearch({
           placeholder="Start typing to search movies..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            if (searchResults.length > 0) {
+              setShowDropdown(true)
+              // Scroll dropdown into view when focused
+              setTimeout(scrollDropdownIntoView, 100)
+            }
+          }}
           disabled={disabled}
           className="pl-10 pr-10 bg-background text-foreground"
         />
@@ -128,8 +197,12 @@ export default function PosterPixelsSearch({
             {searchResults.map((movie, index) => (
               <button
                 key={movie.id}
+                data-index={index}
                 onClick={() => handleMovieSelect(movie)}
-                className="w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors flex items-center gap-3"
+                className={cn(
+                  "w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors flex items-center gap-3",
+                  selectedIndex === index && "bg-muted"
+                )}
               >
                 {/* Movie Poster Placeholder */}
                 <div className="flex-shrink-0 w-12 h-16 bg-muted rounded overflow-hidden">
