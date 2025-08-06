@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,6 @@ import {
   XCircle,
   BarChart3,
   Crown,
-  DollarSign,
   Star
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
@@ -74,16 +73,31 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   const shareText = generateShareText()
   const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
   // Sum the box office (budget) of all correct answers
-  const totalBudgetMastered = result.revealed_pairs
-    .filter(p => p.correct)
-    .reduce((sum, pair) => {
-      // Find which movie was chosen and correct
-      const chosen =
-        pair.chosen_movie === pair.revealed_budgets.movieA.tmdb_id
-          ? pair.revealed_budgets.movieA
-          : pair.revealed_budgets.movieB
-      return sum + (chosen.budget || 0)
-    }, 0)
+  // Use allRoundsData if available (for anonymous users and better accuracy), otherwise use result data
+  const totalBudgetMastered = useMemo(() => {
+    return result.revealed_pairs
+      .filter(p => p.correct)
+      .reduce((sum, pair) => {
+        // Try to get budget data from allRoundsData first (more accurate)
+        const roundData = allRoundsData.find(rd => rd.round === pair.round)
+        
+        let movieABudget = 0
+        let movieBBudget = 0
+        
+        if (roundData && !loadingAnswers) {
+          // Use the fetched budget data
+          movieABudget = roundData.movieA?.budget || 0
+          movieBBudget = roundData.movieB?.budget || 0
+        } else {
+          // Fall back to revealed_budgets from result
+          movieABudget = pair.revealed_budgets?.movieA?.budget || 0
+          movieBBudget = pair.revealed_budgets?.movieB?.budget || 0
+        }
+        
+        const higherBudget = Math.max(movieABudget, movieBBudget)
+        return sum + higherBudget
+      }, 0)
+  }, [result.revealed_pairs, allRoundsData, loadingAnswers])
 
   // Trigger celebration for perfect games or high scores
   useEffect(() => {
@@ -306,7 +320,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className={result.is_perfect_game ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200" : ""}>
+        <Card className={result.is_perfect_game ? "border-2 border-yellow-400 shadow-3d-gold" : "border-2 border-gray-300 shadow-3d-grey"} style={{ borderRadius: 0 }}>
           <CardHeader className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -354,7 +368,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5, type: "spring" }}
-                className="bg-gradient-to-r from-yellow-100 to-golden-100 border-2 border-yellow-300 rounded-lg p-4 text-center"
+                className="bg-gradient-to-r from-yellow-100 to-golden-100 border-2 border-yellow-300 p-4 text-center shadow-3d-gold"
               >
                 <div className="flex items-center justify-center space-x-2 text-yellow-800">
                   <span className="text-2xl">🎬</span>
@@ -372,7 +386,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7 }}
-              className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 rounded-lg p-4 text-center"
+              className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 p-4 text-center shadow-3d-green"
             >
               <div className="flex items-center justify-center space-x-2 text-green-800">
                 <span className="text-xl font-bold font-mono">
@@ -394,7 +408,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200"
+                className="bg-gradient-to-b from-blue-50 to-blue-100 p-3 border border-blue-200 shadow-3d-blue"
+                style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-blue-700">
                   {correctAnswers}/{result.rounds_completed}
@@ -405,7 +420,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-gradient-to-b from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200"
+                className="bg-gradient-to-b from-purple-50 to-purple-100 p-3 border border-purple-200 shadow-3d-purple"
+                style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-purple-700">{formatTime(result.total_duration_ms)}</div>
                 <div className="text-sm text-purple-600 font-medium">Total Time</div>
@@ -414,7 +430,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="bg-gradient-to-b from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200"
+                className="bg-gradient-to-b from-orange-50 to-orange-100 p-3 border border-orange-200 shadow-3d-orange"
+                style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-orange-700">
                   {result.updated_stats?.current_streak || 0}
@@ -461,7 +478,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
       >
-        <Card>
+        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center space-x-2">
               <span>🎭</span>
@@ -484,9 +501,9 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 (playedRound.chosen_movie === roundData.movieA.tmdb_id ? 'A' : 'B') : null
               
               return (
-                <div key={roundData.round} className={`border rounded-lg p-4 ${
+                <div key={roundData.round} className={`border border-gray-300 shadow-3d-grey p-4 ${
                   !wasPlayed ? 'bg-muted/30 border-dashed' : ''
-                }`}>
+                }`} style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <Badge variant={wasPlayed ? "secondary" : "outline"}>
@@ -515,7 +532,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   {/* Movie Comparison */}
                   <div className="grid grid-cols-2 gap-3">
                     {/* Movie A */}
-                    <div className={`text-center p-2 rounded ${
+                    <div className={`text-center p-2 ${
                       !wasPlayed ? 'bg-muted/20' :
                       chosenMovie === 'A' 
                         ? playedRound?.correct 
@@ -525,7 +542,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
                         <img
                           src={getPosterUrl(roundData.movieA.poster_path, 'w185')}
                           alt={`${roundData.movieA.title} poster`}
@@ -555,7 +572,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     </div>
 
                     {/* Movie B */}
-                    <div className={`text-center p-2 rounded ${
+                    <div className={`text-center p-2 ${
                       !wasPlayed ? 'bg-muted/20' :
                       chosenMovie === 'B' 
                         ? playedRound?.correct 
@@ -565,7 +582,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
                         <img
                           src={getPosterUrl(roundData.movieB.poster_path, 'w185')}
                           alt={`${roundData.movieB.title} poster`}
@@ -600,11 +617,11 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     {wasPlayed && playedRound ? (
                       playedRound.correct ? (
                         <div className="text-green-600">
-                          ✅ Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
+                          🟩 Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
                         </div>
                       ) : (
                         <div className="text-red-600">
-                          ❌ Wrong. {roundData[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
+                          🟥 Wrong. {roundData[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
                         </div>
                       )
                     ) : (
@@ -624,7 +641,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               const chosenMovie = roundData.chosen_movie === roundData.revealed_budgets.movieA.tmdb_id ? 'A' : 'B'
               
               return (
-                <div key={roundData.round} className="border rounded-lg p-4">
+                <div key={roundData.round} className="border border-gray-300 shadow-3d-grey p-4" style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="secondary">Round {roundData.round}</Badge>
                     <div className="flex items-center gap-2">
@@ -642,7 +659,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   {/* Movie Comparison */}
                   <div className="grid grid-cols-2 gap-3">
                     {/* Movie A */}
-                    <div className={`text-center p-2 rounded ${
+                    <div className={`text-center p-2 ${
                       chosenMovie === 'A' 
                         ? roundData.correct 
                           ? 'bg-green-50 border border-green-200'
@@ -651,7 +668,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
                         <img
                           src={getPosterUrl(pair.movieA.poster_path, 'w185')}
                           alt={`${pair.movieA.title} poster`}
@@ -676,7 +693,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     </div>
 
                     {/* Movie B */}
-                    <div className={`text-center p-2 rounded ${
+                    <div className={`text-center p-2 ${
                       chosenMovie === 'B' 
                         ? roundData.correct 
                           ? 'bg-green-50 border border-green-200'
@@ -685,7 +702,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted rounded overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
                         <img
                           src={getPosterUrl(pair.movieB.poster_path, 'w185')}
                           alt={`${pair.movieB.title} poster`}
@@ -714,11 +731,11 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   <div className="mt-3 text-center text-sm">
                     {roundData.correct ? (
                       <div className="text-green-600">
-                        ✅ Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
+                        🟩 Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
                       </div>
                     ) : (
                       <div className="text-red-600">
-                        ❌ Wrong. {roundData.revealed_budgets[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
+                        🟥 Wrong. {roundData.revealed_budgets[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
                       </div>
                     )}
                   </div>

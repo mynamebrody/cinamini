@@ -231,25 +231,22 @@ export default function BudgetBracketRound({
             // Find if this round has been completed
             const completedChoice = gameChoices.find(choice => choice.round === roundNum)
             
+            let emoji = '⬜'
+            if (roundNum < round) {
+              // Past rounds
+              emoji = completedChoice?.correct ? '🟩' : '🟥'
+            } else if (roundNum === round && hasChosen && showingFeedback && isCorrect !== null) {
+              // Current round with feedback
+              emoji = isCorrect ? '🟩' : '🟥'
+            }
+            
             return (
-              <div
+              <span
                 key={roundNum}
-                className={`w-3 h-3 rounded-full ${
-                  roundNum < round
-                    ? completedChoice?.correct
-                      ? 'bg-green-500'  // Correct answer
-                      : 'bg-red-500'    // Wrong answer
-                    : roundNum === round
-                      ? hasChosen
-                        ? showingFeedback && isCorrect !== null
-                          ? isCorrect
-                            ? 'bg-green-500'  // Current round - correct
-                            : 'bg-red-500'    // Current round - wrong
-                          : 'bg-blue-500'     // Current round - processing
-                        : 'bg-primary'        // Current round - not chosen yet
-                      : 'bg-muted'            // Future rounds
-                }`}
-              />
+                className="text-lg"
+              >
+                {emoji}
+              </span>
             )
           })}
         </div>
@@ -285,13 +282,13 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'A' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200' 
-                      : 'ring-2 ring-red-500 bg-red-50 shadow-lg shadow-red-200'
-                    : 'ring-2 ring-blue-500 bg-blue-50 shadow-lg shadow-blue-200'
+                      ? 'border-2 border-green-500 bg-green-50 shadow-3d-green' 
+                      : 'border-2 border-red-500 bg-red-50 shadow-3d-red'
+                    : 'border-2 border-blue-500 bg-blue-50 shadow-3d-grey'
                   : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                    ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200'
+                    ? 'border-2 border-green-500 bg-green-50 shadow-3d-green'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-gray-500 hover:shadow-[1px_1px_0px_rgb(107,114,128),2px_2px_0px_rgb(107,114,128),3px_3px_0px_rgb(107,114,128),4px_4px_0px_rgb(107,114,128)]'
+                : 'border-2 border-gray-300 hover:border-gray-600 hover:shadow-3d-grey-dark'
             }`}
             onClick={() => handleMovieChoice('A')}
           >
@@ -318,10 +315,9 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 rounded border border-green-200"
+                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green"
                 >
                   <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
-                    <DollarSign className="w-3 h-3" />
                     {formatBudget(budgetA, false)}
                     {budgetB && budgetA > budgetB && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
@@ -352,13 +348,13 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'B' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200' 
-                      : 'ring-2 ring-red-500 bg-red-50 shadow-lg shadow-red-200'
-                    : 'ring-2 ring-blue-500 bg-blue-50 shadow-lg shadow-blue-200'
+                      ? 'border-2 border-green-500 bg-green-50 shadow-3d-green' 
+                      : 'border-2 border-red-500 bg-red-50 shadow-3d-red'
+                    : 'border-2 border-blue-500 bg-blue-50 shadow-3d-grey'
                   : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                    ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200'
+                    ? 'border-2 border-green-500 bg-green-50 shadow-3d-green'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-gray-500 hover:shadow-[1px_1px_0px_rgb(107,114,128),2px_2px_0px_rgb(107,114,128),3px_3px_0px_rgb(107,114,128),4px_4px_0px_rgb(107,114,128)]'
+                : 'border-2 border-gray-300 hover:border-gray-600 hover:shadow-3d-grey-dark'
             }`}
             onClick={() => handleMovieChoice('B')}
           >
@@ -385,10 +381,9 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 rounded border border-green-200"
+                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green"
                 >
                   <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
-                    <DollarSign className="w-3 h-3" />
                     {formatBudget(budgetB, false)}
                     {budgetA && budgetB > budgetA && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
@@ -450,14 +445,14 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-green-600 font-semibold bg-green-50 p-3 rounded-lg border border-green-200"
+              className="text-green-600 font-semibold bg-green-50 p-3 border border-green-500 shadow-3d-green"
             >
               <div className="flex items-center justify-center space-x-2">
                 <motion.span
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 0.5, delay: 0.5 }}
                 >
-                  ✅
+                  🟩
                 </motion.span>
                 <span>Correct! {pair[chosenMovie === 'A' ? 'movieA' : 'movieB'].title} had the higher budget!</span>
                 <motion.span
@@ -473,10 +468,10 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-red-600 font-semibold bg-red-50 p-3 rounded-lg border border-red-200"
+              className="text-red-600 font-semibold bg-red-50 p-3 border border-red-500 shadow-3d-red"
             >
               <div className="flex items-center justify-center space-x-2">
-                <span>❌</span>
+                <span>🟥</span>
                 <span>Wrong! {budgetA && budgetB && budgetA > budgetB ? pair.movieA.title : pair.movieB.title} had the higher budget.</span>
               </div>
             </motion.div>
@@ -487,7 +482,7 @@ export default function BudgetBracketRound({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border"
+              className="text-sm text-muted-foreground bg-gray-50 p-2 border border-gray-300 shadow-3d-grey"
             >
               <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
             </motion.div>

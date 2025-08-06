@@ -373,7 +373,7 @@ export default function BudgetBracketGame() {
         gameName="Budget Bracket"
         puzzleNumber={puzzle?.puzzle_number}
         puzzleDate={puzzle?.puzzle_date}
-        backgroundColor="#f7ee8b"
+        backgroundColor="#278646"
         emoji="💰"
         onStart={startGame}
         showBackButton={true}
@@ -446,7 +446,7 @@ export default function BudgetBracketGame() {
                     Round 3 of 5
                   </div>
                   <div className="text-muted-foreground text-xs mt-1">
-                    ✅✅❌ (2 correct so far)
+                    🟩🟩🟥 (2 correct so far)
                   </div>
                 </div>
               }

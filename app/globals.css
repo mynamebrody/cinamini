@@ -466,6 +466,50 @@
                 4px 4px 0px rgb(var(--cinema-red));
   }
 
+  /* 3D Shadow utilities for consistent game styling */
+  :root {
+    --shadow-3d-grey: 1px 1px 0px rgb(107, 114, 128), 2px 2px 0px rgb(107, 114, 128), 3px 3px 0px rgb(107, 114, 128), 4px 4px 0px rgb(107, 114, 128);
+    --shadow-3d-grey-dark: 1px 1px 0px rgb(75, 85, 99), 2px 2px 0px rgb(75, 85, 99), 3px 3px 0px rgb(75, 85, 99), 4px 4px 0px rgb(75, 85, 99);
+    --shadow-3d-green: 1px 1px 0px rgb(34, 197, 94), 2px 2px 0px rgb(34, 197, 94), 3px 3px 0px rgb(34, 197, 94), 4px 4px 0px rgb(34, 197, 94);
+    --shadow-3d-red: 1px 1px 0px rgb(239, 68, 68), 2px 2px 0px rgb(239, 68, 68), 3px 3px 0px rgb(239, 68, 68), 4px 4px 0px rgb(239, 68, 68);
+    --shadow-3d-gold: 1px 1px 0px rgb(251, 191, 36), 2px 2px 0px rgb(251, 191, 36), 3px 3px 0px rgb(251, 191, 36), 4px 4px 0px rgb(251, 191, 36);
+    --shadow-3d-blue: 1px 1px 0px rgb(147, 197, 253), 2px 2px 0px rgb(147, 197, 253), 3px 3px 0px rgb(147, 197, 253), 4px 4px 0px rgb(147, 197, 253);
+    --shadow-3d-purple: 1px 1px 0px rgb(196, 181, 253), 2px 2px 0px rgb(196, 181, 253), 3px 3px 0px rgb(196, 181, 253), 4px 4px 0px rgb(196, 181, 253);
+    --shadow-3d-orange: 1px 1px 0px rgb(253, 186, 116), 2px 2px 0px rgb(253, 186, 116), 3px 3px 0px rgb(253, 186, 116), 4px 4px 0px rgb(253, 186, 116);
+  }
+
+  .shadow-3d-grey {
+    box-shadow: var(--shadow-3d-grey);
+  }
+
+  .shadow-3d-grey-dark {
+    box-shadow: var(--shadow-3d-grey-dark);
+  }
+
+  .shadow-3d-green {
+    box-shadow: var(--shadow-3d-green);
+  }
+
+  .shadow-3d-red {
+    box-shadow: var(--shadow-3d-red);
+  }
+
+  .shadow-3d-gold {
+    box-shadow: var(--shadow-3d-gold);
+  }
+
+  .shadow-3d-blue {
+    box-shadow: var(--shadow-3d-blue);
+  }
+
+  .shadow-3d-purple {
+    box-shadow: var(--shadow-3d-purple);
+  }
+
+  .shadow-3d-orange {
+    box-shadow: var(--shadow-3d-orange);
+  }
+
   /* Gradient text for special elements */
   .text-gradient {
     background: linear-gradient(135deg, rgb(var(--cinema-red)) 0%, rgb(var(--cinema-gold)) 100%);

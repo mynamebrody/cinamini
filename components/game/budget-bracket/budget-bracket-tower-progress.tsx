@@ -306,9 +306,9 @@ export default function BudgetBracketTowerProgress({
                         transition={{ type: "spring", delay: 0.2 }}
                       >
                         {isCorrect ? (
-                          <div className="text-green-300 font-bold">✅</div>
+                          <div className="text-green-300 font-bold">🟩</div>
                         ) : (
-                          <div className="text-red-300 font-bold">❌</div>
+                          <div className="text-red-300 font-bold">🟥</div>
                         )}
                       </motion.div>
                     )}

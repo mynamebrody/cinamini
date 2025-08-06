@@ -31,7 +31,7 @@ export function GameLanding({
   const router = useRouter()
   
   // Determine if we need dark text for light backgrounds
-  const useDarkText = backgroundColor === "#f7ee8b" // Budget Bracket light golden
+  const useDarkText = backgroundColor === "#f7ee8b" // Light golden backgrounds need dark text
   const textColor = useDarkText ? "text-gray-900" : "text-white"
   const textColorMuted = useDarkText ? "text-gray-700" : "text-white/70"
   const textColorSecondary = useDarkText ? "text-gray-800" : "text-white/90"
