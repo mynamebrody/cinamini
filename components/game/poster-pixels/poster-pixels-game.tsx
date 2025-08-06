@@ -16,7 +16,6 @@ import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 import { PosterPixelsClarityProgress } from "./poster-pixels-clarity-progress"
 import { PosterPixelsArtGalleryCelebration } from "./poster-pixels-art-gallery-celebration"
-import { usePosterPixelsSounds } from "./poster-pixels-sound-effects"
 
 interface MovieData {
   id?: number
@@ -61,7 +60,6 @@ const GAME_DURATION = 30 // seconds
 
 export default function PosterPixelsGame() {
   const { isAnonymous, loading: authLoading } = useGameMode()
-  const sounds = usePosterPixelsSounds()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [state, setState] = useState<GameState>({
@@ -221,16 +219,12 @@ export default function PosterPixelsGame() {
   }
 
   const startGame = async () => {
-    // Initialize sound system on first interaction
-    sounds.initialize()
     
     // Mark that the user has played before if coming from how to play
     if (modalState === 'howtoplay') {
       localStorage.setItem('poster-pixels-played', 'true')
     }
     
-    // Play camera shutter sound for game start
-    sounds.playShutter()
 
     try {
       if (isAnonymous) {
@@ -582,10 +576,7 @@ export default function PosterPixelsGame() {
         spread: 70,
         origin: { y: 0.6 },
       })
-      sounds.playApplause()
     } else {
-      // Play a gentle chime even for incorrect guesses to soften the blow
-      sounds.playChime()
     }
   }
 
@@ -777,7 +768,6 @@ export default function PosterPixelsGame() {
                     <div className="flex justify-center">
                       <Button 
                         onClick={handleGuess}
-                        onMouseEnter={() => sounds.playInspection()}
                         size="lg"
                         className="px-8 py-3"
                       >

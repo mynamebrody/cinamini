@@ -277,10 +277,10 @@ function CastClimbGame() {
                 </div>
                 
                 <div className="bg-gray-900/50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-lg mb-2">🔊 Audio Integration</h4>
+                  <h4 className="font-semibold text-lg mb-2">📱 Mobile Optimized</h4>
                   <p className="text-gray-300 text-sm">
-                    Contextual audio feedback with game-specific sound profiles. 
-                    Respects user preferences and device capabilities.
+                    Optimized for mobile devices with haptic feedback and 
+                    responsive visual celebrations.
                   </p>
                 </div>
                 

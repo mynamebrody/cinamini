@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { playClimbStep, playSuccess, playFailure, enableAudio } from "@/lib/audio-feedback"
 
 interface CastClimbProgressProps {
   totalActors: number
@@ -33,8 +32,6 @@ export function CastClimbProgress({
         navigator.vibrate(50) // Short vibration for climbing up
       }
       
-      // Play climbing step sound
-      playClimbStep(revealedIndex, totalActors)
       
       // Small delay to allow for smooth transitions
       const timer = setTimeout(() => {
@@ -52,33 +49,15 @@ export function CastClimbProgress({
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([100, 50, 100, 50, 200])
         }
-        playSuccess()
       } else {
         // Failure effects
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([200, 100, 200])
         }
-        playFailure()
       }
     }
   }, [gameCompleted, isCorrect])
   
-  // Enable audio on first interaction
-  useEffect(() => {
-    const handleInteraction = () => {
-      enableAudio()
-      document.removeEventListener('click', handleInteraction)
-      document.removeEventListener('touchstart', handleInteraction)
-    }
-    
-    document.addEventListener('click', handleInteraction)
-    document.addEventListener('touchstart', handleInteraction)
-    
-    return () => {
-      document.removeEventListener('click', handleInteraction)
-      document.removeEventListener('touchstart', handleInteraction)
-    }
-  }, [])
 
   const getStepState = (index: number) => {
     if (gameCompleted && isCorrect && userGuesses.length > 0) {

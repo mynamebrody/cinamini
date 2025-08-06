@@ -8,7 +8,7 @@ This system provides:
 - **Unified Achievement Tracking**: Cross-game achievements and statistics
 - **Theme-Consistent Celebrations**: Each game maintains its personality with shared mechanics
 - **Automatic Progress Tracking**: Games report events, system handles the rest
-- **Rich Visual & Audio Feedback**: Confetti, sounds, and haptic feedback
+- **Rich Visual Feedback**: Confetti and haptic feedback
 - **Easy Integration**: Simple hooks and components for existing games
 
 ## 🚀 Quick Start
@@ -76,11 +76,11 @@ function StatsPage() {
 
 Each game has its own theme configuration:
 
-- **Cast Climb** 🎭: Orange colors, theater emojis, ascending sounds
-- **Retitled** 🌍: Blue colors, travel emojis, cinematic sounds  
-- **Budget Bracket** 💰: Green colors, money emojis, triumphant sounds
-- **Poster Pixels** 🖼️: Purple colors, art emojis, magical sounds
-- **Universal** 🎬: Cinema red, movie emojis, epic sounds
+- **Cast Climb** 🎭: Orange colors, theater emojis
+- **Retitled** 🌍: Blue colors, travel emojis
+- **Budget Bracket** 💰: Green colors, money emojis
+- **Poster Pixels** 🖼️: Purple colors, art emojis
+- **Universal** 🎬: Cinema red, movie emojis
 
 ## 🏆 Achievement Types
 
@@ -104,7 +104,6 @@ Each game has its own theme configuration:
 The system automatically provides:
 
 - **Visual Effects**: Theme-specific confetti and particle systems
-- **Audio Feedback**: Contextual sounds with game-specific instruments
 - **Haptic Feedback**: Mobile vibration patterns
 - **Achievement Notifications**: Toast notifications for new unlocks
 
@@ -142,10 +141,8 @@ const {
 ```tsx
 const {
   celebrate,          // Full celebration with effects
-  playSound,          // Audio only
   triggerHaptic,      // Haptic only
-  createConfetti,     // Visual only
-  isAudioInitialized  // Audio system status
+  createConfetti      // Visual only
 } = useCelebration()
 ```
 
@@ -198,7 +195,7 @@ components/universal/
 ├── index.ts                          # Main exports
 ├── achievement-system.tsx            # Core system & context
 ├── achievement-badge.tsx             # Badge components
-├── celebration-effects-library.tsx   # Audio/haptic/visual effects
+├── celebration-effects-library.tsx   # Haptic/visual effects
 ├── universal-confetti.tsx            # Confetti system
 ├── cross-game-stats.tsx              # Statistics display
 ├── game-integration-example.tsx      # Integration examples

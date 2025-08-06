@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { usePosterPixelsSounds } from "./poster-pixels-sound-effects"
 
 interface PosterPixelsClarityProgressProps {
   clarityLevel: number // 0.2 to 1.0
@@ -20,7 +19,6 @@ export function PosterPixelsClarityProgress({
   const [showSparkles, setShowSparkles] = useState(false)
   const [brushPosition, setBrushPosition] = useState(0)
   const [lastMilestone, setLastMilestone] = useState(0)
-  const sounds = usePosterPixelsSounds()
 
   // Convert clarity level to percentage (20% to 100%)
   const clarityPercent = Math.round((clarityLevel - 0.2) / 0.8 * 100)
@@ -50,7 +48,7 @@ export function PosterPixelsClarityProgress({
     }
   }, [isPlaying])
 
-  // Show sparkles at milestones and play sounds
+  // Show sparkles at milestones
   useEffect(() => {
     const milestones = [0.3, 0.5, 0.7, 0.9]
     const currentMilestone = milestones.find(m => 
@@ -61,17 +59,11 @@ export function PosterPixelsClarityProgress({
       setShowSparkles(true)
       setLastMilestone(currentMilestone)
       
-      // Play appropriate sound for the milestone
-      if (currentMilestone >= 0.9) {
-        sounds.playChime() // Special chime for near completion
-      } else {
-        sounds.playBrushStroke() // Brush stroke for progress
-      }
       
       const timer = setTimeout(() => setShowSparkles(false), 1000)
       return () => clearTimeout(timer)
     }
-  }, [clarityLevel, isPlaying, lastMilestone, sounds])
+  }, [clarityLevel, isPlaying, lastMilestone])
 
   // Generate film strip frames based on clarity levels
   const filmFrames = [
