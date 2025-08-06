@@ -226,7 +226,7 @@ export default function ProfileForm() {
       <Card className="bg-white border-gray-200">
         <CardContent className="pt-6">
           <div className="text-center py-8">
-            <p className="text-red-600">Failed to load profile</p>
+            <p className="text-cinema-red">Failed to load profile</p>
             <Button 
               onClick={fetchProfile} 
               variant="outline" 
@@ -323,7 +323,7 @@ export default function ProfileForm() {
               
               {/* Real-time Validation Error */}
               {validationError && (
-                <p className="text-red-600 text-sm">{validationError}</p>
+                <p className="text-cinema-red text-sm">{validationError}</p>
               )}
               
               {/* Character Count */}

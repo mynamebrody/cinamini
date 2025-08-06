@@ -28,47 +28,53 @@ export default function PosterPixelsHowToPlay({ onStart }: PosterPixelsHowToPlay
 
           {/* How to Play Steps */}
           <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">1</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">1</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Start Pixelated</h3>
+                  <p className="text-sm text-muted-foreground">
+                    The movie poster starts at 1% clarity - extremely pixelated and hard to see.
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Start Pixelated</h3>
-                <p className="text-sm text-muted-foreground">
-                  The movie poster starts at 1% clarity - extremely pixelated and hard to see.
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">2</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">2</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Gradually Clears</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Every 5 seconds, the poster becomes 3-5% clearer. Watch for shapes and colors!
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Gradually Clears</h3>
-                <p className="text-sm text-muted-foreground">
-                  Every 5 seconds, the poster becomes 3-5% clearer. Watch for shapes and colors!
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">3</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">3</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Guess Early</h3>
+                  <p className="text-sm text-muted-foreground">
+                    The sooner you guess correctly, the better your score. One guess only!
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Guess Early</h3>
-                <p className="text-sm text-muted-foreground">
-                  The sooner you guess correctly, the better your score. One guess only!
-                </p>
-              </div>
-            </div>
+            </Card>
           </div>
 
           {/* Tips */}
@@ -98,27 +104,27 @@ export default function PosterPixelsHowToPlay({ onStart }: PosterPixelsHowToPlay
           </div>
 
           {/* Clarity Examples */}
-          <div className="space-y-3">
+          <Card style={{ borderRadius: 0 }} className="p-4 space-y-3 shadow-3d-grey">
             <h3 className="font-semibold">Clarity Levels</h3>
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 bg-red-50 rounded">
+              <div className="flex items-center justify-between p-2 bg-red-50" style={{ borderRadius: 0 }}>
                 <span className="text-sm">1-20% Clarity</span>
-                <span className="text-sm font-medium text-red-600">Very Hard</span>
+                <span className="text-sm font-medium text-cinema-red">Very Hard</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-orange-50 rounded">
+              <div className="flex items-center justify-between p-2 bg-orange-50" style={{ borderRadius: 0 }}>
                 <span className="text-sm">20-40% Clarity</span>
                 <span className="text-sm font-medium text-orange-600">Hard</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-yellow-50 rounded">
+              <div className="flex items-center justify-between p-2 bg-yellow-50" style={{ borderRadius: 0 }}>
                 <span className="text-sm">40-60% Clarity</span>
                 <span className="text-sm font-medium text-yellow-600">Medium</span>
               </div>
-              <div className="flex items-center justify-between p-2 bg-green-50 rounded">
+              <div className="flex items-center justify-between p-2 bg-green-50" style={{ borderRadius: 0 }}>
                 <span className="text-sm">60%+ Clarity</span>
                 <span className="text-sm font-medium text-green-600">Easy</span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Game Features */}
           <div className="grid grid-cols-2 gap-4">

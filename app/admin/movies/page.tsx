@@ -187,7 +187,7 @@ export default function AdminMovieSearch() {
       return { 
         status: "recently-used" as const, 
         label: `Recently used (${movieUsage.length}x)`, 
-        color: "text-red-600",
+        color: "text-cinema-red",
         icon: History,
         bgColor: "bg-red-100"
       }
@@ -258,7 +258,7 @@ export default function AdminMovieSearch() {
                   flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
                   transition-all duration-200 transform hover:scale-105
                   ${filterStatus === filter.value 
-                    ? 'bg-red-600 text-white shadow-lg' 
+                    ? 'bg-cinema-red text-white shadow-lg' 
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }
                 `}
@@ -356,7 +356,7 @@ export default function AdminMovieSearch() {
                         e.stopPropagation()
                         router.push(`/admin/puzzle-editor?movieId=${movie.id}`)
                       }}
-                      className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-red-600 p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-90 group-hover:scale-100 hover:bg-white hover:shadow-lg"
+                      className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-cinema-red p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 transform scale-90 group-hover:scale-100 hover:bg-white hover:shadow-lg"
                       title="Use in puzzle"
                     >
                       <PenTool className="w-4 h-4" />
@@ -365,7 +365,7 @@ export default function AdminMovieSearch() {
                 </div>
                 
                 <div className="mt-3">
-                  <h3 className="text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-red-600 transition-colors">
+                  <h3 className="text-sm font-medium text-gray-900 line-clamp-1 group-hover:text-cinema-red transition-colors">
                     {movie.title}
                   </h3>
                   <div className="flex items-center justify-between mt-1">

@@ -13,6 +13,7 @@ import { GameLanding } from "../game-landing"
 import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { ShareSection } from "../share-section"
+import { MorePuzzlesSection } from "../more-puzzles-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
@@ -736,13 +737,16 @@ export default function CastClimbGame() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Progress Visualization */}
               <div className="order-2 lg:order-1">
-                <CastClimbProgress
-                  totalActors={puzzle.actors.length}
-                  revealedIndex={revealedIndex}
-                  userGuesses={userGuesses}
-                  gameCompleted={false}
-                  className="lg:sticky lg:top-20"
-                />
+                <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+                  <CastClimbProgress
+                    totalActors={puzzle.actors.length}
+                    revealedIndex={revealedIndex}
+                    userGuesses={userGuesses}
+                    gameCompleted={false}
+                    className="lg:sticky lg:top-20"
+                    actors={puzzle.actors}
+                  />
+                </div>
               </div>
               
               {/* Main Game Card */}
@@ -823,7 +827,7 @@ export default function CastClimbGame() {
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleNextHint} 
                     disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
                   >
@@ -831,7 +835,7 @@ export default function CastClimbGame() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full" 
+                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleGiveUp} 
                     disabled={isGuessing}
                   >
@@ -847,20 +851,10 @@ export default function CastClimbGame() {
 
         {gameState === "completed" && result && puzzle && (
           <div className="max-w-4xl mx-auto space-y-4">
-            {/* Progress Visualization */}
-            <CastClimbProgress
-              totalActors={puzzle.actors.length}
-              revealedIndex={puzzle.actors.length - 1}
-              userGuesses={result.user_guesses}
-              gameCompleted={true}
-              isCorrect={result.correct}
-              className="mb-6"
-            />
-            
             <div className="max-w-md mx-auto space-y-4">
             <Card>
               <CardHeader className="text-center">
-                <CardTitle className={result.correct ? "text-green-600" : "text-red-600"}>
+                <CardTitle className={result.correct ? "text-green-600" : "text-cinema-red"}>
                   {result.correct ? "Congratulations!" : "Better luck tomorrow!"}
                 </CardTitle>
                 <p className="text-muted-foreground">
@@ -868,6 +862,46 @@ export default function CastClimbGame() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4 text-center">
+                {/* Your Guesses Section */}
+                {result.user_guesses.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm">Your Guesses</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {result.user_guesses.map((guess, index) => (
+                        <div 
+                          key={guess.id || index} 
+                          className={`flex items-center justify-between text-sm bg-white p-3 border ${
+                            guess.isCorrect 
+                              ? 'border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                              : 'border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                          }`}
+                          style={{ borderRadius: 0 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            {guess.isCorrect ? (
+                              <span className="text-green-600">✅</span>
+                            ) : (
+                              <span className="text-cinema-red">❌</span>
+                            )}
+                            <span className="truncate max-w-32">
+                              {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" || guess.guessFilmTitle === "_GIVE_UP_" ? (
+                                <strong>Skipped</strong>
+                              ) : (
+                                `${guess.guessFilmTitle}${guess.guessFilmYear && guess.guessFilmYear !== 'Unknown' ? ` (${guess.guessFilmYear})` : ''}`
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            {guess.actorsRevealed} actor{guess.actorsRevealed !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {puzzle.filmPosterUrl && (
                   <Image 
                     src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
@@ -911,6 +945,22 @@ export default function CastClimbGame() {
                 />
               </CardContent>
             </Card>
+            
+            {/* Progress Visualization - moved below results */}
+            <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+              <CastClimbProgress
+                totalActors={puzzle.actors.length}
+                revealedIndex={puzzle.actors.length - 1}
+                userGuesses={result.user_guesses}
+                gameCompleted={true}
+                isCorrect={result.correct}
+                actors={puzzle.actors}
+              />
+            </div>
+            
+            {/* More Puzzles Section */}
+            <MorePuzzlesSection currentGameId="cast-climb" />
+            
             {isAnonymous && (
               <AnonymousResultNudge 
                 gameResult={result}

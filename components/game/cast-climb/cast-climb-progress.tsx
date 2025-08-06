@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { playClimbStep, playSuccess, playFailure, enableAudio } from "@/lib/audio-feedback"
 
 interface CastClimbProgressProps {
   totalActors: number
@@ -11,6 +10,7 @@ interface CastClimbProgressProps {
   gameCompleted: boolean
   isCorrect?: boolean
   className?: string
+  actors?: { name: string; character: string }[]
 }
 
 export function CastClimbProgress({
@@ -19,7 +19,8 @@ export function CastClimbProgress({
   userGuesses,
   gameCompleted,
   isCorrect = false,
-  className
+  className,
+  actors = []
 }: CastClimbProgressProps) {
   const [animationState, setAnimationState] = useState<number>(-1)
 
@@ -31,8 +32,6 @@ export function CastClimbProgress({
         navigator.vibrate(50) // Short vibration for climbing up
       }
       
-      // Play climbing step sound
-      playClimbStep(revealedIndex, totalActors)
       
       // Small delay to allow for smooth transitions
       const timer = setTimeout(() => {
@@ -50,33 +49,15 @@ export function CastClimbProgress({
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([100, 50, 100, 50, 200])
         }
-        playSuccess()
       } else {
         // Failure effects
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([200, 100, 200])
         }
-        playFailure()
       }
     }
   }, [gameCompleted, isCorrect])
   
-  // Enable audio on first interaction
-  useEffect(() => {
-    const handleInteraction = () => {
-      enableAudio()
-      document.removeEventListener('click', handleInteraction)
-      document.removeEventListener('touchstart', handleInteraction)
-    }
-    
-    document.addEventListener('click', handleInteraction)
-    document.addEventListener('touchstart', handleInteraction)
-    
-    return () => {
-      document.removeEventListener('click', handleInteraction)
-      document.removeEventListener('touchstart', handleInteraction)
-    }
-  }, [])
 
   const getStepState = (index: number) => {
     if (gameCompleted && isCorrect && userGuesses.length > 0) {
@@ -123,7 +104,7 @@ export function CastClimbProgress({
             isCorrect ? (
               <span className="text-green-600 font-medium animate-bounce">🎉 Summit Reached!</span>
             ) : (
-              <span className="text-red-600 font-medium">⛰️ Climb Ended</span>
+              <span className="text-cinema-red font-medium">⛰️ Climb Ended</span>
             )
           ) : (
             <span className="text-orange-600 font-medium">
@@ -151,17 +132,17 @@ export function CastClimbProgress({
               <div className="flex-1 relative">
                 <div 
                   className={cn(
-                    "h-8 rounded-lg border-2 transition-all duration-700 ease-out relative overflow-hidden",
+                    "h-8 border transition-all duration-700 ease-out relative overflow-hidden shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]",
                     {
                       // Empty state
                       "bg-muted/30 border-muted": stepState === "empty",
                       
                       // Current actor being revealed - Deep Cinema Red theme
-                      "bg-gradient-to-r from-red-200 to-red-300 border-red-500 shadow-lg animate-pulse": 
+                      "bg-gradient-to-r from-red-200 to-red-300 border-red-500 animate-pulse": 
                         stepState === "current",
                       
                       // Previously revealed actors (game in progress) - Cinema theme
-                      "bg-gradient-to-r from-red-300 to-red-400 border-red-600": 
+                      "bg-gradient-to-r from-red-300 to-red-400 border-cinema-red": 
                         stepState === "revealed",
                       
                       // Incorrect guesses
@@ -169,10 +150,11 @@ export function CastClimbProgress({
                         stepState === "incorrect",
                       
                       // Correct guess (winning)
-                      "bg-gradient-to-r from-green-300 to-green-400 border-green-500 shadow-lg": 
+                      "bg-gradient-to-r from-green-300 to-green-400 border-green-500": 
                         stepState === "correct",
                     }
                   )}
+                  style={{ borderRadius: 0 }}
                 >
                   {/* Animated fill effect */}
                   {(stepState === "current" || stepState === "revealed" || stepState === "correct") && (
@@ -197,17 +179,18 @@ export function CastClimbProgress({
                   )}
                   
                   {/* Status icon */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className={cn(
-                      "transition-all duration-300",
-                      stepState === "current" ? "text-lg animate-pulse" : "text-base"
-                    )}>
-                      {stepState === "correct" && "✅"}
-                      {stepState === "incorrect" && "❌"}
-                      {stepState === "current" && "🎭"}
-                      {stepState === "revealed" && "👍"}
-                      {stepState === "empty" && "🔲"}
-                    </span>
+                  <div className="absolute inset-0 flex items-center justify-center px-2">
+                    {stepState === "correct" && <span className="text-lg">✅</span>}
+                    {stepState === "incorrect" && <span className="text-lg">❌</span>}
+                    {(stepState === "current" || stepState === "revealed") && actors[index] && (
+                      <span className={cn(
+                        "font-semibold text-xs text-center leading-tight transition-all duration-300 text-gray-900",
+                        stepState === "current" ? "animate-pulse" : ""
+                      )}>
+                        {actors[index].name}
+                      </span>
+                    )}
+                    {stepState === "empty" && <span className="text-base">🎭</span>}
                   </div>
                 </div>
               </div>
@@ -215,35 +198,27 @@ export function CastClimbProgress({
               {/* Position indicator */}
               <div className="w-6 sm:w-8 text-center">
                 <div className={cn(
-                  "w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all duration-500",
+                  "w-5 h-5 sm:w-6 sm:h-6 border flex items-center justify-center text-xs font-bold transition-all duration-500 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]",
                   {
                     "bg-muted border-muted-foreground/30 text-muted-foreground": stepState === "empty",
-                    "bg-red-600 border-red-700 text-white shadow-lg animate-bounce": stepState === "current",
-                    "bg-red-500 border-red-600 text-white": stepState === "revealed", 
-                    "bg-red-500 border-red-600 text-white": stepState === "incorrect",
+                    "bg-cinema-red border-red-700 text-white animate-bounce": stepState === "current",
+                    "bg-red-500 border-cinema-red text-white": stepState === "revealed", 
+                    "bg-red-500 border-cinema-red text-white": stepState === "incorrect",
                     "bg-green-500 border-green-600 text-white animate-pulse": stepState === "correct",
                   }
-                )}>
+                )}
+                style={{ borderRadius: 0 }}
+                >
                   <span className="text-[10px] sm:text-xs">{index + 1}</span>
                 </div>
               </div>
             </div>
           )
         })}
-        
-        {/* Climbing indicator arrow */}
-        {!gameCompleted && (
-          <div className="absolute -right-8 sm:-right-12 flex items-center" 
-               style={{ top: `${(totalActors - revealedIndex - 1) * 40 + 12}px` }}>
-            <div className="text-red-600 animate-bounce text-sm sm:text-base">
-              ➡️
-            </div>
-          </div>
-        )}
       </div>
       
       {/* Progress summary */}
-      <div className="bg-muted/50 rounded-lg p-3 text-center">
+      <div className="bg-muted/50 p-3 text-center" style={{ borderRadius: 0 }}>
         <div className="text-sm font-medium">
           {gameCompleted ? (
             isCorrect ? (
@@ -251,12 +226,12 @@ export function CastClimbProgress({
                 🏆 Climbed to victory in {userGuesses.length} attempt{userGuesses.length !== 1 ? 's' : ''}!
               </span>
             ) : (
-              <span className="text-red-600">
+              <span className="text-cinema-red">
                 ⛰️ Climb ended after {userGuesses.length} attempt{userGuesses.length !== 1 ? 's' : ''}
               </span>
             )
           ) : (
-            <span className="text-red-600">
+            <span className="text-cinema-red">
               🎬 Currently at Actor {revealedIndex + 1} of {totalActors}
             </span>
           )}

@@ -20,7 +20,7 @@ const getVariantClasses = (variant: ButtonVariant) => {
     case 'outline':
       return 'btn-outline'
     case 'destructive':
-      return 'bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600'
+      return 'bg-red-500 text-white border-red-500 hover:bg-cinema-red hover:border-cinema-red'
     case 'icon':
       return 'btn-icon'
     default:

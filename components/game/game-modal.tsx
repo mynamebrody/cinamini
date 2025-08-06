@@ -67,7 +67,7 @@ export function GameModal({
         {showCloseButton && (
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-2 bg-transparent border border-transparent hover:bg-transparent hover:border-red-600 hover:text-red-600 hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] transition-all z-10"
+            className="absolute top-4 right-4 p-2 bg-transparent border border-transparent hover:bg-transparent hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] transition-all z-10"
             style={{ borderRadius: 0 }}
             aria-label="Close modal"
           >

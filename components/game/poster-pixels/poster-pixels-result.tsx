@@ -102,6 +102,43 @@ export default function PosterPixelsResult({
             </p>
           </div>
 
+          {/* Your Guess Section - Always show */}
+          <div className="space-y-2">
+            <h4 className="text-lg font-semibold text-center">Your Guess</h4>
+            {guesses.length > 0 ? (
+              guesses.map((guess, index) => (
+                <div 
+                  key={index} 
+                  className={cn(
+                    "flex items-center justify-between p-3 bg-white border",
+                    guess.isCorrect 
+                      ? "border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]"
+                      : "border-red-300 shadow-[1px_1px_0px_rgb(252,165,165),2px_2px_0px_rgb(252,165,165),3px_3px_0px_rgb(252,165,165),4px_4px_0px_rgb(252,165,165)]"
+                  )}
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-3">
+                    {guess.isCorrect ? (
+                      <Check className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <X className="w-5 h-5 text-red-500" />
+                    )}
+                    <div>
+                      <div className="font-medium">{guess.movieTitle}</div>
+                      <div className="text-sm text-muted-foreground">
+                        At {formatClarity(guess.clarityLevel)} clarity
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-3 bg-gray-50 border border-gray-200 text-center text-muted-foreground" style={{ borderRadius: 0 }}>
+                No guess recorded
+              </div>
+            )}
+          </div>
+
           {/* Performance Summary */}
           <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t border-border">
             <div>
@@ -137,38 +174,6 @@ export default function PosterPixelsResult({
         </CardContent>
       </Card>
 
-      {/* Guess Breakdown */}
-      {guesses.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Your Guess</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {guesses.map((guess, index) => (
-              <div key={index} className={cn(
-                "flex items-center justify-between p-3 rounded-lg",
-                guess.isCorrect 
-                  ? "bg-green-50 border border-green-200"
-                  : "bg-red-50 border border-red-200"
-              )}>
-                <div className="flex items-center gap-3">
-                  {guess.isCorrect ? (
-                    <Check className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <X className="w-5 h-5 text-red-500" />
-                  )}
-                  <div>
-                    <div className="font-medium">{guess.movieTitle}</div>
-                    <div className="text-sm text-muted-foreground">
-                      At {formatClarity(guess.clarityLevel)} clarity
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       <p className="text-center text-muted-foreground text-sm">
         Come back tomorrow for a new puzzle!

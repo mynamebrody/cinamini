@@ -620,7 +620,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           🟩 Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
                         </div>
                       ) : (
-                        <div className="text-red-600">
+                        <div className="text-cinema-red">
                           🟥 Wrong. {roundData[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
                         </div>
                       )
@@ -734,7 +734,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         🟩 Correct! Difference: {roundData.budget_difference.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
                       </div>
                     ) : (
-                      <div className="text-red-600">
+                      <div className="text-cinema-red">
                         🟥 Wrong. {roundData.revealed_budgets[roundData.correct_choice === 'A' ? 'movieA' : 'movieB'].title} had the higher budget.
                       </div>
                     )}

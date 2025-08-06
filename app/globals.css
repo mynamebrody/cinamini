@@ -528,6 +528,37 @@
     box-shadow: var(--shadow-3d-orange);
   }
 
+  /* Form elements and search components - square edges and cinema red focus */
+  input[type="text"], 
+  input[type="email"], 
+  input[type="password"], 
+  input[type="search"],
+  textarea,
+  select {
+    border-radius: 0 !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  input[type="search"]:focus,
+  textarea:focus,
+  select:focus {
+    border-color: rgb(var(--cinema-red)) !important;
+    box-shadow: 0 0 0 1px rgb(var(--cinema-red)) !important;
+    outline: none !important;
+  }
+
+  /* Search component specific styling */
+  [data-search-input] {
+    border-radius: 0 !important;
+  }
+
+  [data-search-input]:focus {
+    border-color: rgb(var(--cinema-red)) !important;
+    box-shadow: 0 0 0 1px rgb(var(--cinema-red)) !important;
+  }
+
   /* Gradient text for special elements */
   .text-gradient {
     background: linear-gradient(135deg, rgb(var(--cinema-red)) 0%, rgb(var(--cinema-gold)) 100%);

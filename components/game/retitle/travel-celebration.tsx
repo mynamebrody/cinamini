@@ -102,40 +102,6 @@ const AirplaneFly = () => {
   )
 }
 
-const TravelSoundEffects = ({ isCorrect }: { isCorrect: boolean }) => {
-  useEffect(() => {
-    // Create Web Audio context for travel sounds
-    if (typeof window !== 'undefined' && 'AudioContext' in window) {
-      const audioContext = new AudioContext()
-      
-      // Create boarding announcement sound effect
-      const playBoardingSound = () => {
-        const oscillator = audioContext.createOscillator()
-        const gainNode = audioContext.createGain()
-        
-        oscillator.connect(gainNode)
-        gainNode.connect(audioContext.destination)
-        
-        // Boarding chime sequence
-        const frequencies = isCorrect ? [440, 523, 659] : [349, 440, 523]
-        let time = audioContext.currentTime
-        
-        frequencies.forEach((freq, index) => {
-          oscillator.frequency.setValueAtTime(freq, time + index * 0.2)
-          gainNode.gain.setValueAtTime(0.1, time + index * 0.2)
-          gainNode.gain.exponentialRampToValueAtTime(0.01, time + index * 0.2 + 0.15)
-        })
-        
-        oscillator.start(time)
-        oscillator.stop(time + 0.8)
-      }
-      
-      playBoardingSound()
-    }
-  }, [isCorrect])
-  
-  return null
-}
 
 export default function TravelCelebration({
   isVisible,
@@ -213,8 +179,6 @@ export default function TravelCelebration({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
         >
-          {/* Travel Sound Effects */}
-          <TravelSoundEffects isCorrect={isCorrect} />
           
           {/* Airplane Animation */}
           <AnimatePresence>

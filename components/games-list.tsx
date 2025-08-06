@@ -84,10 +84,10 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
       <div className="text-center py-16">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
           <p className="text-red-700 font-medium mb-2">Unable to load games</p>
-          <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-cinema-red text-sm">{error}</p>
           <button 
             onClick={loadGames}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            className="mt-4 px-4 py-2 bg-cinema-red text-white rounded hover:bg-red-700 transition-colors"
           >
             Try Again
           </button>

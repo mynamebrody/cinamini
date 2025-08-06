@@ -38,8 +38,7 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
   const {
     celebrate,
     createConfetti,
-    triggerHaptic,
-    playSound
+    triggerHaptic
   } = useCelebration()
 
   // Example: Handle game completion
@@ -80,7 +79,6 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
     // Use celebration library directly for custom moments
     const confettiConfig = createConfetti(gameTheme, 'heavy', 4000)
     triggerHaptic('success')
-    playSound(gameTheme, 'gold', 'magical')
   }
 
   return (
@@ -282,7 +280,7 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
 
 // Utility component for easy celebration testing
 export function CelebrationTester() {
-  const { celebrate, createConfetti, playSound, triggerHaptic } = useCelebration()
+  const { celebrate, createConfetti, triggerHaptic } = useCelebration()
   const [activeConfetti, setActiveConfetti] = useState<GameTheme | null>(null)
 
   const testCelebration = (gameTheme: GameTheme) => {

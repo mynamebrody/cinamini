@@ -15,6 +15,7 @@ import { type GameChoice } from "@/lib/budget-bracket-client"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
 import AnonymousResultNudge from "../anonymous-result-nudge"
+import { MorePuzzlesSection } from "../more-puzzles-section"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -551,6 +552,10 @@ export default function BudgetBracketGame() {
                     result={gameResult} 
                     puzzle={puzzle}
                   />
+                  
+                  {/* More Puzzles Section */}
+                  <MorePuzzlesSection currentGameId="budget-bracket" />
+                  
                   {isAnonymous && (
                     <AnonymousResultNudge 
                       gameResult={gameResult}
@@ -598,6 +603,9 @@ export default function BudgetBracketGame() {
                   </div>
                 </CardContent>
                 </Card>
+                
+                {/* More Puzzles Section */}
+                <MorePuzzlesSection currentGameId="budget-bracket" />
               </div>
             ) : (
               // Loading or error state

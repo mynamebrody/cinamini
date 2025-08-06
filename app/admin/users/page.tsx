@@ -231,7 +231,7 @@ export default function UserControlsPage() {
                 {resendResult.success ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-4 w-4 text-cinema-red" />
                 )}
                 <AlertTitle className={resendResult.success ? "text-green-800" : "text-red-800"}>
                   {resendResult.success ? "Success" : "Error"}
@@ -294,7 +294,7 @@ export default function UserControlsPage() {
                 {inviteResult.success ? (
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertCircle className="h-4 w-4 text-cinema-red" />
                 )}
                 <AlertTitle className={inviteResult.success ? "text-green-800" : "text-red-800"}>
                   {inviteResult.success ? "Invitation Sent" : "Error"}
@@ -403,7 +403,7 @@ export default function UserControlsPage() {
                   </div>
                 ) : (
                   <Alert className="border-red-200 bg-red-50">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertCircle className="h-4 w-4 text-cinema-red" />
                     <AlertTitle className="text-red-800">Error</AlertTitle>
                     <AlertDescription className="text-red-700">
                       {linkResult.error}

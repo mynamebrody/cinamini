@@ -16,7 +16,7 @@ import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 import { PosterPixelsClarityProgress } from "./poster-pixels-clarity-progress"
 import { PosterPixelsArtGalleryCelebration } from "./poster-pixels-art-gallery-celebration"
-import { usePosterPixelsSounds } from "./poster-pixels-sound-effects"
+import { MorePuzzlesSection } from "../more-puzzles-section"
 
 interface MovieData {
   id?: number
@@ -61,7 +61,6 @@ const GAME_DURATION = 30 // seconds
 
 export default function PosterPixelsGame() {
   const { isAnonymous, loading: authLoading } = useGameMode()
-  const sounds = usePosterPixelsSounds()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [state, setState] = useState<GameState>({
@@ -108,7 +107,7 @@ export default function PosterPixelsGame() {
           
           // Check if time is up
           if (newTimeElapsed >= GAME_DURATION) {
-            handleGameOver(false)
+            handleGameOver(false, undefined, prev.guesses)
             return prev
           }
           
@@ -221,16 +220,12 @@ export default function PosterPixelsGame() {
   }
 
   const startGame = async () => {
-    // Initialize sound system on first interaction
-    sounds.initialize()
     
     // Mark that the user has played before if coming from how to play
     if (modalState === 'howtoplay') {
       localStorage.setItem('poster-pixels-played', 'true')
     }
     
-    // Play camera shutter sound for game start
-    sounds.playShutter()
 
     try {
       if (isAnonymous) {
@@ -404,8 +399,9 @@ export default function PosterPixelsGame() {
 
         setSelectedMovie(null)
 
-        // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        // End game immediately after single guess - pass the updated guesses
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
         // Authenticated user - use API
         const response = await fetch("/api/poster-pixels/guess", {
@@ -442,7 +438,8 @@ export default function PosterPixelsGame() {
         setSelectedMovie(null)
 
         // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
     } catch (error) {
       console.error("Error submitting guess:", error)
@@ -479,8 +476,9 @@ export default function PosterPixelsGame() {
           guesses: [...prev.guesses, newGuess],
         }))
 
-        // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        // End game immediately after single guess - pass the updated guesses
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
         // Authenticated user - use API
         const response = await fetch("/api/poster-pixels/guess", {
@@ -515,7 +513,8 @@ export default function PosterPixelsGame() {
         }))
 
         // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
     } catch (error) {
       console.error("Error submitting guess:", error)
@@ -527,7 +526,7 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const handleGameOver = async (won: boolean, guessClarityLevel?: number) => {
+  const handleGameOver = async (won: boolean, guessClarityLevel?: number, updatedGuesses?: Array<{ movieId: number; movieTitle: string; isCorrect: boolean; clarityLevel: number }>) => {
     if (intervalRef.current) clearInterval(intervalRef.current)
 
     // Use the clarity level from the guess, or current clarity if no guess was made (time up)
@@ -540,7 +539,7 @@ export default function PosterPixelsGame() {
           won,
           timeElapsed: state.timeElapsed,
           clarityLevel: finalClarityLevel,
-          guesses: state.guesses,
+          guesses: updatedGuesses || state.guesses,
           puzzleId: state.puzzle!.id,
           movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
         }
@@ -578,10 +577,7 @@ export default function PosterPixelsGame() {
         spread: 70,
         origin: { y: 0.6 },
       })
-      sounds.playApplause()
     } else {
-      // Play a gentle chime even for incorrect guesses to soften the blow
-      sounds.playChime()
     }
   }
 
@@ -712,13 +708,13 @@ export default function PosterPixelsGame() {
               <CardContent className="pt-6 text-center space-y-4">
                 <div className="text-6xl mb-4">🖼️</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">Restoration Studio Error</h3>
-                <p className="text-red-600 mb-4 bg-white/50 rounded-lg p-3">
+                <p className="text-cinema-red mb-4 bg-white/50 rounded-lg p-3">
                   <span className="text-sm font-medium">Studio Issue:</span><br />
                   {state.error}
                 </p>
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                  className="w-full bg-gradient-to-r from-red-500 to-cinema-red hover:from-cinema-red hover:to-red-700"
                 >
                   <span className="mr-2">🔄</span>
                   Restart Restoration Studio
@@ -733,7 +729,7 @@ export default function PosterPixelsGame() {
 
 
         {gameState === 'playing' && (
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="max-w-4xl mx-auto space-y-6 pb-40">
             {/* Timer */}
             <div className="text-center">
               <div className="inline-flex items-center gap-2 text-lg font-semibold">
@@ -754,7 +750,7 @@ export default function PosterPixelsGame() {
             </div>
 
             {/* Search Card */}
-            <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+            <Card className="border border-gray-300 shadow-3d-grey mb-40" style={{ borderRadius: 0 }}>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="text-center mb-4">
@@ -773,7 +769,6 @@ export default function PosterPixelsGame() {
                     <div className="flex justify-center">
                       <Button 
                         onClick={handleGuess}
-                        onMouseEnter={() => sounds.playInspection()}
                         size="lg"
                         className="px-8 py-3"
                       >
@@ -813,6 +808,13 @@ export default function PosterPixelsGame() {
             }
             guesses={state.guesses}
           />
+        )}
+        
+        {gameState === 'completed' && (
+          <div className="max-w-md mx-auto mt-6">
+            {/* More Puzzles Section */}
+            <MorePuzzlesSection currentGameId="poster-pixels" />
+          </div>
         )}
       </main>
     </div>

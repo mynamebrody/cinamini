@@ -38,19 +38,20 @@ export function FavoriteMovieSlot({
       <button
         onClick={onAddClick}
         className={cn(
-          "relative aspect-[2/3] w-full rounded-lg border-2 border-dashed",
+          "relative aspect-[2/3] w-full border-2 border-dashed",
           "bg-gray-50 transition-all duration-200",
           "flex flex-col items-center justify-center gap-2",
-          "hover:border-gray-400",
+          "hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
           "hover:bg-gray-100",
           "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
           isDragOver && "border-primary bg-primary/10 scale-105",
           "border-gray-300"
         )}
+        style={{ borderRadius: 0 }}
         aria-label={`Add movie to position ${position}`}
       >
-        <Plus className="h-8 w-8 text-gray-400" />
-        <span className="text-sm text-gray-500">Add Favorite</span>
+        <Plus className="h-8 w-8 text-gray-400 hover:text-cinema-red transition-colors" />
+        <span className="text-sm text-gray-500 hover:text-cinema-red transition-colors">Add Favorite</span>
       </button>
     )
   }
@@ -106,7 +107,8 @@ export function FavoriteMovieSlot({
                 e.stopPropagation()
                 onRemove()
               }}
-              className="p-1.5 bg-red-600/80 rounded-md hover:bg-red-600 transition-colors"
+              className="p-1.5 bg-cinema-red hover:bg-cinema-red transition-colors"
+              style={{ borderRadius: 0 }}
               aria-label={`Remove ${title} from favorites`}
             >
               <X className="h-4 w-4 text-white" />

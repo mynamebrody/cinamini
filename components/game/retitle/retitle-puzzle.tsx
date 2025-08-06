@@ -84,9 +84,9 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             onClick={() => handleSelect(option.id)}
             className={cn(
               "p-4 cursor-pointer transition-all duration-200 relative overflow-hidden",
-              "bg-card border border-gray-300 hover:border-red-700",
-              "hover:shadow-3d-red",
-              selectedId === option.id && "ring-2 ring-primary/50 bg-accent border-red-700 shadow-3d-red",
+              "bg-card border border-gray-300 hover:border-[rgb(153,37,29)]",
+              "hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
+              selectedId === option.id && "ring-2 ring-primary/50 bg-accent border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
