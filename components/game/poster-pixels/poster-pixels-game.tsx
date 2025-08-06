@@ -108,7 +108,7 @@ export default function PosterPixelsGame() {
           
           // Check if time is up
           if (newTimeElapsed >= GAME_DURATION) {
-            handleGameOver(false)
+            handleGameOver(false, undefined, prev.guesses)
             return prev
           }
           
@@ -404,8 +404,9 @@ export default function PosterPixelsGame() {
 
         setSelectedMovie(null)
 
-        // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        // End game immediately after single guess - pass the updated guesses
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
         // Authenticated user - use API
         const response = await fetch("/api/poster-pixels/guess", {
@@ -442,7 +443,8 @@ export default function PosterPixelsGame() {
         setSelectedMovie(null)
 
         // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
     } catch (error) {
       console.error("Error submitting guess:", error)
@@ -479,8 +481,9 @@ export default function PosterPixelsGame() {
           guesses: [...prev.guesses, newGuess],
         }))
 
-        // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        // End game immediately after single guess - pass the updated guesses
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
         // Authenticated user - use API
         const response = await fetch("/api/poster-pixels/guess", {
@@ -515,7 +518,8 @@ export default function PosterPixelsGame() {
         }))
 
         // End game immediately after single guess
-        handleGameOver(isCorrect, guessClarityLevel)
+        const updatedGuesses = [...state.guesses, newGuess]
+        handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
     } catch (error) {
       console.error("Error submitting guess:", error)
@@ -527,7 +531,7 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const handleGameOver = async (won: boolean, guessClarityLevel?: number) => {
+  const handleGameOver = async (won: boolean, guessClarityLevel?: number, updatedGuesses?: Array<{ movieId: number; movieTitle: string; isCorrect: boolean; clarityLevel: number }>) => {
     if (intervalRef.current) clearInterval(intervalRef.current)
 
     // Use the clarity level from the guess, or current clarity if no guess was made (time up)
@@ -540,7 +544,7 @@ export default function PosterPixelsGame() {
           won,
           timeElapsed: state.timeElapsed,
           clarityLevel: finalClarityLevel,
-          guesses: state.guesses,
+          guesses: updatedGuesses || state.guesses,
           puzzleId: state.puzzle!.id,
           movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
         }
@@ -712,13 +716,13 @@ export default function PosterPixelsGame() {
               <CardContent className="pt-6 text-center space-y-4">
                 <div className="text-6xl mb-4">🖼️</div>
                 <h3 className="text-xl font-bold text-gray-800 mb-2">Restoration Studio Error</h3>
-                <p className="text-red-600 mb-4 bg-white/50 rounded-lg p-3">
+                <p className="text-cinema-red mb-4 bg-white/50 rounded-lg p-3">
                   <span className="text-sm font-medium">Studio Issue:</span><br />
                   {state.error}
                 </p>
                 <Button 
                   onClick={() => window.location.reload()} 
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                  className="w-full bg-gradient-to-r from-red-500 to-cinema-red hover:from-cinema-red hover:to-red-700"
                 >
                   <span className="mr-2">🔄</span>
                   Restart Restoration Studio

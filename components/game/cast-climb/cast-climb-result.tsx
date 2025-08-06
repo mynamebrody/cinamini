@@ -97,10 +97,10 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
             {correct ? (
               <CheckCircle className="w-12 h-12 text-green-600" />
             ) : (
-              <XCircle className="w-12 h-12 text-red-600" />
+              <XCircle className="w-12 h-12 text-cinema-red" />
             )}
           </div>
-          <CardTitle className={correct ? "text-green-600" : "text-red-600"}>
+          <CardTitle className={correct ? "text-green-600" : "text-cinema-red"}>
             {correct ? "Congratulations!" : "Better luck tomorrow!"}
           </CardTitle>
           <p className="text-muted-foreground">
@@ -108,6 +108,44 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
           </p>
         </CardHeader>
         <CardContent className="space-y-4 text-center">
+          {/* Your Guesses Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Your Guesses</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {user_guesses.map((guess, index) => (
+                <div 
+                  key={guess.id} 
+                  className={`flex items-center justify-between text-sm bg-white p-3 border ${
+                    guess.isCorrect 
+                      ? 'border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                      : 'border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                  }`}
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-2">
+                    {guess.isCorrect ? (
+                      <CheckCircle className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-cinema-red" />
+                    )}
+                    <span className="truncate max-w-32">
+                      {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" || guess.guessFilmTitle === "_GIVE_UP_" ? (
+                        <strong>Skipped</strong>
+                      ) : (
+                        `${guess.guessFilmTitle}${guess.guessFilmYear && guess.guessFilmYear !== 'Unknown' ? ` (${guess.guessFilmYear})` : ''}`
+                      )}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    {guess.actorsRevealed} actor{guess.actorsRevealed !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
           {/* Movie Poster */}
           {puzzle.filmPosterUrl && (
             <Image 
@@ -216,37 +254,6 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
         </div>
       </div>
 
-      {/* Detailed Guess Breakdown */}
-      {user_guesses.length > 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Your Guesses</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {user_guesses.map((guess, index) => (
-              <div key={guess.id} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  {guess.isCorrect ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-red-600" />
-                  )}
-                  <span className="truncate max-w-32">
-                    {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" || guess.guessFilmTitle === "_GIVE_UP_" ? (
-                      <strong>Skipped</strong>
-                    ) : (
-                      `${guess.guessFilmTitle}${guess.guessFilmYear && guess.guessFilmYear !== 'Unknown' ? ` (${guess.guessFilmYear})` : ''}`
-                    )}
-                  </span>
-                </div>
-                <div className="text-muted-foreground text-xs">
-                  {guess.actorsRevealed} actor{guess.actorsRevealed !== 1 ? 's' : ''}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

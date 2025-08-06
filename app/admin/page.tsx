@@ -160,7 +160,7 @@ export default function AdminDashboard() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-500 mt-0.5">•</span>
-                    <span>Movies recently used (last 30 days) show as <span className="text-red-600">●</span> unavailable</span>
+                    <span>Movies recently used (last 30 days) show as <span className="text-cinema-red">●</span> unavailable</span>
                   </li>
                 </ul>
               </div>

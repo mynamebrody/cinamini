@@ -80,7 +80,7 @@ export default function AuthHashProcessor({
         
         {error && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-red-600">Authentication Error</h2>
+            <h2 className="text-xl font-semibold text-cinema-red">Authentication Error</h2>
             <p className="text-red-700">{error}</p>
             <button
               onClick={() => {

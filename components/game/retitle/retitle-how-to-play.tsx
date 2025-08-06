@@ -28,47 +28,53 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
 
           {/* How to Play Steps */}
           <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">1</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">1</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">See the Foreign Title</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You'll see a movie title in another language, along with the country flag.
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">See the Foreign Title</h3>
-                <p className="text-sm text-muted-foreground">
-                  You'll see a movie title in another language, along with the country flag.
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">2</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">2</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Choose the Original</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select the correct English title from 4-5 movie options.
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Choose the Original</h3>
-                <p className="text-sm text-muted-foreground">
-                  Select the correct English title from 4-5 movie options.
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">3</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">3</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Learn the Translation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    After guessing, discover what the foreign title means in English!
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Learn the Translation</h3>
-                <p className="text-sm text-muted-foreground">
-                  After guessing, discover what the foreign title means in English!
-                </p>
-              </div>
-            </div>
+            </Card>
           </div>
 
           {/* Tips */}
@@ -98,7 +104,7 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
           </div>
 
           {/* Example */}
-          <div className="bg-card border rounded-lg p-4 space-y-3">
+          <Card style={{ borderRadius: 0 }} className="p-4 space-y-3 shadow-3d-grey">
             <h3 className="font-semibold">Example</h3>
             <div className="space-y-2">
               <div className="flex items-center gap-3">
@@ -113,7 +119,7 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
                 <span className="font-medium">Home Alone</span>
               </p>
             </div>
-          </div>
+          </Card>
 
           {/* Game Features */}
           <div className="grid grid-cols-2 gap-4">

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { MovieSearchBar } from './movie-search-bar'
-import { Heart, Check } from 'lucide-react'
+import { Heart, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { MovieSearchResult, MovieSearchResponse, APIErrorResponse } from '@/lib/types/tmdb'
 import Image from 'next/image'
@@ -93,11 +93,18 @@ export function MovieSearchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col bg-white border-neutral-200">
-        <DialogHeader>
+      <DialogContent className="!w-[75vw] !h-[75vh] !max-w-none !max-h-none !min-h-0 overflow-hidden flex flex-col bg-white border-neutral-200" style={{ borderRadius: 0, width: '75vw', height: '75vh', maxWidth: 'none', maxHeight: 'none' }}>
+        <DialogHeader className="relative">
           <DialogTitle className="text-neutral-900">
             Add Movie to Favorites
           </DialogTitle>
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-0 top-0 px-1 py-2 bg-transparent border border-transparent rounded-none hover:bg-transparent hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] transition-all"
+            aria-label="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
@@ -111,8 +118,8 @@ export function MovieSearchModal({
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="bg-red-500/10 border border-red-500/20 p-3" style={{ borderRadius: 0 }}>
+              <p className="text-sm text-cinema-red">{error}</p>
             </div>
           )}
 
@@ -122,8 +129,8 @@ export function MovieSearchModal({
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-[2/3] bg-neutral-200 rounded-lg" />
-                    <div className="mt-2 h-4 bg-neutral-200 rounded" />
+                    <div className="aspect-[2/3] bg-neutral-200" style={{ borderRadius: 0 }} />
+                    <div className="mt-2 h-4 bg-neutral-200" style={{ borderRadius: 0 }} />
                   </div>
                 ))}
               </div>

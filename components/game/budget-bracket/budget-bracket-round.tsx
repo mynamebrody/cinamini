@@ -275,6 +275,19 @@ export default function BudgetBracketRound({
             scale: hasChosen && chosenMovie === 'A' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
           }}
           transition={{ duration: 0.3 }}
+          className={`${
+            hasChosen 
+              ? chosenMovie === 'A' 
+                ? showingFeedback && isCorrect !== null
+                  ? isCorrect 
+                    ? 'shadow-3d-green' 
+                    : 'shadow-3d-red'
+                  : 'shadow-3d-grey'
+                : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
+                  ? 'shadow-3d-green'
+                  : ''
+              : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+          }`}
         >
           <Card 
             className={`cursor-pointer transition-all duration-300 ${
@@ -282,13 +295,13 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'A' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'border-2 border-green-500 bg-green-50 shadow-3d-green' 
-                      : 'border-2 border-red-500 bg-red-50 shadow-3d-red'
-                    : 'border-2 border-blue-500 bg-blue-50 shadow-3d-grey'
+                      ? 'border-2 border-green-500 bg-green-50' 
+                      : 'border-2 border-red-500 bg-red-50'
+                    : 'border-2 border-blue-500 bg-blue-50'
                   : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                    ? 'border-2 border-green-500 bg-green-50 shadow-3d-green'
+                    ? 'border-2 border-green-500 bg-green-50'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-gray-600 hover:shadow-3d-grey-dark'
+                : 'border-2 border-gray-300 hover:border-[rgb(153,37,29)]'
             }`}
             onClick={() => handleMovieChoice('A')}
           >
@@ -315,15 +328,21 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green"
+                  className={`mt-3 p-2 ${
+                    budgetB && budgetA > budgetB 
+                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                  }`}
                 >
-                  <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
+                  <div className={`flex items-center justify-center gap-1 text-sm font-mono font-bold ${
+                    budgetB && budgetA > budgetB ? 'text-green-800' : 'text-[rgb(153,37,29)]'
+                  }`}>
                     {formatBudget(budgetA, false)}
                     {budgetB && budgetA > budgetB && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
                     )}
                     {budgetB && budgetA < budgetB && (
-                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
+                      <TrendingDown className="w-3 h-3 text-[rgb(153,37,29)] ml-1" />
                     )}
                   </div>
                 </motion.div>
@@ -341,6 +360,19 @@ export default function BudgetBracketRound({
             scale: hasChosen && chosenMovie === 'B' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
           }}
           transition={{ duration: 0.3 }}
+          className={`${
+            hasChosen 
+              ? chosenMovie === 'B' 
+                ? showingFeedback && isCorrect !== null
+                  ? isCorrect 
+                    ? 'shadow-3d-green' 
+                    : 'shadow-3d-red'
+                  : 'shadow-3d-grey'
+                : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
+                  ? 'shadow-3d-green'
+                  : ''
+              : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+          }`}
         >
           <Card 
             className={`cursor-pointer transition-all duration-300 ${
@@ -348,13 +380,13 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'B' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'border-2 border-green-500 bg-green-50 shadow-3d-green' 
-                      : 'border-2 border-red-500 bg-red-50 shadow-3d-red'
-                    : 'border-2 border-blue-500 bg-blue-50 shadow-3d-grey'
+                      ? 'border-2 border-green-500 bg-green-50' 
+                      : 'border-2 border-red-500 bg-red-50'
+                    : 'border-2 border-blue-500 bg-blue-50'
                   : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                    ? 'border-2 border-green-500 bg-green-50 shadow-3d-green'
+                    ? 'border-2 border-green-500 bg-green-50'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-gray-600 hover:shadow-3d-grey-dark'
+                : 'border-2 border-gray-300 hover:border-[rgb(153,37,29)]'
             }`}
             onClick={() => handleMovieChoice('B')}
           >
@@ -381,15 +413,21 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green"
+                  className={`mt-3 p-2 ${
+                    budgetA && budgetB > budgetA 
+                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                  }`}
                 >
-                  <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
+                  <div className={`flex items-center justify-center gap-1 text-sm font-mono font-bold ${
+                    budgetA && budgetB > budgetA ? 'text-green-800' : 'text-[rgb(153,37,29)]'
+                  }`}>
                     {formatBudget(budgetB, false)}
                     {budgetA && budgetB > budgetA && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
                     )}
                     {budgetA && budgetB < budgetA && (
-                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
+                      <TrendingDown className="w-3 h-3 text-[rgb(153,37,29)] ml-1" />
                     )}
                   </div>
                 </motion.div>
@@ -468,7 +506,7 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-red-600 font-semibold bg-red-50 p-3 border border-red-500 shadow-3d-red"
+              className="text-cinema-red font-semibold bg-red-50 p-3 border border-red-500 shadow-3d-red"
             >
               <div className="flex items-center justify-center space-x-2">
                 <span>🟥</span>

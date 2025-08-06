@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import ProfileForm from "@/components/profile-form"
 import EmailConfirmationBanner from "@/components/email-confirmation-banner"
+import { Button } from "@/components/ui/button"
 
 export default async function ProfilePage({
   searchParams,
@@ -38,9 +39,11 @@ export default async function ProfilePage({
       <header className="border-b border-neutral-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <a href="/" className="text-neutral-900 hover:text-neutral-600 transition-colors">
-              ← Back to Home
-            </a>
+            <Button variant="ghost" asChild>
+              <a href="/">
+                ← Back to Home
+              </a>
+            </Button>
             <h1 className="text-xl font-bold text-neutral-900">Profile Settings</h1>
             <div className="w-[104px]"></div> {/* Spacer to center the title */}
           </div>

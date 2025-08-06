@@ -522,17 +522,17 @@ export default function AnalyticsPage() {
                       <tr key={cohort.cohort} className="border-b hover:bg-muted/50">
                         <td className="p-2">{cohort.cohort}</td>
                         <td className="text-center p-2">
-                          <span className={`font-medium ${cohort.day1 >= 80 ? 'text-green-600' : cohort.day1 >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <span className={`font-medium ${cohort.day1 >= 80 ? 'text-green-600' : cohort.day1 >= 60 ? 'text-yellow-600' : 'text-cinema-red'}`}>
                             {cohort.day1.toFixed(1)}%
                           </span>
                         </td>
                         <td className="text-center p-2">
-                          <span className={`font-medium ${cohort.day7 >= 50 ? 'text-green-600' : cohort.day7 >= 30 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <span className={`font-medium ${cohort.day7 >= 50 ? 'text-green-600' : cohort.day7 >= 30 ? 'text-yellow-600' : 'text-cinema-red'}`}>
                             {cohort.day7.toFixed(1)}%
                           </span>
                         </td>
                         <td className="text-center p-2">
-                          <span className={`font-medium ${cohort.day30 >= 20 ? 'text-green-600' : cohort.day30 >= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <span className={`font-medium ${cohort.day30 >= 20 ? 'text-green-600' : cohort.day30 >= 10 ? 'text-yellow-600' : 'text-cinema-red'}`}>
                             {cohort.day30.toFixed(1)}%
                           </span>
                         </td>

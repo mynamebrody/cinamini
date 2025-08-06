@@ -220,7 +220,7 @@ export default function PosterPixelsEditor() {
             </Button>
           )}
           {selectedMovie && !selectedMovie.poster_path && (
-            <div className="text-sm text-red-600 bg-red-50 p-2 rounded border border-red-200">
+            <div className="text-sm text-cinema-red bg-red-50 p-2 rounded border border-red-200">
               <div className="flex items-center gap-2">
                 <X className="w-4 h-4" />
                 <span>This movie doesn't have a poster. Please select a different movie.</span>

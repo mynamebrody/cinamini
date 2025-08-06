@@ -28,47 +28,53 @@ export default function BudgetBracketHowToPlay({ onStart }: BudgetBracketHowToPl
 
           {/* How to Play Steps */}
           <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">1</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">1</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Compare Movies</h3>
+                  <p className="text-sm text-muted-foreground">
+                    You'll see two movie posters side by side. Click on the movie you think had the higher production budget.
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Compare Movies</h3>
-                <p className="text-sm text-muted-foreground">
-                  You'll see two movie posters side by side. Click on the movie you think had the higher production budget.
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">2</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">2</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Progress Through Rounds</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Play through all 5 rounds of comparisons. Try to get them all correct!
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Progress Through Rounds</h3>
-                <p className="text-sm text-muted-foreground">
-                  Play through all 5 rounds of comparisons. Try to get them all correct!
-                </p>
-              </div>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <span className="text-lg font-semibold">3</span>
+            <Card style={{ borderRadius: 0 }} className="p-4 shadow-3d-grey">
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                    <span className="text-lg font-semibold">3</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Perfect Game</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Get all 5 rounds correct for a perfect game and earn the Perfect Producer badge!
+                  </p>
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold mb-1">Perfect Game</h3>
-                <p className="text-sm text-muted-foreground">
-                  Get all 5 rounds correct for a perfect game and earn the Perfect Producer badge!
-                </p>
-              </div>
-            </div>
+            </Card>
           </div>
 
           {/* Tips */}

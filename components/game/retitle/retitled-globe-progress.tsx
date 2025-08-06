@@ -121,8 +121,8 @@ const PassportStamp = ({ isVisible, flagEmoji }: { isVisible: boolean, flagEmoji
           transition={{ type: "spring", stiffness: 200, damping: 15 }}
           className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
         >
-          <div className="bg-red-600/20 border-2 border-red-600 rounded-lg px-4 py-2 rotate-12 transform">
-            <div className="text-red-600 font-bold text-sm text-center">
+          <div className="bg-cinema-red/20 border-2 border-cinema-red rounded-lg px-4 py-2 rotate-12 transform">
+            <div className="text-cinema-red font-bold text-sm text-center">
               <div className="text-xl mb-1">{flagEmoji}</div>
               <div>VISITED</div>
             </div>

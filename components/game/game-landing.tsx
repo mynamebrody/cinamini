@@ -110,7 +110,7 @@ export function GameLanding({
           <Button
             onClick={onStart}
             size="lg"
-            className={`${useDarkText ? 'bg-gray-900 text-white' : 'bg-white text-neutral-900'} font-semibold px-8 md:px-12 py-4 md:py-6 text-lg md:text-xl shadow-lg transition-all duration-200 font-funnel backdrop-blur-sm border border-solid hover:bg-white hover:text-red-700 hover:border-red-700 hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]`}
+            className={`${useDarkText ? 'bg-gray-900 text-white border-white' : 'bg-white text-neutral-900 border-neutral-900'} font-semibold px-8 md:px-12 py-4 md:py-6 text-lg md:text-xl shadow-lg transition-all duration-200 font-funnel backdrop-blur-sm border border-solid hover:bg-white hover:text-[rgb(153,37,29)] hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]`}
             style={{ borderRadius: 0 }}
           >
             <Play className="w-5 h-5 md:w-6 md:h-6 mr-3" />

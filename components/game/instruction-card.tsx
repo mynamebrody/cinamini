@@ -20,10 +20,10 @@ export function InstructionCard({
   darkTheme = false
 }: InstructionCardProps) {
   return (
-    <div className={`${darkTheme ? 'bg-gray-900/10 border-gray-900/20' : 'bg-white/10 border-white/20'} backdrop-blur-sm rounded-2xl p-6 md:p-8 border ${className}`}>
+    <div className={`${darkTheme ? 'bg-gray-900/10 border-gray-900/20' : 'bg-white/10 border-white/20'} backdrop-blur-sm p-6 md:p-8 border shadow-3d-grey ${className}`} style={{ borderRadius: 0 }}>
       {/* Step number */}
       <div className="flex items-center mb-4">
-        <div className={`w-8 h-8 md:w-10 md:h-10 ${darkTheme ? 'bg-gray-900 text-white' : 'bg-white text-neutral-900'} rounded-full flex items-center justify-center font-bold text-sm md:text-base font-funnel mr-4`}>
+        <div className={`w-8 h-8 md:w-10 md:h-10 bg-white text-gray-900 border border-gray-200 flex items-center justify-center font-bold text-sm md:text-base font-funnel mr-4 shadow-3d-grey`} style={{ borderRadius: 0 }}>
           {step}
         </div>
         <h3 className={`text-lg md:text-xl font-semibold ${darkTheme ? 'text-gray-900' : 'text-white'} font-funnel`}>
@@ -38,7 +38,7 @@ export function InstructionCard({
 
       {/* Example content */}
       {example && (
-        <div className={`${darkTheme ? 'bg-gray-900/5 border-gray-900/10' : 'bg-white/5 border-white/10'} rounded-lg p-4 border`}>
+        <div className={`${darkTheme ? 'bg-gray-900/5 border-gray-900/10' : 'bg-white/5 border-white/10'} p-4 border shadow-3d-grey`} style={{ borderRadius: 0 }}>
           {example}
         </div>
       )}
