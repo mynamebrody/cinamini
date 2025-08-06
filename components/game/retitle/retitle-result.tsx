@@ -147,6 +147,16 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
                 <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
               
+              {/* Puzzle number divider */}
+              <div className="text-center border-b border-dashed border-gray-400 pb-2">
+                <div className="text-xs font-mono text-muted-foreground">
+                  --------------------------------
+                </div>
+                <div className="text-sm font-bold mt-1">
+                  Retitled #{result.puzzle?.puzzleNumber || '???'}
+                </div>
+              </div>
+              
               {/* Destination info */}
               <div className="flex items-center justify-center gap-3">
                 <div className="text-3xl">{result.puzzle.flagEmoji}</div>

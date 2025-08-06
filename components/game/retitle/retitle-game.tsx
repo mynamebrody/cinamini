@@ -144,7 +144,8 @@ export default function RetitleGame() {
               puzzle: {
                 localizedTitle: data.puzzle.localizedTitle,
                 countryCode: data.puzzle.countryCode,
-                flagEmoji: data.puzzle.flagEmoji
+                flagEmoji: data.puzzle.flagEmoji,
+                puzzleNumber: data.puzzle.puzzleNumber
               },
               stats: {
                 gamesPlayed: statsData?.stats?.gamesPlayed || 0,
@@ -167,7 +168,8 @@ export default function RetitleGame() {
               puzzle: {
                 localizedTitle: data.puzzle.localizedTitle,
                 countryCode: data.puzzle.countryCode,
-                flagEmoji: data.puzzle.flagEmoji
+                flagEmoji: data.puzzle.flagEmoji,
+                puzzleNumber: data.puzzle.puzzleNumber
               },
               stats: {
                 gamesPlayed: statsData?.stats?.gamesPlayed || 0,

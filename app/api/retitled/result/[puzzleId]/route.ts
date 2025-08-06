@@ -21,7 +21,7 @@ export async function GET(
     // Get the puzzle to get correct answer info
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("*")
+      .select("*, puzzle_number")
       .eq("id", puzzleId)
       .single()
 
@@ -69,7 +69,8 @@ export async function GET(
         localizedTitle: puzzle.localized_title,
         englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
-        flagEmoji: getCountryFlag(puzzle.country_code)
+        flagEmoji: getCountryFlag(puzzle.country_code),
+        puzzleNumber: puzzle.puzzle_number
       },
       stats: {
         gamesPlayed: stats?.games_played || 1,
