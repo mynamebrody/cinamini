@@ -29,6 +29,7 @@ interface GuessResult {
     englishTranslation: string
     countryCode: string
     flagEmoji: string
+    puzzleNumber?: number
   }
 }
 

@@ -46,6 +46,7 @@ export interface LocalizedTitle {
 export interface RetitledPuzzle {
   id: string;
   puzzle_date: string;
+  puzzle_number: number;
   seed_value: string;
   film_id: number;
   film_title: string;
@@ -507,6 +508,16 @@ function levenshteinDistance(str1: string, str2: string): number {
 }
 
 /**
+ * Calculate Retitled puzzle number based on date
+ */
+export function calculatePuzzleNumber(date: Date): number {
+  const launchDate = new Date('2025-01-01'); // Retitled launch date
+  const diffTime = date.getTime() - launchDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(1, diffDays + 1);
+}
+
+/**
  * Generate a complete daily puzzle using the movie pool manager
  */
 export async function generateDailyPuzzle(date: Date): Promise<RetitledPuzzle | null> {
@@ -595,6 +606,7 @@ export async function generateDailyPuzzle(date: Date): Promise<RetitledPuzzle | 
       return {
         id: `retitled_${date.toISOString().split('T')[0]}`,
         puzzle_date: date.toISOString().split('T')[0],
+        puzzle_number: calculatePuzzleNumber(date),
         seed_value: seed,
         film_id: candidateMovie.tmdb_id,
         film_title: candidateMovie.title,
@@ -698,6 +710,7 @@ function generateFallbackPuzzle(date: Date): RetitledPuzzle {
   return {
     id: `retitled_fallback_${date.toISOString().split('T')[0]}`,
     puzzle_date: date.toISOString().split('T')[0],
+    puzzle_number: calculatePuzzleNumber(date),
     seed_value: seed,
     film_id: selected.tmdb_id,
     film_title: selected.title,

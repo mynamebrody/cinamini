@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
           localizedTitle: puzzle.localized_title,
           englishTranslation: puzzle.english_translation || '',
           countryCode: puzzle.country_code,
-          flagEmoji: getCountryFlag(puzzle.country_code)
+          flagEmoji: getCountryFlag(puzzle.country_code),
+          puzzleNumber: puzzle.puzzle_number
         },
         stats: {
           gamesPlayed: 1,
@@ -122,7 +123,8 @@ export async function POST(request: NextRequest) {
           localizedTitle: puzzle.localized_title,
           englishTranslation: puzzle.english_translation || '',
           countryCode: puzzle.country_code,
-          flagEmoji: getCountryFlag(puzzle.country_code)
+          flagEmoji: getCountryFlag(puzzle.country_code),
+          puzzleNumber: puzzle.puzzle_number
         },
         stats: {
           gamesPlayed: currentStats?.games_played || 0,
@@ -231,7 +233,8 @@ export async function POST(request: NextRequest) {
         localizedTitle: puzzle.localized_title,
         englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
-        flagEmoji: getCountryFlag(puzzle.country_code)
+        flagEmoji: getCountryFlag(puzzle.country_code),
+        puzzleNumber: puzzle.puzzle_number
       },
       stats: {
         gamesPlayed: newStats.games_played,
