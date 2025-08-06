@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Play, Clock, BarChart3, Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Clock, BarChart3, Loader2 } from "lucide-react"
 import { GameHeader } from "../game-header"
-import { HowToPlayModal } from "../how-to-play-modal"
+import { GameLanding } from "../game-landing"
+import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
@@ -13,6 +14,9 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
+import { PosterPixelsClarityProgress } from "./poster-pixels-clarity-progress"
+import { PosterPixelsArtGalleryCelebration } from "./poster-pixels-art-gallery-celebration"
+import { usePosterPixelsSounds } from "./poster-pixels-sound-effects"
 
 interface MovieData {
   id?: number
@@ -50,13 +54,14 @@ interface GameState {
   error: string | null
 }
 
-type GameStateType = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
+type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 const GAME_DURATION = 30 // seconds
 
 export default function PosterPixelsGame() {
   const { isAnonymous, loading: authLoading } = useGameMode()
+  const sounds = usePosterPixelsSounds()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [state, setState] = useState<GameState>({
@@ -77,6 +82,11 @@ export default function PosterPixelsGame() {
   const [selectedMovie, setSelectedMovie] = useState<{
     id: number
     title: string
+  } | null>(null)
+  const [celebrationData, setCelebrationData] = useState<{
+    won: boolean
+    clarityLevel: number
+    movieTitle: string
   } | null>(null)
 
   // Load today's puzzle
@@ -211,10 +221,16 @@ export default function PosterPixelsGame() {
   }
 
   const startGame = async () => {
+    // Initialize sound system on first interaction
+    sounds.initialize()
+    
     // Mark that the user has played before if coming from how to play
     if (modalState === 'howtoplay') {
       localStorage.setItem('poster-pixels-played', 'true')
     }
+    
+    // Play camera shutter sound for game start
+    sounds.playShutter()
 
     try {
       if (isAnonymous) {
@@ -228,7 +244,6 @@ export default function PosterPixelsGame() {
           clarityLevel: 0.20,
         }))
         setGameState('playing')
-        setModalState('none')
       } else {
         // Authenticated user - use API
         const response = await fetch("/api/poster-pixels/start", {
@@ -254,7 +269,6 @@ export default function PosterPixelsGame() {
           clarityLevel: 0.20,
         }))
         setGameState('playing')
-        setModalState('none')
       }
     } catch (error) {
       console.error("Error starting game:", error)
@@ -549,19 +563,25 @@ export default function PosterPixelsGame() {
       console.error("Error completing game:", error)
     }
 
+    // Update final game state directly without celebration
     setState(prev => ({
       ...prev,
       won,
-      clarityLevel: finalClarityLevel, // Preserve the clarity level from when guess was made
+      clarityLevel: finalClarityLevel,
     }))
     setGameState('completed')
 
+    // Still fire confetti for wins and play celebration sound
     if (won) {
       confetti({
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
       })
+      sounds.playApplause()
+    } else {
+      // Play a gentle chime even for incorrect guesses to soften the blow
+      sounds.playChime()
     }
   }
 
@@ -574,8 +594,23 @@ export default function PosterPixelsGame() {
     setModalState('stats')
   }
 
-  const showHowToPlay = () => {
-    setModalState('howtoplay')
+
+
+  // Don't render the game container UI if we're showing the landing page
+  if (gameState === "ready" && modalState !== 'howtoplay') {
+    return (
+      <GameLanding
+        gameId="poster-pixels"
+        gameName="Poster Pixels"
+        puzzleNumber={state.puzzle?.puzzle_number}
+        puzzleDate={new Date().toISOString().split('T')[0]}
+        backgroundColor="#3a3a3c"
+        emoji="🖼️"
+        onStart={startGame}
+      >
+        {/* How to Play content removed from splash page */}
+      </GameLanding>
+    )
   }
 
   // Render the game
@@ -583,9 +618,9 @@ export default function PosterPixelsGame() {
     <div className="game-container">
       <GameHeader 
         title="Poster Pixels" 
-        onHelpClick={showHowToPlay}
+        onHelpClick={() => setModalState('howtoplay')}
       >
-        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
+        {(gameState === 'completed') && !isAnonymous && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>
@@ -593,28 +628,60 @@ export default function PosterPixelsGame() {
       </GameHeader>
 
       {/* How to Play Modal */}
-      <HowToPlayModal
+      <GameModal
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
-        title="Poster Pixels"
-        instructions={
-          <div className="space-y-4">
-            <p className="text-neutral-600">
-              Can you identify the movie from its pixelated poster?
-            </p>
-            <div className="bg-neutral-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-2">How to Play:</h3>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li>• A pixelated movie poster will appear</li>
-                <li>• It gradually becomes clearer over 30 seconds</li>
-                <li>• You have one guess to identify the movie</li>
-                <li>• The sooner you guess correctly, the better!</li>
-              </ul>
-            </div>
+        className="max-w-2xl"
+      >
+        <GameModalHeader>
+          <GameModalTitle>How to Play Poster Pixels</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <InstructionGrid columns={2}>
+            <InstructionCard
+              step={1}
+              title="Blurry Movie Poster"
+              description="A heavily pixelated movie poster appears on screen. At first, it's almost impossible to make out any details."
+              darkTheme={true}
+            />
+            <InstructionCard
+              step={2}
+              title="Gradual Clarity"
+              description="Over 30 seconds, the poster slowly becomes clearer and more recognizable. Details start to emerge."
+              darkTheme={true}
+            />
+            <InstructionCard
+              step={3}
+              title="Search & Guess"
+              description="Search for movies and make your best guess. You only get one chance, so choose wisely!"
+              darkTheme={true}
+              example={
+                <div className="bg-muted rounded-lg px-3 py-2 text-center">
+                  <div className="text-foreground text-sm">🔍 Search movies...</div>
+                  <div className="mt-1 text-muted-foreground text-xs">One guess only!</div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={4}
+              title="Score Points"
+              description="The earlier you guess correctly, the higher your score! Challenge yourself to identify movies from minimal details."
+              darkTheme={true}
+              example={
+                <div className="bg-muted rounded-lg p-3 text-center">
+                  <div className="text-foreground text-sm font-semibold">🏆 Perfect!</div>
+                  <div className="text-muted-foreground text-xs mt-1">Guessed at 45% clarity</div>
+                </div>
+              }
+            />
+          </InstructionGrid>
+          <div className="mt-6 text-center">
+            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+              Back to Game
+            </Button>
           </div>
-        }
-        onStart={startGame}
-      />
+        </GameModalBody>
+      </GameModal>
 
       {/* Stats Modal */}
       <GameModal
@@ -633,86 +700,68 @@ export default function PosterPixelsGame() {
       <main className="flex-1 overflow-auto p-4">
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin" />
+            <div className="text-center">
+              <div className="text-lg">Loading today's puzzle...</div>
+            </div>
           </div>
         )}
 
         {gameState === 'error' && (
           <div className="flex-1 flex items-center justify-center">
-            <Card className="w-full max-w-md">
-              <CardContent className="pt-6 text-center">
-                <p className="text-red-500 mb-4">{state.error}</p>
-                <Button onClick={() => window.location.reload()} className="w-full">
-                  Try Again
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {gameState === 'ready' && (
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle>Poster Pixels</CardTitle>
-                <p className="text-muted-foreground">
-                  Identify the movie from its pixelated poster
+            <Card className="w-full max-w-md bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+              <CardContent className="pt-6 text-center space-y-4">
+                <div className="text-6xl mb-4">🖼️</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Restoration Studio Error</h3>
+                <p className="text-red-600 mb-4 bg-white/50 rounded-lg p-3">
+                  <span className="text-sm font-medium">Studio Issue:</span><br />
+                  {state.error}
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-lg text-neutral-700">
-                    A pixelated movie poster will appear and gradually become clearer over 30 seconds.
-                  </p>
-                  <p className="text-neutral-600 mt-2">
-                    You have one guess to identify the movie. The sooner you guess correctly, the better!
-                  </p>
-                </div>
-
-                <Button
-                  onClick={startGame}
-                  size="lg"
-                  variant="primary"
-                  className="w-full"
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
                 >
-                  <Play className="w-5 h-5 mr-2" />
-                  Start Game
+                  <span className="mr-2">🔄</span>
+                  Restart Restoration Studio
                 </Button>
-
-                <div className="text-center text-sm text-muted-foreground">
-                  Daily puzzle • {new Date().toLocaleDateString()}
-                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Our art restoration tools need a moment to recalibrate
+                </p>
               </CardContent>
             </Card>
           </div>
         )}
+
 
         {gameState === 'playing' && (
-          <div className="max-w-4xl mx-auto">
-            <Card className="p-8 bg-white border-neutral-200">
-              <div className="space-y-6">
-                {/* Centered Timer */}
-                <div className="text-center mb-6">
-                  <div className="inline-flex items-center gap-2 text-2xl font-bold text-white bg-neutral-800 px-4 py-2 rounded-lg">
-                    <Clock className="w-6 h-6" />
-                    <span>{formatTime(GAME_DURATION - state.timeElapsed)}</span>
-                  </div>
-                </div>
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Timer */}
+            <div className="text-center">
+              <div className="inline-flex items-center gap-2 text-lg font-semibold">
+                <Clock className="w-5 h-5" />
+                <span>Time Remaining: {formatTime(GAME_DURATION - state.timeElapsed)}</span>
+              </div>
+            </div>
 
-                {/* Poster Display */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative">
-                    <canvas
-                      ref={canvasRef}
-                      className="border-2 border-neutral-200 rounded-lg shadow-2xl"
-                      width={300}
-                      height={450}
-                    />
-                  </div>
-                </div>
+            {/* Poster Display */}
+            <div className="flex justify-center">
+              <canvas
+                ref={canvasRef}
+                className="border border-gray-300 shadow-3d-grey"
+                width={300}
+                height={450}
+                style={{ borderRadius: 0 }}
+              />
+            </div>
 
-                {/* Search Bar */}
+            {/* Search Card */}
+            <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+              <CardContent className="p-6">
                 <div className="space-y-4">
+                  <div className="text-center mb-4">
+                    <h3 className="text-lg font-semibold">Guess the Movie</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Search for the movie title</p>
+                  </div>
+                  
                   <PosterPixelsSearch
                     onMovieSelect={setSelectedMovie}
                     selectedMovie={selectedMovie}
@@ -720,24 +769,24 @@ export default function PosterPixelsGame() {
                     onAutoSubmit={handleAutoSubmit}
                   />
                   
-                  {/* Guess Button */}
                   {selectedMovie && (
                     <div className="flex justify-center">
                       <Button 
                         onClick={handleGuess}
+                        onMouseEnter={() => sounds.playInspection()}
                         size="lg"
-                        variant="primary"
-                        className="px-8"
+                        className="px-8 py-3"
                       >
                         Submit Guess
                       </Button>
                     </div>
                   )}
                 </div>
-              </div>
+              </CardContent>
             </Card>
           </div>
         )}
+
 
         {gameState === 'completed' && state.puzzle && (
           <PosterPixelsResult

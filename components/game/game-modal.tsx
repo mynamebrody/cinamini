@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react"
 import { X, HelpCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 interface GameModalProps {
@@ -60,13 +61,14 @@ export function GameModal({
       
       {/* Modal content */}
       <div className={cn(
-        "relative bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden animate-fade-in",
+        "relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
         className
       )}>
         {showCloseButton && (
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-neutral-100 transition-colors z-10"
+            className="absolute top-4 right-4 p-2 bg-transparent border border-transparent hover:bg-transparent hover:border-red-600 hover:text-red-600 hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] transition-all z-10"
+            style={{ borderRadius: 0 }}
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -111,7 +113,7 @@ interface GameModalBodyProps {
 
 export function GameModalBody({ children, className }: GameModalBodyProps) {
   return (
-    <div className={cn("px-6 py-4 overflow-y-auto", className)}>
+    <div className={cn("px-6 py-4 overflow-y-auto max-h-[70vh]", className)}>
       {children}
     </div>
   )
@@ -138,15 +140,13 @@ interface HelpIconButtonProps {
 
 export function HelpIconButton({ onClick, className }: HelpIconButtonProps) {
   return (
-    <button
+    <Button
+      variant="icon"
       onClick={onClick}
-      className={cn(
-        "p-2 rounded-lg hover:bg-neutral-100 transition-colors",
-        className
-      )}
+      className={className}
       aria-label="How to play"
     >
       <HelpCircle className="w-5 h-5" />
-    </button>
+    </Button>
   )
 }

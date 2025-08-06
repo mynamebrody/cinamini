@@ -17,6 +17,7 @@ export function MovieSearchBar({
   placeholder = "Search for movies..." 
 }: MovieSearchBarProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
 
   // Handle search submission
   const handleSearch = useCallback(() => {
@@ -49,7 +50,15 @@ export function MovieSearchBar({
           value={searchQuery}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
-          className="pl-10 pr-4 bg-background/50 backdrop-blur-sm border-white/20 text-white placeholder:text-gray-400 focus:border-[#2b725e] focus:ring-[#2b725e]"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className="pl-10 pr-4 bg-white border-silver text-charcoal placeholder:text-neutral-500 focus:border-cinema-red focus:ring-cinema-red font-funnel"
+          style={{
+            borderRadius: 0,
+            boxShadow: (isFocused || searchQuery.trim().length > 0)
+              ? '1px 1px 0px rgb(var(--cinema-red)), 2px 2px 0px rgb(var(--cinema-red)), 3px 3px 0px rgb(var(--cinema-red)), 4px 4px 0px rgb(var(--cinema-red))'
+              : 'none'
+          }}
           disabled={loading}
           maxLength={100}
         />
@@ -57,7 +66,8 @@ export function MovieSearchBar({
       <Button
         onClick={handleSearch}
         disabled={loading || searchQuery.trim().length === 0}
-        className="bg-[#2b725e] hover:bg-[#235e4c] text-white min-w-[100px]"
+        variant="default"
+        className="min-w-[100px]"
         type="button"
       >
         {loading ? (

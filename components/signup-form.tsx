@@ -38,7 +38,7 @@ export default function SignUpForm() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="space-y-2 text-center">
-        <h1 className="font-nyt text-4xl font-bold tracking-tight text-neutral-900">Create an account</h1>
+        <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">Create an account</h1>
         <p className="text-lg text-neutral-600">Sign up to get started</p>
       </div>
 

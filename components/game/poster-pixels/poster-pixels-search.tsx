@@ -101,53 +101,78 @@ export default function PosterPixelsSearch({
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           type="text"
-          placeholder="Search for a movie..."
+          placeholder="Start typing to search movies..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           disabled={disabled}
-          className="pl-10 pr-10 py-2 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/20"
+          className="pl-10 pr-10 bg-background text-foreground"
         />
         {searchQuery && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            disabled={disabled}
           >
-            <X className="w-5 h-5" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
       {/* Search Results Dropdown */}
       {showDropdown && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto backdrop-blur-sm">
-          {searchResults.map((movie) => (
-            <button
-              key={movie.id}
-              onClick={() => handleMovieSelect(movie)}
-              className="w-full px-4 py-3 hover:bg-gray-100 transition-colors text-left"
-            >
-              <div className="flex-1">
-                <p className="text-gray-900 font-medium">
-                  {movie.title} 
-                  {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
-                    <span className="text-gray-600"> ({movie.releaseYear})</span>
+        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-sm">
+          <div className="py-1">
+            {searchResults.map((movie, index) => (
+              <button
+                key={movie.id}
+                onClick={() => handleMovieSelect(movie)}
+                className="w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors flex items-center gap-3"
+              >
+                {/* Movie Poster Placeholder */}
+                <div className="flex-shrink-0 w-12 h-16 bg-muted rounded overflow-hidden">
+                  {movie.posterUrl ? (
+                    <img
+                      src={movie.posterUrl}
+                      alt={`${movie.title} poster`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                      No Image
+                    </div>
                   )}
-                </p>
-              </div>
-            </button>
-          ))}
+                </div>
+                
+                {/* Movie Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-foreground truncate">
+                    {movie.title}
+                  </div>
+                  {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
+                    <div className="text-xs text-muted-foreground">
+                      {movie.releaseYear}
+                    </div>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Selected Movie Display */}
       {selectedMovie && !showDropdown && (
-        <div className="mt-2 p-2 bg-purple-500/20 border border-purple-500/30 rounded-lg">
-          <p className="text-sm text-purple-300">
-            Selected: <span className="font-medium">{selectedMovie.title}</span>
-          </p>
+        <div className="mt-3 p-3 bg-muted rounded border">
+          <div className="flex items-center gap-2">
+            <div>
+              <p className="text-xs text-muted-foreground">Selected movie:</p>
+              <p className="text-sm font-medium">{selectedMovie.title}</p>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -79,8 +79,10 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
       <Card className={cn(
         "p-8 text-center space-y-6",
         "bg-card border",
-        result.correct ? "border-green-500/50" : "border-red-500/50"
-      )}>
+        result.correct 
+          ? "border-green-500/50 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]" 
+          : "border-red-500/50 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]"
+      )} style={{ borderRadius: 0 }}>
         {/* Icon */}
         <div className={cn(
           "w-20 h-20 rounded-full mx-auto flex items-center justify-center",
@@ -93,13 +95,25 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
           )}
         </div>
 
-        {/* Result Text */}
+        {/* Result Text with Travel Theme */}
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            {result.correct ? "Correct!" : "Not quite!"}
+          <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+            {result.correct ? (
+              <>
+                <span>🎆</span>
+                <span>Journey Complete!</span>
+                <span>✈️</span>
+              </>
+            ) : (
+              <>
+                <span>🎠</span>
+                <span>Next Departure!</span>
+                <span>🗺️</span>
+              </>
+            )}
           </h2>
           <p className="text-muted-foreground">
-            The answer was:
+            {result.correct ? "Passport stamped for:" : "The destination was:"}
           </p>
         </div>
 
@@ -124,23 +138,44 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
             {result.correctAnswer.title} ({result.correctAnswer.releaseYear})
           </h3>
           
-          {/* Localized Title Display */}
+          {/* Travel Ticket Style Display */}
           {result.puzzle && (
-            <div className="bg-muted rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">{result.puzzle.flagEmoji}</span>
-                <span className="text-lg font-medium">{result.puzzle.localizedTitle}</span>
+            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]" style={{ borderRadius: 0, borderColor: 'rgb(156,163,175)' }}>
+              {/* Ticket header */}
+              <div className="text-center border-b border-dashed border-gray-400 pb-2">
+                <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
+              
+              {/* Destination info */}
+              <div className="flex items-center justify-center gap-3">
+                <div className="text-3xl">{result.puzzle.flagEmoji}</div>
+                <div className="text-center">
+                  <div className="text-lg font-bold">{result.puzzle.localizedTitle}</div>
+                  <div className="text-xs text-muted-foreground">DESTINATION TITLE</div>
+                </div>
+              </div>
+              
               {result.puzzle.englishTranslation && (
-                <p className="text-base text-muted-foreground text-center italic">
-                  "{result.puzzle.englishTranslation}"
-                </p>
+                <div className="text-center border-t border-dashed border-gray-400 pt-2">
+                  <p className="text-base text-muted-foreground italic">
+                    "{result.puzzle.englishTranslation}"
+                  </p>
+                  <div className="text-xs text-muted-foreground mt-1">LITERAL TRANSLATION</div>
+                </div>
               )}
+              
               {result.correctAnswer.translationNote && (
-                <p className="text-sm text-muted-foreground text-center">
-                  {result.correctAnswer.translationNote}
-                </p>
+                <div className="bg-white/50 dark:bg-black/20 rounded p-2 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    📝 {result.correctAnswer.translationNote}
+                  </p>
+                </div>
               )}
+              
+              {/* Ticket stub */}
+              <div className="text-center text-xs text-muted-foreground font-mono pt-2 border-t border-dashed border-gray-400">
+                {result.correct ? '✅ VALID JOURNEY' : '📋 LEARNING EXPERIENCE'}
+              </div>
             </div>
           )}
         </div>
@@ -174,9 +209,13 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
           shareUrl="https://cinamini.app"
         />
         
-        <p className="text-center text-muted-foreground text-sm">
-          Come back tomorrow for a new puzzle!
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
+            <span>🌅</span>
+            <span>Next departure: Tomorrow's adventure awaits!</span>
+            <span>🎆</span>
+          </p>
+        </div>
       </div>
     </div>
   )

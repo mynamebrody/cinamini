@@ -1,6 +1,6 @@
 import * as React from "react"
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'icon'
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -21,6 +21,8 @@ const getVariantClasses = (variant: ButtonVariant) => {
       return 'btn-outline'
     case 'destructive':
       return 'bg-red-500 text-white border-red-500 hover:bg-red-600 hover:border-red-600'
+    case 'icon':
+      return 'btn-icon'
     default:
       return 'btn-primary'
   }

@@ -4,36 +4,42 @@
 @layer base {
   /* Light theme (default) */
   :root {
-    /* Cinema brand colors */
-    --cinema-red: 108 3 17;          /* #6c0311 */
-    --cinema-red-dark: 86 2 14;      /* #56020e - darker version for hovers */
-    --cinema-gold: 178 140 73;       /* #b28c49 */
+    /* Cinema brand colors - New Sophisticated Palette */
+    --cinema-red: 153 37 29;         /* #99251d - Deep Cinema Red */
+    --cinema-red-dark: 122 29 22;    /* #7a1d16 - Darker for hovers */
+    --cinema-red-light: 181 45 32;   /* #b52d20 - Lighter for highlights */
+    --cinema-gold: 235 187 74;       /* #ebbb4a - Warm Golden Yellow */
+    --cinema-gold-light: 247 238 139; /* #f7ee8b - Light Golden Yellow */
+    --cinema-gold-dark: 212 169 53;  /* #d4a935 - Darker gold */
+    --charcoal: 58 58 60;            /* #3a3a3c - Dark Charcoal */
+    --silver: 209 210 212;           /* #d1d2d4 - Light Silver */
+    --cinema-green: 39 134 70;        /* #278646 - Cinema Green */
     
-    /* Game state colors */
+    /* Game state colors (maintained for UX consistency) */
     --game-correct: 106 170 100;     /* #6AAA64 */
     --game-present: 201 180 88;      /* #C9B458 */ 
     --game-absent: 120 124 126;      /* #787C7E */
     
-    /* Light theme colors */
+    /* Light theme colors - Updated with new palette */
     --background: 255 255 255;       /* Pure white */
-    --foreground: 33 33 33;          /* Near black text */
+    --foreground: 58 58 60;          /* Charcoal text for better readability */
     --muted: 245 245 245;            /* Light gray backgrounds */
     --muted-foreground: 117 117 117; /* Medium gray text */
     --card: 255 255 255;             /* White cards */
-    --card-foreground: 33 33 33;     /* Dark card text */
-    --border: 224 224 224;           /* Light borders */
-    --input: 238 238 238;            /* Input backgrounds */
-    --primary: 108 3 17;            /* Cinema red primary */
+    --card-foreground: 58 58 60;     /* Charcoal card text */
+    --border: 209 210 212;           /* Silver borders */
+    --input: 245 245 245;            /* Input backgrounds */
+    --primary: 153 37 29;            /* Deep cinema red primary */
     --primary-foreground: 255 255 255; /* White on red */
-    --secondary: 245 245 245;        /* Light secondary */
-    --secondary-foreground: 33 33 33; /* Dark secondary text */
-    --accent: 250 250 250;           /* Very light accent */
-    --accent-foreground: 33 33 33;   /* Dark accent text */
-    --destructive: 239 68 68;        /* Red for errors */
+    --secondary: 247 238 139;        /* Light golden secondary */
+    --secondary-foreground: 58 58 60; /* Charcoal on light gold */
+    --accent: 235 187 74;            /* Warm golden accent */
+    --accent-foreground: 255 255 255; /* White on gold */
+    --destructive: 153 37 29;        /* Cinema red for errors */
     --destructive-foreground: 255 255 255; /* White on red */
-    --ring: 108 3 17;               /* Cinema red focus rings */
+    --ring: 153 37 29;              /* Cinema red focus rings */
     --popover: 255 255 255;          /* White popovers */
-    --popover-foreground: 33 33 33;  /* Dark popover text */
+    --popover-foreground: 58 58 60;  /* Charcoal popover text */
   }
 
 
@@ -51,7 +57,7 @@
     height: 100%;
     background-color: rgb(var(--background));
     color: rgb(var(--foreground));
-    font-family: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
+    font-family: var(--font-funnel-sans-light), 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -60,19 +66,41 @@
 
   /* Typography inspired by NYT */
   h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
     font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.2;
   }
 
+  /* Font utility classes */
+  .font-funnel {
+    font-family: var(--font-funnel-sans-light), 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
+  }
+
+  .font-funnel-display-bold {
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
+  }
+
+  /* Logo and brand text */
+  .brand-text {
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .logo-text {
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
+    font-weight: 400;
+  }
+
   h1 {
     font-size: 2.5rem;
-    font-family: 'Georgia', 'Times', serif;
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
   }
 
   h2 {
     font-size: 2rem;
-    font-family: 'Georgia', 'Times', serif;
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
   }
 
   h3 {
@@ -121,7 +149,7 @@
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    border-radius: 0.375rem;
+    border-radius: 0;
     font-size: 0.875rem;
     font-weight: 500;
     transition: all 0.2s ease;
@@ -140,8 +168,13 @@
   }
 
   .btn-primary:hover {
-    background-color: rgb(var(--cinema-red-dark));
-    border-color: rgb(var(--cinema-red-dark));
+    background-color: white;
+    color: rgb(var(--cinema-red));
+    border-color: rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
   }
 
   .btn-secondary {
@@ -151,7 +184,13 @@
   }
 
   .btn-secondary:hover {
-    background-color: rgb(var(--accent));
+    background-color: white;
+    color: rgb(var(--cinema-red));
+    border-color: rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
   }
 
   .btn-ghost {
@@ -161,17 +200,47 @@
   }
 
   .btn-ghost:hover {
-    background-color: rgb(var(--accent));
+    background-color: transparent;
+    color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
   }
 
   .btn-outline {
     background-color: transparent;
     color: rgb(var(--foreground));
-    border: 1px solid rgb(var(--border));
+    border: 1px solid transparent;
   }
 
   .btn-outline:hover {
-    background-color: rgb(var(--accent));
+    background-color: transparent;
+    color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
+  }
+
+  .btn-icon {
+    background-color: transparent;
+    color: rgb(var(--foreground));
+    border: 1px solid transparent;
+    padding: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-icon:hover {
+    background-color: transparent;
+    color: rgb(var(--cinema-red));
+    border: 1px solid rgb(var(--cinema-red));
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
   }
 
   /* Button sizes */
@@ -197,8 +266,11 @@
     background-color: rgb(var(--card));
     color: rgb(var(--card-foreground));
     border: 1px solid rgb(var(--border));
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    border-radius: 0;
+    box-shadow: 1px 1px 0px rgb(var(--silver)),
+                2px 2px 0px rgb(var(--silver)),
+                3px 3px 0px rgb(var(--silver)),
+                4px 4px 0px rgb(var(--silver));
   }
 
   .card-hover {
@@ -206,7 +278,10 @@
   }
 
   .card-hover:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
     transform: translateY(-1px);
   }
 
@@ -214,13 +289,20 @@
   .featured-card {
     background: linear-gradient(135deg, rgb(var(--card)) 0%, rgb(var(--muted)) 100%);
     border: 2px solid rgb(var(--border));
-    border-radius: 0.75rem;
+    border-radius: 0;
     transition: all 0.3s ease;
+    box-shadow: 1px 1px 0px rgb(var(--silver)),
+                2px 2px 0px rgb(var(--silver)),
+                3px 3px 0px rgb(var(--silver)),
+                4px 4px 0px rgb(var(--silver));
   }
 
   .featured-card:hover {
     border-color: rgb(var(--cinema-red));
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
     transform: translateY(-2px);
   }
 
@@ -310,7 +392,7 @@
   }
 
   .game-title {
-    font-family: 'Georgia', 'Times New Roman', serif;
+    font-family: var(--font-funnel-display-bold), 'Georgia', 'Times New Roman', serif;
     font-size: 1.5rem;
     font-weight: 700;
     color: rgb(var(--foreground));
@@ -357,5 +439,562 @@
 
   .animate-scale-in {
     animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Enhanced hover animations for game cards */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.4); }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  /* Smooth transitions for interactive elements */
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .transition-bounce {
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* NYT Games inspired card shadow */
+  .shadow-nyt {
+    box-shadow: 1px 1px 0px rgb(var(--silver)),
+                2px 2px 0px rgb(var(--silver)),
+                3px 3px 0px rgb(var(--silver)),
+                4px 4px 0px rgb(var(--silver));
+  }
+
+  .shadow-nyt-hover {
+    box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
+                2px 2px 0px rgb(var(--cinema-red)),
+                3px 3px 0px rgb(var(--cinema-red)),
+                4px 4px 0px rgb(var(--cinema-red));
+  }
+
+  /* 3D Shadow utilities for consistent game styling */
+  :root {
+    --shadow-3d-grey: 1px 1px 0px rgb(107, 114, 128), 2px 2px 0px rgb(107, 114, 128), 3px 3px 0px rgb(107, 114, 128), 4px 4px 0px rgb(107, 114, 128);
+    --shadow-3d-grey-dark: 1px 1px 0px rgb(75, 85, 99), 2px 2px 0px rgb(75, 85, 99), 3px 3px 0px rgb(75, 85, 99), 4px 4px 0px rgb(75, 85, 99);
+    --shadow-3d-green: 1px 1px 0px rgb(34, 197, 94), 2px 2px 0px rgb(34, 197, 94), 3px 3px 0px rgb(34, 197, 94), 4px 4px 0px rgb(34, 197, 94);
+    --shadow-3d-red: 1px 1px 0px rgb(239, 68, 68), 2px 2px 0px rgb(239, 68, 68), 3px 3px 0px rgb(239, 68, 68), 4px 4px 0px rgb(239, 68, 68);
+    --shadow-3d-gold: 1px 1px 0px rgb(251, 191, 36), 2px 2px 0px rgb(251, 191, 36), 3px 3px 0px rgb(251, 191, 36), 4px 4px 0px rgb(251, 191, 36);
+    --shadow-3d-blue: 1px 1px 0px rgb(147, 197, 253), 2px 2px 0px rgb(147, 197, 253), 3px 3px 0px rgb(147, 197, 253), 4px 4px 0px rgb(147, 197, 253);
+    --shadow-3d-purple: 1px 1px 0px rgb(196, 181, 253), 2px 2px 0px rgb(196, 181, 253), 3px 3px 0px rgb(196, 181, 253), 4px 4px 0px rgb(196, 181, 253);
+    --shadow-3d-orange: 1px 1px 0px rgb(253, 186, 116), 2px 2px 0px rgb(253, 186, 116), 3px 3px 0px rgb(253, 186, 116), 4px 4px 0px rgb(253, 186, 116);
+  }
+
+  .shadow-3d-grey {
+    box-shadow: var(--shadow-3d-grey);
+  }
+
+  .shadow-3d-grey-dark {
+    box-shadow: var(--shadow-3d-grey-dark);
+  }
+
+  .shadow-3d-green {
+    box-shadow: var(--shadow-3d-green);
+  }
+
+  .shadow-3d-red {
+    box-shadow: var(--shadow-3d-red);
+  }
+
+  .shadow-3d-gold {
+    box-shadow: var(--shadow-3d-gold);
+  }
+
+  .shadow-3d-blue {
+    box-shadow: var(--shadow-3d-blue);
+  }
+
+  .shadow-3d-purple {
+    box-shadow: var(--shadow-3d-purple);
+  }
+
+  .shadow-3d-orange {
+    box-shadow: var(--shadow-3d-orange);
+  }
+
+  /* Gradient text for special elements */
+  .text-gradient {
+    background: linear-gradient(135deg, rgb(var(--cinema-red)) 0%, rgb(var(--cinema-gold)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Shimmer animation for cast climb progress */
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  /* Additional climbing animations */
+  @keyframes climbBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.05); }
+  }
+
+  .animate-climb-bounce {
+    animation: climbBounce 0.6s ease-in-out;
+  }
+
+  /* Progressive reveal animation */
+  @keyframes progressFill {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+
+  .animate-progress-fill {
+    animation: progressFill 1s ease-out;
+  }
+
+  /* Confetti fall animation */
+  @keyframes confettiFall {
+    0% {
+      transform: translateY(-100vh) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-confetti-fall {
+    animation: confettiFall 3s linear forwards;
+  }
+
+  /* Travel-themed animations for Retitled */
+  @keyframes globeSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  @keyframes flagWave {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+  }
+
+  @keyframes airplaneFly {
+    0% { 
+      transform: translateX(-100px) translateY(0px) rotate(0deg);
+      opacity: 0;
+    }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { 
+      transform: translateX(calc(100vw + 100px)) translateY(-20px) rotate(5deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes passportStamp {
+    0% { 
+      transform: scale(0) rotate(-45deg);
+      opacity: 0;
+    }
+    50% { 
+      transform: scale(1.2) rotate(-10deg);
+      opacity: 0.8;
+    }
+    100% { 
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes travelFloat {
+    0%, 100% { 
+      transform: translateY(0px) rotate(-2deg);
+    }
+    33% { 
+      transform: translateY(-8px) rotate(1deg);
+    }
+    66% { 
+      transform: translateY(-4px) rotate(-1deg);
+    }
+  }
+
+  @keyframes countryPulse {
+    0%, 100% { 
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% { 
+      transform: scale(1.1);
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+  }
+
+  @keyframes boardingPassSlide {
+    0% { 
+      transform: translateY(20px) rotate(-5deg);
+      opacity: 0;
+    }
+    100% { 
+      transform: translateY(0px) rotate(1deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes globeTilt {
+    0%, 100% { transform: rotateX(0deg) rotateY(0deg); }
+    25% { transform: rotateX(5deg) rotateY(5deg); }
+    50% { transform: rotateX(0deg) rotateY(10deg); }
+    75% { transform: rotateX(-5deg) rotateY(5deg); }
+  }
+
+  /* Travel animation classes */
+  .animate-globe-spin {
+    animation: globeSpin 3s linear infinite;
+  }
+
+  .animate-flag-wave {
+    animation: flagWave 2s ease-in-out infinite;
+  }
+
+  .animate-airplane-fly {
+    animation: airplaneFly 3s ease-in-out forwards;
+  }
+
+  .animate-passport-stamp {
+    animation: passportStamp 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+
+  .animate-travel-float {
+    animation: travelFloat 3s ease-in-out infinite;
+  }
+
+  .animate-country-pulse {
+    animation: countryPulse 2s ease-in-out infinite;
+  }
+
+  .animate-boarding-pass-slide {
+    animation: boardingPassSlide 0.6s ease-out forwards;
+  }
+
+  .animate-globe-tilt {
+    animation: globeTilt 4s ease-in-out infinite;
+  }
+
+  /* 3D Globe effect with CSS */
+  .globe-3d {
+    background: radial-gradient(circle at 30% 30%, #4ade80, #22c55e, #16a34a, #15803d);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 
+      inset -20px -20px 40px rgba(0, 0, 0, 0.3),
+      0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .globe-3d::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: 20%;
+    width: 30%;
+    height: 30%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: rotate(-45deg);
+  }
+
+  /* Travel-themed boarding pass style */
+  .boarding-pass {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px dashed #64748b;
+    position: relative;
+  }
+
+  .boarding-pass::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 5px,
+      #64748b 5px,
+      #64748b 10px
+    );
+  }
+
+  /* Country collection progress */
+  .country-progress {
+    background: linear-gradient(90deg, #3b82f6 0%, #10b981 100%);
+    border-radius: 9999px;
+    height: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .country-progress::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  /* ============================================
+     HOLLYWOOD STUDIO THEME - BUDGET BRACKET
+     ============================================ */
+
+  /* Money rain animations */
+  @keyframes moneyFall {
+    0% {
+      transform: translateY(-50px) rotate(0deg) scale(0.5);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(300px) rotate(360deg) scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes dollarBounce {
+    0% {
+      transform: translateY(0px) scale(1) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-15px) scale(1.1) rotate(5deg);
+    }
+    50% {
+      transform: translateY(0px) scale(1) rotate(0deg);
+    }
+    75% {
+      transform: translateY(-8px) scale(1.05) rotate(-3deg);
+    }
+    100% {
+      transform: translateY(0px) scale(1) rotate(0deg);
+    }
+  }
+
+  @keyframes champagnePop {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.3) rotate(15deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+
+  @keyframes goldenSparkle {
+    0% {
+      transform: scale(0) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5) rotate(180deg);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(0) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes elevatorDing {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+    }
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+    }
+  }
+
+  @keyframes studioLights {
+    0%, 100% {
+      opacity: 0.8;
+      transform: rotate(0deg);
+    }
+    25% {
+      opacity: 1;
+      transform: rotate(90deg);
+    }
+    50% {
+      opacity: 0.6;
+      transform: rotate(180deg);
+    }
+    75% {
+      opacity: 1;
+      transform: rotate(270deg);
+    }
+  }
+
+  @keyframes towerGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(34, 197, 94, 0.6);
+    }
+  }
+
+  @keyframes mogulCrown {
+    0% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-5px) rotate(5deg);
+    }
+    50% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    75% {
+      transform: translateY(-3px) rotate(-3deg);
+    }
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+  }
+
+  @keyframes budgetCounter {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  /* Hollywood Studio Classes */
+  .animate-money-fall {
+    animation: moneyFall 3s ease-out forwards;
+  }
+
+  .animate-dollar-bounce {
+    animation: dollarBounce 1s ease-in-out;
+  }
+
+  .animate-champagne-pop {
+    animation: champagnePop 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+
+  .animate-golden-sparkle {
+    animation: goldenSparkle 2s ease-out forwards;
+  }
+
+  .animate-elevator-ding {
+    animation: elevatorDing 0.6s ease-out;
+  }
+
+  .animate-studio-lights {
+    animation: studioLights 4s ease-in-out infinite;
+  }
+
+  .animate-tower-glow {
+    animation: towerGlow 2s ease-in-out infinite;
+  }
+
+  .animate-mogul-crown {
+    animation: mogulCrown 2s ease-in-out infinite;
+  }
+
+  .animate-budget-counter {
+    animation: budgetCounter 0.8s ease-in-out;
+  }
+
+  /* Choice feedback animations */
+  .choice-correct {
+    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+    border: 2px solid #16a34a;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    animation: correctPulse 1s ease-out;
+  }
+
+  .choice-incorrect {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 2px solid #dc2626;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+    animation: incorrectShake 0.6s ease-out;
+  }
+
+  @keyframes correctPulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+    }
+  }
+
+  @keyframes incorrectShake {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-4px);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(4px);
+    }
+  }
+
+  /* Hollywood theme utilities */
+  .text-hollywood {
+    background: linear-gradient(45deg, #fbbf24 0%, #f59e0b 50%, #dc2626 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: bold;
+  }
+
+  .shadow-hollywood {
+    box-shadow: 
+      0 10px 15px -3px rgba(251, 191, 36, 0.1),
+      0 4px 6px -2px rgba(251, 191, 36, 0.05),
+      0 0 0 1px rgba(251, 191, 36, 0.1);
   }
 }

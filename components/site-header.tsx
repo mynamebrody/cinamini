@@ -38,8 +38,10 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
                 className="h-10 w-auto"
                 priority
               />
+              {/* Fallback text logo if needed */}
+              {/* <span className="text-2xl font-funnel-display-bold text-cinema-red font-bold">cinamini</span> */}
             </a>
-            <span className="ml-3 text-sm text-neutral-500 hidden sm:block">
+            <span className="ml-3 text-sm text-neutral-500 hidden sm:block font-funnel">
               Daily Movie Puzzles
             </span>
           </div>

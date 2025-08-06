@@ -1,9 +1,7 @@
 "use client"
 
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { CheckCircle, Play, DollarSign, Globe, Film, Image, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface GameCardProps {
@@ -11,8 +9,12 @@ interface GameCardProps {
   name: string
   description: string
   hasPlayedToday: boolean
-  featured?: boolean
   isAuthenticated?: boolean
+  style?: {
+    emoji: string
+    bgColor: string
+    textColor?: string
+  }
 }
 
 export default function GameCard({ 
@@ -20,8 +22,8 @@ export default function GameCard({
   name, 
   description, 
   hasPlayedToday, 
-  featured = false, 
-  isAuthenticated = false 
+  isAuthenticated = false,
+  style = { emoji: '🎬', bgColor: '#6b7280', textColor: 'white' }
 }: GameCardProps) {
   const router = useRouter()
 
@@ -29,138 +31,63 @@ export default function GameCard({
     router.push(`/game/${id}`)
   }
 
-  const getGameIcon = () => {
-    const iconClass = cn("flex-shrink-0", featured ? "w-8 h-8" : "w-6 h-6")
-    
-    switch (id) {
-      case 'budget-bracket':
-        return <DollarSign className={cn(iconClass, "text-emerald-500")} />
-      case 'retitled':
-        return <Globe className={cn(iconClass, "text-blue-500")} />
-      case 'poster-pixels':
-        return <Image className={cn(iconClass, "text-purple-500")} />
-      case 'cast-climb':
-        return <Users className={cn(iconClass, "text-orange-500")} />
-      default:
-        return <Film className={cn(iconClass, "text-neutral-500")} />
-    }
-  }
-
-  const getFeatureStyles = () => {
-    if (!featured) return ""
-    
-    switch (id) {
-      case 'budget-bracket':
-        return "bg-gradient-to-br from-emerald-50 to-white border-emerald-200"
-      case 'retitled':
-        return "bg-gradient-to-br from-blue-50 to-white border-blue-200"
-      case 'poster-pixels':
-        return "bg-gradient-to-br from-purple-50 to-white border-purple-200"
-      case 'cast-climb':
-        return "bg-gradient-to-br from-orange-50 to-white border-orange-200"
-      default:
-        return "bg-gradient-to-br from-neutral-50 to-white"
-    }
-  }
-
-  if (featured) {
-    return (
-      <Card className={cn(
-        "featured-card px-8 pt-8 pb-8 relative overflow-hidden group cursor-pointer h-64 flex flex-col",
-        getFeatureStyles()
-      )}>
-        {/* Content Area - takes available space */}
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start space-x-4 flex-1">
-              {getGameIcon()}
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-nyt text-2xl font-bold text-neutral-900 mb-2">
-                      {name}
-                    </h3>
-                  </div>
-                  {hasPlayedToday && (
-                    <div className="flex items-center ml-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    </div>
-                  )}
-                </div>
-                <p className="text-neutral-600 text-lg leading-relaxed line-clamp-3">
-                  {description}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Play Button - positioned with consistent padding from bottom */}
-        <div className="mt-auto">
-          <Button
-            onClick={handlePlay}
-            size="lg"
-            variant={hasPlayedToday ? "secondary" : "primary"}
-            className="w-full h-12 text-base font-semibold transition-all"
-          >
-            {hasPlayedToday ? (
-              <>
-                <CheckCircle className="w-5 h-5 mr-2" />
-                View Results
-              </>
-            ) : (
-              <>
-                <Play className="w-5 h-5 mr-2" />
-                Play Today's Puzzle
-              </>
-            )}
-          </Button>
-        </div>
-      </Card>
-    )
-  }
-
-  // Regular card design
   return (
-    <Card className="card-hover p-6 cursor-pointer group">
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            {getGameIcon()}
-            <div>
-              <h3 className="font-semibold text-lg text-neutral-900 mb-1">
-                {name}
-              </h3>
-              <p className="text-neutral-600 text-sm">
-                {description}
-              </p>
-            </div>
-          </div>
-          {hasPlayedToday && (
-            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-          )}
+    <div 
+      className="group overflow-hidden cursor-pointer hover:scale-[1.03] bg-white transition-all duration-300"
+      style={{
+        boxShadow: '8px 8px 0px 0px rgba(0,0,0,0.15)'
+      }}
+      onClick={handlePlay}
+    >
+      {/* Colored Header */}
+      <div 
+        className="h-32 flex items-center justify-center relative"
+        style={{ backgroundColor: style.bgColor }}
+      >
+        <div className="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+          {style.emoji}
         </div>
         
+        {/* Play Status Badge */}
+        {hasPlayedToday && (
+          <div className="absolute top-4 right-4">
+            <div className="bg-white/30 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+              <span className="text-xs font-semibold text-white font-funnel">
+                ✓ Completed
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
+      </div>
+
+      {/* Content */}
+      <div className="p-8">
+        {/* Game Name */}
+        <h3 className="text-2xl font-bold text-neutral-900 mb-4 font-funnel-display-bold tracking-tight">
+          {name}
+        </h3>
+        
+        {/* Game Description */}
+        <p className="text-neutral-600 text-base font-funnel leading-relaxed mb-6 line-clamp-3">
+          {description}
+        </p>
+        
+        {/* Play Button */}
         <Button
-          onClick={handlePlay}
-          variant={hasPlayedToday ? "secondary" : "primary"}
-          size="md"
-          className="w-full"
+          variant="outline"
+          size="default"
+          className="w-full border-2 border-neutral-300 font-semibold font-funnel text-neutral-700 transition-all duration-200 py-3 rounded-xl group-hover:bg-neutral-900 group-hover:text-white group-hover:border-neutral-900 hover:scale-[1.02]"
+          onClick={(e) => {
+            e.stopPropagation()
+            handlePlay()
+          }}
         >
-          {hasPlayedToday ? (
-            <>
-              <CheckCircle className="w-4 h-4 mr-2" />
-              View Results
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4 mr-2" />
-              Play
-            </>
-          )}
+          {hasPlayedToday ? 'View Results' : 'Play Today'}
         </Button>
       </div>
-    </Card>
+    </div>
   )
 }

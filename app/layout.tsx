@@ -1,11 +1,23 @@
 import type React from "react"
 import type { Viewport } from "next"
-import { Geist } from "next/font/google"
+import { Funnel_Display, Funnel_Sans } from "next/font/google"
 import { constructMetadata } from "@/lib/metadata"
 import "./globals.css"
 
-const geist = Geist({
-  subsets: ["latin"],
+// Load Funnel Display Bold for headings
+const funnelDisplayBold = Funnel_Display({
+  subsets: ['latin'],
+  weight: ['700'],
+  variable: '--font-funnel-display-bold',
+  display: 'swap',
+})
+
+// Load Funnel Sans Light for body text
+const funnelSansLight = Funnel_Sans({
+  subsets: ['latin'],
+  weight: ['300'],
+  variable: '--font-funnel-sans-light',
+  display: 'swap',
 })
 
 export const metadata = constructMetadata()
@@ -22,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={geist.className}>
+    <html lang="en" className={`${funnelDisplayBold.variable} ${funnelSansLight.variable}`}>
+      <body className={funnelSansLight.className}>
         {children}
       </body>
     </html>

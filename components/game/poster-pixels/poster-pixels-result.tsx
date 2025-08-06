@@ -47,6 +47,13 @@ export default function PosterPixelsResult({
     const clarity = formatClarity(clarityLevel)
     const time = formatTime(timeElapsed)
     
+    // Check if time ran out (game duration is 30 seconds)
+    const ranOutOfTime = !won && timeElapsed >= 29.5 // Allow small margin for timing
+    
+    if (ranOutOfTime) {
+      return `Poster Pixels #${puzzleNumber} ${result}\nRan out of time!`
+    }
+    
     return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time}`
   }
 

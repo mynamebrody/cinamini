@@ -54,41 +54,71 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
 
   return (
     <div className="space-y-8">
-      {/* Flag and Title */}
+      {/* Flag and Title with Travel Theme */}
       <div className="text-center space-y-4">
-        <div className="text-6xl">{puzzle.flagEmoji}</div>
-        <div className="text-sm text-muted-foreground">{puzzle.countryName}</div>
-        <h2 className="text-3xl font-bold text-foreground">"{puzzle.localizedTitle}"</h2>
-        {puzzle.englishTranslation && (
-          <p className="text-lg text-muted-foreground italic">"{puzzle.englishTranslation}"</p>
-        )}
-        <p className="text-muted-foreground">Which movie is this?</p>
+        <div className="relative inline-block">
+          <div className="text-6xl">{puzzle.flagEmoji}</div>
+          <div className="absolute -top-2 -right-2 text-2xl">🗺️</div>
+        </div>
+        <div className="text-sm text-muted-foreground font-medium">
+          📍 Now exploring: {puzzle.countryName}
+        </div>
+        <div className="rounded-lg p-4 border border-yellow-200" style={{ backgroundColor: '#ebbb4a' }}>
+          <h2 className="text-3xl font-bold text-white mb-2">"{puzzle.localizedTitle}"</h2>
+          {puzzle.englishTranslation && (
+            <p className="text-lg text-white/90 italic">"{puzzle.englishTranslation}"</p>
+          )}
+        </div>
+        <p className="text-muted-foreground flex items-center justify-center gap-2">
+          <span>🎫</span>
+          <span>Which movie earned this title?</span>
+          <span>🎬</span>
+        </p>
       </div>
 
-      {/* Options */}
+      {/* Movie Options with Boarding Pass Style */}
       <div className="space-y-3 max-w-2xl mx-auto">
-        {puzzle.options.map((option) => (
+        {puzzle.options.map((option, index) => (
           <Card
             key={option.id}
             onClick={() => handleSelect(option.id)}
             className={cn(
-              "p-4 cursor-pointer transition-all duration-200",
-              "bg-card border hover:bg-accent hover:border-accent-foreground/20",
-              "transform hover:scale-[1.02] active:scale-[0.98]",
-              selectedId === option.id && "ring-2 ring-primary/50 bg-accent",
+              "p-4 cursor-pointer transition-all duration-200 relative overflow-hidden",
+              "bg-card border border-gray-300 hover:border-red-700",
+              "hover:shadow-3d-red",
+              selectedId === option.id && "ring-2 ring-primary/50 bg-accent border-red-700 shadow-3d-red",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
-            <p className="text-foreground text-lg font-medium text-center">
-              {option.title}
-            </p>
+            {/* Boarding pass perforation effect */}
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-muted-foreground font-mono">
+                  {String.fromCharCode(65 + index)}) {/* A, B, C, D */}
+                </div>
+                <p className="text-foreground text-lg font-medium">
+                  {option.title}
+                </p>
+              </div>
+              
+              {selectedId === option.id && (
+                <div className="text-red-700 animate-pulse">
+                  ✈️
+                </div>
+              )}
+            </div>
           </Card>
         ))}
       </div>
 
-      {/* Timer */}
+      {/* Travel Timer */}
       <div className="text-center text-muted-foreground">
-        <p className="text-sm">Timer: {formatTime(elapsedTime)}</p>
+        <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+          <span className="text-xs">⏱️</span>
+          <p className="text-sm font-mono">Flight Time: {formatTime(elapsedTime)}</p>
+        </div>
       </div>
     </div>
   )

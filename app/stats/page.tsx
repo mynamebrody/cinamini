@@ -13,7 +13,7 @@ export default async function StatsPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <h1 className="text-2xl font-bold mb-4 text-neutral-900">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
       </div>
     )
   }
@@ -41,7 +41,7 @@ export default async function StatsPage() {
                 Back to Home
               </a>
             </Button>
-            <h1 className="text-xl font-bold text-neutral-900">Your Statistics</h1>
+            <h1 className="text-xl font-bold text-neutral-900 font-funnel-display-bold">Your Statistics</h1>
           </div>
         </div>
       </header>

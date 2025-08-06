@@ -7,7 +7,7 @@ export default async function LoginPage() {
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <h1 className="text-2xl font-bold mb-4 text-neutral-900">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
       </div>
     )
   }

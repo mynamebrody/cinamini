@@ -6,9 +6,10 @@ import BudgetBracketResult from "./budget-bracket-result"
 import BudgetBracketStats from "./budget-bracket-stats"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trophy, Play, BarChart3 } from "lucide-react"
+import { Trophy, BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
-import { HowToPlayModal } from "../how-to-play-modal"
+import { GameLanding } from "../game-landing"
+import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { type GameChoice } from "@/lib/budget-bracket-client"
 import { useGameMode } from "@/hooks/use-game-mode"
@@ -83,6 +84,7 @@ export default function BudgetBracketGame() {
       loadTodaysPuzzle()
     }
   }, [authLoading])
+
 
   const fetchCompletedGameResult = async (puzzleId: number) => {
     try {
@@ -230,7 +232,7 @@ export default function BudgetBracketGame() {
         )
         setGameChoices(updatedChoices)
         
-        if (currentRound < 5) {
+        if (currentRound < 4) {
           setCurrentRound(currentRound + 1)
         } else {
           submitGame(updatedChoices)
@@ -362,6 +364,25 @@ export default function BudgetBracketGame() {
     setModalState('howtoplay')
   }
 
+
+  // Don't render the game container UI if we're showing the landing page
+  if (gameState === "ready" && modalState !== 'howtoplay') {
+    return (
+      <GameLanding
+        gameId="budget-bracket"
+        gameName="Budget Bracket"
+        puzzleNumber={puzzle?.puzzle_number}
+        puzzleDate={puzzle?.puzzle_date}
+        backgroundColor="#278646"
+        emoji="💰"
+        onStart={startGame}
+        showBackButton={true}
+      >
+        {/* How to Play content removed from splash page */}
+      </GameLanding>
+    )
+  }
+
   // Render the game
   return (
     <div className="game-container">
@@ -377,28 +398,83 @@ export default function BudgetBracketGame() {
       </GameHeader>
 
       {/* How to Play Modal */}
-      <HowToPlayModal
+      <GameModal
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
-        title="Budget Bracket"
-        instructions={
-          <div className="space-y-4">
-            <p className="text-neutral-600">
-              Test your movie budget knowledge in this elimination bracket challenge!
-            </p>
-            <div className="bg-neutral-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-2">How to Play:</h3>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li>• See two movie posters side-by-side</li>
-                <li>• Pick the one with the higher production budget</li>
-                <li>• Play through all 5 rounds</li>
-                <li>• Get all 5 correct to become a "Perfect Producer"</li>
-              </ul>
-            </div>
+        className="max-w-2xl"
+      >
+        <GameModalHeader>
+          <GameModalTitle>How to Play Budget Bracket</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <InstructionGrid columns={2}>
+            <InstructionCard
+              step={1}
+              title="Face the Bracket"
+              description="See two movie posters side-by-side in each round. Your mission: pick the one with the higher production budget."
+              darkTheme={true}
+              example={
+                <div className="flex items-center justify-center space-x-4">
+                  <div className="w-16 h-20 bg-muted rounded-lg flex items-center justify-center">
+                    <span className="text-muted-foreground text-xs">🎥</span>
+                  </div>
+                  <div className="text-foreground font-bold">VS</div>
+                  <div className="w-16 h-20 bg-muted rounded-lg flex items-center justify-center">
+                    <span className="text-muted-foreground text-xs">🎥</span>
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={2}
+              title="Make Your Choice"
+              description="Tap the movie you think had the higher budget. Trust your instincts - sometimes the smaller films surprise you!"
+              darkTheme={true}
+              example={
+                <div className="text-center">
+                  <div className="bg-muted rounded-lg px-4 py-2 text-sm text-muted-foreground">
+                    Choose Higher Budget →
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={3}
+              title="Survive 5 Rounds"
+              description="Complete all 5 budget comparisons. Each wrong choice brings you closer to elimination, but you can still finish all rounds."
+              darkTheme={true}
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm">
+                    Round 3 of 5
+                  </div>
+                  <div className="text-muted-foreground text-xs mt-1">
+                    🟩🟩🟥 (2 correct so far)
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={4}
+              title="Perfect Producer"
+              description="Get all 5 rounds correct to earn the coveted 'Perfect Producer' status and ultimate bragging rights!"
+              darkTheme={true}
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm font-mono">
+                    Budget Bracket #123 🏆 5/5
+                  </div>
+                </div>
+              }
+            />
+          </InstructionGrid>
+          <div className="mt-6 text-center">
+            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+              Back to Game
+            </Button>
           </div>
-        }
-        onStart={startGame}
-      />
+        </GameModalBody>
+      </GameModal>
 
       {/* Stats Modal */}
       <GameModal
@@ -436,45 +512,20 @@ export default function BudgetBracketGame() {
           </div>
         )}
 
-        {gameState === 'ready' && (
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle>Budget Bracket #{puzzle?.puzzle_number}</CardTitle>
-                <p className="text-muted-foreground">
-                  Pick the movie with the higher production budget
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Can you pick the bigger budget film in all 5 rounds?
-                  </p>
-                </div>
-
-                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Playing
-                </Button>
-
-                <div className="text-center text-sm text-muted-foreground">
-                  Daily puzzle • {new Date().toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Ready state is now handled by the landing page above */}
 
         {gameState === 'playing' && puzzle && puzzle.pairs && puzzle.pairs[currentRound - 1] && (
-          <div className="max-w-md mx-auto">
-            <BudgetBracketRound
-              pair={puzzle.pairs[currentRound - 1]}
-              round={currentRound}
-              onChoice={handleRoundChoice}
-              gameChoices={gameChoices}
-              puzzle={puzzle}
-            />
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Game Round */}
+            <div className="max-w-md mx-auto">
+              <BudgetBracketRound
+                pair={puzzle.pairs[currentRound - 1]}
+                round={currentRound}
+                onChoice={handleRoundChoice}
+                gameChoices={gameChoices}
+                puzzle={puzzle}
+              />
+            </div>
           </div>
         )}
 
@@ -492,23 +543,26 @@ export default function BudgetBracketGame() {
         )}
 
         {gameState === 'completed' && (
-          <div className="max-w-md mx-auto space-y-4">
+          <div className="max-w-4xl mx-auto space-y-6">
             {gameResult && puzzle ? (
               <>
-                <BudgetBracketResult 
-                  result={gameResult} 
-                  puzzle={puzzle}
-                />
-                {isAnonymous && (
-                  <AnonymousResultNudge 
-                    gameResult={gameResult}
-                    gameName="Budget Bracket"
+                <div className="max-w-md mx-auto">
+                  <BudgetBracketResult 
+                    result={gameResult} 
+                    puzzle={puzzle}
                   />
-                )}
+                  {isAnonymous && (
+                    <AnonymousResultNudge 
+                      gameResult={gameResult}
+                      gameName="Budget Bracket"
+                    />
+                  )}
+                </div>
               </>
             ) : puzzle?.has_played && puzzle.user_result ? (
               // Fallback for when detailed result couldn't be fetched
-              <Card>
+              <div className="max-w-md mx-auto">
+                <Card>
                 <CardHeader className="text-center">
                   <CardTitle className="flex items-center justify-center gap-2">
                     <Trophy className="w-5 h-5 text-yellow-500" />
@@ -543,14 +597,17 @@ export default function BudgetBracketGame() {
                     Come back tomorrow for a new puzzle!
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
             ) : (
               // Loading or error state
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <p className="text-muted-foreground">Loading your results...</p>
-                </CardContent>
-              </Card>
+              <div className="max-w-md mx-auto">
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-muted-foreground">Loading your results...</p>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
         )}
