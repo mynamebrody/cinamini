@@ -36,7 +36,7 @@ export function HowToPlayModal({
       <GameModalHeader>
         <GameModalTitle>How to Play {title}</GameModalTitle>
       </GameModalHeader>
-      <GameModalBody className="space-y-4">
+      <GameModalBody className="space-y-3">
         {instructions}
       </GameModalBody>
       <GameModalFooter>

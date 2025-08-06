@@ -67,8 +67,8 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
   const otherGames = ALL_GAMES.filter(game => game.id !== currentGameId)
 
   return (
-    <div className="w-full">
-      <Card className="bg-white border-gray-300 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]" style={{ borderRadius: 0 }}>
+    <div className="w-full mt-6">
+      <Card className="bg-white border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
         <CardHeader className="text-center">
           <CardTitle className="text-lg font-bold text-gray-800">
             More Puzzles
@@ -82,7 +82,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
               return (
                 <div
                   key={game.id}
-                  className="flex items-center justify-between p-3 bg-white border border-gray-300 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]"
+                  className="flex items-center justify-between p-3 bg-white border border-gray-300 shadow-3d-grey"
                   style={{ borderRadius: 0 }}
                 >
                   <div className="flex items-center gap-3">

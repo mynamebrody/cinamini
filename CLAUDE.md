@@ -39,6 +39,8 @@ Cast member guessing game with progressive reveals:
 - `npm run lint` - Run Next.js linting
 - `npm run quick-dev` - Concurrently run dev server with turbopack and ngrok
 
+**Note**: Do not run `npm run dev` commands automatically. Always hand over testing to human verification.
+
 ### Database Management
 - `npm run db:reset` - Reset database to latest migration state
 - `npm run db:pull` - Pull schema changes from remote database

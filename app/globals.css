@@ -265,8 +265,16 @@
   .card {
     background-color: rgb(var(--card));
     color: rgb(var(--card-foreground));
-    border: 1px solid rgb(var(--border));
     border-radius: 0;
+  }
+
+  /* Default border for cards - can be overridden by Tailwind utilities */
+  .card:not([class*="border-"]) {
+    border: 1px solid rgb(var(--border));
+  }
+
+  /* Default 3D shadow for cards - can be overridden by Tailwind utilities */
+  .card:not([class*="shadow-"]) {
     box-shadow: 1px 1px 0px rgb(var(--silver)),
                 2px 2px 0px rgb(var(--silver)),
                 3px 3px 0px rgb(var(--silver)),
@@ -275,6 +283,11 @@
 
   .card-hover {
     transition: all 0.2s ease;
+  }
+
+  /* Alias for backward compatibility - use shadow-3d-grey instead */
+  .shadow-3d-gray {
+    box-shadow: var(--shadow-3d-grey);
   }
 
   .card-hover:hover {
