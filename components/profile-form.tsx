@@ -210,7 +210,7 @@ export default function ProfileForm() {
 
   if (isLoading) {
     return (
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-white border border-[rgb(var(--silver))]">
         <CardContent className="pt-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -223,7 +223,7 @@ export default function ProfileForm() {
 
   if (!profile) {
     return (
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-white border border-[rgb(var(--silver))]">
         <CardContent className="pt-6">
           <div className="text-center py-8">
             <p className="text-cinema-red">Failed to load profile</p>
@@ -242,7 +242,7 @@ export default function ProfileForm() {
 
   return (
     <>
-      <Card className="bg-white border-gray-200">
+      <Card className="bg-white border border-[rgb(var(--silver))]">
         <CardHeader>
           <CardTitle className="text-gray-900 flex items-center gap-2 font-funnel-display-bold">
             <User className="h-5 w-5" />
@@ -293,7 +293,7 @@ export default function ProfileForm() {
             type="email"
             value={profile.email}
             disabled
-            className="bg-gray-50 border-gray-300 text-gray-600 cursor-not-allowed"
+            className="bg-gray-50 border border-[rgb(var(--silver))] text-gray-600 cursor-not-allowed"
           />
           <p className="text-xs text-gray-500">
             Email cannot be changed. Contact support if you need to update your email.
@@ -316,7 +316,7 @@ export default function ProfileForm() {
                 onChange={(e) => handleUsernameChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Enter username (3-20 characters)"
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-500"
+                className="bg-white border border-[rgb(var(--silver))] text-gray-900 placeholder:text-gray-500"
                 disabled={isSaving}
                 autoFocus
               />
@@ -366,7 +366,7 @@ export default function ProfileForm() {
                 <Input
                   value={profile.username || "Not set"}
                   disabled
-                  className="bg-gray-50 border-gray-300 text-gray-900 flex-1"
+                  className="bg-gray-50 border border-[rgb(var(--silver))] text-gray-900 flex-1"
                 />
                 <Button
                   onClick={handleEdit}
@@ -392,7 +392,7 @@ export default function ProfileForm() {
         </div>
 
         {/* Account Details */}
-        <div className="pt-4 border-t border-gray-200 space-y-2">
+        <div className="pt-4 border-t border-[rgb(var(--silver))] space-y-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-600">
             <div>
               <span className="font-medium">Member since:</span>
@@ -409,7 +409,7 @@ export default function ProfileForm() {
     </Card>
     
     {/* Favorite Films Section */}
-    <Card className="mt-6 bg-white border-gray-200">
+    <Card className="mt-6 bg-white border border-[rgb(var(--silver))]">
       <CardHeader>
         <CardTitle className="text-gray-900 font-funnel-display-bold">Favorite Films</CardTitle>
       </CardHeader>

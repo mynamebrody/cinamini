@@ -94,7 +94,7 @@ export default function ForgotPasswordForm() {
             type="email"
             placeholder="you@example.com"
             required
-            className="bg-white border-neutral-300 text-neutral-900 placeholder:text-neutral-500"
+            className="bg-white border-[rgb(var(--silver))] text-neutral-900 placeholder:text-neutral-500"
           />
         </div>
 

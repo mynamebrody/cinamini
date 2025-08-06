@@ -385,7 +385,7 @@ export default function BudgetBracketEditor() {
                   ) : (
                     <button
                       onClick={() => openMovieSelector(pairIdx, "A")}
-                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
+                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
                     >
                       <Plus className="w-5 h-5 mb-0.5" />
                       <span className="text-xs">Add Movie</span>
@@ -412,7 +412,7 @@ export default function BudgetBracketEditor() {
                   ) : (
                     <button
                       onClick={() => openMovieSelector(pairIdx, "B")}
-                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
+                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
                     >
                       <Plus className="w-5 h-5 mb-0.5" />
                       <span className="text-xs">Add Movie</span>

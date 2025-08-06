@@ -396,7 +396,7 @@ export default function CastClimbEditor() {
             id="difficulty"
             value={difficultyLevel}
             onChange={(e) => setDifficultyLevel(parseInt(e.target.value))}
-            className="w-full h-10 px-3 rounded-md border border-gray-300 bg-white"
+            className="w-full h-10 px-3 rounded-md border border border-[rgb(var(--silver))] bg-white"
           >
             <option value={1}>Easy (1)</option>
             <option value={2}>Medium (2)</option>

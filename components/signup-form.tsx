@@ -64,7 +64,7 @@ export default function SignUpForm() {
               type="email"
               placeholder="you@example.com"
               required
-              className="bg-white border-neutral-300 text-neutral-900 placeholder:text-neutral-500"
+              className="bg-white border-[rgb(var(--silver))] text-neutral-900 placeholder:text-neutral-500"
             />
           </div>
           <div className="space-y-2">
@@ -76,7 +76,7 @@ export default function SignUpForm() {
               name="password"
               type="password"
               required
-              className="bg-white border-neutral-300 text-neutral-900"
+              className="bg-white border-[rgb(var(--silver))] text-neutral-900"
             />
           </div>
         </div>

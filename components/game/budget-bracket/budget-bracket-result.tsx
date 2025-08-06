@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 import { useBudgetBracketShare } from "@/hooks/useGameShare"
-import type { BudgetBracketShareData } from "@/lib/sharing"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -74,24 +73,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   
   const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
   
-  // Use centralized sharing system - memoize to prevent infinite re-renders
-  const shareData: BudgetBracketShareData = useMemo(() => ({
-    rounds: result.revealed_pairs.map(pair => ({
-      round: pair.round,
-      correct: pair.correct,
-      timeMs: pair.time_taken_ms
-    })),
-    puzzle: {
-      puzzleNumber: puzzle.puzzle_number
-    },
-    result: {
-      isPerfectGame: result.is_perfect_game,
-      totalDurationMs: result.total_duration_ms,
-      roundsCompleted: result.rounds_completed
-    }
-  }), [result.revealed_pairs, puzzle.puzzle_number, result.is_perfect_game, result.total_duration_ms, result.rounds_completed])
-  
-  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useBudgetBracketShare(puzzle.id.toString())
+  const { shareText: centralizedShareText, fetchShare } = useBudgetBracketShare(puzzle.id.toString())
   
   // Generate share text on mount
   useEffect(() => {
@@ -352,7 +334,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+        <Card className="border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -515,7 +497,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
       >
-        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+        <Card className="border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center space-x-2">
               <span>🎭</span>
@@ -538,7 +520,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 (playedRound.chosen_movie === roundData.movieA.tmdb_id ? 'A' : 'B') : null
               
               return (
-                <div key={roundData.round} className={`border border-gray-300 shadow-3d-grey p-4 ${
+                <div key={roundData.round} className={`border border-[rgb(var(--silver))] shadow-3d-grey p-4 ${
                   !wasPlayed ? 'bg-muted/30 border-dashed' : ''
                 }`} style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
@@ -678,7 +660,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               const chosenMovie = roundData.chosen_movie === roundData.revealed_budgets.movieA.tmdb_id ? 'A' : 'B'
               
               return (
-                <div key={roundData.round} className="border border-gray-300 shadow-3d-grey p-4" style={{ borderRadius: 0 }}>
+                <div key={roundData.round} className="border border-[rgb(var(--silver))] shadow-3d-grey p-4" style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="secondary">Round {roundData.round}</Badge>
                     <div className="flex items-center gap-2">

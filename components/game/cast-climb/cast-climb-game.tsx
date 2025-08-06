@@ -789,7 +789,7 @@ export default function CastClimbGame() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Progress Visualization */}
               <div className="order-2 lg:order-1">
-                <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+                <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
                   <CastClimbProgress
                     totalActors={puzzle.actors.length}
                     revealedIndex={revealedIndex}
@@ -879,7 +879,7 @@ export default function CastClimbGame() {
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
-                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
+                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleNextHint} 
                     disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
                   >
@@ -887,7 +887,7 @@ export default function CastClimbGame() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
+                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleGiveUp} 
                     disabled={isGuessing}
                   >
@@ -999,7 +999,7 @@ export default function CastClimbGame() {
             </Card>
             
             {/* Progress Visualization - moved below results */}
-            <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+            <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
               <CastClimbProgress
                 totalActors={puzzle.actors.length}
                 revealedIndex={puzzle.actors.length - 1}

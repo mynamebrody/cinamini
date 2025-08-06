@@ -120,16 +120,12 @@ async function generateBudgetBracketServerShare(
       .single()
     
     if (game && game.choices) {
-      console.log('Budget Bracket server share - raw choices:', game.choices)
-      const mappedRounds = game.choices.map((choice: any) => ({
-        round: choice.round,
-        correct: choice.correct || false,
-        timeMs: choice.time_taken_ms || 0
-      }))
-      console.log('Budget Bracket server share - mapped rounds:', mappedRounds)
-      
       gameData = {
-        rounds: mappedRounds,
+        rounds: game.choices.map((choice: any) => ({
+          round: choice.round,
+          correct: choice.correct || false,
+          timeMs: choice.time_taken_ms || 0
+        })),
         puzzle: { puzzleNumber },
         result: {
           isPerfectGame: game.is_perfect_game,

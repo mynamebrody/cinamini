@@ -84,7 +84,7 @@ export function PosterPixelsClarityProgress({
   ]
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-lg border border-gray-300/50">
+    <div className="w-full max-w-2xl mx-auto bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-lg border border border-[rgb(var(--silver))]/50">
       {/* Art Studio Header */}
       <div className="text-center mb-6">
         <motion.div
@@ -263,7 +263,7 @@ export function PosterPixelsClarityProgress({
         <div className="flex items-center gap-3">
           <div className="relative">
             {/* Palette base */}
-            <div className="w-16 h-12 bg-white rounded-2xl border-2 border-gray-300 shadow-md relative">
+            <div className="w-16 h-12 bg-white rounded-2xl border-2 border border-[rgb(var(--silver))] shadow-md relative">
               {/* Paint colors arranged on palette */}
               {paletteColors.map((paint, index) => (
                 <motion.div
@@ -287,7 +287,7 @@ export function PosterPixelsClarityProgress({
               ))}
               
               {/* Palette thumb hole */}
-              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-gray-100 rounded-full border border-gray-300" />
+              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-3 h-4 bg-gray-100 rounded-full border border border-[rgb(var(--silver))]" />
             </div>
 
             {/* Animated brush */}
