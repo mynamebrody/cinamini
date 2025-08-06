@@ -52,7 +52,6 @@ export async function POST(request: NextRequest) {
       return acc
     }, [] as BudgetBracketMovie[])
 
-    console.log('Unique movies for enrichment:', uniqueMovies.map(m => ({ id: m.tmdb_id, title: m.title })))
 
     // Fetch budget details from TMDB for all movies (filter out any with undefined tmdb_id)
     const moviesForEnrichment = uniqueMovies
@@ -65,7 +64,6 @@ export async function POST(request: NextRequest) {
         popularity: m.popularity_score
       }))
 
-    console.log('Movies being sent to TMDB enrichment:', moviesForEnrichment)
     const enrichedMovies = await enrichMoviesWithDetails(moviesForEnrichment)
 
     // Create a lookup map for enriched movie data

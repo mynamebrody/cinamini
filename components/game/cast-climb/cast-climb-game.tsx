@@ -20,6 +20,8 @@ import { CastClimbProgress } from "./cast-climb-progress"
 import { CelebrationConfetti } from "./celebration-confetti"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
+import { useCastClimbShare } from "@/hooks/useGameShare"
+import type { CastClimbShareData } from "@/lib/sharing"
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -96,6 +98,9 @@ export default function CastClimbGame() {
   const [result, setResult] = useState<CastClimbResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
+  
+  // Centralized sharing system
+  const { shareText: centralizedShareText, fetchShare } = useCastClimbShare(puzzle?.id || '')
 
   // ============================================================================
   // EFFECTS AND DATA LOADING
@@ -106,6 +111,16 @@ export default function CastClimbGame() {
       loadTodaysPuzzle()
     }
   }, [authLoading])
+  
+  // Generate centralized share text when result is available
+  useEffect(() => {
+    if (result && puzzle && userGuesses.length > 0) {
+      fetchShare().catch((error) => {
+        console.log('Centralized sharing failed for Cast Climb:', error)
+        // Fallback handled by using result.share_text
+      })
+    }
+  }, [result, puzzle, userGuesses, fetchShare])
 
   // Elapsed time effect
   useEffect(() => {
@@ -167,7 +182,7 @@ export default function CastClimbGame() {
         
         if (userGuesses.length > 0) {
           isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
-          shareText = generateClientShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
+          shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
         } else {
           // No guesses found, but user has played - this shouldn't normally happen
           console.warn("User has played Cast Climb but no guesses found")
@@ -262,7 +277,7 @@ export default function CastClimbGame() {
               perfect_games: isCorrect && newGuesses.length === 1 ? 1 : 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateClientShareText(puzzle.puzzleNumber, newGuesses, isCorrect),
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect),
             game_completed: true
           }
           
@@ -372,7 +387,7 @@ export default function CastClimbGame() {
               perfect_games: 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateClientShareText(puzzle.puzzleNumber, newGuesses, false),
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false),
             game_completed: true
           }
           
@@ -478,7 +493,7 @@ export default function CastClimbGame() {
             perfect_games: 0,
             average_actors_revealed: maxAttempts
           },
-          share_text: generateClientShareText(puzzle.puzzleNumber, allGuesses, false),
+          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false),
           game_completed: true
         }
         
@@ -542,7 +557,7 @@ export default function CastClimbGame() {
           perfect_games: 0,
           average_actors_revealed: 0
         },
-        share_text: generateClientShareText(puzzle.puzzleNumber, userGuesses, false),
+        share_text: generateFallbackShareText(puzzle.puzzleNumber, userGuesses, false),
         game_completed: true
       })
       setGameState("completed")
@@ -555,7 +570,44 @@ export default function CastClimbGame() {
   // UTILITY FUNCTIONS
   // ============================================================================
 
-  const generateClientShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): string => {
+  // Helper function to generate CastClimbShareData
+  const generateShareData = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): CastClimbShareData => {
+    return {
+      guesses: guesses.map((guess, index) => ({
+        isCorrect: guess.isCorrect,
+        actorsRevealed: guess.actorsRevealed,
+        attemptNumber: guess.attemptNumber || index + 1
+      })),
+      puzzle: {
+        puzzleNumber
+      },
+      result: {
+        isWin,
+        totalGuesses: guesses.length
+      }
+    }
+  }
+  
+  // Helper function to use centralized sharing and fallback to client generation
+  const getShareText = async (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): Promise<string> => {
+    try {
+      if (puzzle && centralizedShareText) {
+        return centralizedShareText
+      }
+      
+      const shareData = generateShareData(puzzleNumber, guesses, isWin)
+      await generateShare(shareData)
+      
+      // Return centralized share text or fallback
+      return centralizedShareText || generateFallbackShareText(puzzleNumber, guesses, isWin)
+    } catch (error) {
+      console.error('Error generating share text:', error)
+      return generateFallbackShareText(puzzleNumber, guesses, isWin)
+    }
+  }
+  
+  // Fallback share text generation (matches original format)
+  const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): string => {
     let pattern = ''
     
     if (isWin) {
@@ -563,7 +615,7 @@ export default function CastClimbGame() {
       const incorrectAttempts = guesses.length - 1
       pattern = "❌".repeat(incorrectAttempts) + "✅"
     } else {
-      // All attempts were incorrect
+      // All attempts were incorrect  
       pattern = "❌".repeat(guesses.length)
     }
     
@@ -737,7 +789,7 @@ export default function CastClimbGame() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Progress Visualization */}
               <div className="order-2 lg:order-1">
-                <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+                <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
                   <CastClimbProgress
                     totalActors={puzzle.actors.length}
                     revealedIndex={revealedIndex}
@@ -827,7 +879,7 @@ export default function CastClimbGame() {
                 <div className="space-y-2">
                   <Button 
                     variant="outline" 
-                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
+                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleNextHint} 
                     disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
                   >
@@ -835,7 +887,7 @@ export default function CastClimbGame() {
                   </Button>
                   <Button 
                     variant="outline" 
-                    className="w-full border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
+                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
                     onClick={handleGiveUp} 
                     disabled={isGuessing}
                   >
@@ -940,14 +992,14 @@ export default function CastClimbGame() {
                   </p>
                 </div>
                 <ShareSection 
-                  shareText={result.share_text}
-                  shareUrl="https://cinamini.app"
+                  shareText={centralizedShareText || result.share_text}
+                  shareUrl="https://cinamini.app/game/cast-climb"
                 />
               </CardContent>
             </Card>
             
             {/* Progress Visualization - moved below results */}
-            <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+            <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
               <CastClimbProgress
                 totalActors={puzzle.actors.length}
                 revealedIndex={puzzle.actors.length - 1}

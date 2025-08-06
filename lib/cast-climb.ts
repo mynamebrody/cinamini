@@ -334,18 +334,29 @@ export function generateShareText(
   isWin: boolean
 ): string {
   let pattern = '';
+  let resultText = '';
   
   if (isWin) {
-    // Show pattern: ❌❌✅ (failed attempts then success)
+    // Show pattern: ❌❌✅🎭 (failed attempts then success, then remaining 🎭)
     const incorrectAttempts = guesses.length - 1;
+    const remainingActors = Math.max(0, CAST_CLIMB_CONFIG.ACTORS_TO_SHOW - guesses.length);
+    
     pattern = CAST_CLIMB_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(incorrectAttempts) + 
-              CAST_CLIMB_CONFIG.SHARE_EMOJIS.CORRECT;
+              CAST_CLIMB_CONFIG.SHARE_EMOJIS.CORRECT + 
+              '🎭'.repeat(remainingActors);
+              
+    if (guesses.length === 1) {
+      resultText = 'Got the 🎬 on the first try! 🥇';
+    } else {
+      resultText = `Got the 🎬 in ${guesses.length} guesses`;
+    }
   } else {
     // All failed attempts (❌❌❌❌ if exhausted all actors)
     pattern = CAST_CLIMB_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(guesses.length);
+    resultText = 'Was unable to guess the 🎬!';
   }
   
-  return `Cast Climb #${puzzleNumber} ${pattern}`;
+  return `Cast Climb #${puzzleNumber} ${pattern}\n${resultText}`;
 }
 
 /**

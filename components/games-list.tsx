@@ -141,7 +141,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 })}
               </p>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0">
-                The Daily Cinema Games
+                Today's Cinema Games
               </h1>
               <p className="text-base md:text-lg text-neutral-600 mt-3 md:mt-4 font-funnel max-w-2xl mx-auto px-4 md:px-0">
                 Four movie puzzles, updated daily. Can you solve them all?

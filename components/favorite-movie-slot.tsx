@@ -45,7 +45,7 @@ export function FavoriteMovieSlot({
           "hover:bg-gray-100",
           "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
           isDragOver && "border-primary bg-primary/10 scale-105",
-          "border-gray-300"
+          "border border-[rgb(var(--silver))]"
         )}
         style={{ borderRadius: 0 }}
         aria-label={`Add movie to position ${position}`}

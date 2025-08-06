@@ -220,7 +220,7 @@ export default function BudgetBracketRound({
           animate={{ scale: 1 }}
           transition={{ type: "spring" }}
         >
-          <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border-gray-300">
+          <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border border-[rgb(var(--silver))]">
             🎬 Round {round} of 5 🏢
           </Badge>
         </motion.div>
@@ -301,7 +301,7 @@ export default function BudgetBracketRound({
                   : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
                     ? 'border-2 border-green-500 bg-green-50'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-[rgb(153,37,29)]'
+                : 'border-2 border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)]'
             }`}
             onClick={() => handleMovieChoice('A')}
           >
@@ -386,7 +386,7 @@ export default function BudgetBracketRound({
                   : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
                     ? 'border-2 border-green-500 bg-green-50'
                     : 'opacity-60 grayscale'
-                : 'border-2 border-gray-300 hover:border-[rgb(153,37,29)]'
+                : 'border-2 border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)]'
             }`}
             onClick={() => handleMovieChoice('B')}
           >
@@ -520,7 +520,7 @@ export default function BudgetBracketRound({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-sm text-muted-foreground bg-gray-50 p-2 border border-gray-300 shadow-3d-grey"
+              className="text-sm text-muted-foreground bg-gray-50 p-2 border border border-[rgb(var(--silver))] shadow-3d-grey"
             >
               <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
             </motion.div>

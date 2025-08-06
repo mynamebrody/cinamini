@@ -406,42 +406,31 @@ export function validatePuzzleData(puzzle: any): puzzle is PosterPixelsPuzzle {
  */
 export function getPosterPixelsShareText(
   puzzle: PosterPixelsPuzzle,
-  attempts: PosterPixelsGuess[]
+  attempts: PosterPixelsGuess[],
+  timedOut: boolean = false
 ): string {
   let pattern = '';
-  let finalScore = 0;
-  let clarityWon: ClarityLevel | null = null;
+  let resultText = '';
   
-  if (attempts.length === 0) {
-    pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(POSTER_PIXELS_CONFIG.MAX_ATTEMPTS);
+  if (attempts.length === 0 || timedOut) {
+    // No attempts made or timed out
+    pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT;
+    resultText = timedOut ? 'Ran out of time! ⌛' : 'Did not guess';
   } else {
     const lastAttempt = attempts[attempts.length - 1];
-    finalScore = lastAttempt.score;
+    const clarityWon = getCurrentClarityLevel(attempts.length);
+    const solveTimeSeconds = lastAttempt.solve_time_ms ? Math.round(lastAttempt.solve_time_ms / 1000) : 0;
     
     if (lastAttempt.is_correct) {
-      // Show pattern: ❌❌✅ (failed attempts then success)
-      const incorrectAttempts = attempts.length - 1;
-      pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(incorrectAttempts) + 
-                POSTER_PIXELS_CONFIG.SHARE_EMOJIS.CORRECT;
-      clarityWon = getCurrentClarityLevel(attempts.length);
+      pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.CORRECT;
+      resultText = `Guessed at ${clarityWon}% clarity in ${solveTimeSeconds}s 🖼️`;
     } else {
-      // All failed attempts
-      pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(attempts.length);
+      pattern = POSTER_PIXELS_CONFIG.SHARE_EMOJIS.INCORRECT;
+      resultText = `Guessed at ${clarityWon}% clarity in ${solveTimeSeconds}s`;
     }
   }
   
-  let shareText = `Poster Pixels #${puzzle.puzzle_number} ${pattern}`;
-  
-  if (finalScore > 0) {
-    shareText += `\n${finalScore} points`;
-    if (clarityWon) {
-      shareText += ` (${clarityWon}% clarity)`;
-    }
-    }
-
-  shareText += `\nhttps://cinamini.app`;
-
-  return shareText;
+  return `Poster Pixels #${puzzle.puzzle_number} ${pattern}\n${resultText}`;
 }
 
 /**

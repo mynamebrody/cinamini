@@ -34,7 +34,7 @@ export default async function StatsPage() {
       {/* Header */}
       <header className="border-b border-neutral-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
               <a href="/" className="text-neutral-900 hover:text-neutral-600 transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -42,6 +42,7 @@ export default async function StatsPage() {
               </a>
             </Button>
             <h1 className="text-xl font-bold text-neutral-900 font-funnel-display-bold">Your Statistics</h1>
+            <div className="w-[120px]"></div> {/* Spacer to center the title */}
           </div>
         </div>
       </header>
@@ -51,7 +52,6 @@ export default async function StatsPage() {
         <div className="space-y-6">
           {/* Page Header */}
           <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-neutral-900">Game Statistics</h2>
             <p className="text-neutral-600">Track your progress across all cinamini games</p>
           </div>
 

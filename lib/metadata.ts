@@ -6,7 +6,7 @@ export const siteConfig = {
   name: "cinamini",
   description: "Daily movie puzzle games for cinema enthusiasts. Test your film knowledge with Retitled, Budget Bracket, and more!",
   url: BASE_URL,
-  ogImage: `${BASE_URL}/og-images/homepage.png`,
+  ogImage: `${BASE_URL}/og-images/homepage.jpg`,
   keywords: "movie games, daily puzzles, film trivia, cinema games, movie challenges",
   authors: [{ name: "cinamini Team" }],
 }
@@ -15,25 +15,25 @@ export const gameMetadata = {
   retitled: {
     title: "Retitled - Daily Movie Title Puzzle",
     description: "Can you guess the movie from its reimagined title? Play Retitled, the daily movie title puzzle game!",
-    ogImage: `${BASE_URL}/og-images/retitled.png`,
+    ogImage: `${BASE_URL}/og-images/retitled.jpg`,
     ogImageAlt: `${BASE_URL}/api/og?game=retitled`,
   },
   "budget-bracket": {
     title: "Budget Bracket - Movie Budget Guessing Game",
     description: "Test your knowledge of movie budgets! Compare and guess which films cost more to make.",
-    ogImage: `${BASE_URL}/og-images/budget-bracket.png`,
+    ogImage: `${BASE_URL}/og-images/budget-bracket.jpg`,
     ogImageAlt: `${BASE_URL}/api/og?game=budget-bracket`,
   },
   "cast-climb": {
     title: "Cast Climb - Actor Connection Puzzle",
     description: "Connect actors through their shared movies. Challenge yourself with Cast Climb!",
-    ogImage: `${BASE_URL}/og-images/cast-climb.png`,
+    ogImage: `${BASE_URL}/og-images/cast-climb.jpg`,
     ogImageAlt: `${BASE_URL}/api/og?game=cast-climb`,
   },
   "poster-pixels": {
     title: "Poster Pixels - Movie Poster Recognition",
     description: "Can you identify the movie from a pixelated poster? Test your visual memory!",
-    ogImage: `${BASE_URL}/og-images/poster-pixels.png`,
+    ogImage: `${BASE_URL}/og-images/poster-pixels.jpg`,
     ogImageAlt: `${BASE_URL}/api/og?game=poster-pixels`,
   },
 }

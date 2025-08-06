@@ -166,7 +166,7 @@ export default function ResetPasswordForm() {
               type="password"
               required
               minLength={6}
-              className="bg-white border-neutral-300 text-neutral-900"
+              className="bg-white border-[rgb(var(--silver))] text-neutral-900"
               placeholder="At least 6 characters"
             />
           </div>
@@ -181,7 +181,7 @@ export default function ResetPasswordForm() {
               type="password"
               required
               minLength={6}
-              className="bg-white border-neutral-300 text-neutral-900"
+              className="bg-white border-[rgb(var(--silver))] text-neutral-900"
               placeholder="Enter password again"
             />
           </div>

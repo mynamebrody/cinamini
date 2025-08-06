@@ -1,13 +1,17 @@
 "use client"
 
+import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Trophy, Clock, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { usePosterPixelsShare } from "@/hooks/useGameShare"
+import type { PosterPixelsShareData } from "@/lib/sharing"
 
 interface PosterPixelsResultProps {
+  puzzleId: string
   puzzleNumber: number
   won: boolean
   timeElapsed: number
@@ -21,9 +25,12 @@ interface PosterPixelsResultProps {
     isCorrect: boolean
     clarityLevel: number
   }>
+  timedOut?: boolean
+  finalScore?: number
 }
 
 export default function PosterPixelsResult({ 
+  puzzleId,
   puzzleNumber,
   won, 
   timeElapsed, 
@@ -31,7 +38,9 @@ export default function PosterPixelsResult({
   movieTitle, 
   movieYear,
   moviePosterUrl,
-  guesses 
+  guesses,
+  timedOut = false,
+  finalScore = 0
 }: PosterPixelsResultProps) {
   const formatTime = (seconds: number) => {
     const secs = Math.floor(seconds)
@@ -42,16 +51,50 @@ export default function PosterPixelsResult({
     return `${Math.round(clarity * 100)}%`
   }
 
-  const generateShareText = () => {
+  // Use centralized sharing system - memoize to prevent infinite re-renders
+  const shareData: PosterPixelsShareData = useMemo(() => ({
+    attempts: guesses.map((guess, index) => ({
+      guessMovieId: guess.movieId,
+      guessMovieTitle: guess.movieTitle,
+      isCorrect: guess.isCorrect,
+      clarityLevel: guess.clarityLevel,
+      solveTimeMs: timeElapsed * 1000 // Convert to milliseconds
+    })),
+    puzzle: {
+      puzzleNumber
+    },
+    result: {
+      isWin: won,
+      finalScore,
+      timedOut
+    }
+  }), [guesses, puzzleNumber, won, finalScore, timedOut, timeElapsed])
+  
+  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = usePosterPixelsShare(puzzleId)
+  
+  // Generate share text on mount
+  useEffect(() => {
+    fetchShare().catch((error) => {
+      console.log('Centralized sharing failed for Poster Pixels:', error)
+      // Fallback handled by using generateFallbackShareText()
+    })
+  }, [fetchShare])
+  
+  // Fallback share text function for loading states or errors
+  function generateFallbackShareText(): string {
     const result = won ? "✅" : "❌"
     const clarity = formatClarity(clarityLevel)
     const time = formatTime(timeElapsed)
     
     // Check if time ran out (game duration is 30 seconds)
-    const ranOutOfTime = !won && timeElapsed >= 29.5 // Allow small margin for timing
+    const ranOutOfTime = timedOut || (!won && timeElapsed >= 29.5) // Allow small margin for timing
     
     if (ranOutOfTime) {
-      return `Poster Pixels #${puzzleNumber} ${result}\nRan out of time!`
+      return `Poster Pixels #${puzzleNumber} ${result}\nRan out of time! ⌛`
+    }
+    
+    if (won) {
+      return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time} 🖼️`
     }
     
     return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time}`
@@ -167,8 +210,8 @@ export default function PosterPixelsResult({
             </div>
             
             <ShareSection 
-              shareText={generateShareText()}
-              shareUrl="https://cinamini.app"
+              shareText={centralizedShareText || generateFallbackShareText()}
+              shareUrl="https://cinamini.app/game/poster-pixels"
             />
           </div>
         </CardContent>

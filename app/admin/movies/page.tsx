@@ -233,7 +233,7 @@ export default function AdminMovieSearch() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && searchMovies()}
             placeholder="Search for movies..."
-            className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cinema-red focus:border-cinema-red transition-all duration-200 group-hover:border-gray-300"
+            className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cinema-red focus:border-cinema-red transition-all duration-200 group-hover:border border-[rgb(var(--silver))]"
           />
           <button
             onClick={searchMovies}

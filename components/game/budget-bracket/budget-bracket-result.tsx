@@ -15,6 +15,7 @@ import {
   Star
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
+import { useBudgetBracketShare } from "@/hooks/useGameShare"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -70,8 +71,18 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   const [loadingAnswers, setLoadingAnswers] = useState(true)
   const [showCelebration, setShowCelebration] = useState(false)
   
-  const shareText = generateShareText()
   const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
+  
+  const { shareText: centralizedShareText, fetchShare } = useBudgetBracketShare(puzzle.id.toString())
+  
+  // Generate share text on mount
+  useEffect(() => {
+    fetchShare().catch((error) => {
+      console.log('Centralized sharing failed for Budget Bracket:', error)
+      // Fallback handled by ShareSection using generateFallbackShareText()
+    })
+  }, [fetchShare])
+  
   // Sum the box office (budget) of all correct answers
   // Use allRoundsData if available (for anonymous users and better accuracy), otherwise use result data
   const totalBudgetMastered = useMemo(() => {
@@ -114,7 +125,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     fetchAllAnswers()
   }, [])
   
-  function generateShareText(): string {
+  // Fallback share text function for loading states or errors
+  function generateFallbackShareText(): string {
     const choices: GameChoice[] = result.revealed_pairs.map(pair => ({
       round: pair.round,
       chosen_movie: pair.chosen_movie,
@@ -123,13 +135,15 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     }))
 
     const pattern = generateSharePattern(choices)
+    const timeText = `${Math.round(result.total_duration_ms / 1000)}s`
     
-    const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
-    let resultText = result.is_perfect_game 
-      ? "Perfect Producer! 🎬" 
-      : `${correctAnswers}/5 correct`
-    
-    return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${resultText} • ${Math.round(result.total_duration_ms / 1000)}s`
+    if (result.is_perfect_game) {
+      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
+    } else if (correctAnswers === 0) {
+      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
+    } else {
+      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`
+    }
   }
 
   const formatTime = (ms: number) => {
@@ -320,7 +334,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+        <Card className="border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -464,7 +478,12 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               </div>
               
               <ShareSection 
-                shareText={shareText}
+                shareText={
+                  // Prefer local data if centralized sharing returns wrong data (0/5 when we have correct answers)
+                  (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
+                    ? centralizedShareText 
+                    : generateFallbackShareText()
+                }
                 shareUrl="https://cinamini.app/game/budget-bracket"
               />
             </motion.div>
@@ -478,7 +497,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.6 }}
       >
-        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+        <Card className="border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader>
             <CardTitle className="text-lg flex items-center space-x-2">
               <span>🎭</span>
@@ -501,7 +520,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 (playedRound.chosen_movie === roundData.movieA.tmdb_id ? 'A' : 'B') : null
               
               return (
-                <div key={roundData.round} className={`border border-gray-300 shadow-3d-grey p-4 ${
+                <div key={roundData.round} className={`border border-[rgb(var(--silver))] shadow-3d-grey p-4 ${
                   !wasPlayed ? 'bg-muted/30 border-dashed' : ''
                 }`} style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
@@ -641,7 +660,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               const chosenMovie = roundData.chosen_movie === roundData.revealed_budgets.movieA.tmdb_id ? 'A' : 'B'
               
               return (
-                <div key={roundData.round} className="border border-gray-300 shadow-3d-grey p-4" style={{ borderRadius: 0 }}>
+                <div key={roundData.round} className="border border-[rgb(var(--silver))] shadow-3d-grey p-4" style={{ borderRadius: 0 }}>
                   <div className="flex items-center justify-between mb-3">
                     <Badge variant="secondary">Round {roundData.round}</Badge>
                     <div className="flex items-center gap-2">

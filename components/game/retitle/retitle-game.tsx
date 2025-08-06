@@ -55,6 +55,7 @@ export default function RetitleGame() {
   const [modalState, setModalState] = useState<ModalState>('none')
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null)
   const [startTime, setStartTime] = useState<number>(0)
+  const [solveTimeMs, setSolveTimeMs] = useState<number>(0)
   const [result, setResult] = useState<GuessResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
@@ -207,7 +208,8 @@ export default function RetitleGame() {
   const handleGuess = async (guessFilmId: number) => {
     if (!puzzle) return
 
-    const solveTimeMs = Date.now() - startTime
+    const currentSolveTime = Date.now() - startTime
+    setSolveTimeMs(currentSolveTime)
 
     try {
       if (isAnonymous) {
@@ -220,7 +222,7 @@ export default function RetitleGame() {
           body: JSON.stringify({
             puzzleId: puzzle.id,
             guessFilmId,
-            solveTimeMs
+            solveTimeMs: currentSolveTime
           })
         })
 
@@ -246,7 +248,7 @@ export default function RetitleGame() {
           body: JSON.stringify({
             puzzleId: puzzle.id,
             guessFilmId,
-            solveTimeMs
+            solveTimeMs: currentSolveTime
           })
         })
 
@@ -453,6 +455,8 @@ export default function RetitleGame() {
             <RetitleResult 
               result={result} 
               puzzleId={puzzle?.id || ""}
+              puzzleNumber={puzzle?.puzzleNumber || 0}
+              solveTimeMs={solveTimeMs}
             />
             
             {/* More Puzzles Section */}

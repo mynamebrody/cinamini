@@ -36,7 +36,7 @@ export default async function ProfilePage({
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-neutral-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-[rgb(var(--silver))] bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" asChild>

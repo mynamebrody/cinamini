@@ -10,15 +10,15 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://cinamini.app"
 export function getOGImageUrl(imageName: string, gameName?: string): string {
   // In production, always use the defined paths
   if (process.env.NODE_ENV === 'production') {
-    return `${BASE_URL}/og-images/${imageName}.png`
+    return `${BASE_URL}/og-images/${imageName}.jpg`
   }
   
   // In development, check if static file exists
-  const staticPath = path.join(process.cwd(), 'public', 'og-images', `${imageName}.png`)
+  const staticPath = path.join(process.cwd(), 'public', 'og-images', `${imageName}.jpg`)
   const staticExists = fs.existsSync(staticPath)
   
   if (staticExists) {
-    return `${BASE_URL}/og-images/${imageName}.png`
+    return `${BASE_URL}/og-images/${imageName}.jpg`
   }
   
   // Check for SVG fallback

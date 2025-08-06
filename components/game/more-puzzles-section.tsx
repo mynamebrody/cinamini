@@ -68,7 +68,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
 
   return (
     <div className="w-full mt-6">
-      <Card className="bg-white border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
+      <Card className="bg-white border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
         <CardHeader className="text-center">
           <CardTitle className="text-lg font-bold text-gray-800">
             More Puzzles
@@ -82,7 +82,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
               return (
                 <div
                   key={game.id}
-                  className="flex items-center justify-between p-3 bg-white border border-gray-300 shadow-3d-grey"
+                  className="flex items-center justify-between p-3 bg-white border border-[rgb(var(--silver))] shadow-3d-grey"
                   style={{ borderRadius: 0 }}
                 >
                   <div className="flex items-center gap-3">
@@ -101,8 +101,8 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
                       variant={hasPlayed ? "outline" : "default"}
                       className={
                         hasPlayed
-                          ? "border-gray-300 hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]"
-                          : "bg-[rgb(153,37,29)] hover:bg-[rgb(122,29,22)] text-white"
+                          ? "border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]"
+                          : "bg-[rgb(153,37,29)] hover:bg-white hover:text-[rgb(153,37,29)] text-white border border-[rgb(153,37,29)]"
                       }
                     >
                       {hasPlayed ? "Results" : "Play"}

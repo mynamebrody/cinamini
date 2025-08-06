@@ -742,7 +742,7 @@ export default function PosterPixelsGame() {
             <div className="flex justify-center">
               <canvas
                 ref={canvasRef}
-                className="border border-gray-300 shadow-3d-grey"
+                className="border border-[rgb(var(--silver))] shadow-3d-grey"
                 width={300}
                 height={450}
                 style={{ borderRadius: 0 }}
@@ -750,7 +750,7 @@ export default function PosterPixelsGame() {
             </div>
 
             {/* Search Card */}
-            <Card className="border border-gray-300 shadow-3d-grey mb-40" style={{ borderRadius: 0 }}>
+            <Card className="border border-[rgb(var(--silver))] shadow-3d-grey mb-40" style={{ borderRadius: 0 }}>
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="text-center mb-4">

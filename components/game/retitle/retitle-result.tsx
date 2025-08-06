@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
@@ -8,6 +8,8 @@ import { Check, X, Flame } from "lucide-react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useRetitledShare } from "@/hooks/useGameShare"
+import type { RetitledShareData } from "@/lib/sharing"
 
 interface GuessResult {
   correct: boolean
@@ -35,43 +37,64 @@ interface GuessResult {
 interface RetitleResultProps {
   result: GuessResult
   puzzleId: string
+  puzzleNumber: number
+  solveTimeMs?: number
 }
 
-export default function RetitleResult({ result, puzzleId }: RetitleResultProps) {
+export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTimeMs = 0 }: RetitleResultProps) {
   const [shareText, setShareText] = useState<string | null>(null)
   const [loadingShare, setLoadingShare] = useState(true)
   
+  // Use centralized sharing system - memoize to prevent infinite re-renders
+  const shareData: RetitledShareData = useMemo(() => ({
+    guess: {
+      isCorrect: result.correct,
+      solveTimeMs
+    },
+    puzzle: {
+      puzzleNumber,
+      countryCode: result.puzzle?.countryCode || 'US',
+      localizedTitle: result.puzzle?.localizedTitle || ''
+    }
+  }), [result.correct, solveTimeMs, puzzleNumber, result.puzzle?.countryCode, result.puzzle?.localizedTitle])
+  
+  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId)
+  
   const generateFallbackShareText = () => {
-    const resultEmoji = result.correct ? "🟩" : "🟥"
-    const flagEmoji = result.puzzle?.flagEmoji || "🎬"
-    return `Retitled ${flagEmoji} ${resultEmoji}⬜⬜⬜`
+    const resultEmoji = result.correct ? "✅" : "❌"
+    const flagEmoji = result.puzzle?.flagEmoji || "🏳️"
+    return `Retitled ${flagEmoji} • ${resultEmoji}`
   }
 
   useEffect(() => {
-    // Fetch share text when component mounts
-    const fetchShareText = async () => {
-      try {
-        const response = await fetch(`/api/retitled/share/${puzzleId}`)
-        
-        if (!response.ok) {
-          // If API fails (e.g., for anonymous users), use fallback
-          setShareText(generateFallbackShareText())
-          return
-        }
-        
-        const { shareText } = await response.json()
-        setShareText(shareText)
-      } catch (err) {
-        console.error("Error fetching share text:", err)
-        // Use fallback instead of showing error for anonymous users
+    // Try centralized sharing first, fallback to legacy API if it fails
+    fetchShare().catch(() => {
+      console.log('Centralized sharing failed, falling back to legacy API')
+      fetchLegacyShareText()
+    })
+  }, [fetchShare])
+  
+  // Fallback to legacy share API if centralized system fails
+  const fetchLegacyShareText = async () => {
+    try {
+      const response = await fetch(`/api/retitled/share/${puzzleId}`)
+      
+      if (!response.ok) {
+        // If API fails (e.g., for anonymous users), use fallback
         setShareText(generateFallbackShareText())
-      } finally {
-        setLoadingShare(false)
+        return
       }
+      
+      const { shareText } = await response.json()
+      setShareText(shareText)
+    } catch (err) {
+      console.error("Error fetching share text:", err)
+      // Use fallback instead of showing error for anonymous users
+      setShareText(generateFallbackShareText())
+    } finally {
+      setLoadingShare(false)
     }
-
-    fetchShareText()
-  }, [puzzleId])
+  }
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -145,6 +168,11 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
               <div className="text-center border-b border-dashed border-gray-400 pb-2">
                 <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
+              <div className="text-center border-b border-dashed border-gray-400 pb-2 mt-2">
+                <div className="text-xs font-mono text-muted-foreground">
+                  Retitled #{puzzleNumber}
+                </div>
+              </div>
               
               {/* Destination info */}
               <div className="flex items-center justify-center gap-3">
@@ -205,8 +233,8 @@ export default function RetitleResult({ result, puzzleId }: RetitleResultProps) 
       {/* Actions */}
       <div className="space-y-3">
         <ShareSection 
-          shareText={shareText || generateFallbackShareText()}
-          shareUrl="https://cinamini.app"
+          shareText={centralizedShareText || shareText || generateFallbackShareText()}
+          shareUrl="https://cinamini.app/game/retitled"
         />
         
         <div className="text-center space-y-2">
