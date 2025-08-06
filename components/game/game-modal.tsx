@@ -87,7 +87,7 @@ interface GameModalHeaderProps {
 
 export function GameModalHeader({ children, className }: GameModalHeaderProps) {
   return (
-    <div className={cn("px-6 pt-6 pb-4 border-b border-neutral-200", className)}>
+    <div className={cn("px-5 pt-4 pb-3 border-b border-neutral-200", className)}>
       {children}
     </div>
   )
@@ -100,7 +100,7 @@ interface GameModalTitleProps {
 
 export function GameModalTitle({ children, className }: GameModalTitleProps) {
   return (
-    <h2 className={cn("text-2xl font-bold text-center", className)}>
+    <h2 className={cn("text-xl font-bold text-center", className)}>
       {children}
     </h2>
   )
@@ -113,7 +113,7 @@ interface GameModalBodyProps {
 
 export function GameModalBody({ children, className }: GameModalBodyProps) {
   return (
-    <div className={cn("px-6 py-4 overflow-y-auto max-h-[70vh]", className)}>
+    <div className={cn("px-5 py-4 overflow-y-auto max-h-[70vh]", className)}>
       {children}
     </div>
   )
@@ -126,7 +126,7 @@ interface GameModalFooterProps {
 
 export function GameModalFooter({ children, className }: GameModalFooterProps) {
   return (
-    <div className={cn("px-6 py-4 border-t border-neutral-200", className)}>
+    <div className={cn("px-5 py-3 border-t border-neutral-200", className)}>
       {children}
     </div>
   )
