@@ -16,6 +16,7 @@ import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 import { PosterPixelsClarityProgress } from "./poster-pixels-clarity-progress"
 import { PosterPixelsArtGalleryCelebration } from "./poster-pixels-art-gallery-celebration"
+import { MorePuzzlesSection } from "../more-puzzles-section"
 
 interface MovieData {
   id?: number
@@ -807,6 +808,13 @@ export default function PosterPixelsGame() {
             }
             guesses={state.guesses}
           />
+        )}
+        
+        {gameState === 'completed' && (
+          <div className="max-w-md mx-auto mt-6">
+            {/* More Puzzles Section */}
+            <MorePuzzlesSection currentGameId="poster-pixels" />
+          </div>
         )}
       </main>
     </div>

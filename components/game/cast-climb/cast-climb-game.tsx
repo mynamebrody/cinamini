@@ -13,6 +13,7 @@ import { GameLanding } from "../game-landing"
 import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { ShareSection } from "../share-section"
+import { MorePuzzlesSection } from "../more-puzzles-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
@@ -850,18 +851,6 @@ export default function CastClimbGame() {
 
         {gameState === "completed" && result && puzzle && (
           <div className="max-w-4xl mx-auto space-y-4">
-            {/* Progress Visualization */}
-            <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4 mb-6" style={{ borderRadius: 0 }}>
-              <CastClimbProgress
-                totalActors={puzzle.actors.length}
-                revealedIndex={puzzle.actors.length - 1}
-                userGuesses={result.user_guesses}
-                gameCompleted={true}
-                isCorrect={result.correct}
-                actors={puzzle.actors}
-              />
-            </div>
-            
             <div className="max-w-md mx-auto space-y-4">
             <Card>
               <CardHeader className="text-center">
@@ -956,6 +945,22 @@ export default function CastClimbGame() {
                 />
               </CardContent>
             </Card>
+            
+            {/* Progress Visualization - moved below results */}
+            <div className="shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)] bg-white border border-gray-300 p-4" style={{ borderRadius: 0 }}>
+              <CastClimbProgress
+                totalActors={puzzle.actors.length}
+                revealedIndex={puzzle.actors.length - 1}
+                userGuesses={result.user_guesses}
+                gameCompleted={true}
+                isCorrect={result.correct}
+                actors={puzzle.actors}
+              />
+            </div>
+            
+            {/* More Puzzles Section */}
+            <MorePuzzlesSection currentGameId="cast-climb" />
+            
             {isAnonymous && (
               <AnonymousResultNudge 
                 gameResult={result}
