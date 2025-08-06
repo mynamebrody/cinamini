@@ -291,7 +291,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   )
 
   return (
-    <div className="space-y-6 relative overflow-hidden">
+    <div className="space-y-4 relative">
       
       {/* Celebration Effects */}
       <AnimatePresence>
@@ -320,7 +320,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className={result.is_perfect_game ? "border-2 border-yellow-400 shadow-3d-gold" : "border-2 border-gray-300 shadow-3d-grey"} style={{ borderRadius: 0 }}>
+        <Card className="border border-gray-300 shadow-3d-grey" style={{ borderRadius: 0 }}>
           <CardHeader className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -408,7 +408,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="bg-gradient-to-b from-blue-50 to-blue-100 p-3 border border-blue-200 shadow-3d-blue"
+                className="bg-gradient-to-b from-blue-50 to-blue-100 p-3 border border-blue-300 shadow-3d-blue"
                 style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-blue-700">
@@ -420,7 +420,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5 }}
-                className="bg-gradient-to-b from-purple-50 to-purple-100 p-3 border border-purple-200 shadow-3d-purple"
+                className="bg-gradient-to-b from-purple-50 to-purple-100 p-3 border border-purple-300 shadow-3d-purple"
                 style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-purple-700">{formatTime(result.total_duration_ms)}</div>
@@ -430,7 +430,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="bg-gradient-to-b from-orange-50 to-orange-100 p-3 border border-orange-200 shadow-3d-orange"
+                className="bg-gradient-to-b from-orange-50 to-orange-100 p-3 border border-orange-300 shadow-3d-orange"
                 style={{ borderRadius: 0 }}
               >
                 <div className="text-3xl font-bold text-orange-700">
@@ -536,10 +536,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                       !wasPlayed ? 'bg-muted/20' :
                       chosenMovie === 'A' 
                         ? playedRound?.correct 
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
+                          : 'bg-red-50 border border-red-200 shadow-3d-red'
                         : roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
-                          ? 'bg-green-50 border border-green-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
                       <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
@@ -576,10 +576,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                       !wasPlayed ? 'bg-muted/20' :
                       chosenMovie === 'B' 
                         ? playedRound?.correct 
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
+                          : 'bg-red-50 border border-red-200 shadow-3d-red'
                         : roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
-                          ? 'bg-green-50 border border-green-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
                       <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
@@ -662,10 +662,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     <div className={`text-center p-2 ${
                       chosenMovie === 'A' 
                         ? roundData.correct 
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
+                          : 'bg-red-50 border border-red-200 shadow-3d-red'
                         : roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
-                          ? 'bg-green-50 border border-green-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
                       <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
@@ -696,10 +696,10 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     <div className={`text-center p-2 ${
                       chosenMovie === 'B' 
                         ? roundData.correct 
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-red-50 border border-red-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
+                          : 'bg-red-50 border border-red-200 shadow-3d-red'
                         : roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
-                          ? 'bg-green-50 border border-green-200'
+                          ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
                       <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
