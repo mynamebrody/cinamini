@@ -230,7 +230,7 @@ export default function ProfileForm() {
             <Button 
               onClick={fetchProfile} 
               variant="outline" 
-              className="mt-4 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="mt-4"
             >
               Try Again
             </Button>
@@ -244,7 +244,7 @@ export default function ProfileForm() {
     <>
       <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="text-gray-900 flex items-center gap-2">
+          <CardTitle className="text-gray-900 flex items-center gap-2 font-funnel-display-bold">
             <User className="h-5 w-5" />
             Account Information
           </CardTitle>
@@ -336,7 +336,7 @@ export default function ProfileForm() {
                 <Button
                   onClick={handleSave}
                   disabled={!!validationError || isSaving || !editedUsername.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="default"
                 >
                   {isSaving ? (
                     <>
@@ -354,7 +354,6 @@ export default function ProfileForm() {
                   onClick={handleCancel}
                   variant="outline"
                   disabled={isSaving}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -373,7 +372,6 @@ export default function ProfileForm() {
                   onClick={handleEdit}
                   variant="outline"
                   size="sm"
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   <Edit2 className="h-4 w-4 mr-1" />
                   Edit
@@ -389,27 +387,17 @@ export default function ProfileForm() {
           )}
           
           <p className="text-xs text-gray-500">
-            Your username is visible to other users and can be changed up to 5 times per hour.
+            Your username can be visible to other users.
           </p>
         </div>
 
         {/* Account Details */}
         <div className="pt-4 border-t border-gray-200 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Account Details</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-600">
             <div>
               <span className="font-medium">Member since:</span>
               <br />
               {new Date(profile.createdAt).toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </div>
-            <div>
-              <span className="font-medium">Last updated:</span>
-              <br />
-              {new Date(profile.updatedAt).toLocaleDateString(undefined, {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
@@ -423,7 +411,7 @@ export default function ProfileForm() {
     {/* Favorite Films Section */}
     <Card className="mt-6 bg-white border-gray-200">
       <CardHeader>
-        <CardTitle className="text-gray-900">Favorite Films</CardTitle>
+        <CardTitle className="text-gray-900 font-funnel-display-bold">Favorite Films</CardTitle>
       </CardHeader>
       <CardContent>
         <FavoriteFilmsSection />

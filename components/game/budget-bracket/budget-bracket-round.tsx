@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
-import { Clock, DollarSign } from "lucide-react"
+import { Clock, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -70,6 +71,7 @@ export default function BudgetBracketRound({
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
   const [roundStartTime, setRoundStartTime] = useState<number>(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
   const [showingFeedback, setShowingFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [budgetA, setBudgetA] = useState<number | null>(null)
@@ -88,7 +90,16 @@ export default function BudgetBracketRound({
     setBudgetB(null)
     setReleaseDateA(null)
     setReleaseDateB(null)
+    setElapsedTime(0)
   }, [round])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - roundStartTime) / 1000))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [roundStartTime])
 
   const handleMovieChoice = async (movie: 'A' | 'B') => {
     if (hasChosen) return
@@ -98,6 +109,11 @@ export default function BudgetBracketRound({
 
     setHasChosen(true)
     setChosenMovie(movie)
+    
+    // Add haptic feedback for mobile
+    if (navigator.vibrate) {
+      navigator.vibrate(50)
+    }
 
     // Fetch budget information to show feedback
     try {
@@ -129,6 +145,13 @@ export default function BudgetBracketRound({
         
         setIsCorrect(correct)
         setShowingFeedback(true)
+        
+        // Celebration vibration for correct answers
+        if (correct && navigator.vibrate) {
+          navigator.vibrate([100, 50, 100, 50, 200])
+        } else if (!correct && navigator.vibrate) {
+          navigator.vibrate([200])
+        }
       }
     } catch (error) {
       console.error('Error fetching budget data:', error)
@@ -149,6 +172,12 @@ export default function BudgetBracketRound({
     }).format(budget)
     
     return isEstimated ? `${formatted} est.` : formatted
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   const getMovieYear = (releaseDate: string | undefined | null) => {
@@ -178,12 +207,23 @@ export default function BudgetBracketRound({
   }
 
   return (
-    <div className="space-y-4">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-4"
+    >
       {/* Round indicator with progress dots */}
       <div className="text-center space-y-3">
-        <Badge variant="secondary" className="text-lg px-4 py-2">
-          Round {round} of 5
-        </Badge>
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: "spring" }}
+        >
+          <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border-gray-300">
+            🎬 Round {round} of 5 🏢
+          </Badge>
+        </motion.div>
         
         {/* Progress indicator */}
         <div className="flex justify-center space-x-2">
@@ -215,31 +255,46 @@ export default function BudgetBracketRound({
         </div>
         
         {!hasChosen && (
-          <p className="text-sm text-muted-foreground">
-            Which movie had a higher production budget?
-          </p>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-sm text-muted-foreground flex items-center justify-center space-x-1"
+          >
+            <span>💰</span>
+            <span>Which movie had a higher production budget?</span>
+            <span>🎥</span>
+          </motion.p>
         )}
       </div>
 
       {/* Movie comparison */}
       <div className="grid grid-cols-2 gap-6">
         {/* Movie A */}
-        <Card 
-          className={`cursor-pointer transition-all duration-300 ${
-            hasChosen 
-              ? chosenMovie === 'A' 
-                ? showingFeedback && isCorrect !== null
-                  ? isCorrect 
-                    ? 'ring-2 ring-green-500 bg-green-50' 
-                    : 'ring-2 ring-red-500 bg-red-50'
-                  : 'ring-2 ring-blue-500 bg-blue-50'
-                : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                  ? 'ring-2 ring-green-500 bg-green-50'
-                  : 'opacity-60'
-              : 'hover:scale-105 hover:shadow-lg'
-          }`}
-          onClick={() => handleMovieChoice('A')}
+        <motion.div
+          whileHover={!hasChosen ? { scale: 1.05, y: -5 } : {}}
+          whileTap={!hasChosen ? { scale: 0.98 } : {}}
+          animate={{
+            scale: hasChosen && chosenMovie === 'A' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
+          }}
+          transition={{ duration: 0.3 }}
         >
+          <Card 
+            className={`cursor-pointer transition-all duration-300 ${
+              hasChosen 
+                ? chosenMovie === 'A' 
+                  ? showingFeedback && isCorrect !== null
+                    ? isCorrect 
+                      ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200' 
+                      : 'ring-2 ring-red-500 bg-red-50 shadow-lg shadow-red-200'
+                    : 'ring-2 ring-blue-500 bg-blue-50 shadow-lg shadow-blue-200'
+                  : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
+                    ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200'
+                    : 'opacity-60 grayscale'
+                : 'border-2 border-gray-300 hover:border-gray-500 hover:shadow-[1px_1px_0px_rgb(107,114,128),2px_2px_0px_rgb(107,114,128),3px_3px_0px_rgb(107,114,128),4px_4px_0px_rgb(107,114,128)]'
+            }`}
+            onClick={() => handleMovieChoice('A')}
+          >
           <CardContent className="p-8">
             <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
               <img
@@ -259,34 +314,54 @@ export default function BudgetBracketRound({
               
               {/* Budget reveal */}
               {showingFeedback && budgetA && (
-                <div className="mt-3 p-2 bg-background rounded border">
-                  <div className="flex items-center justify-center gap-1 text-sm font-mono">
+                <motion.div 
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 rounded border border-green-200"
+                >
+                  <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
                     <DollarSign className="w-3 h-3" />
                     {formatBudget(budgetA, false)}
+                    {budgetB && budgetA > budgetB && (
+                      <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
+                    )}
+                    {budgetB && budgetA < budgetB && (
+                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
+                    )}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </motion.div>
 
         {/* Movie B */}
-        <Card 
-          className={`cursor-pointer transition-all duration-300 ${
-            hasChosen 
-              ? chosenMovie === 'B' 
-                ? showingFeedback && isCorrect !== null
-                  ? isCorrect 
-                    ? 'ring-2 ring-green-500 bg-green-50' 
-                    : 'ring-2 ring-red-500 bg-red-50'
-                  : 'ring-2 ring-blue-500 bg-blue-50'
-                : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                  ? 'ring-2 ring-green-500 bg-green-50'
-                  : 'opacity-60'
-              : 'hover:scale-105 hover:shadow-lg'
-          }`}
-          onClick={() => handleMovieChoice('B')}
+        <motion.div
+          whileHover={!hasChosen ? { scale: 1.05, y: -5 } : {}}
+          whileTap={!hasChosen ? { scale: 0.98 } : {}}
+          animate={{
+            scale: hasChosen && chosenMovie === 'B' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
+          }}
+          transition={{ duration: 0.3 }}
         >
+          <Card 
+            className={`cursor-pointer transition-all duration-300 ${
+              hasChosen 
+                ? chosenMovie === 'B' 
+                  ? showingFeedback && isCorrect !== null
+                    ? isCorrect 
+                      ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200' 
+                      : 'ring-2 ring-red-500 bg-red-50 shadow-lg shadow-red-200'
+                    : 'ring-2 ring-blue-500 bg-blue-50 shadow-lg shadow-blue-200'
+                  : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
+                    ? 'ring-2 ring-green-500 bg-green-50 shadow-lg shadow-green-200'
+                    : 'opacity-60 grayscale'
+                : 'border-2 border-gray-300 hover:border-gray-500 hover:shadow-[1px_1px_0px_rgb(107,114,128),2px_2px_0px_rgb(107,114,128),3px_3px_0px_rgb(107,114,128),4px_4px_0px_rgb(107,114,128)]'
+            }`}
+            onClick={() => handleMovieChoice('B')}
+          >
           <CardContent className="p-8">
             <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
               <img
@@ -306,54 +381,152 @@ export default function BudgetBracketRound({
               
               {/* Budget reveal */}
               {showingFeedback && budgetB && (
-                <div className="mt-3 p-2 bg-background rounded border">
-                  <div className="flex items-center justify-center gap-1 text-sm font-mono">
+                <motion.div 
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2, type: "spring" }}
+                  className="mt-3 p-2 bg-gradient-to-r from-green-100 to-green-50 rounded border border-green-200"
+                >
+                  <div className="flex items-center justify-center gap-1 text-sm font-mono font-bold text-green-800">
                     <DollarSign className="w-3 h-3" />
                     {formatBudget(budgetB, false)}
+                    {budgetA && budgetB > budgetA && (
+                      <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
+                    )}
+                    {budgetA && budgetB < budgetA && (
+                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
+                    )}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </motion.div>
       </div>
 
+      {/* Studio Timer */}
+      <div className="text-center text-muted-foreground">
+        <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+          <span className="text-xs">🎬</span>
+          <p className="text-sm font-mono">Studio Time: {formatTime(elapsedTime)}</p>
+        </div>
+      </div>
 
       {/* Choice feedback */}
       {hasChosen && !showingFeedback && (
-        <div className="text-center">
-          <div className="text-muted-foreground animate-pulse">
-            Revealing budgets...
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center"
+        >
+          <div className="text-muted-foreground animate-pulse flex items-center justify-center space-x-2">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              💰
+            </motion.div>
+            <span>Revealing budgets...</span>
+            <motion.div
+              animate={{ rotate: -360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              🎬
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {showingFeedback && isCorrect !== null && (
-        <div className="text-center space-y-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="text-center space-y-2"
+        >
           {isCorrect ? (
-            <div className="text-green-600 font-semibold">
-              ✅ Correct! {pair[chosenMovie === 'A' ? 'movieA' : 'movieB'].title} had the higher budget!
-            </div>
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.4 }}
+              className="text-green-600 font-semibold bg-green-50 p-3 rounded-lg border border-green-200"
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <motion.span
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                  ✅
+                </motion.span>
+                <span>Correct! {pair[chosenMovie === 'A' ? 'movieA' : 'movieB'].title} had the higher budget!</span>
+                <motion.span
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 0.5, delay: 0.7 }}
+                >
+                  💰
+                </motion.span>
+              </div>
+            </motion.div>
           ) : (
-            <div className="text-red-600 font-semibold">
-              ❌ Wrong! {budgetA && budgetB && budgetA > budgetB ? pair.movieA.title : pair.movieB.title} had the higher budget.
-            </div>
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.4 }}
+              className="text-red-600 font-semibold bg-red-50 p-3 rounded-lg border border-red-200"
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <span>❌</span>
+                <span>Wrong! {budgetA && budgetB && budgetA > budgetB ? pair.movieA.title : pair.movieB.title} had the higher budget.</span>
+              </div>
+            </motion.div>
           )}
           
           {budgetA && budgetB && (
-            <div className="text-sm text-muted-foreground">
-              Difference: {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-sm text-muted-foreground bg-gray-50 p-2 rounded border"
+            >
+              <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
+            </motion.div>
           )}
 
-          <div className="text-sm text-muted-foreground">
-            {isCorrect && round < 5 ? 'Moving to next round...' : 
-             isCorrect && round === 5 ? 'Perfect Producer!' : 
-             round < 5 ? 'Moving to next round...' : 
-             'Game Complete!'}
-          </div>
-        </div>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="text-sm text-muted-foreground font-medium"
+          >
+            {isCorrect && round < 5 ? (
+              <div className="flex items-center justify-center space-x-2 text-blue-600">
+                <span>🎬</span>
+                <span>Climbing to the next floor...</span>
+                <span>🏢</span>
+              </div>
+            ) : isCorrect && round === 5 ? (
+              <div className="flex items-center justify-center space-x-2 text-yellow-600">
+                <span>👑</span>
+                <span>Hollywood Mogul Achieved!</span>
+                <span>🏆</span>
+              </div>
+             ) : round < 5 ? (
+              <div className="flex items-center justify-center space-x-2 text-orange-600">
+                <span>📈</span>
+                <span>Still climbing... next floor awaits!</span>
+                <span>💪</span>
+              </div>
+             ) : (
+              <div className="flex items-center justify-center space-x-2 text-purple-600">
+                <span>🎭</span>
+                <span>Your Hollywood journey is complete!</span>
+                <span>🌟</span>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   )
 }

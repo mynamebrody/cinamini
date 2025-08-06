@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ShareSection } from "@/components/game/share-section"
@@ -9,7 +10,10 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  BarChart3
+  BarChart3,
+  Crown,
+  DollarSign,
+  Star
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 
@@ -65,8 +69,31 @@ interface BudgetBracketResultProps {
 export default function BudgetBracketResult({ result, puzzle }: BudgetBracketResultProps) {
   const [allRoundsData, setAllRoundsData] = useState<any[]>([])
   const [loadingAnswers, setLoadingAnswers] = useState(true)
+  const [showCelebration, setShowCelebration] = useState(false)
   
   const shareText = generateShareText()
+  const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
+  // Sum the box office (budget) of all correct answers
+  const totalBudgetMastered = result.revealed_pairs
+    .filter(p => p.correct)
+    .reduce((sum, pair) => {
+      // Find which movie was chosen and correct
+      const chosen =
+        pair.chosen_movie === pair.revealed_budgets.movieA.tmdb_id
+          ? pair.revealed_budgets.movieA
+          : pair.revealed_budgets.movieB
+      return sum + (chosen.budget || 0)
+    }, 0)
+
+  // Trigger celebration for perfect games or high scores
+  useEffect(() => {
+    if (result.is_perfect_game || correctAnswers >= 4) {
+      setTimeout(() => {
+        setShowCelebration(true)
+        setTimeout(() => setShowCelebration(false), 3000)
+      }, 500)
+    }
+  }, [])
   
   // Automatically fetch all answers when component mounts
   useEffect(() => {
@@ -191,78 +218,257 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   }
 
 
-  return (
-    <div className="space-y-6">
-      
-      {/* Result Header */}
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            {result.is_perfect_game ? (
-              <>
-                <Trophy className="w-6 h-6 text-yellow-500" />
-                Perfect Producer!
-              </>
-            ) : (
-              <>
-                <BarChart3 className="w-6 h-6" />
-                Game Complete
-              </>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Performance Summary */}
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold">
-                {result.revealed_pairs.filter(p => p.correct).length}/{result.rounds_completed}
-              </div>
-              <div className="text-sm text-muted-foreground">Correct</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{formatTime(result.total_duration_ms)}</div>
-              <div className="text-sm text-muted-foreground">Time</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">
-                {result.updated_stats?.current_streak || 0}
-              </div>
-              <div className="text-sm text-muted-foreground">Streak</div>
-            </div>
-          </div>
+  // Celebration components
+  const MoneyRain = () => (
+    <>
+      {Array.from({ length: 12 }, (_, i) => (
+        <motion.div
+          key={`money-${i}`}
+          initial={{ y: -50, opacity: 0, rotate: 0 }}
+          animate={{ 
+            y: 300, 
+            opacity: [0, 1, 1, 0], 
+            rotate: [0, 180, 360],
+            x: [0, Math.random() * 100 - 50]
+          }}
+          transition={{ 
+            duration: 3, 
+            delay: i * 0.1,
+            ease: "easeOut"
+          }}
+          className="absolute text-green-500 font-bold pointer-events-none z-20 text-2xl"
+          style={{
+            left: `${10 + Math.random() * 80}%`,
+            top: "0%"
+          }}
+        >
+          💰
+        </motion.div>
+      ))}
+    </>
+  )
 
-          {/* Share Section */}
-          <div className="border-t pt-4">
-            <div className="text-center mb-3">
-              <div className="text-lg font-mono tracking-wider mb-2">
-                {generateSharePattern(result.revealed_pairs.map(p => ({
-                  round: p.round,
-                  chosen_movie: p.chosen_movie,
-                  correct: p.correct,
-                  time_taken_ms: p.time_taken_ms
-                })))}
+  const HollywoodSparkles = () => (
+    <>
+      {Array.from({ length: 8 }, (_, i) => (
+        <motion.div
+          key={`sparkle-${i}`}
+          initial={{ scale: 0, opacity: 1 }}
+          animate={{ 
+            scale: [0, 1.5, 0],
+            opacity: [1, 1, 0],
+            rotate: [0, 180]
+          }}
+          transition={{ 
+            duration: 2, 
+            delay: i * 0.2,
+            ease: "easeOut"
+          }}
+          className="absolute text-yellow-400 pointer-events-none z-20 text-3xl"
+          style={{
+            left: `${20 + Math.random() * 60}%`,
+            top: `${20 + Math.random() * 40}%`
+          }}
+        >
+          ⭐
+        </motion.div>
+      ))}
+    </>
+  )
+
+  return (
+    <div className="space-y-6 relative overflow-hidden">
+      
+      {/* Celebration Effects */}
+      <AnimatePresence>
+        {showCelebration && (
+          <>
+            <MoneyRain />
+            <HollywoodSparkles />
+            {result.is_perfect_game && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{ type: "spring", duration: 1 }}
+                className="absolute top-4 right-4 text-6xl z-30"
+              >
+                🏆
+              </motion.div>
+            )}
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Result Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Card className={result.is_perfect_game ? "border-2 border-yellow-400 shadow-lg shadow-yellow-200" : ""}>
+          <CardHeader className="text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", delay: 0.3 }}
+            >
+              <CardTitle className="flex items-center justify-center gap-2">
+                {result.is_perfect_game ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: [0, 15, -15, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Crown className="w-8 h-8 text-yellow-500" />
+                    </motion.div>
+                    <span className="bg-gradient-to-r from-yellow-600 to-yellow-400 bg-clip-text text-transparent text-2xl">
+                      HOLLYWOOD MOGUL!
+                    </span>
+                    <Trophy className="w-8 h-8 text-yellow-500" />
+                  </>
+                ) : correctAnswers >= 4 ? (
+                  <>
+                    <Star className="w-6 h-6 text-purple-500" />
+                    <span className="text-purple-600 text-xl">Executive Producer!</span>
+                    <Star className="w-6 h-6 text-purple-500" />
+                  </>
+                ) : correctAnswers >= 3 ? (
+                  <>
+                    <Trophy className="w-6 h-6 text-blue-500" />
+                    <span className="text-blue-600">Rising Producer</span>
+                  </>
+                ) : (
+                  <>
+                    <BarChart3 className="w-6 h-6" />
+                    Game Complete
+                  </>
+                )}
+              </CardTitle>
+            </motion.div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Hollywood Achievement Banner */}
+            {result.is_perfect_game && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.5, type: "spring" }}
+                className="bg-gradient-to-r from-yellow-100 to-golden-100 border-2 border-yellow-300 rounded-lg p-4 text-center"
+              >
+                <div className="flex items-center justify-center space-x-2 text-yellow-800">
+                  <span className="text-2xl">🎬</span>
+                  <span className="font-bold text-lg">Perfect Producer Achievement Unlocked!</span>
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <div className="text-sm text-yellow-700 mt-1">
+                  You've mastered the art of budget prediction. Welcome to the penthouse!
+                </div>
+              </motion.div>
+            )}
+
+            {/* Budget Mastered Counter */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="bg-gradient-to-r from-green-100 to-emerald-100 border border-green-300 rounded-lg p-4 text-center"
+            >
+              <div className="flex items-center justify-center space-x-2 text-green-800">
+                <span className="text-xl font-bold font-mono">
+                  Budget Mastered: {
+                    totalBudgetMastered >= 1_000_000_000
+                      ? `$${(totalBudgetMastered / 1_000_000_000).toFixed(2)}B`
+                      : `$${(totalBudgetMastered / 1_000_000).toFixed(1)}M`
+                  }
+                </span>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Budget Bracket #{puzzle.puzzle_number}
+              <div className="text-sm text-green-700 mt-1">
+                Total production value from correct predictions
               </div>
+            </motion.div>
+
+            {/* Performance Summary */}
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200"
+              >
+                <div className="text-3xl font-bold text-blue-700">
+                  {correctAnswers}/{result.rounds_completed}
+                </div>
+                <div className="text-sm text-blue-600 font-medium">Correct Calls</div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-gradient-to-b from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200"
+              >
+                <div className="text-3xl font-bold text-purple-700">{formatTime(result.total_duration_ms)}</div>
+                <div className="text-sm text-purple-600 font-medium">Total Time</div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-gradient-to-b from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200"
+              >
+                <div className="text-3xl font-bold text-orange-700">
+                  {result.updated_stats?.current_streak || 0}
+                </div>
+                <div className="text-sm text-orange-600 font-medium">Day Streak</div>
+              </motion.div>
             </div>
-            
-            <ShareSection 
-              shareText={shareText}
-              shareUrl="https://cinamini.app/game/budget-bracket"
-            />
-          </div>
-        </CardContent>
-      </Card>
+
+            {/* Share Section */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="border-t pt-4"
+            >
+              <div className="text-center mb-3">
+                <div className="text-lg font-mono tracking-wider mb-2 bg-gray-50 p-2 rounded border">
+                  {generateSharePattern(result.revealed_pairs.map(p => ({
+                    round: p.round,
+                    chosen_movie: p.chosen_movie,
+                    correct: p.correct,
+                    time_taken_ms: p.time_taken_ms
+                  })))}
+                </div>
+                <div className="text-sm text-muted-foreground flex items-center justify-center space-x-1">
+                  <span>🎬</span>
+                  <span>Budget Bracket #{puzzle.puzzle_number}</span>
+                  <span>💰</span>
+                </div>
+              </div>
+              
+              <ShareSection 
+                shareText={shareText}
+                shareUrl="https://cinamini.app/game/budget-bracket"
+              />
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
 
       {/* Round by Round Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">
-            Round Breakdown
-          </CardTitle>
-        </CardHeader>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.6 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center space-x-2">
+              <span>🎭</span>
+              <span>Round Breakdown</span>
+              <span>📊</span>
+            </CardTitle>
+          </CardHeader>
         <CardContent className="space-y-4">
           {loadingAnswers ? (
             <div className="text-center py-8">
@@ -521,7 +727,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
             })
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </motion.div>
 
     </div>
   )

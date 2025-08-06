@@ -83,7 +83,7 @@ export default function LoginForm() {
     return (
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-2 text-center">
-          <h1 className="font-nyt text-4xl font-bold tracking-tight text-neutral-900">Processing...</h1>
+          <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">Processing...</h1>
           <p className="text-lg text-neutral-600">Please wait while we confirm your email</p>
         </div>
         <div className="text-center space-y-4">
@@ -101,7 +101,7 @@ export default function LoginForm() {
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="space-y-2 text-center">
-        <h1 className="font-nyt text-4xl font-bold tracking-tight text-neutral-900">Welcome back</h1>
+        <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">Welcome back</h1>
         <p className="text-lg text-neutral-600">Sign in to your account</p>
       </div>
 

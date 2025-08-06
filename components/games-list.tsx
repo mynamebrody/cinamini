@@ -16,17 +16,17 @@ interface GamesListProps {
   isAuthenticated: boolean
 }
 
-// Define which games should be featured (left, center, right)
-const FEATURED_GAMES = ['retitled', 'budget-bracket', 'cast-climb']
+// Define which games should be featured (2x2 grid on mobile, 4 across on desktop)
+const FEATURED_GAMES = ['retitled', 'budget-bracket', 'cast-climb', 'poster-pixels']
 
-// Game emoji and color mappings
+// Game emoji and color mappings - New Sophisticated Cinema Palette
 const GAME_STYLES: Record<string, { emoji: string; bgColor: string; textColor?: string }> = {
-  'budget-bracket': { emoji: '💰', bgColor: '#22c55e' }, // Green
-  'retitled': { emoji: '🌍', bgColor: '#3b82f6' }, // Blue
-  'cast-climb': { emoji: '🎭', bgColor: '#f59e0b' }, // Orange
-  'poster-pixels': { emoji: '🖼️', bgColor: '#8b5cf6' }, // Purple
+  'cast-climb': { emoji: '🎭', bgColor: '#99251d', textColor: 'white' }, // Deep Cinema Red - Theater theme
+  'retitled': { emoji: '🌍', bgColor: '#ebbb4a', textColor: 'white' }, // Warm Golden - World adventure
+  'budget-bracket': { emoji: '💰', bgColor: '#278646', textColor: 'white' }, // Cinema Green - Money/success theme
+  'poster-pixels': { emoji: '🖼️', bgColor: '#3a3a3c', textColor: 'white' }, // Charcoal - Art gallery sophistication
   // Default for any new games
-  'default': { emoji: '🎬', bgColor: '#6b7280' } // Gray
+  'default': { emoji: '🎬', bgColor: '#d1d2d4', textColor: '#3a3a3c' } // Silver with charcoal text
 }
 
 export default function GamesList({ isAuthenticated }: GamesListProps) {
@@ -125,73 +125,130 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
   }
 
   return (
-    <div>
-      {/* Featured Games Banner */}
+    <div className="bg-white">
+      {/* Hero Section - Featured Games */}
       {sortedFeaturedGames.length > 0 && (
-        <section className="bg-[#6495ed] py-8">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {sortedFeaturedGames.map((game) => {
+        <section className="bg-white py-12 md:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Date and Title */}
+            <div className="text-center mb-12 md:mb-16">
+              <p className="text-xs md:text-sm text-neutral-500 mb-2 md:mb-3 font-funnel uppercase tracking-wider font-medium">
+                {new Date().toLocaleDateString('en-US', { 
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </p>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0">
+                The Daily Cinema Games
+              </h1>
+              <p className="text-base md:text-lg text-neutral-600 mt-3 md:mt-4 font-funnel max-w-2xl mx-auto px-4 md:px-0">
+                Four movie puzzles, updated daily. Can you solve them all?
+              </p>
+            </div>
+
+            {/* Featured Games Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-7xl mx-auto">
+              {sortedFeaturedGames.map((game, index) => {
                 const style = getGameStyle(game.game_id)
+                
                 return (
-                  <div key={game.game_id} className="bg-white rounded-lg p-6 text-center">
-                    <div className="text-6xl mb-4">{style.emoji}</div>
-                    <h3 className="text-xl font-bold text-neutral-900 mb-2">{game.display_name}</h3>
-                    <p className="text-sm text-neutral-500 mb-2">
-                      {new Date().toLocaleDateString('en-US', { 
-                        weekday: 'long',
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </p>
+                  <div
+                    key={game.game_id}
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.03]"
+                    style={{
+                      boxShadow: 'none',
+                      borderRadius: 0
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = `1px 1px 0px #999,
+                                                        2px 2px 0px #999,
+                                                        3px 3px 0px #999,
+                                                        4px 4px 0px #999,
+                                                        5px 5px 0px #999,
+                                                        6px 6px 0px #999`
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                    onClick={() => window.location.href = `/game/${game.game_id}`}
+                  >
+                    <div
+                      className="p-6 md:p-8 text-center h-72 flex flex-col justify-center items-center relative overflow-hidden"
+                      style={{ 
+                        backgroundColor: style.bgColor,
+                        borderRadius: 0,
+                        imageRendering: 'pixelated',
+                        shapeRendering: 'crispEdges'
+                      }}
+                    >
+                      {/* Game Emoji */}
+                      <div className="text-5xl md:text-6xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                        {style.emoji}
+                      </div>
+                      
+                      {/* Game Title */}
+                      <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 font-funnel-display-bold text-white drop-shadow-sm">
+                        {game.display_name}
+                      </h2>
+                      
+                      {/* Game Description */}
+                      <p className="text-white/95 text-sm md:text-base font-funnel leading-relaxed max-w-xs md:max-w-sm drop-shadow-sm px-2 md:px-0">
+                        {game.description}
+                      </p>
+
+                      {/* Play Status */}
+                      {game.hasPlayedToday && (
+                        <div className="absolute top-5 right-5">
+                          <div className="bg-white/30 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                            <span className="text-xs font-semibold text-white font-funnel">
+                              ✓ Completed
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Subtle bottom gradient for text readability */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
+                    </div>
                   </div>
                 )
               })}
-            </div>
-            <div className="text-center mt-6">
-              <a href="#more-games" className="text-white text-sm hover:underline">
-                READ ABOUT TODAY'S PUZZLE ON WORDPLAY
-              </a>
             </div>
           </div>
         </section>
       )}
 
       {/* More Games Section */}
-      <section className="py-12" id="more-games">
-        <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-8">More Games</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {/* Show all featured games as cards */}
-            {sortedFeaturedGames.map((game) => (
-              <GameCard
-                key={game.game_id}
-                id={game.game_id}
-                name={game.display_name}
-                description={game.description}
-                hasPlayedToday={game.hasPlayedToday}
-                isAuthenticated={isAuthenticated}
-                style={getGameStyle(game.game_id)}
-              />
-            ))}
+      {regularGames.length > 0 && (
+        <section className="bg-neutral-50/50 py-20" id="more-games">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 font-funnel-display-bold mb-4 tracking-tight">
+                More Games
+              </h2>
+              <p className="text-lg text-neutral-600 font-funnel max-w-xl mx-auto">
+                Additional puzzles and challenges coming soon
+              </p>
+            </div>
             
-            {/* Show regular games */}
-            {regularGames.map((game) => (
-              <GameCard
-                key={game.game_id}
-                id={game.game_id}
-                name={game.display_name}
-                description={game.description}
-                hasPlayedToday={game.hasPlayedToday}
-                isAuthenticated={isAuthenticated}
-                style={getGameStyle(game.game_id)}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {regularGames.map((game) => (
+                <GameCard
+                  key={game.game_id}
+                  id={game.game_id}
+                  name={game.display_name}
+                  description={game.description}
+                  hasPlayedToday={game.hasPlayedToday}
+                  isAuthenticated={isAuthenticated}
+                  style={getGameStyle(game.game_id)}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   )
 }

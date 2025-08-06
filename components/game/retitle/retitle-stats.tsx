@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X, Trophy, Flame, Clock, Target } from "lucide-react"
+import { getCountryFlag } from "@/lib/flag-emojis"
 
 interface StatsData {
   gamesPlayed: number
@@ -22,20 +23,6 @@ interface RetitleStatsProps {
   onClose?: () => void
 }
 
-// Country flag emojis mapping
-const FLAG_EMOJIS: Record<string, string> = {
-  'FR': '🇫🇷',
-  'ES': '🇪🇸',
-  'DE': '🇩🇪',
-  'DK': '🇩🇰',
-  'IT': '🇮🇹',
-  'JP': '🇯🇵',
-  'KR': '🇰🇷',
-  'CN': '🇨🇳',
-  'BR': '🇧🇷',
-  'RU': '🇷🇺',
-  'IN': '🇮🇳'
-}
 
 export default function RetitleStats({ onClose }: RetitleStatsProps) {
   const { user, isAnonymous, loading: authLoading } = useGameMode()
@@ -193,7 +180,7 @@ export default function RetitleStats({ onClose }: RetitleStatsProps) {
             {stats.countriesGuessed.length > 0 ? (
               stats.countriesGuessed.map((country) => (
                 <span key={country} className="text-2xl">
-                  {FLAG_EMOJIS[country] || '🏳️'}
+                  {getCountryFlag(country)}
                 </span>
               ))
             ) : (

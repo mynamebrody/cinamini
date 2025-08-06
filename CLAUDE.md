@@ -377,21 +377,21 @@ const selectedMovie = rng.choice(moviePool);
 
 ## UI/UX Guidelines
 
-### Brand Colors
+### Brand Colors - Sophisticated Cinema Palette
 ```css
-/* Cinema red (primary) */
---cinema-red: #B31B1B;
+/* Deep Cinema Red (primary brand) */
+--cinema-red: #99251d;         /* (153,37,29) */
+--cinema-red-dark: #7a1d16;    /* Darker variant for hovers */
+--cinema-red-light: #b52d20;   /* Lighter variant for highlights */
 
-/* Background (existing) */
---background: #161616;
---card-background: #1c1c1c;
+/* Golden Yellow Accents */
+--cinema-gold: #ebbb4a;        /* (235,187,74) - Warm Golden Yellow */
+--cinema-gold-light: #f7ee8b;  /* (247,238,139) - Light Golden Yellow */
+--cinema-gold-dark: #d4a935;   /* Darker gold for depth */
 
-/* Accent green (existing) */
---accent-green: #2b725e;
---accent-green-hover: #235e4c;
-
-/* Golden accent (for wins/streaks) */
---golden: #FFD700;
+/* UI Neutrals */
+--charcoal: #3a3a3c;          /* (58,58,60) - Dark Charcoal */
+--silver: #d1d2d4;            /* (209,210,212) - Light Silver */
 
 /* Text colors (existing) */
 --text-primary: #ffffff;

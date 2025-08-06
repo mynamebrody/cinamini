@@ -12,7 +12,7 @@ export default async function ProfilePage({
   if (!isSupabaseConfigured) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
-        <h1 className="text-2xl font-bold mb-4 text-neutral-900">Connect Supabase to get started</h1>
+        <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
       </div>
     )
   }
@@ -52,13 +52,6 @@ export default async function ProfilePage({
         <div className="space-y-6">
           {/* Email Confirmation Banner */}
           {emailConfirmed && <EmailConfirmationBanner />}
-
-          {/* Profile Header */}
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold text-neutral-900">Your Profile</h2>
-            <p className="text-neutral-600">Manage your account information and preferences</p>
-          </div>
-
           {/* Profile Form */}
           <ProfileForm />
         </div>

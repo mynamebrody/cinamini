@@ -10,7 +10,7 @@ export default async function Home() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-neutral-900">Connect Supabase to get started</h1>
+          <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
           <p className="text-neutral-600">Please configure your Supabase connection to continue.</p>
         </div>
       </div>
@@ -36,7 +36,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7]">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Auth Hash Processor for invite links */}
       <AuthHashProcessor 
         redirectPath="/profile"
@@ -45,28 +45,33 @@ export default async function Home() {
       />
       
       {/* Optional Banner */}
-      <Banner
+      {/* <Banner
         message="🎬 Free game with an annual Cinema subscription. Ends soon."
-        show={true} // Toggle this to show/hide banner
+        show={false} // Toggle this to show/hide banner
         className="bg-[#ffd92e] text-black py-3"
-      />
+      /> */}
 
       {/* Navigation Header */}
       <SiteHeader user={user} displayName={displayName} />
 
-      {/* Games Content */}
-      <GamesList isAuthenticated={!!user} />
+      {/* Games Content - flex-1 makes this grow to fill available space */}
+      <main className="relative flex-1">
+        <GamesList isAuthenticated={!!user} />
+      </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Footer - Always at bottom */}
+      <footer className="bg-neutral-50/80 border-t border-neutral-200/50 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex flex-col sm:flex-row justify-between items-center">
             <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
               © 2025 cinamini. Made with 🍿 in Grand Rapids, MI
             </div>
-            <div className="flex items-center space-x-6 text-sm text-neutral-500">
-              <a href="/profile" className="hover:text-cinema-red transition-colors">
+            <div className="flex items-center space-x-8 text-sm">
+              <a href="/profile" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
                 Profile
+              </a>
+              <a href="/stats" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
+                Statistics
               </a>
             </div>
           </div>

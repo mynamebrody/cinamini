@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { getCountryFlag } from "@/lib/flag-emojis"
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,23 +41,10 @@ export async function GET(request: NextRequest) {
     const puzzleNumber = puzzle.puzzle_number || 1
 
     // Get flag emoji
-    const FLAG_EMOJIS: Record<string, string> = {
-      'FR': '🇫🇷',
-      'ES': '🇪🇸',
-      'DE': '🇩🇪',
-      'DK': '🇩🇰',
-      'IT': '🇮🇹',
-      'JP': '🇯🇵',
-      'KR': '🇰🇷',
-      'CN': '🇨🇳',
-      'BR': '🇧🇷',
-      'RU': '🇷🇺',
-      'IN': '🇮🇳'
-    }
-    const flagEmoji = FLAG_EMOJIS[puzzle.country_code] || '🏳️'
+    const flagEmoji = getCountryFlag(puzzle.country_code)
 
     // Generate result grid (simplified for single guess)
-    const resultGrid = guess.is_correct ? '🟩⬜⬜⬜' : '🟥⬜⬜⬜'
+    const resultGrid = guess.is_correct ? '✅' : '❌'
 
     // Generate share text
     const shareText = `Retitled #${puzzleNumber} ${flagEmoji}\n${resultGrid}\nhttps://cinamini.app`

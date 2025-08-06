@@ -7,13 +7,16 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Play, BarChart3 } from "lucide-react"
+import { BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
-import { HowToPlayModal } from "../how-to-play-modal"
+import { GameLanding } from "../game-landing"
+import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { ShareSection } from "../share-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
+import { CastClimbProgress } from "./cast-climb-progress"
+import { CelebrationConfetti } from "./celebration-confetti"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
 
@@ -91,6 +94,7 @@ export default function CastClimbGame() {
   const [elapsedTime, setElapsedTime] = useState<number>(0)
   const [result, setResult] = useState<CastClimbResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
 
   // ============================================================================
   // EFFECTS AND DATA LOADING
@@ -266,6 +270,11 @@ export default function CastClimbGame() {
           
           setResult(anonymousResult)
           setGameState("completed")
+          
+          // Trigger celebration if won
+          if (isCorrect) {
+            setTimeout(() => setShowConfetti(true), 500)
+          }
         } else if (!isCorrect) {
           // Wrong guess but can continue - reveal next actor
           setRevealedIndex(revealedIndex + 1)
@@ -304,6 +313,11 @@ export default function CastClimbGame() {
           // Game is completed (either correct or max attempts reached)
           setResult(data)
           setGameState("completed")
+          
+          // Trigger celebration if won
+          if (isCorrect) {
+            setTimeout(() => setShowConfetti(true), 500)
+          }
         } else if (!isCorrect) {
           // Wrong guess but can continue - reveal next actor
           setRevealedIndex(revealedIndex + 1)
@@ -567,8 +581,31 @@ export default function CastClimbGame() {
   // RENDER
   // ============================================================================
 
+  // Don't render the game container UI if we're showing the landing page
+  if (gameState === "ready" && modalState !== 'howtoplay') {
+    return (
+      <GameLanding
+        gameId="cast-climb"
+        gameName="Cast Climb"
+        puzzleNumber={puzzle?.puzzleNumber}
+        puzzleDate={puzzle?.puzzleDate}
+        backgroundColor="#99251d"
+        emoji="🎭"
+        onStart={startGame}
+        showBackButton={true}
+      >
+        {/* How to Play content removed from splash page */}
+      </GameLanding>
+    )
+  }
+
   return (
     <div className="game-container">
+      {/* Celebration Confetti */}
+      <CelebrationConfetti 
+        show={showConfetti} 
+        onComplete={() => setShowConfetti(false)}
+      />
       <GameHeader 
         title="Cast Climb" 
         onHelpClick={showHowToPlay}
@@ -581,28 +618,76 @@ export default function CastClimbGame() {
       </GameHeader>
 
       {/* How to Play Modal */}
-      <HowToPlayModal
+      <GameModal
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
-        title="Cast Climb"
-        instructions={
-          <div className="space-y-4">
-            <p className="text-neutral-600">
-              Guess the movie by its cast. Wrong guesses reveal more actors!
-            </p>
-            <div className="bg-neutral-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-2">How to Play:</h3>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li>• See actors from a mystery movie one by one</li>
-                <li>• Search and guess the movie title after each hint</li>
-                <li>• Wrong guesses reveal the next actor in the cast</li>
-                <li>• Try to guess with as few hints as possible!</li>
-              </ul>
-            </div>
+        className="max-w-2xl"
+      >
+        <GameModalHeader>
+          <GameModalTitle>How to Play Cast Climb</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <InstructionGrid columns={2}>
+            <InstructionCard
+              step={1}
+              title="Meet the Cast"
+              description="See actors from a mystery movie revealed one by one, starting with supporting cast."
+              example={
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                    <span className="text-muted-foreground text-xs">🎭</span>
+                  </div>
+                  <div className="text-left">
+                    <p className="text-foreground text-sm font-medium">Supporting Actor</p>
+                    <p className="text-muted-foreground text-xs">Actor 1 of 4</p>
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={2}
+              title="Make Your Guess"
+              description="Search for and guess the movie title after each actor reveal. Wrong guesses unlock the next actor."
+              example={
+                <div className="text-center">
+                  <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground">
+                    Search movies...
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={3}
+              title="Climb the Cast"
+              description="Try to guess with as few actor hints as possible. You get up to 4 attempts before the game ends."
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm font-mono">
+                    ❌❌✅ (Won on 3rd guess)
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={4}
+              title="Share Your Score"
+              description="Perfect games are won with just the first actor. Can you climb to the top?"
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm font-mono">
+                    Cast Climb #123 ✅
+                  </div>
+                </div>
+              }
+            />
+          </InstructionGrid>
+          <div className="mt-6 text-center">
+            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+              Back to Game
+            </Button>
           </div>
-        }
-        onStart={startGame}
-      />
+        </GameModalBody>
+      </GameModal>
 
       {/* Stats Modal */}
       <GameModal
@@ -640,38 +725,24 @@ export default function CastClimbGame() {
           </div>
         )}
 
-        {gameState === "ready" && puzzle && (
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle>Cast Climb #{puzzle.puzzleNumber}</CardTitle>
-                <p className="text-muted-foreground">
-                  Guess the movie by its cast. Wrong guesses reveal more actors.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Can you guess the movie with just one actor hint?
-                  </p>
-                </div>
-
-                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Playing
-                </Button>
-
-                <div className="text-center text-sm text-muted-foreground">
-                  Daily puzzle • {new Date().toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Ready state is now handled by the landing page above */}
 
         {gameState === "playing" && puzzle && (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+              {/* Progress Visualization */}
+              <div className="order-2 lg:order-1">
+                <CastClimbProgress
+                  totalActors={puzzle.actors.length}
+                  revealedIndex={revealedIndex}
+                  userGuesses={userGuesses}
+                  gameCompleted={false}
+                  className="lg:sticky lg:top-20"
+                />
+              </div>
+              
+              {/* Main Game Card */}
+              <div className="order-1 lg:order-2 max-w-md mx-auto lg:mx-0">
             <Card>
               <CardHeader className="text-center">
                 <CardTitle>Cast Climb #{puzzle.puzzleNumber}</CardTitle>
@@ -763,13 +834,26 @@ export default function CastClimbGame() {
                     Give Up
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+              </div>
+            </div>
           </div>
         )}
 
         {gameState === "completed" && result && puzzle && (
-          <div className="max-w-md mx-auto space-y-4">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {/* Progress Visualization */}
+            <CastClimbProgress
+              totalActors={puzzle.actors.length}
+              revealedIndex={puzzle.actors.length - 1}
+              userGuesses={result.user_guesses}
+              gameCompleted={true}
+              isCorrect={result.correct}
+              className="mb-6"
+            />
+            
+            <div className="max-w-md mx-auto space-y-4">
             <Card>
               <CardHeader className="text-center">
                 <CardTitle className={result.correct ? "text-green-600" : "text-red-600"}>
@@ -829,6 +913,7 @@ export default function CastClimbGame() {
                 gameName="Cast Climb"
               />
             )}
+            </div>
           </div>
         )}
       </main>

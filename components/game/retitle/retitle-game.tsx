@@ -8,11 +8,13 @@ import AnonymousResultNudge from "../anonymous-result-nudge"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
+import RetitledGlobeProgress from "./retitled-globe-progress"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Play, BarChart3 } from "lucide-react"
+import { BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
-import { HowToPlayModal } from "../how-to-play-modal"
+import { GameLanding } from "../game-landing"
+import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 
 interface PuzzleData {
@@ -54,12 +56,26 @@ export default function RetitleGame() {
   const [startTime, setStartTime] = useState<number>(0)
   const [result, setResult] = useState<GuessResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [visitedCountries, setVisitedCountries] = useState<string[]>([])
+  const [travelState, setTravelState] = useState<'preparing' | 'traveling' | 'arrived' | 'celebrating'>('preparing')
 
   useEffect(() => {
     if (!authLoading) {
       loadTodaysPuzzle()
     }
   }, [authLoading])
+
+  // Load visited countries from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('retitled-visited-countries')
+    if (saved) {
+      try {
+        setVisitedCountries(JSON.parse(saved))
+      } catch (err) {
+        console.warn('Failed to parse visited countries:', err)
+      }
+    }
+  }, [])
 
   const loadTodaysPuzzle = async () => {
     try {
@@ -257,6 +273,36 @@ export default function RetitleGame() {
     setModalState('howtoplay')
   }
 
+  // Don't render the game container UI if we're showing the landing page
+  if (gameState === "ready" && modalState !== 'howtoplay') {
+    return (
+      <GameLanding
+        gameId="retitled"
+        gameName="Retitled"
+        puzzleNumber={puzzle?.puzzleNumber}
+        puzzleDate={puzzle?.puzzleDate}
+        backgroundColor="#ebbb4a"
+        emoji="🌍"
+        onStart={startGame}
+        showBackButton={true}
+      >
+        {/* Travel preparation globe */}
+        {puzzle && (
+          <div className="mt-8">
+            <RetitledGlobeProgress
+              countryCode={puzzle.countryCode}
+              countryName={puzzle.countryName}
+              flagEmoji={puzzle.flagEmoji}
+              gameState="preparing"
+              visitedCountries={visitedCountries}
+              className=""
+            />
+          </div>
+        )}
+      </GameLanding>
+    )
+  }
+
   // Render the game
   return (
     <div className="game-container">
@@ -272,28 +318,82 @@ export default function RetitleGame() {
       </GameHeader>
 
       {/* How to Play Modal */}
-      <HowToPlayModal
+      <GameModal
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
-        title="Retitled"
-        instructions={
-          <div className="space-y-4">
-            <p className="text-neutral-600">
-              Test your movie knowledge by identifying English films from their foreign titles!
-            </p>
-            <div className="bg-neutral-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-2">How to Play:</h3>
-              <ul className="space-y-2 text-sm text-neutral-600">
-                <li>• You'll see a foreign movie title with a country flag</li>
-                <li>• Choose the correct English title from 4-5 options</li>
-                <li>• Learn interesting translation trivia along the way</li>
-                <li>• One puzzle per day - make it count!</li>
-              </ul>
-            </div>
+        className="max-w-2xl"
+      >
+        <GameModalHeader>
+          <GameModalTitle>How to Play Retitled</GameModalTitle>
+        </GameModalHeader>
+        <GameModalBody>
+          <InstructionGrid columns={2}>
+            <InstructionCard
+              step={1}
+              title="See the Foreign Title"
+              description="You'll see a movie title translated into another language, along with the country flag to give you context."
+              example={
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-3 mb-2">
+                    <span className="text-2xl">🇪🇸</span>
+                    <div className="text-muted-foreground text-sm font-medium">Spanish Title</div>
+                  </div>
+                  <div className="bg-muted rounded-lg px-4 py-2 text-lg text-foreground font-semibold">
+                    Solo en Casa
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={2}
+              title="Choose the English Title"
+              description="Pick the correct English movie title from 4-5 carefully selected options. Some might be tricky!"
+              example={
+                <div className="space-y-2">
+                  <div className="bg-muted rounded-lg px-3 py-2 text-sm text-foreground text-center">
+                    A) Home Alone
+                  </div>
+                  <div className="bg-muted/50 rounded-lg px-3 py-2 text-sm text-muted-foreground text-center">
+                    B) House Party
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={3}
+              title="One Chance Only"
+              description="You get just one guess per daily puzzle, so think carefully! Consider the literal translation and cultural context."
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm">
+                    ✅ Correct!
+                  </div>
+                  <div className="text-muted-foreground text-xs mt-1">
+                    One guess per day
+                  </div>
+                </div>
+              }
+            />
+            <InstructionCard
+              step={4}
+              title="Learn & Share"
+              description="Discover fascinating translation trivia and share your success (or educated guess) with friends!"
+              example={
+                <div className="text-center">
+                  <div className="text-foreground text-sm font-mono">
+                    Retitled #123 🌍✅
+                  </div>
+                </div>
+              }
+            />
+          </InstructionGrid>
+          <div className="mt-6 text-center">
+            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+              Back to Game
+            </Button>
           </div>
-        }
-        onStart={startGame}
-      />
+        </GameModalBody>
+      </GameModal>
 
       {/* Stats Modal */}
       <GameModal
@@ -313,7 +413,7 @@ export default function RetitleGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+              <div className="text-lg">Loading today's puzzle...</div>
             </div>
           </div>
         )}
@@ -331,35 +431,7 @@ export default function RetitleGame() {
           </div>
         )}
 
-        {gameState === 'ready' && (
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader className="text-center">
-                <CardTitle>Retitled #{puzzle?.puzzleNumber}</CardTitle>
-                <p className="text-muted-foreground">
-                  Identify the English film from its foreign title
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Today's Challenge</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Can you identify the English movie from its foreign title?
-                  </p>
-                </div>
-
-                <Button onClick={startGame} className="w-full" size="lg" variant="primary">
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Playing
-                </Button>
-
-                <div className="text-center text-sm text-muted-foreground">
-                  Daily puzzle • {new Date().toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Ready state is now handled by the landing page above */}
 
         {gameState === 'playing' && puzzle && (
           <div className="max-w-4xl mx-auto">
@@ -386,6 +458,7 @@ export default function RetitleGame() {
           </div>
         )}
       </main>
+      
     </div>
   )
 }

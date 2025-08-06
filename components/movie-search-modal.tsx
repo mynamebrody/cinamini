@@ -93,7 +93,7 @@ export function MovieSearchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col bg-white border-neutral-200">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col bg-white border-neutral-200">
         <DialogHeader>
           <DialogTitle className="text-neutral-900">
             Add Movie to Favorites
@@ -129,7 +129,7 @@ export function MovieSearchModal({
               </div>
             ) : searchResults.length > 0 ? (
               <TooltipProvider>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-1">
                   {searchResults.map((movie) => {
                     const isAlreadyFavorited = existingMovieIds.includes(movie.id)
                     const displayTitle = `${movie.title}${movie.releaseYear ? ` (${movie.releaseYear})` : ''}`
@@ -142,7 +142,7 @@ export function MovieSearchModal({
                             disabled={isAlreadyFavorited}
                             className={cn(
                               "group relative text-left transition-all duration-200",
-                              "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg",
+                              "focus:outline-none focus:ring-2 focus:ring-cinema-red focus:ring-offset-2 rounded-lg",
                               isAlreadyFavorited
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:scale-105"
@@ -154,12 +154,12 @@ export function MovieSearchModal({
                                   src={movie.posterUrl}
                                   alt={movie.title}
                                   fill
-                                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
                                   className="object-cover"
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <span className="text-neutral-400 text-sm">No poster</span>
+                                  <span className="text-neutral-400 text-xs font-funnel">No poster</span>
                                 </div>
                               )}
                               
@@ -171,17 +171,17 @@ export function MovieSearchModal({
                               )}>
                                 {isAlreadyFavorited ? (
                                   <div className="flex flex-col items-center gap-2">
-                                    <Check className="h-8 w-8 text-green-500" />
-                                    <span className="text-sm text-white">Already Added</span>
+                                    <Check className="h-6 w-6 text-green-500" />
+                                    <span className="text-xs text-white font-funnel">Already Added</span>
                                   </div>
                                 ) : (
-                                  <Heart className="h-8 w-8 text-white" />
+                                  <Heart className="h-6 w-6 text-white" />
                                 )}
                               </div>
                             </div>
                             
-                            <div className="mt-2">
-                              <h3 className="font-medium text-sm line-clamp-1 text-neutral-900">
+                            <div className="mt-3 px-1 pb-1">
+                              <h3 className="font-funnel text-xs leading-tight line-clamp-2 text-neutral-900 min-h-[2.5rem]">
                                 {displayTitle}
                               </h3>
                             </div>
@@ -189,9 +189,9 @@ export function MovieSearchModal({
                         </TooltipTrigger>
                         <TooltipContent 
                           side="bottom" 
-                          className="bg-white border-neutral-200 text-neutral-900 max-w-xs"
+                          className="bg-white border-neutral-200 text-neutral-900 max-w-xs font-funnel"
                         >
-                          <p>{displayTitle}</p>
+                          <p className="text-sm">{displayTitle}</p>
                         </TooltipContent>
                       </Tooltip>
                     )
@@ -200,13 +200,13 @@ export function MovieSearchModal({
               </TooltipProvider>
             ) : currentQuery && !loading ? (
               <div className="text-center py-8">
-                <p className="text-neutral-500">
+                <p className="text-neutral-500 font-funnel">
                   No movies found for "{currentQuery}"
                 </p>
               </div>
             ) : (
               <div className="text-center py-8">
-                <p className="text-neutral-500">
+                <p className="text-neutral-500 font-funnel">
                   Search for a movie to add to your favorites
                 </p>
               </div>
