@@ -2,6 +2,7 @@ import type React from "react"
 import type { Viewport } from "next"
 import { Funnel_Display, Funnel_Sans } from "next/font/google"
 import { constructMetadata } from "@/lib/metadata"
+import GoogleAnalytics from "@/components/google-analytics"
 import "./globals.css"
 
 // Load Funnel Display Bold for headings
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${funnelDisplayBold.variable} ${funnelSansLight.variable}`}>
       <body className={funnelSansLight.className}>
+        <GoogleAnalytics />
         {children}
       </body>
     </html>
