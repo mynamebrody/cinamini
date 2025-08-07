@@ -211,7 +211,7 @@ export default function PosterPixelsResult({
             
             <ShareSection 
               shareText={centralizedShareText || generateFallbackShareText()}
-              shareUrl="https://cinamini.app/game/poster-pixels"
+              shareUrl="https://www.cinamini.app/game/poster-pixels"
             />
           </div>
         </CardContent>

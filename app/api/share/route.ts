@@ -293,10 +293,10 @@ export async function GET(request: NextRequest) {
   }
   
   const gameUrls: Record<string, string> = {
-    'retitled': 'https://cinamini.app/game/retitled',
-    'budget-bracket': 'https://cinamini.app/game/budget-bracket', 
-    'cast-climb': 'https://cinamini.app/game/cast-climb',
-    'poster-pixels': 'https://cinamini.app/game/poster-pixels',
+    'retitled': 'https://www.cinamini.app/game/retitled',
+    'budget-bracket': 'https://www.cinamini.app/game/budget-bracket', 
+    'cast-climb': 'https://www.cinamini.app/game/cast-climb',
+    'poster-pixels': 'https://www.cinamini.app/game/poster-pixels',
   }
   
   const shareUrl = gameUrls[game]

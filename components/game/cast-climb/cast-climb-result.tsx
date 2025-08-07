@@ -225,7 +225,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
       <div className="space-y-2">
         <ShareDrawer 
           shareText={share_text}
-          shareUrl="https://cinamini.app/game/cast-climb"
+          shareUrl="https://www.cinamini.app/game/cast-climb"
           title="Share Your Cast Climb Results"
           description="Show off your movie knowledge!"
         />

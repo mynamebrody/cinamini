@@ -484,7 +484,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     ? centralizedShareText 
                     : generateFallbackShareText()
                 }
-                shareUrl="https://cinamini.app/game/budget-bracket"
+                shareUrl="https://www.cinamini.app/game/budget-bracket"
               />
             </motion.div>
           </CardContent>
