@@ -89,17 +89,60 @@ export async function GET(request: NextRequest) {
 
     const tmdbData: TMDBSearchResponse = await tmdbResponse.json()
 
+    // Fetch director information for each movie (limit to first 5 for performance)
+    const moviesWithDirectors = await Promise.all(
+      tmdbData.results.slice(0, 5).map(async (movie) => {
+        let director = null
+        try {
+          // Fetch movie credits to get director
+          const creditsUrl = `${TMDB_BASE_URL}/movie/${movie.id}/credits`
+          const creditsResponse = await fetch(creditsUrl, {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
+            },
+            signal: AbortSignal.timeout(5000), // 5 second timeout for credits
+          })
+          
+          if (creditsResponse.ok) {
+            const creditsData = await creditsResponse.json()
+            const directorCredit = creditsData.crew?.find((person: any) => person.job === 'Director')
+            if (directorCredit) {
+              director = directorCredit.name
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch director for movie ${movie.id}:`, error)
+        }
+        
+        return {
+          id: movie.id,
+          title: movie.title,
+          overview: movie.overview || 'No overview available.',
+          posterUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+          releaseYear: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : 'Unknown',
+          rating: movie.vote_average,
+          voteCount: movie.vote_count,
+          director: director
+        }
+      })
+    )
+
+    // For remaining movies beyond first 5, don't fetch directors (performance)
+    const remainingMovies = tmdbData.results.slice(5).map(movie => ({
+      id: movie.id,
+      title: movie.title,
+      overview: movie.overview || 'No overview available.',
+      posterUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
+      releaseYear: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : 'Unknown',
+      rating: movie.vote_average,
+      voteCount: movie.vote_count,
+      director: null
+    }))
+
     // Transform TMDB response to match the MovieSearchResult interface
     const searchResponse: MovieSearchResponse = {
-      results: tmdbData.results.map(movie => ({
-        id: movie.id,
-        title: movie.title,
-        overview: movie.overview || 'No overview available.',
-        posterUrl: movie.poster_path ? `${TMDB_IMAGE_BASE_URL}${movie.poster_path}` : null,
-        releaseYear: movie.release_date ? new Date(movie.release_date).getFullYear().toString() : 'Unknown',
-        rating: movie.vote_average,
-        voteCount: movie.vote_count
-      })),
+      results: [...moviesWithDirectors, ...remainingMovies],
       totalResults: tmdbData.total_results,
       page: tmdbData.page,
       totalPages: tmdbData.total_pages,

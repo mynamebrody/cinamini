@@ -139,7 +139,7 @@ export function MovieSearchModal({
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-1">
                   {searchResults.map((movie) => {
                     const isAlreadyFavorited = existingMovieIds.includes(movie.id)
-                    const displayTitle = `${movie.title}${movie.releaseYear ? ` (${movie.releaseYear})` : ''}`
+                    const displayTitle = `${movie.title}${movie.releaseYear ? ` (${movie.releaseYear})` : ''}${movie.director ? ` - Dir. ${movie.director}` : ''}`
                     
                     return (
                       <Tooltip key={movie.id}>

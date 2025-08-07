@@ -30,6 +30,7 @@ export interface MovieSearchResult {
   releaseYear: string
   rating: number
   voteCount: number
+  director?: string | null
 }
 
 export interface MovieSearchResponse {

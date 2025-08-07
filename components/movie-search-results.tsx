@@ -74,6 +74,11 @@ function MovieCard({ movie }: { movie: MovieSearchResult }) {
             <Calendar className="h-3 w-3" />
             {movie.releaseYear}
           </span>
+          {movie.director && (
+            <span className="flex items-center gap-1">
+              <span>Dir. {movie.director}</span>
+            </span>
+          )}
           {movie.voteCount > 0 && (
             <span className="flex items-center gap-1">
               <Users className="h-3 w-3" />

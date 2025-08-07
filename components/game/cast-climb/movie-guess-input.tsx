@@ -270,11 +270,17 @@ export function MovieGuessInput({
                     <div className="font-medium truncate">
                       {movie.title}
                     </div>
-                    {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
-                      <div className="text-xs text-muted-foreground">
-                        ({movie.releaseYear})
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
+                        <span>({movie.releaseYear})</span>
+                      )}
+                      {movie.director && (
+                        <>
+                          {movie.releaseYear && movie.releaseYear !== 'Unknown' && <span>•</span>}
+                          <span>Dir. {movie.director}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </button>
               ))}

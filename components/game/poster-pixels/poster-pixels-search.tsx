@@ -11,6 +11,7 @@ interface Movie {
   title: string
   releaseYear: string
   posterUrl: string | null
+  director?: string | null
 }
 
 interface PosterPixelsSearchProps {
@@ -204,32 +205,22 @@ export default function PosterPixelsSearch({
                   selectedIndex === index && "bg-muted"
                 )}
               >
-                {/* Movie Poster Placeholder */}
-                <div className="flex-shrink-0 w-12 h-16 bg-muted rounded overflow-hidden">
-                  {movie.posterUrl ? (
-                    <img
-                      src={movie.posterUrl}
-                      alt={`${movie.title} poster`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                      No Image
-                    </div>
-                  )}
-                </div>
-                
                 {/* Movie Info */}
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-foreground truncate">
                     {movie.title}
                   </div>
-                  {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
-                    <div className="text-xs text-muted-foreground">
-                      {movie.releaseYear}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {movie.releaseYear && movie.releaseYear !== 'Unknown' && (
+                      <span>{movie.releaseYear}</span>
+                    )}
+                    {movie.director && (
+                      <>
+                        {movie.releaseYear && movie.releaseYear !== 'Unknown' && <span>•</span>}
+                        <span>Dir. {movie.director}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
