@@ -1,0 +1,153 @@
+export default function Privacy() {
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="border-b border-neutral-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <a href="/" className="inline-block">
+            <img 
+              src="/cinamini/Wordmark - Black.svg" 
+              alt="cinamini" 
+              className="h-8 w-auto"
+            />
+          </a>
+        </div>
+      </header>
+      
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1">
+        <h1 className="text-3xl font-bold text-neutral-900 font-funnel-display-bold mb-8">
+          Privacy Policy
+        </h1>
+        
+        <div className="prose prose-neutral max-w-none">
+          <p className="text-sm text-neutral-500 mb-8">
+            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Information We Collect
+            </h2>
+            <p className="text-neutral-700 mb-4">
+              <strong>Without an Account:</strong> If you play cinamini without creating an account, all your game data (results, streaks, statistics) is stored locally in your browser only. We do not collect or store this information on our servers.
+            </p>
+            <p className="text-neutral-700 mb-4">
+              <strong>With an Account:</strong> When you create an account, we collect:
+            </p>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li><strong>Account Information:</strong> Email address and display name</li>
+              <li><strong>Game Data:</strong> Your game results, statistics, streaks, and preferences</li>
+              <li><strong>Usage Data:</strong> How you interact with our games and features</li>
+            </ul>
+            <p className="text-neutral-700 mb-4 mt-4">
+              <strong>For All Users:</strong> We collect basic analytics via Google Analytics (device type, browser, general usage patterns).
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              How We Use Your Information
+            </h2>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li>Provide and improve our movie puzzle games</li>
+              <li>Track your progress, streaks, and statistics</li>
+              <li>Send you account-related communications</li>
+              <li>Analyze usage to improve our games and features</li>
+              <li>Ensure security and prevent misuse</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Information Sharing
+            </h2>
+            <p className="text-neutral-700 mb-4">
+              We do not sell, trade, or rent your personal information. We may share data only:
+            </p>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li>With service providers who help operate cinamini (Supabase for data storage)</li>
+              <li>When required by law or to protect our rights</li>
+              <li>In anonymized, aggregated form for analytics purposes</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Data Security
+            </h2>
+            <p className="text-neutral-700">
+              We use industry-standard security measures to protect your data, including encryption 
+              and secure hosting with Supabase. However, no method of transmission over the internet 
+              is 100% secure.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Your Rights
+            </h2>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li>Access and download your data</li>
+              <li>Correct inaccurate information</li>
+              <li>Delete your account and data</li>
+              <li>Opt out of non-essential communications</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Third-Party Services
+            </h2>
+            <p className="text-neutral-700 mb-4">
+              cinamini uses:
+            </p>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li><strong>Google Analytics:</strong> To understand how users interact with our site</li>
+              <li><strong>The Movie Database (TMDB):</strong> For movie information and images</li>
+              <li><strong>Supabase:</strong> For authentication and data storage</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Children's Privacy
+            </h2>
+            <p className="text-neutral-700">
+              cinamini is not intended for children under 13. We do not knowingly collect 
+              personal information from children under 13.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Contact Us
+            </h2>
+            <p className="text-neutral-700">
+              Questions about this Privacy Policy? Contact us at{' '}
+              <a href="mailto:privacy@cinamini.app" className="text-cinema-red hover:underline">
+                privacy@cinamini.app
+              </a>
+            </p>
+          </section>
+        </div>
+      </main>
+
+      <footer className="bg-neutral-50/80 border-t border-neutral-200/50 mt-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
+              © 2025 cinamini. Made with 🍿 in Grand Rapids, MI
+            </div>
+            <div className="flex items-center space-x-8 text-sm">
+              <a href="/privacy" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
+                Privacy
+              </a>
+              <a href="/terms" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
+                Terms
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}

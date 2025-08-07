@@ -73,6 +73,12 @@ export default async function Home() {
               <a href="/stats" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
                 Statistics
               </a>
+              <a href="/privacy" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
+                Privacy
+              </a>
+              <a href="/terms" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
+                Terms
+              </a>
             </div>
           </div>
         </div>
