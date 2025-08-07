@@ -3,114 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Magic Link</title>
+  <title>Your cinamini Magic Link</title>
   <style>
+    /* Email client reset */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
+      color: #3a3a3c;
+      background-color: #ffffff;
       margin: 0;
       padding: 0;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
+    
+    /* Web font imports with fallbacks */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+    
+    /* Outer wrapper with silver border for 3D effect */
+    .email-wrapper {
+      max-width: 608px;
+      margin: 40px auto;
+      border: 4px solid #d1d2d4;
+      box-shadow: 1px 1px 0px #d1d2d4, 2px 2px 0px #d1d2d4, 3px 3px 0px #d1d2d4, 4px 4px 0px #d1d2d4;
+    }
+    
+    /* Main container */
     .container {
       max-width: 600px;
-      margin: 40px auto;
       background-color: #ffffff;
-      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    
+    /* Header with white background and cinema red border */
     .header {
-      background-color: #6c0311;
-      padding: 40px 20px;
+      background-color: #ffffff;
+      border-bottom: 4px solid #99251d;
+      padding: 30px 20px;
       text-align: center;
-      color: white;
     }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
+    
+    /* Logo image styling */
+    .logo-img {
+      height: 40px;
+      width: auto;
+      max-width: 200px;
+      display: inline-block;
     }
+    
+    /* Main content area */
     .content {
       padding: 40px 30px;
+      background-color: #ffffff;
     }
+    
+    /* Typography hierarchy */
     .content h2 {
-      color: #1f2937;
-      font-size: 24px;
-      margin-bottom: 20px;
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 20px 0;
+      letter-spacing: -0.025em;
     }
+    
     .content p {
-      color: #4b5563;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      color: #3a3a3c;
       margin-bottom: 20px;
       font-size: 16px;
+      font-weight: 400;
+      line-height: 1.6;
     }
+    
+    /* Primary CTA button with 3D shadow */
     .button {
       display: inline-block;
-      background-color: #6c0311;
-      color: white;
-      padding: 14px 32px;
+      background-color: #ebbb4a;
+      color: #3a3a3c;
+      padding: 18px 36px;
       text-decoration: none;
-      border-radius: 6px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-weight: 600;
-      font-size: 16px;
-      margin: 20px 0;
+      font-size: 20px;
+      margin: 25px 0;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+      transition: all 0.2s ease;
     }
+    
     .button:hover {
-      background-color: #56020e;
+      background-color: #f7ee8b;
+      transform: translate(-1px, -1px);
     }
+    
+    /* Magic link highlight box */
+    .magic-box {
+      background-color: #f7ee8b;
+      border: 2px solid #d4a935;
+      padding: 25px;
+      margin: 25px 0;
+      text-align: center;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+    }
+    
+    .magic-box h3 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      margin: 0 0 12px 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
+    .magic-box p {
+      color: #3a3a3c;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    /* URL display box */
+    .url-box {
+      background-color: #f8fafc;
+      border: 1px solid #d1d2d4;
+      padding: 15px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-size: 14px;
+      color: #3a3a3c;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+    
+    /* Security notice styling */
+    .security-notice {
+      background-color: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 20px;
+      margin: 25px 0;
+      border-left: 4px solid #99251d;
+    }
+    
+    .security-notice p {
+      margin: 0;
+      color: #991b1b;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Footer styling */
     .footer {
-      background-color: #f9fafb;
+      background-color: #f8fafc;
       padding: 30px;
       text-align: center;
       color: #6b7280;
       font-size: 14px;
-      border-top: 1px solid #e5e7eb;
+      border-top: 2px solid #d1d2d4;
     }
+    
     .footer p {
-      margin: 5px 0;
+      margin: 8px 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-weight: 400;
     }
-    .url-box {
-      background-color: #f3f4f6;
-      padding: 12px;
-      border-radius: 4px;
-      margin: 20px 0;
-      word-break: break-all;
-      font-size: 14px;
-      color: #4b5563;
+    
+    /* Mobile responsive adjustments */
+    @media only screen and (max-width: 480px) {
+      .email-wrapper {
+        margin: 20px auto;
+      }
+      
+      .logo-img {
+        height: 32px;
+      }
+      
+      .content {
+        padding: 30px 20px;
+      }
+      
+      .button {
+        width: 100%;
+        padding: 20px;
+        font-size: 20px;
+        text-align: center;
+      }
+      
+      .magic-box {
+        padding: 20px 15px;
+      }
     }
-    .magic-box {
-      background-color: #fef7cd;
-      border: 1px solid #b28c49;
-      padding: 20px;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .magic-box h3 {
-      color: #6c0311;
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
-    .magic-box p {
-      color: #6c0311;
-      margin: 0;
-      font-size: 14px;
-    }
+    
+    /* Email client specific fixes */
+    /* Outlook VML fallback for shadows */
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🎬 cinamini</h1>
-    </div>
+  <!--[if mso]>
+  <style>
+    .email-wrapper {
+      border: 4px solid #d1d2d4 !important;
+    }
+    .button {
+      border: 4px solid #d4a935 !important;
+    }
+  </style>
+  <![endif]-->
+  <div class="email-wrapper">
+    <div class="container">
+      <div class="header">
+        <!-- Logo with PNG fallback and webp for modern clients -->
+        <picture>
+          <source srcset="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.webp" type="image/webp">
+          <img src="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.png" alt="cinamini" class="logo-img">
+        </picture>
+      </div>
+    
     <div class="content">
-      <h2>Your Magic Link 🪄</h2>
+      <h2>Your Magic Link is Ready ✨</h2>
       <p>Hi there,</p>
-      <p>Here's your magic link to sign in to cinamini. No password needed!</p>
+      <p>Here's your secure magic link to sign in to cinamini. No password needed – just one click and you're in!</p>
       
       <div class="magic-box">
-        <h3>✨ One-Click Sign In</h3>
-        <p>Click the button below to instantly access your account and start playing today's movie puzzles.</p>
+        <h3>🔑 One-Click Cinema Access</h3>
+        <p>Click the button below to instantly access your account and start solving today's movie puzzles.</p>
       </div>
       
       <div style="text-align: center;">
@@ -122,13 +236,18 @@
         {{ .ConfirmationURL }}
       </div>
       
-      <p><strong>This magic link will expire in 15 minutes for security reasons.</strong></p>
+      <div class="security-notice">
+        <p><strong>🔒 Security Notice:</strong> This magic link will expire in 15 minutes for your account's protection.</p>
+      </div>
       
       <p>If you didn't request this magic link, you can safely ignore this email. Your account remains secure.</p>
     </div>
+    
     <div class="footer">
-      <p>This email was sent by cinamini</p>
-      <p>Need help? Contact us at help@cinamini.app</p>
+      <p>This email was sent by <strong>cinamini</strong></p>
+      <p>Need help? Contact us at <a href="mailto:help@cinamini.app" style="color: #99251d; text-decoration: none;">help@cinamini.app</a></p>
+      <p style="margin-top: 15px; color: #9ca3af; font-size: 12px;">Made with 🍿 in Grand Rapids, MI</p>
+    </div>
     </div>
   </div>
 </body>

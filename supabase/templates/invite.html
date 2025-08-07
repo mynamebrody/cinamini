@@ -3,120 +3,330 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're Invited to Cinamini!</title>
+  <title>You're Invited to cinamini!</title>
   <style>
+    /* Email client reset */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
+      color: #3a3a3c;
+      background-color: #ffffff;
       margin: 0;
       padding: 0;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
+    
+    /* Web font imports with fallbacks */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+    
+    /* Outer wrapper with silver border for 3D effect */
+    .email-wrapper {
+      max-width: 608px;
+      margin: 40px auto;
+      border: 4px solid #d1d2d4;
+      box-shadow: 1px 1px 0px #d1d2d4, 2px 2px 0px #d1d2d4, 3px 3px 0px #d1d2d4, 4px 4px 0px #d1d2d4;
+    }
+    
+    /* Main container */
     .container {
       max-width: 600px;
-      margin: 40px auto;
       background-color: #ffffff;
-      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    
+    /* Header with white background and cinema red border */
     .header {
-      background-color: #6c0311;
-      padding: 40px 20px;
+      background-color: #ffffff;
+      border-bottom: 4px solid #99251d;
+      padding: 30px 20px;
       text-align: center;
-      color: white;
     }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
+    
+    /* Logo image styling */
+    .logo-img {
+      height: 40px;
+      width: auto;
+      max-width: 200px;
+      display: inline-block;
     }
+    
+    /* Main content area */
     .content {
       padding: 40px 30px;
+      background-color: #ffffff;
     }
+    
+    /* Typography hierarchy */
     .content h2 {
-      color: #1f2937;
-      font-size: 24px;
-      margin-bottom: 20px;
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 20px 0;
+      letter-spacing: -0.025em;
     }
+    
     .content p {
-      color: #4b5563;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      color: #3a3a3c;
       margin-bottom: 20px;
       font-size: 16px;
+      font-weight: 400;
+      line-height: 1.6;
     }
+    
+    /* Primary CTA button with 3D shadow */
     .button {
       display: inline-block;
-      background-color: #6c0311;
-      color: white;
-      padding: 14px 32px;
+      background-color: #ebbb4a;
+      color: #3a3a3c;
+      padding: 18px 36px;
       text-decoration: none;
-      border-radius: 6px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-weight: 600;
-      font-size: 16px;
-      margin: 20px 0;
+      font-size: 20px;
+      margin: 25px 0;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+      transition: all 0.2s ease;
     }
+    
     .button:hover {
-      background-color: #56020e;
+      background-color: #f7ee8b;
+      transform: translate(-1px, -1px);
     }
+    
+    /* Invitation banner with excitement */
+    .invitation-banner {
+      background-color: #f7ee8b;
+      border: 2px solid #d4a935;
+      padding: 30px;
+      margin: 30px 0;
+      text-align: center;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+    }
+    
+    .invitation-banner h3 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      margin: 0 0 15px 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
+    .invitation-banner p {
+      color: #3a3a3c;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+    
+    /* Games showcase grid */
+    .games-showcase {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 30px 0;
+    }
+    
+    .game-preview {
+      background-color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      border: 2px solid #d1d2d4;
+      box-shadow: 1px 1px 0px #d1d2d4, 2px 2px 0px #d1d2d4, 3px 3px 0px #d1d2d4, 4px 4px 0px #d1d2d4;
+    }
+    
+    .game-preview h4 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      margin: 0 0 8px 0;
+      color: #99251d;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
+    .game-preview p {
+      margin: 0;
+      color: #3a3a3c;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 400;
+    }
+    
+    /* Excitement highlight box */
+    .excitement-box {
+      background-color: #fef7cd;
+      border: 2px solid #f59e0b;
+      padding: 25px;
+      margin: 25px 0;
+      border-left: 4px solid #d97706;
+      box-shadow: 1px 1px 0px #fbbf24, 2px 2px 0px #fbbf24, 3px 3px 0px #fbbf24, 4px 4px 0px #fbbf24;
+    }
+    
+    .excitement-box h4 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #92400e;
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
+    .excitement-box ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #92400e;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .excitement-box li {
+      margin-bottom: 5px;
+    }
+    
+    /* URL display box */
+    .url-box {
+      background-color: #f8fafc;
+      border: 1px solid #d1d2d4;
+      padding: 15px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-size: 14px;
+      color: #3a3a3c;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+    
+    /* Footer styling */
     .footer {
-      background-color: #f9fafb;
+      background-color: #f8fafc;
       padding: 30px;
       text-align: center;
       color: #6b7280;
       font-size: 14px;
-      border-top: 1px solid #e5e7eb;
+      border-top: 2px solid #d1d2d4;
     }
+    
     .footer p {
-      margin: 5px 0;
+      margin: 8px 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-weight: 400;
     }
-    .url-box {
-      background-color: #f3f4f6;
-      padding: 12px;
-      border-radius: 4px;
-      margin: 20px 0;
-      word-break: break-all;
-      font-size: 14px;
-      color: #4b5563;
+    
+    /* Mobile responsive adjustments */
+    @media only screen and (max-width: 480px) {
+      .email-wrapper {
+        margin: 20px auto;
+      }
+      
+      .logo-img {
+        height: 32px;
+      }
+      
+      .content {
+        padding: 30px 20px;
+      }
+      
+      .games-showcase {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
+      .button {
+        width: 100%;
+        padding: 20px;
+        font-size: 20px;
+        text-align: center;
+      }
+      
+      .invitation-banner {
+        padding: 25px 20px;
+      }
+      
+      .invitation-banner h3 {
+        font-size: 22px;
+      }
+      
+      .invitation-banner p {
+        font-size: 16px;
+      }
+      
+      .excitement-box {
+        padding: 20px 15px;
+      }
     }
-    .invite-box {
-      background-color: #fef7cd;
-      border: 1px solid #b28c49;
-      padding: 20px;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .invite-box h3 {
-      color: #6c0311;
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
-    .invite-box p {
-      color: #6c0311;
-      margin: 0;
-      font-size: 14px;
-    }
+    
+    /* Email client specific fixes */
+    /* Outlook VML fallback for shadows */
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🎬 cinamini</h1>
-    </div>
+  <!--[if mso]>
+  <style>
+    .email-wrapper {
+      border: 4px solid #d1d2d4 !important;
+    }
+    .button {
+      border: 4px solid #d4a935 !important;
+    }
+  </style>
+  <![endif]-->
+  <div class="email-wrapper">
+    <div class="container">
+      <div class="header">
+        <!-- Logo with PNG fallback and webp for modern clients -->
+        <picture>
+          <source srcset="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.webp" type="image/webp">
+          <img src="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.png" alt="cinamini" class="logo-img">
+        </picture>
+      </div>
+    
     <div class="content">
-      <h2>You're Invited!</h2>
+      <h2>🎬 You're Invited to the Show!</h2>
       <p>Hi there,</p>
-      <p>You've been invited to join cinamini, the daily movie puzzle platform for cinema enthusiasts!</p>
+      <p>Congratulations! You've been personally invited to join cinamini, the ultimate daily movie puzzle platform that's captivating cinema lovers worldwide.</p>
       
-      <div class="invite-box">
-        <h3>🎮 Daily Movie Challenges</h3>
-        <p>Test your film knowledge with Retitled, Budget Bracket, Cast Climb, and more. New puzzles every day!</p>
+      <div class="invitation-banner">
+        <h3>🌟 Welcome to Cinema Excellence!</h3>
+        <p>You're about to join an exclusive community of movie enthusiasts who challenge their film knowledge every single day.</p>
       </div>
       
-      <p>Click the button below to accept your invitation and create your account:</p>
+      <div class="games-showcase">
+        <div class="game-preview">
+          <h4>🇪🇸 Retitled</h4>
+          <p>Decode international movie titles and explore world cinema</p>
+        </div>
+        <div class="game-preview">
+          <h4>💰 Budget Bracket</h4>
+          <p>Test your Hollywood economics knowledge in our elimination challenge</p>
+        </div>
+        <div class="game-preview">
+          <h4>🎬 Cast Climb</h4>
+          <p>Identify films from progressive cast member reveals</p>
+        </div>
+        <div class="game-preview">
+          <h4>🖼️ Poster Pixels</h4>
+          <p>Recognize classics from pixelated poster artwork</p>
+        </div>
+      </div>
+      
+      <div class="excitement-box">
+        <h4>🚀 What Awaits You</h4>
+        <ul>
+          <li>Fresh movie puzzles every day at midnight</li>
+          <li>Build unstoppable winning streaks</li>
+          <li>Challenge friends and share your victories</li>
+          <li>Discover hidden gems and cinema trivia</li>
+          <li>Join a passionate community of movie lovers</li>
+        </ul>
+      </div>
+      
+      <p>Ready to dive into the ultimate movie experience? Click below to accept your invitation and create your account:</p>
       
       <div style="text-align: center;">
-        <a href="{{ .ConfirmationURL }}" class="button">Accept Invitation</a>
+        <a href="{{ .ConfirmationURL }}" class="button">Accept My Invitation</a>
       </div>
       
       <p>Or copy and paste this link into your browser:</p>
@@ -124,13 +334,16 @@
         {{ .ConfirmationURL }}
       </div>
       
-      <p><strong>This invitation link will expire in 7 days.</strong></p>
+      <p><strong>This exclusive invitation expires in 7 days</strong> – don't miss your chance to become part of the cinamini community!</p>
       
-      <p>If you weren't expecting this invitation, you can safely ignore this email.</p>
+      <p>If you weren't expecting this invitation, you can safely ignore this email. No account will be created without your confirmation.</p>
     </div>
+    
     <div class="footer">
-      <p>This email was sent by cinamini</p>
-      <p>Need help? Contact us at help@cinamini.app</p>
+      <p>This email was sent by <strong>cinamini</strong></p>
+      <p>Need help? Contact us at <a href="mailto:help@cinamini.app" style="color: #99251d; text-decoration: none;">help@cinamini.app</a></p>
+      <p style="margin-top: 15px; color: #9ca3af; font-size: 12px;">Made with 🍿 in Grand Rapids, MI</p>
+    </div>
     </div>
   </div>
 </body>

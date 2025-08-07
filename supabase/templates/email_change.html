@@ -3,133 +3,255 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirm Email Change</title>
+  <title>Confirm Your Email Change</title>
   <style>
+    /* Email client reset */
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
       line-height: 1.6;
-      color: #333;
-      background-color: #f5f5f5;
+      color: #3a3a3c;
+      background-color: #ffffff;
       margin: 0;
       padding: 0;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
     }
+    
+    /* Web font imports with fallbacks */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+    
+    /* Outer wrapper with silver border for 3D effect */
+    .email-wrapper {
+      max-width: 608px;
+      margin: 40px auto;
+      border: 4px solid #d1d2d4;
+      box-shadow: 1px 1px 0px #d1d2d4, 2px 2px 0px #d1d2d4, 3px 3px 0px #d1d2d4, 4px 4px 0px #d1d2d4;
+    }
+    
+    /* Main container */
     .container {
       max-width: 600px;
-      margin: 40px auto;
       background-color: #ffffff;
-      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+    
+    /* Header with white background and cinema red border */
     .header {
-      background-color: #6c0311;
-      padding: 40px 20px;
+      background-color: #ffffff;
+      border-bottom: 4px solid #99251d;
+      padding: 30px 20px;
       text-align: center;
-      color: white;
     }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: 600;
+    
+    /* Logo image styling */
+    .logo-img {
+      height: 40px;
+      width: auto;
+      max-width: 200px;
+      display: inline-block;
     }
+    
+    /* Main content area */
     .content {
       padding: 40px 30px;
+      background-color: #ffffff;
     }
+    
+    /* Typography hierarchy */
     .content h2 {
-      color: #1f2937;
-      font-size: 24px;
-      margin-bottom: 20px;
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 0 20px 0;
+      letter-spacing: -0.025em;
     }
+    
     .content p {
-      color: #4b5563;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      color: #3a3a3c;
       margin-bottom: 20px;
       font-size: 16px;
+      font-weight: 400;
+      line-height: 1.6;
     }
+    
+    /* Primary CTA button with 3D shadow */
     .button {
       display: inline-block;
-      background-color: #6c0311;
-      color: white;
-      padding: 14px 32px;
+      background-color: #ebbb4a;
+      color: #3a3a3c;
+      padding: 18px 36px;
       text-decoration: none;
-      border-radius: 6px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
       font-weight: 600;
-      font-size: 16px;
-      margin: 20px 0;
+      font-size: 20px;
+      margin: 25px 0;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+      transition: all 0.2s ease;
     }
+    
     .button:hover {
-      background-color: #56020e;
+      background-color: #f7ee8b;
+      transform: translate(-1px, -1px);
     }
+    
+    /* Email change highlight box */
+    .change-box {
+      background-color: #f7ee8b;
+      border: 2px solid #d4a935;
+      padding: 25px;
+      margin: 25px 0;
+      text-align: center;
+      box-shadow: 1px 1px 0px #d4a935, 2px 2px 0px #d4a935, 3px 3px 0px #d4a935, 4px 4px 0px #d4a935;
+    }
+    
+    .change-box h3 {
+      font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+      color: #99251d;
+      margin: 0 0 12px 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+    
+    .change-box p {
+      color: #3a3a3c;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    /* Email display styling */
+    .email-display {
+      background-color: #ffffff;
+      border: 2px solid #d1d2d4;
+      padding: 15px;
+      margin: 15px 0;
+      border-left: 4px solid #99251d;
+      box-shadow: 1px 1px 0px #d1d2d4, 2px 2px 0px #d1d2d4;
+    }
+    
+    .email-display code {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 18px;
+      color: #99251d;
+      font-weight: 600;
+    }
+    
+    /* URL display box */
+    .url-box {
+      background-color: #f8fafc;
+      border: 1px solid #d1d2d4;
+      padding: 15px;
+      margin: 20px 0;
+      word-break: break-all;
+      font-size: 14px;
+      color: #3a3a3c;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    }
+    
+    /* Security notice styling */
+    .security-notice {
+      background-color: #f0f9ff;
+      border: 1px solid #bae6fd;
+      padding: 20px;
+      margin: 25px 0;
+      border-left: 4px solid #0369a1;
+    }
+    
+    .security-notice p {
+      margin: 0;
+      color: #0c4a6e;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    /* Footer styling */
     .footer {
-      background-color: #f9fafb;
+      background-color: #f8fafc;
       padding: 30px;
       text-align: center;
       color: #6b7280;
       font-size: 14px;
-      border-top: 1px solid #e5e7eb;
+      border-top: 2px solid #d1d2d4;
     }
+    
     .footer p {
-      margin: 5px 0;
+      margin: 8px 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-weight: 400;
     }
-    .url-box {
-      background-color: #f3f4f6;
-      padding: 12px;
-      border-radius: 4px;
-      margin: 20px 0;
-      word-break: break-all;
-      font-size: 14px;
-      color: #4b5563;
+    
+    /* Mobile responsive adjustments */
+    @media only screen and (max-width: 480px) {
+      .email-wrapper {
+        margin: 20px auto;
+      }
+      
+      .logo-img {
+        height: 32px;
+      }
+      
+      .content {
+        padding: 30px 20px;
+      }
+      
+      .button {
+        width: 100%;
+        padding: 20px;
+        font-size: 20px;
+        text-align: center;
+      }
+      
+      .change-box {
+        padding: 20px 15px;
+      }
+      
+      .email-display code {
+        font-size: 16px;
+      }
     }
-    .change-box {
-      background-color: #fef7cd;
-      border: 1px solid #b28c49;
-      padding: 20px;
-      border-radius: 6px;
-      margin: 20px 0;
-    }
-    .change-box h3 {
-      color: #6c0311;
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
-    .change-box p {
-      color: #6c0311;
-      margin: 0;
-      font-size: 14px;
-    }
-    .email-display {
-      background-color: #f8fafc;
-      padding: 15px;
-      border-radius: 4px;
-      margin: 15px 0;
-      border-left: 4px solid #6c0311;
-    }
-    .email-display code {
-      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-      font-size: 16px;
-      color: #1f2937;
-      font-weight: 600;
-    }
+    
+    /* Email client specific fixes */
+    /* Outlook VML fallback for shadows */
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>🎬 cinamini</h1>
-    </div>
+  <!--[if mso]>
+  <style>
+    .email-wrapper {
+      border: 4px solid #d1d2d4 !important;
+    }
+    .button {
+      border: 4px solid #d4a935 !important;
+    }
+  </style>
+  <![endif]-->
+  <div class="email-wrapper">
+    <div class="container">
+      <div class="header">
+        <!-- Logo with PNG fallback and webp for modern clients -->
+        <picture>
+          <source srcset="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.webp" type="image/webp">
+          <img src="https://kihoxjuvbxzetmsefdeb.supabase.co/storage/v1/object/public/cinamini-p/Wordmark.png" alt="cinamini" class="logo-img">
+        </picture>
+      </div>
+    
     <div class="content">
-      <h2>Confirm Email Change</h2>
+      <h2>📧 Confirm Email Change</h2>
       <p>Hi there,</p>
-      <p>We received a request to change the email address associated with your cinamini account.</p>
+      <p>We received a request to update the email address associated with your cinamini account. We want to make sure this change is secure and intentional.</p>
       
       <div class="change-box">
-        <h3>📧 New Email Address</h3>
-        <p>Your new email address will be:</p>
+        <h3>✨ Your New Email Address</h3>
+        <p>Once confirmed, your account will use:</p>
         <div class="email-display">
           <code>{{ .NewEmail }}</code>
         </div>
       </div>
       
-      <p>To complete this change and confirm your new email address, click the button below:</p>
+      <p>Click the button below to confirm this email change and complete the update:</p>
       
       <div style="text-align: center;">
         <a href="{{ .ConfirmationURL }}" class="button">Confirm Email Change</a>
@@ -140,13 +262,20 @@
         {{ .ConfirmationURL }}
       </div>
       
-      <p><strong>This link will expire in 24 hours for security reasons.</strong></p>
+      <div class="security-notice">
+        <p><strong>🔒 Security Info:</strong> This confirmation link expires in 24 hours. After confirming, you'll use your new email to sign in to cinamini.</p>
+      </div>
       
-      <p>If you didn't request this email change, please ignore this email and consider securing your account. Your current email address will remain unchanged.</p>
+      <p>If you didn't request this email change, please ignore this message and consider securing your account. Your current email will remain unchanged.</p>
+      
+      <p>Once confirmed, you can continue enjoying your movie puzzles and maintaining your streaks with your new email address!</p>
     </div>
+    
     <div class="footer">
-      <p>This email was sent by cinamini</p>
-      <p>Need help? Contact us at help@cinamini.app</p>
+      <p>This email was sent by <strong>cinamini</strong></p>
+      <p>Need help? Contact us at <a href="mailto:help@cinamini.app" style="color: #99251d; text-decoration: none;">help@cinamini.app</a></p>
+      <p style="margin-top: 15px; color: #9ca3af; font-size: 12px;">Made with 🍿 in Grand Rapids, MI</p>
+    </div>
     </div>
   </div>
 </body>
