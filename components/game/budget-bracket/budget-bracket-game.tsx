@@ -79,6 +79,7 @@ export default function BudgetBracketGame() {
   const [gameChoices, setGameChoices] = useState<GameChoice[]>([])
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [gameStartTime, setGameStartTime] = useState<number>(0)
 
   useEffect(() => {
     if (!authLoading) {
@@ -168,6 +169,7 @@ export default function BudgetBracketGame() {
     setCurrentRound(1)
     setGameChoices([])
     setModalState('none')
+    setGameStartTime(Date.now())
   }
 
   const handleRoundChoice = (chosenMovieTmdbId: number, timeTaken: number) => {
@@ -525,6 +527,7 @@ export default function BudgetBracketGame() {
                 onChoice={handleRoundChoice}
                 gameChoices={gameChoices}
                 puzzle={puzzle}
+                gameStartTime={gameStartTime}
               />
             </div>
           </div>

@@ -35,6 +35,7 @@ interface BudgetBracketRoundProps {
   onChoice: (chosenMovieTmdbId: number, timeTaken: number) => void
   gameChoices: GameChoice[]
   puzzle: PuzzleData
+  gameStartTime: number
 }
 
 interface RevealedBudget {
@@ -49,7 +50,8 @@ export default function BudgetBracketRound({
   round, 
   onChoice, 
   gameChoices, 
-  puzzle 
+  puzzle,
+  gameStartTime 
 }: BudgetBracketRoundProps) {
   // Safety check for pair data
   if (!pair || !pair.movieA || !pair.movieB) {
@@ -70,7 +72,6 @@ export default function BudgetBracketRound({
   
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
-  const [roundStartTime, setRoundStartTime] = useState<number>(0)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [showingFeedback, setShowingFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
@@ -81,7 +82,6 @@ export default function BudgetBracketRound({
 
   useEffect(() => {
     // Reset state for new round
-    setRoundStartTime(Date.now())
     setHasChosen(false)
     setChosenMovie(null)
     setShowingFeedback(false)
@@ -90,22 +90,23 @@ export default function BudgetBracketRound({
     setBudgetB(null)
     setReleaseDateA(null)
     setReleaseDateB(null)
-    setElapsedTime(0)
   }, [round])
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - roundStartTime) / 1000))
+      if (gameStartTime > 0) {
+        setElapsedTime(Math.floor((Date.now() - gameStartTime) / 1000))
+      }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [roundStartTime])
+  }, [gameStartTime])
 
   const handleMovieChoice = async (movie: 'A' | 'B') => {
     if (hasChosen) return
 
     const chosenTmdbId = movie === 'A' ? pair.movieA.tmdb_id : pair.movieB.tmdb_id
-    const timeTaken = Date.now() - roundStartTime
+    const timeTaken = Date.now() - gameStartTime
 
     setHasChosen(true)
     setChosenMovie(movie)
@@ -266,10 +267,10 @@ export default function BudgetBracketRound({
       </div>
 
       {/* Movie comparison */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-4 md:gap-6 items-stretch">
         {/* Movie A */}
         <motion.div
-          whileHover={!hasChosen ? { scale: 1.05, y: -5 } : {}}
+          whileHover={!hasChosen ? { scale: 1.02, y: -2 } : {}}
           whileTap={!hasChosen ? { scale: 0.98 } : {}}
           animate={{
             scale: hasChosen && chosenMovie === 'A' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
@@ -285,12 +286,14 @@ export default function BudgetBracketRound({
                   : 'shadow-3d-grey'
                 : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
                   ? 'shadow-3d-green'
-                  : ''
+                  : showingFeedback && budgetA && budgetB && budgetA < budgetB && chosenMovie === 'B'
+                    ? 'shadow-3d-red'
+                    : ''
               : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
           }`}
         >
           <Card 
-            className={`cursor-pointer transition-all duration-300 ${
+            className={`cursor-pointer transition-all duration-300 h-full flex flex-col ${
               hasChosen 
                 ? chosenMovie === 'A' 
                   ? showingFeedback && isCorrect !== null
@@ -305,8 +308,8 @@ export default function BudgetBracketRound({
             }`}
             onClick={() => handleMovieChoice('A')}
           >
-          <CardContent className="p-8">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
+          <CardContent className="p-4 md:p-8 flex flex-col h-full">
+            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0">
               <img
                 src={getPosterUrl(pair.movieA.poster_path, 'w342')}
                 alt={`${pair.movieA.title} poster`}
@@ -314,13 +317,15 @@ export default function BudgetBracketRound({
                 loading="lazy"
               />
             </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-sm leading-tight mb-1">
-                {pair.movieA.title}
-              </h3>
-              <p className="text-xs text-muted-foreground font-bold">
-                {getMovieYear(releaseDateA || pair.movieA.release_date) || 'Missing Date'}
-              </p>
+            <div className="text-center flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-semibold text-sm leading-tight mb-1">
+                  {pair.movieA.title}
+                </h3>
+                <p className="text-xs text-muted-foreground font-bold">
+                  {getMovieYear(releaseDateA || pair.movieA.release_date) || 'Missing Date'}
+                </p>
+              </div>
               
               {/* Budget reveal */}
               {showingFeedback && budgetA && (
@@ -328,21 +333,21 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className={`mt-3 p-2 ${
+                  className={`mt-3 p-1.5 rounded ${
                     budgetB && budgetA > budgetB 
                       ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
-                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-3d-red'
                   }`}
                 >
-                  <div className={`flex items-center justify-center gap-1 text-sm font-mono font-bold ${
-                    budgetB && budgetA > budgetB ? 'text-green-800' : 'text-[rgb(153,37,29)]'
+                  <div className={`flex items-center justify-center gap-1 text-xs font-mono font-bold ${
+                    budgetB && budgetA > budgetB ? 'text-green-800' : 'text-red-800'
                   }`}>
                     {formatBudget(budgetA, false)}
                     {budgetB && budgetA > budgetB && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
                     )}
                     {budgetB && budgetA < budgetB && (
-                      <TrendingDown className="w-3 h-3 text-[rgb(153,37,29)] ml-1" />
+                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
                     )}
                   </div>
                 </motion.div>
@@ -354,7 +359,7 @@ export default function BudgetBracketRound({
 
         {/* Movie B */}
         <motion.div
-          whileHover={!hasChosen ? { scale: 1.05, y: -5 } : {}}
+          whileHover={!hasChosen ? { scale: 1.02, y: -2 } : {}}
           whileTap={!hasChosen ? { scale: 0.98 } : {}}
           animate={{
             scale: hasChosen && chosenMovie === 'B' && showingFeedback && isCorrect ? [1, 1.1, 1] : 1
@@ -370,12 +375,14 @@ export default function BudgetBracketRound({
                   : 'shadow-3d-grey'
                 : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
                   ? 'shadow-3d-green'
-                  : ''
+                  : showingFeedback && budgetA && budgetB && budgetB < budgetA && chosenMovie === 'A'
+                    ? 'shadow-3d-red'
+                    : ''
               : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
           }`}
         >
           <Card 
-            className={`cursor-pointer transition-all duration-300 ${
+            className={`cursor-pointer transition-all duration-300 h-full flex flex-col ${
               hasChosen 
                 ? chosenMovie === 'B' 
                   ? showingFeedback && isCorrect !== null
@@ -390,8 +397,8 @@ export default function BudgetBracketRound({
             }`}
             onClick={() => handleMovieChoice('B')}
           >
-          <CardContent className="p-8">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto">
+          <CardContent className="p-4 md:p-8 flex flex-col h-full">
+            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0">
               <img
                 src={getPosterUrl(pair.movieB.poster_path, 'w342')}
                 alt={`${pair.movieB.title} poster`}
@@ -399,13 +406,15 @@ export default function BudgetBracketRound({
                 loading="lazy"
               />
             </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-sm leading-tight mb-1">
-                {pair.movieB.title}
-              </h3>
-              <p className="text-xs text-muted-foreground font-bold">
-                {getMovieYear(releaseDateB || pair.movieB.release_date) || 'Missing Date'}
-              </p>
+            <div className="text-center flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-semibold text-sm leading-tight mb-1">
+                  {pair.movieB.title}
+                </h3>
+                <p className="text-xs text-muted-foreground font-bold">
+                  {getMovieYear(releaseDateB || pair.movieB.release_date) || 'Missing Date'}
+                </p>
+              </div>
               
               {/* Budget reveal */}
               {showingFeedback && budgetB && (
@@ -413,21 +422,21 @@ export default function BudgetBracketRound({
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.2, type: "spring" }}
-                  className={`mt-3 p-2 ${
+                  className={`mt-3 p-1.5 rounded ${
                     budgetA && budgetB > budgetA 
                       ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
-                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-3d-red'
                   }`}
                 >
-                  <div className={`flex items-center justify-center gap-1 text-sm font-mono font-bold ${
-                    budgetA && budgetB > budgetA ? 'text-green-800' : 'text-[rgb(153,37,29)]'
+                  <div className={`flex items-center justify-center gap-1 text-xs font-mono font-bold ${
+                    budgetA && budgetB > budgetA ? 'text-green-800' : 'text-red-800'
                   }`}>
                     {formatBudget(budgetB, false)}
                     {budgetA && budgetB > budgetA && (
                       <TrendingUp className="w-3 h-3 text-green-600 ml-1" />
                     )}
                     {budgetA && budgetB < budgetA && (
-                      <TrendingDown className="w-3 h-3 text-[rgb(153,37,29)] ml-1" />
+                      <TrendingDown className="w-3 h-3 text-red-600 ml-1" />
                     )}
                   </div>
                 </motion.div>
@@ -506,10 +515,10 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-cinema-red font-semibold bg-red-50 p-3 border border-red-500 shadow-3d-red"
+              className="text-red-800 font-semibold bg-red-50 p-3 border border-red-400 shadow-3d-red rounded"
             >
               <div className="flex items-center justify-center space-x-2">
-                <span>🟥</span>
+                <span className="text-sm flex items-center">🟥</span>
                 <span>Wrong! {budgetA && budgetB && budgetA > budgetB ? pair.movieA.title : pair.movieB.title} had the higher budget.</span>
               </div>
             </motion.div>
@@ -520,7 +529,7 @@ export default function BudgetBracketRound({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-sm text-muted-foreground bg-gray-50 p-2 border border border-[rgb(var(--silver))] shadow-3d-grey"
+              className="text-sm text-muted-foreground bg-gray-50 p-2 border border border-[rgb(var(--silver))]"
             >
               <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
             </motion.div>
