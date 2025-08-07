@@ -993,7 +993,7 @@ export default function CastClimbGame() {
                 </div>
                 <ShareSection 
                   shareText={centralizedShareText || result.share_text}
-                  shareUrl="https://www.cinamini.app/game/cast-climb"
+                  shareUrl="https://cinamini.app/game/cast-climb"
                 />
               </CardContent>
             </Card>

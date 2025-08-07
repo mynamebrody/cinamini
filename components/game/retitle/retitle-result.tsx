@@ -234,7 +234,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
       <div className="space-y-3">
         <ShareSection 
           shareText={centralizedShareText || shareText || generateFallbackShareText()}
-          shareUrl="https://www.cinamini.app/game/retitled"
+          shareUrl="https://cinamini.app/game/retitled"
         />
         
         <div className="text-center space-y-2">

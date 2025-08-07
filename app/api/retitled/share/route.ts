@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     // Generate share text
     const shareText = `Retitled #${puzzleNumber} ${flagEmoji} • ${resultEmoji} • ${timeText}`
-    const shareUrl = `https://www.cinamini.app/game/retitled`
+    const shareUrl = `https://cinamini.app/game/retitled`
 
     return NextResponse.json({
       shareText,
