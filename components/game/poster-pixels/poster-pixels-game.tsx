@@ -601,6 +601,8 @@ export default function PosterPixelsGame() {
         puzzleNumber={state.puzzle?.puzzle_number}
         puzzleDate={new Date().toISOString().split('T')[0]}
         backgroundColor="#3a3a3c"
+        logo="/cinamini/games/PosterPixelsPoster.svg"
+        logoPng="/cinamini/games/PosterPixelsPoster.png"
         emoji="🖼️"
         onStart={startGame}
       >

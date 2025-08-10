@@ -166,14 +166,14 @@ export default function CastClimbStats() {
       {/* Overview Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.games_played}</div>
             <div className="text-sm text-muted-foreground">Games Played</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.games_won}</div>
             <div className="text-sm text-muted-foreground">Games Won</div>
           </CardContent>
@@ -256,7 +256,7 @@ export default function CastClimbStats() {
       {/* Perfect Games & Time Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Star className="w-5 h-5 text-yellow-500" />
               <div className="text-2xl font-bold">{stats.perfect_games}</div>
@@ -269,7 +269,7 @@ export default function CastClimbStats() {
         </Card>
         
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-blue-500" />
               <div className="text-2xl font-bold">{formatTime(stats.best_solve_time_ms)}</div>
@@ -384,7 +384,7 @@ export default function CastClimbStats() {
       {/* Motivational Message */}
       {stats.games_played > 0 && (
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-sm text-muted-foreground">
               {stats.current_streak === 0 && stats.games_played > 0 ? (
                 "Ready for a comeback? Start a new streak today! 💪"

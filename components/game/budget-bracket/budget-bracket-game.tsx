@@ -259,8 +259,8 @@ export default function BudgetBracketGame() {
 
   const submitGame = async (choices: GameChoice[]) => {
     try {
-      // Calculate total duration as sum of individual round times
-      const totalDuration = choices.reduce((sum, choice) => sum + choice.time_taken_ms, 0)
+      // Calculate total duration from game start to completion
+      const totalDuration = Date.now() - gameStartTime
       
       console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
 
@@ -377,6 +377,8 @@ export default function BudgetBracketGame() {
         puzzleNumber={puzzle?.puzzle_number}
         puzzleDate={puzzle?.puzzle_date}
         backgroundColor="#278646"
+        logo="/cinamini/games/BudgetBracketPoster.svg"
+        logoPng="/cinamini/games/BudgetBracketPoster.png"
         emoji="💰"
         onStart={startGame}
         showBackButton={true}

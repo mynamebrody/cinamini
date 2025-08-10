@@ -145,14 +145,14 @@ export default function BudgetBracketStats() {
       {/* Overview Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.games_played}</div>
             <div className="text-sm text-muted-foreground">Games Played</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.perfect_games}</div>
             <div className="text-sm text-muted-foreground">Perfect Games</div>
           </CardContent>
@@ -321,7 +321,7 @@ export default function BudgetBracketStats() {
       {/* Motivational Message */}
       {stats.games_played > 0 && (
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-sm text-muted-foreground">
               {stats.current_streak === 0 && stats.games_played > 0 ? (
                 "Ready for a comeback? Start a new streak today! 💪"

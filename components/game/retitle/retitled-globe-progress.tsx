@@ -14,62 +14,6 @@ interface RetitledGlobeProgressProps {
   onAnimationComplete?: () => void
 }
 
-const GLOBE_PATTERNS = {
-  // Simplified world map representation using CSS gradients - Golden theme
-  worldMap: `
-    radial-gradient(ellipse 20% 40% at 30% 20%, #d4af37 0%, transparent 50%),
-    radial-gradient(ellipse 25% 35% at 70% 30%, #b8860b 0%, transparent 50%),
-    radial-gradient(ellipse 30% 45% at 40% 60%, #daa520 0%, transparent 50%),
-    radial-gradient(ellipse 35% 25% at 80% 70%, #cd853f 0%, transparent 50%),
-    linear-gradient(45deg, #ebbb4a 0%, #d4af37 50%, #b8860b 100%)
-  `
-}
-
-// Country spotlight positions on the globe (approximated)
-const COUNTRY_POSITIONS = {
-  'ES': { x: 45, y: 35 }, // Spain
-  'FR': { x: 48, y: 32 }, // France
-  'DE': { x: 52, y: 30 }, // Germany
-  'IT': { x: 52, y: 38 }, // Italy
-  'JP': { x: 85, y: 45 }, // Japan
-  'KR': { x: 82, y: 42 }, // South Korea
-  'CN': { x: 75, y: 40 }, // China
-  'IN': { x: 70, y: 50 }, // India
-  'BR': { x: 25, y: 70 }, // Brazil
-  'MX': { x: 15, y: 45 }, // Mexico
-  'RU': { x: 70, y: 25 }, // Russia
-  'GB': { x: 48, y: 30 }, // United Kingdom
-  'US': { x: 20, y: 40 }, // United States
-  'CA': { x: 20, y: 30 }, // Canada
-  'AU': { x: 80, y: 75 }, // Australia
-  'AR': { x: 28, y: 80 }, // Argentina
-  'EG': { x: 55, y: 45 }, // Egypt
-  'ZA': { x: 55, y: 85 }, // South Africa
-  'NG': { x: 50, y: 55 }, // Nigeria
-  'TR': { x: 58, y: 38 }, // Turkey
-  'TH': { x: 75, y: 52 }, // Thailand
-  'VN': { x: 78, y: 52 }, // Vietnam
-  'ID': { x: 78, y: 65 }, // Indonesia
-  'PH': { x: 82, y: 55 }, // Philippines
-  'MY': { x: 75, y: 58 }, // Malaysia
-  'SG': { x: 76, y: 60 }, // Singapore
-  'NO': { x: 52, y: 20 }, // Norway
-  'SE': { x: 54, y: 22 }, // Sweden
-  'FI': { x: 58, y: 20 }, // Finland
-  'DK': { x: 52, y: 28 }, // Denmark
-  'NL': { x: 50, y: 30 }, // Netherlands
-  'BE': { x: 48, y: 31 }, // Belgium
-  'CH': { x: 50, y: 34 }, // Switzerland
-  'AT': { x: 52, y: 34 }, // Austria
-  'PL': { x: 56, y: 30 }, // Poland
-  'CZ': { x: 52, y: 32 }, // Czech Republic
-  'HU': { x: 56, y: 34 }, // Hungary
-  'GR': { x: 56, y: 42 }, // Greece
-  'PT': { x: 42, y: 42 }, // Portugal
-  'IE': { x: 44, y: 28 }, // Ireland
-  'IS': { x: 40, y: 18 }, // Iceland
-  'default': { x: 50, y: 50 } // Fallback position
-}
 
 const FlagConfetti = ({ isVisible }: { isVisible: boolean }) => {
   const confettiItems = Array.from({ length: 12 }, (_, i) => ({
@@ -144,18 +88,12 @@ export default function RetitledGlobeProgress({
 }: RetitledGlobeProgressProps) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showPassport, setShowPassport] = useState(false)
-  const [globeRotation, setGlobeRotation] = useState(0)
   const [isPulsing, setIsPulsing] = useState(false)
 
-  const currentPosition = COUNTRY_POSITIONS[countryCode as keyof typeof COUNTRY_POSITIONS] || COUNTRY_POSITIONS.default
   const visitedCount = visitedCountries.length
-  const totalCountries = 195 // Approximate total countries
 
   useEffect(() => {
     if (gameState === 'traveling') {
-      // Rotate globe to show destination country
-      const targetRotation = -(currentPosition.x - 50) * 3.6 // Convert to degrees
-      setGlobeRotation(targetRotation)
       setIsPulsing(true)
       
       const timer = setTimeout(() => {
@@ -176,11 +114,8 @@ export default function RetitledGlobeProgress({
         clearTimeout(confettiTimer)
         clearTimeout(passportTimer)
       }
-    } else if (gameState === 'preparing') {
-      // Gentle spinning preparation
-      setGlobeRotation(prev => prev + 360)
     }
-  }, [gameState, currentPosition.x, onAnimationComplete])
+  }, [gameState, onAnimationComplete])
 
   const getGameStateText = () => {
     switch (gameState) {
@@ -243,15 +178,7 @@ export default function RetitledGlobeProgress({
           {/* Progress indicator */}
           <div className="space-y-1">
             <div className="text-xs text-muted-foreground">
-              Countries Visited: {visitedCount}/{totalCountries}
-            </div>
-            <div className="w-32 h-1 bg-muted rounded-full mx-auto overflow-hidden">
-              <motion.div 
-                className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${(visitedCount / totalCountries) * 100}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
+              Countries Visited: {visitedCount}
             </div>
           </div>
 

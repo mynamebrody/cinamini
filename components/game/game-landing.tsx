@@ -4,6 +4,7 @@ import React from "react"
 import { Button } from "@/components/ui/button"
 import { Play, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { GameLogo } from "../game-logo"
 
 interface GameLandingProps {
   gameId: string
@@ -11,7 +12,9 @@ interface GameLandingProps {
   puzzleNumber?: number
   puzzleDate?: string
   backgroundColor: string
-  emoji: string
+  emoji?: string
+  logo?: string
+  logoPng?: string
   children: React.ReactNode
   onStart: () => void
   showBackButton?: boolean
@@ -24,6 +27,8 @@ export function GameLanding({
   puzzleDate,
   backgroundColor,
   emoji,
+  logo,
+  logoPng,
   children,
   onStart,
   showBackButton = true
@@ -84,9 +89,17 @@ export function GameLanding({
             {formatDate(puzzleDate)}
           </p>
 
-          {/* Game emoji */}
-          <div className="text-6xl md:text-8xl mb-6 md:mb-8 drop-shadow-lg">
-            {emoji}
+          {/* Game icon */}
+          <div className="mb-6 md:mb-8 drop-shadow-lg flex justify-center">
+            <GameLogo
+              logo={logo}
+              logoPng={logoPng}
+              emoji={emoji}
+              alt={gameName}
+              width={128}
+              height={128}
+              className="w-24 h-24 md:w-32 md:h-32"
+            />
           </div>
 
           {/* Game title */}

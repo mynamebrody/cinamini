@@ -73,12 +73,15 @@ export default function BudgetBracketRound({
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [totalGameTime, setTotalGameTime] = useState(0)
   const [showingFeedback, setShowingFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
   const [budgetA, setBudgetA] = useState<number | null>(null)
   const [budgetB, setBudgetB] = useState<number | null>(null)
   const [releaseDateA, setReleaseDateA] = useState<string | null>(null)
   const [releaseDateB, setReleaseDateB] = useState<string | null>(null)
+  const [roundStartTime, setRoundStartTime] = useState<number>(0)
+  const [imagesLoaded, setImagesLoaded] = useState({ movieA: false, movieB: false })
 
   useEffect(() => {
     // Reset state for new round
@@ -90,23 +93,45 @@ export default function BudgetBracketRound({
     setBudgetB(null)
     setReleaseDateA(null)
     setReleaseDateB(null)
+    setRoundStartTime(0)
+    setImagesLoaded({ movieA: false, movieB: false })
   }, [round])
 
+  // Start round timer when both images have loaded
+  useEffect(() => {
+    if (imagesLoaded.movieA && imagesLoaded.movieB && roundStartTime === 0) {
+      setRoundStartTime(Date.now())
+    }
+  }, [imagesLoaded, roundStartTime])
+
+  // Update total game time (for Studio Timer display)
   useEffect(() => {
     const interval = setInterval(() => {
       if (gameStartTime > 0) {
-        setElapsedTime(Math.floor((Date.now() - gameStartTime) / 1000))
+        setTotalGameTime(Math.floor((Date.now() - gameStartTime) / 1000))
       }
     }, 1000)
 
     return () => clearInterval(interval)
   }, [gameStartTime])
 
+  // Update round time (for internal timing calculations)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (roundStartTime > 0) {
+        setElapsedTime(Math.floor((Date.now() - roundStartTime) / 1000))
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [roundStartTime])
+
   const handleMovieChoice = async (movie: 'A' | 'B') => {
     if (hasChosen) return
 
     const chosenTmdbId = movie === 'A' ? pair.movieA.tmdb_id : pair.movieB.tmdb_id
-    const timeTaken = Date.now() - gameStartTime
+    // Use round start time for more accurate per-round timing (excludes loading time)
+    const timeTaken = roundStartTime > 0 ? Date.now() - roundStartTime : Date.now() - gameStartTime
 
     setHasChosen(true)
     setChosenMovie(movie)
@@ -315,6 +340,7 @@ export default function BudgetBracketRound({
                 alt={`${pair.movieA.title} poster`}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onLoad={() => setImagesLoaded(prev => ({ ...prev, movieA: true }))}
               />
             </div>
             <div className="text-center flex-1 flex flex-col justify-between">
@@ -404,6 +430,7 @@ export default function BudgetBracketRound({
                 alt={`${pair.movieB.title} poster`}
                 className="w-full h-full object-cover"
                 loading="lazy"
+                onLoad={() => setImagesLoaded(prev => ({ ...prev, movieB: true }))}
               />
             </div>
             <div className="text-center flex-1 flex flex-col justify-between">
@@ -451,7 +478,7 @@ export default function BudgetBracketRound({
       <div className="text-center text-muted-foreground">
         <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
           <span className="text-xs">🎬</span>
-          <p className="text-sm font-mono">Studio Time: {formatTime(elapsedTime)}</p>
+          <p className="text-sm font-mono">Studio Time: {formatTime(totalGameTime)}</p>
         </div>
       </div>
 
@@ -515,7 +542,7 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-red-800 font-semibold bg-red-50 p-3 border border-red-400 shadow-3d-red rounded"
+              className="text-red-800 font-semibold bg-red-50 p-3 border border-red-400 shadow-3d-red"
             >
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-sm flex items-center">🟥</span>
@@ -529,7 +556,7 @@ export default function BudgetBracketRound({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-sm text-muted-foreground bg-gray-50 p-2 border border border-[rgb(var(--silver))]"
+              className="text-sm text-muted-foreground bg-gray-50 p-2 border border-[rgb(var(--silver))] shadow-3d-grey"
             >
               <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
             </motion.div>

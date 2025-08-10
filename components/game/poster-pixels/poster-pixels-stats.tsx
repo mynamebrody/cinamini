@@ -163,14 +163,14 @@ export default function PosterPixelsStats() {
       {/* Overview Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.games_played}</div>
             <div className="text-sm text-muted-foreground">Games Played</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4 text-center">
+          <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="text-2xl font-bold">{stats.games_won}</div>
             <div className="text-sm text-muted-foreground">Games Won</div>
           </CardContent>

@@ -91,14 +91,14 @@ export function CastClimbProgress({
   const getRungLabel = (index: number) => {
     if (index === 0) return "Supporting Cast"
     if (index === totalActors - 1) return "Lead Actor"
-    if (index === totalActors - 2 && totalActors > 2) return "Main Cast"
+    if (index === totalActors - 2 || index === totalActors - 3) return "Main Cast"
     return `Actor ${index + 1}`
   }
 
   return (
     <div className={cn("flex flex-col space-y-3", className)}>
       <div className="text-center">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-1">🧗 Cast Climb Progress</h3>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-1">Cast Climb Progress</h3>
         <div className="text-xs text-muted-foreground">
           {gameCompleted ? (
             isCorrect ? (

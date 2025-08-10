@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
           .insert({
             puzzle_date: generatedPuzzle.puzzle_date,
             puzzle_number: generatedPuzzle.puzzle_number,
+            seed_value: generatedPuzzle.seed_value,
             film_id: generatedPuzzle.film_id,
             film_title: generatedPuzzle.film_title,
             film_poster_url: generatedPuzzle.film_poster_url,

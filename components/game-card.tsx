@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { GameLogo } from "./game-logo"
 
 interface GameCardProps {
   id: string
@@ -11,7 +12,9 @@ interface GameCardProps {
   hasPlayedToday: boolean
   isAuthenticated?: boolean
   style?: {
-    emoji: string
+    emoji?: string
+    logo?: string
+    logoPng?: string
     bgColor: string
     textColor?: string
   }
@@ -44,8 +47,16 @@ export default function GameCard({
         className="h-32 flex items-center justify-center relative"
         style={{ backgroundColor: style.bgColor }}
       >
-        <div className="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
-          {style.emoji}
+        <div className="group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+          <GameLogo
+            logo={style.logo}
+            logoPng={style.logoPng}
+            emoji={style.emoji}
+            alt={name}
+            width={64}
+            height={64}
+            className="w-16 h-16"
+          />
         </div>
         
         {/* Play Status Badge */}
