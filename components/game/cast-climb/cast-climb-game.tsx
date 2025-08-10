@@ -643,6 +643,8 @@ export default function CastClimbGame() {
         puzzleNumber={puzzle?.puzzleNumber}
         puzzleDate={puzzle?.puzzleDate}
         backgroundColor="#99251d"
+        logo="/cinamini/games/CastClimbPoster.svg"
+        logoPng="/cinamini/games/CastClimbPoster.png"
         emoji="🎭"
         onStart={startGame}
         showBackButton={true}

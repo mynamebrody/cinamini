@@ -285,7 +285,8 @@ export default function RetitleGame() {
         puzzleNumber={puzzle?.puzzleNumber}
         puzzleDate={puzzle?.puzzleDate}
         backgroundColor="#ebbb4a"
-        emoji="🌍"
+        logo="/cinamini/games/RetitledPoster.svg"
+        logoPng="/cinamini/games/RetitledPoster.png"
         onStart={startGame}
         showBackButton={true}
       >

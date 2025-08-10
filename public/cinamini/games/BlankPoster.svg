@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <bx:export>
+      <bx:file format="svg"/>
+    </bx:export>
+    <clipPath id="61e32faf83">
+      <path d="M 123.457031 65.039062 L 316.800781 65.039062 L 316.800781 310 L 123.457031 310 Z M 123.457031 65.039062 "/>
+    </clipPath>
+    <clipPath id="bfd86fb07c">
+      <path d="M 123.457031 65.046875 L 316.792969 65.046875 L 316.792969 310.109375 L 123.457031 310.109375 Z M 123.457031 65.046875 "/>
+    </clipPath>
+    <clipPath id="adabc97acd">
+      <path d="M 89.597656 27.316406 L 279.289062 27.316406 L 279.289062 310.117188 L 89.597656 310.117188 Z M 89.597656 27.316406 "/>
+    </clipPath>
+    <clipPath id="44ef36f56f">
+      <path d="M 89.597656 27.320312 L 279.246094 27.320312 L 279.246094 310.058594 L 89.597656 310.058594 Z M 89.597656 27.320312 "/>
+    </clipPath>
+  </defs>
+  <g style="fill: rgb(0, 0, 0); fill-opacity: 1;" transform="matrix(1.545192, 0, 0, 1.545192, -63.996376, -38.852871)">
+    <g transform="translate(93.288375, 263.452593)">
+      <path style="stroke:none" d="M 32.359375 83.375 L -3.328125 47.515625 L -3.328125 7.203125 L 187.84375 7.203125 L 223.53125 42.890625 L 223.53125 83.375 Z M 2.765625 43.265625 L 183.59375 43.265625 L 183.59375 13.3125 L 2.765625 13.3125 Z M 2.765625 43.265625 "/>
+    </g>
+  </g>
+  <g clip-rule="nonzero" clip-path="url(#61e32faf83)" transform="matrix(1.545192, 0, 0, 1.545192, -63.996376, -38.852871)" style="">
+    <path style=" stroke:none;fill-rule:nonzero;fill:#000000;fill-opacity:1;" d="M 123.457031 65.039062 L 316.800781 65.039062 L 316.800781 309.742188 L 123.457031 309.742188 Z M 123.457031 65.039062 "/>
+  </g>
+  <g clip-rule="nonzero" clip-path="url(#bfd86fb07c)" transform="matrix(1.545192, 0, 0, 1.545192, -63.996376, -38.852871)" style="">
+    <path style="fill:none;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke:#000000;stroke-opacity:1;stroke-miterlimit:4;" d="M 0.00156861 0.00241396 L 257.782852 0.00241396 L 257.782852 326.752456 L 0.00156861 326.752456 Z M 0.00156861 0.00241396 " transform="matrix(0.75,0,0,0.75,123.455855,65.045065)"/>
+  </g>
+  <g style="fill: rgb(0, 0, 0); fill-opacity: 1;" transform="matrix(1.545192, 0, 0, 1.545192, -63.996376, -38.852871)">
+    <g transform="translate(93.288375, 19.842368)">
+      <path style="stroke:none" d="M 32.359375 83.375 L -3.328125 47.515625 L -3.328125 7.203125 L 187.84375 7.203125 L 223.53125 42.890625 L 223.53125 83.375 Z M 2.765625 43.265625 L 183.59375 43.265625 L 183.59375 13.3125 L 2.765625 13.3125 Z M 2.765625 43.265625 "/>
+    </g>
+  </g>
+  <g clip-rule="nonzero" clip-path="url(#adabc97acd)" transform="matrix(1.545192, 0, 0, 1.545192, -63.996376, -38.852871)" style="">
+    <path style=" stroke:none;fill-rule:nonzero;fill:#ffffff;fill-opacity:1;" d="M 89.597656 27.316406 L 279.289062 27.316406 L 279.289062 310.367188 L 89.597656 310.367188 Z M 89.597656 27.316406 "/>
+  </g>
+  <g clip-rule="nonzero" clip-path="url(#44ef36f56f)" transform="matrix(1.54219, 0, 0, 1.547473, -63.157845, -38.915184)" style="">
+    <path style="fill:none;stroke-width:12;stroke-linecap:butt;stroke-linejoin:miter;stroke:#000000;stroke-opacity:1;stroke-miterlimit:4;" d="M -0.00235448 -0.000126136 L 252.904175 -0.000126136 L 252.904175 377.046785 L -0.00235448 377.046785 Z M -0.00235448 -0.000126136 " transform="matrix(0.749876,0,0,0.749876,89.599422,27.320407)"/>
+  </g>
+  <rect x="362.553" y="4.031" width="6.999" height="434.956" style="stroke: rgb(0, 0, 0); stroke-width: 1;"/>
+  <rect x="75.782" y="4.06" width="290.806" height="2.179" style="stroke: rgb(0, 0, 0); stroke-width: 1;"/>
+</svg>

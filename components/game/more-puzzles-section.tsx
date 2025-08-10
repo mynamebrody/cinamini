@@ -6,19 +6,22 @@ import { Button } from "@/components/ui/button"
 import { localGameStorage } from "@/lib/local-game-storage"
 import { useGameMode } from "@/hooks/use-game-mode"
 import Link from "next/link"
+import { GameLogo } from "../game-logo"
 
 interface GameInfo {
   id: string
   name: string
-  emoji: string
+  emoji?: string
+  logo?: string
+  logoPng?: string
   path: string
 }
 
 const ALL_GAMES: GameInfo[] = [
-  { id: "cast-climb", name: "Cast Climb", emoji: "🎭", path: "/game/cast-climb" },
-  { id: "retitled", name: "Retitled", emoji: "🌍", path: "/game/retitled" },
-  { id: "budget-bracket", name: "Budget Bracket", emoji: "💰", path: "/game/budget-bracket" },
-  { id: "poster-pixels", name: "Poster Pixels", emoji: "🖼️", path: "/game/poster-pixels" }
+  { id: "cast-climb", name: "Cast Climb", logo: "/cinamini/games/CastClimbPoster.svg", logoPng: "/cinamini/games/CastClimbPoster.png", emoji: "🎭", path: "/game/cast-climb" },
+  { id: "retitled", name: "Retitled", logo: "/cinamini/games/RetitledPoster.svg", logoPng: "/cinamini/games/RetitledPoster.png", emoji: "🌍", path: "/game/retitled" },
+  { id: "budget-bracket", name: "Budget Bracket", logo: "/cinamini/games/BudgetBracketPoster.svg", logoPng: "/cinamini/games/BudgetBracketPoster.png", emoji: "💰", path: "/game/budget-bracket" },
+  { id: "poster-pixels", name: "Poster Pixels", logo: "/cinamini/games/PosterPixelsPoster.svg", logoPng: "/cinamini/games/PosterPixelsPoster.png", emoji: "🖼️", path: "/game/poster-pixels" }
 ]
 
 interface MorePuzzlesSectionProps {
@@ -86,7 +89,17 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
                   style={{ borderRadius: 0 }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="text-2xl">{game.emoji}</div>
+                    <div className="w-8 h-8 flex items-center justify-center">
+                      <GameLogo
+                        logo={game.logo}
+                        logoPng={game.logoPng}
+                        emoji={game.emoji}
+                        alt={game.name}
+                        width={32}
+                        height={32}
+                        className="w-8 h-8"
+                      />
+                    </div>
                     <div>
                       <h3 className="font-semibold text-gray-800">{game.name}</h3>
                       <div className="text-xs text-gray-600">

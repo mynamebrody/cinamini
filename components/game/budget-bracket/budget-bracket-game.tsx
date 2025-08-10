@@ -377,6 +377,8 @@ export default function BudgetBracketGame() {
         puzzleNumber={puzzle?.puzzle_number}
         puzzleDate={puzzle?.puzzle_date}
         backgroundColor="#278646"
+        logo="/cinamini/games/BudgetBracketPoster.svg"
+        logoPng="/cinamini/games/BudgetBracketPoster.png"
         emoji="💰"
         onStart={startGame}
         showBackButton={true}

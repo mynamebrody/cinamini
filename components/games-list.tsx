@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import GameCard from "./game-card"
 import { Loader2 } from "lucide-react"
 import { localGameStorage } from "@/lib/local-game-storage"
+import { GameLogo } from "./game-logo"
 
 interface Game {
   game_id: string
@@ -19,12 +20,12 @@ interface GamesListProps {
 // Define which games should be featured (2x2 grid on mobile, 4 across on desktop)
 const FEATURED_GAMES = ['retitled', 'budget-bracket', 'cast-climb', 'poster-pixels']
 
-// Game emoji and color mappings - New Sophisticated Cinema Palette
-const GAME_STYLES: Record<string, { emoji: string; bgColor: string; textColor?: string }> = {
-  'cast-climb': { emoji: '🎭', bgColor: '#99251d', textColor: 'white' }, // Deep Cinema Red - Theater theme
-  'retitled': { emoji: '🌍', bgColor: '#ebbb4a', textColor: 'white' }, // Warm Golden - World adventure
-  'budget-bracket': { emoji: '💰', bgColor: '#278646', textColor: 'white' }, // Cinema Green - Money/success theme
-  'poster-pixels': { emoji: '🖼️', bgColor: '#3a3a3c', textColor: 'white' }, // Charcoal - Art gallery sophistication
+// Game logo and color mappings - New Sophisticated Cinema Palette
+const GAME_STYLES: Record<string, { emoji?: string; logo?: string; logoPng?: string; bgColor: string; textColor?: string }> = {
+  'cast-climb': { logo: '/cinamini/games/CastClimbPoster.svg', logoPng: '/cinamini/games/CastClimbPoster.png', bgColor: '#99251d', textColor: 'white' }, // Deep Cinema Red - Theater theme
+  'retitled': { logo: '/cinamini/games/RetitledPoster.svg', logoPng: '/cinamini/games/RetitledPoster.png', bgColor: '#ebbb4a', textColor: 'white' }, // Warm Golden - World adventure
+  'budget-bracket': { logo: '/cinamini/games/BudgetBracketPoster.svg', logoPng: '/cinamini/games/BudgetBracketPoster.png', bgColor: '#278646', textColor: 'white' }, // Cinema Green - Money/success theme
+  'poster-pixels': { logo: '/cinamini/games/PosterPixelsPoster.svg', logoPng: '/cinamini/games/PosterPixelsPoster.png', bgColor: '#3a3a3c', textColor: 'white' }, // Charcoal - Art gallery sophistication
   // Default for any new games
   'default': { emoji: '🎬', bgColor: '#d1d2d4', textColor: '#3a3a3c' } // Silver with charcoal text
 }
@@ -183,9 +184,17 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                         shapeRendering: 'crispEdges'
                       }}
                     >
-                      {/* Game Emoji */}
-                      <div className="text-5xl md:text-6xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
-                        {style.emoji}
+                      {/* Game Icon */}
+                      <div className="mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                        <GameLogo
+                          logo={style.logo}
+                          logoPng={style.logoPng}
+                          emoji={style.emoji}
+                          alt={game.display_name}
+                          width={80}
+                          height={80}
+                          className="w-16 h-16 md:w-20 md:h-20"
+                        />
                       </div>
                       
                       {/* Game Title */}
