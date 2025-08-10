@@ -20,7 +20,7 @@ export default function Privacy() {
         
         <div className="prose prose-neutral max-w-none">
           <p className="text-sm text-neutral-500 mb-8">
-            Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            Last updated: August 1, 2025
           </p>
 
           <section className="mb-8">
