@@ -5,6 +5,7 @@ import {
   calculateUserStats,
   type CastClimbResult
 } from "@/lib/cast-climb"
+import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,20 @@ export async function POST(request: NextRequest) {
     
     if (!user) {
       // For anonymous users, return a basic response since the game logic is handled client-side
+      // Send webhook noting anonymous attempt (no DB persistence)
+      const body = await request.json().catch(() => ({}))
+      await sendGuessWebhook(request, {
+        event: "guess",
+        game: "cast-climb",
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId: body?.puzzleId,
+          guessFilmId: body?.guessFilmId,
+          guessFilmTitle: body?.guessFilmTitle,
+        },
+        progress: { attemptNumber: 1 },
+      })
+
       return NextResponse.json({ 
         error: "Anonymous mode not supported for Cast Climb API", 
         message: "Game logic should be handled client-side for anonymous users"
@@ -114,6 +129,25 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Fire webhook for authenticated guess
+    await sendGuessWebhook(request, {
+      event: "guess",
+      game: "cast-climb",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId,
+        guessFilmId,
+        guessFilmTitle,
+        guessFilmYear,
+      },
+      progress: {
+        attemptNumber,
+        maxAttempts,
+        isSkip,
+      },
+      correctAnswer: { id: puzzle.film_id, isCorrect },
+    })
 
     // Get all user guesses for this puzzle (including the new one)
     const allGuesses = [...(existingGuesses || []), newGuess]

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,21 @@ export async function POST(request: NextRequest) {
     if (!user) {
       // For anonymous users, return a simple response
       // Note: This is a basic implementation - full anonymous support would require more work
+      // Send webhook for anonymous guess
+      await sendGuessWebhook(request, {
+        event: "guess",
+        game: "poster-pixels",
+        user: { isAuthenticated: false },
+        guess: {
+          gameId: game_id,
+          puzzleId: puzzle_id,
+          guessedMovieId: guessed_movie_id,
+          guessedMovieTitle: guessed_movie_title,
+          timeTakenMs: time_taken_ms,
+        },
+        progress: { guessNumber: 1, clarityLevel: clarity_level },
+      })
+
       return NextResponse.json({
         isCorrect: false, // Would need to check against puzzle answer
         isGameCompleted: false,
@@ -107,6 +123,23 @@ export async function POST(request: NextRequest) {
       console.error("Error updating game:", updateError)
       throw updateError
     }
+
+    // Fire webhook for authenticated guess
+    await sendGuessWebhook(request, {
+      event: "guess",
+      game: "poster-pixels",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        gameId: game_id,
+        puzzleId: puzzle_id,
+        guessedMovieId: guessed_movie_id,
+        guessedMovieTitle: guessed_movie_title,
+        timeTakenMs: time_taken_ms,
+        clarityLevel: clarity_level,
+      },
+      progress: { guessNumber, gameCompleted: !!updates.completed },
+      correctAnswer: { id: correctMovieId, isCorrect },
+    })
 
     return NextResponse.json({
       guess: newGuess,

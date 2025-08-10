@@ -5,6 +5,7 @@ import {
   type GameChoice,
   type MoviePair 
 } from '@/lib/budget-bracket'
+import { sendGuessWebhook } from '@/lib/webhooks'
 
 interface GuessRequest {
   puzzle_id: number
@@ -136,6 +137,25 @@ export async function POST(request: NextRequest) {
       budget_difference: currentPair.budgetDifference,
       next_round: isCorrect && round < 5 ? round + 1 : null
     }
+
+    // Fire webhook for authenticated guess (round 1 only on server)
+    await sendGuessWebhook(request, {
+      event: 'guess',
+      game: 'budget-bracket',
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId: puzzle_id,
+        round,
+        chosenMovieTmdbId: chosen_movie_tmdb_id,
+        timeTakenMs: time_taken_ms,
+      },
+      progress: { round, isGameComplete },
+      correctAnswer: {
+        correctChoice: currentPair.correctChoice,
+        budgetDifference: currentPair.budgetDifference,
+        isCorrect,
+      },
+    })
 
     return NextResponse.json(response)
 

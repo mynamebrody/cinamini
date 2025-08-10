@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
 import { getCountryFlag } from "@/lib/retitled"
+import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,25 @@ export async function POST(request: NextRequest) {
       if (!correctMovie) {
         return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
       }
+
+      // Fire webhook for anonymous guess
+      await sendGuessWebhook(request, {
+        event: "guess",
+        game: "retitled",
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId,
+          guessFilmId,
+        },
+        progress: { attemptNumber: 1 },
+        correctAnswer: {
+          id: puzzle.film_id,
+          title: correctMovie.title,
+          originalTitle: correctMovie.original_title,
+          releaseYear: getReleaseYear(correctMovie.release_date),
+          isCorrect,
+        },
+      })
 
       return NextResponse.json({
         correct: isCorrect,
@@ -216,6 +236,26 @@ export async function POST(request: NextRequest) {
     if (!correctMovie) {
       return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
     }
+
+    // Fire webhook for authenticated guess
+    await sendGuessWebhook(request, {
+      event: "guess",
+      game: "retitled",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId,
+        guessFilmId,
+        solveTimeMs,
+      },
+      progress: { attemptNumber: 1 },
+      correctAnswer: {
+        id: puzzle.film_id,
+        title: correctMovie.title,
+        originalTitle: correctMovie.original_title,
+        releaseYear: getReleaseYear(correctMovie.release_date),
+        isCorrect,
+      },
+    })
 
     return NextResponse.json({
       correct: isCorrect,
