@@ -36,7 +36,7 @@ export default async function StatsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
-              <a href="/" className="text-neutral-900 hover:text-neutral-600 transition-colors">
+              <a href="/" className="text-neutral-900 hover:text-[rgb(153,37,29)] transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
               </a>
