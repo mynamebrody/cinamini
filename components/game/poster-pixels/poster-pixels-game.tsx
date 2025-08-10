@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Clock, BarChart3, Loader2 } from "lucide-react"
+import { BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
 import { GameLanding } from "../game-landing"
 import { InstructionCard, InstructionGrid } from "../instruction-card"
@@ -14,8 +14,6 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
-import { PosterPixelsClarityProgress } from "./poster-pixels-clarity-progress"
-import { PosterPixelsArtGalleryCelebration } from "./poster-pixels-art-gallery-celebration"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 
 interface MovieData {
@@ -35,6 +33,7 @@ interface PuzzleData {
   film_title?: string
   film_poster_url?: string
   film_release_year?: number
+  clarity_levels?: number[]
 }
 
 interface GameState {
@@ -52,12 +51,14 @@ interface GameState {
     clarityLevel: number
   }>
   error: string | null
+  currentLevelIndex: number
+  finalScore?: number
 }
 
 type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
-const GAME_DURATION = 30 // seconds
+const DEFAULT_LEVELS = [5, 15, 35, 65, 100]
 
 export default function PosterPixelsGame() {
   const { isAnonymous, loading: authLoading } = useGameMode()
@@ -70,22 +71,16 @@ export default function PosterPixelsGame() {
     gameStarted: false,
     won: false,
     timeElapsed: 0,
-    clarityLevel: 0.50, // Start at 50% clarity
+    clarityLevel: 0.05,
     guesses: [],
     error: null,
+    currentLevelIndex: 0,
   })
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const startTimeRef = useRef<number | null>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [selectedMovie, setSelectedMovie] = useState<{
     id: number
     title: string
-  } | null>(null)
-  const [celebrationData, setCelebrationData] = useState<{
-    won: boolean
-    clarityLevel: number
-    movieTitle: string
   } | null>(null)
 
   // Load today's puzzle
@@ -95,37 +90,7 @@ export default function PosterPixelsGame() {
     }
   }, [authLoading])
 
-  // Timer effect
-  useEffect(() => {
-    if (state.gameStarted && gameState === 'playing' && state.timeElapsed < GAME_DURATION) {
-      intervalRef.current = setInterval(() => {
-        setState(prev => {
-          const newTimeElapsed = prev.timeElapsed + 0.1
-          // Reach 100% clarity at 25 seconds (5 seconds before the end)
-          const TARGET_TIME = 25 // Time to reach 100% clarity
-          const newClarityLevel = Math.min(1, 0.50 + (Math.min(newTimeElapsed, TARGET_TIME) / TARGET_TIME) * 0.50)
-          
-          // Check if time is up
-          if (newTimeElapsed >= GAME_DURATION) {
-            handleGameOver(false, undefined, prev.guesses)
-            return prev
-          }
-          
-          return {
-            ...prev,
-            timeElapsed: newTimeElapsed,
-            clarityLevel: newClarityLevel,
-          }
-        })
-      }, 100) // Update every 100ms for smooth animation
-
-      return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current)
-      }
-    }
-  }, [state.gameStarted, gameState, state.timeElapsed])
-
-  // Draw pixelated poster
+  // Draw pixelated poster on clarity changes
   useEffect(() => {
     if (canvasRef.current && state.puzzle && state.gameStarted) {
       try {
@@ -141,6 +106,13 @@ export default function PosterPixelsGame() {
     }
   }, [state.clarityLevel, state.puzzle, state.gameStarted])
 
+  const getLevels = () => state.puzzle?.clarity_levels || DEFAULT_LEVELS
+  const getLevelFraction = (index: number) => {
+    const levels = getLevels()
+    const clampedIndex = Math.max(0, Math.min(levels.length - 1, index))
+    return (levels[clampedIndex] / 100)
+  }
+
   const loadTodaysPuzzle = async () => {
     try {
       if (isAnonymous) {
@@ -155,13 +127,15 @@ export default function PosterPixelsGame() {
           throw new Error(data.error || "Failed to load puzzle")
         }
 
+        const initialIndex = 0
         setState(prev => ({
           ...prev,
           puzzle: data.puzzle,
           hasPlayedToday: localResult !== null,
           won: localResult?.result?.won || false,
-          timeElapsed: localResult?.result?.timeElapsed || 0,
-          clarityLevel: localResult?.result?.clarityLevel || 0.75,
+          timeElapsed: 0,
+          clarityLevel: getLevelFraction(initialIndex),
+          currentLevelIndex: initialIndex,
           guesses: localResult?.result?.guesses || [],
         }))
 
@@ -184,17 +158,15 @@ export default function PosterPixelsGame() {
           throw new Error(data.error || "Failed to load puzzle")
         }
 
+        const initialIndex = 0
         setState(prev => ({
           ...prev,
           puzzle: data.puzzle,
           hasPlayedToday: data.hasPlayedToday,
           won: data.hasPlayedToday && data.previousGame?.won,
-          timeElapsed: data.hasPlayedToday && data.previousGame?.total_time_ms 
-            ? data.previousGame.total_time_ms / 1000 // Convert ms to seconds
-            : prev.timeElapsed,
-          clarityLevel: data.hasPlayedToday && data.previousGame?.final_clarity_level 
-            ? data.previousGame.final_clarity_level
-            : prev.clarityLevel,
+          timeElapsed: 0,
+          clarityLevel: getLevelFraction(initialIndex),
+          currentLevelIndex: initialIndex,
           guesses: data.previousGame?.guesses || [],
         }))
 
@@ -230,13 +202,13 @@ export default function PosterPixelsGame() {
     try {
       if (isAnonymous) {
         // For anonymous users, handle game start locally
-        startTimeRef.current = Date.now()
         setState(prev => ({
           ...prev,
-          gameId: `anonymous-${Date.now()}`, // Generate local game ID
+          gameId: `anonymous-${Date.now()}`,
           gameStarted: true,
           timeElapsed: 0,
-          clarityLevel: 0.20,
+          clarityLevel: getLevelFraction(0),
+          currentLevelIndex: 0,
         }))
         setGameState('playing')
       } else {
@@ -255,13 +227,13 @@ export default function PosterPixelsGame() {
           throw new Error(data.error || "Failed to start game")
         }
 
-        startTimeRef.current = Date.now()
         setState(prev => ({
           ...prev,
           gameId: data.gameId,
           gameStarted: true,
           timeElapsed: 0,
-          clarityLevel: 0.20,
+          clarityLevel: getLevelFraction(0),
+          currentLevelIndex: 0,
         }))
         setGameState('playing')
       }
@@ -372,11 +344,22 @@ export default function PosterPixelsGame() {
     ctx.fillText('Please check your connection', canvas.width / 2, canvas.height / 2 + 25)
   }
 
+  const enhancementsUsed = () => state.currentLevelIndex + 1
+
+  const calculateScoreFromLevel = (index: number) => {
+    const levels = getLevels()
+    const level = levels[Math.max(0, Math.min(levels.length - 1, index))]
+    if (level <= 5) return 1000
+    if (level <= 15) return 750
+    if (level <= 35) return 500
+    if (level <= 65) return 250
+    return 100
+  }
+
   const handleGuess = async () => {
     if (!selectedMovie || !state.gameId || gameState !== 'playing') return
 
-    const timeTaken = Math.round(Date.now() - (startTimeRef.current || Date.now()))
-    const guessClarityLevel = state.clarityLevel // Capture clarity level at guess time
+    const guessClarityLevel = state.clarityLevel // 0..1
     
     // Handle both old and new data structures
     const correctMovieId = state.puzzle!.movie_data?.id || state.puzzle!.film_id
@@ -399,7 +382,6 @@ export default function PosterPixelsGame() {
 
         setSelectedMovie(null)
 
-        // End game immediately after single guess - pass the updated guesses
         const updatedGuesses = [...state.guesses, newGuess]
         handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
@@ -412,7 +394,7 @@ export default function PosterPixelsGame() {
             puzzle_id: state.puzzle!.id,
             guessed_movie_id: selectedMovie.id,
             guessed_movie_title: selectedMovie.title,
-            time_taken_ms: timeTaken,
+            time_taken_ms: 0,
             clarity_level: guessClarityLevel,
           }),
         })
@@ -437,7 +419,6 @@ export default function PosterPixelsGame() {
 
         setSelectedMovie(null)
 
-        // End game immediately after single guess
         const updatedGuesses = [...state.guesses, newGuess]
         handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
@@ -454,8 +435,7 @@ export default function PosterPixelsGame() {
   const handleAutoSubmit = async (movie: { id: number; title: string }) => {
     if (!state.gameId || gameState !== 'playing') return
 
-    const timeTaken = Math.round(Date.now() - (startTimeRef.current || Date.now()))
-    const guessClarityLevel = state.clarityLevel // Capture clarity level at guess time
+    const guessClarityLevel = state.clarityLevel // 0..1
     
     // Handle both old and new data structures
     const correctMovieId = state.puzzle!.movie_data?.id || state.puzzle!.film_id
@@ -476,7 +456,6 @@ export default function PosterPixelsGame() {
           guesses: [...prev.guesses, newGuess],
         }))
 
-        // End game immediately after single guess - pass the updated guesses
         const updatedGuesses = [...state.guesses, newGuess]
         handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       } else {
@@ -489,7 +468,7 @@ export default function PosterPixelsGame() {
             puzzle_id: state.puzzle!.id,
             guessed_movie_id: movie.id,
             guessed_movie_title: movie.title,
-            time_taken_ms: timeTaken,
+            time_taken_ms: 0,
             clarity_level: guessClarityLevel,
           }),
         })
@@ -512,7 +491,6 @@ export default function PosterPixelsGame() {
           guesses: [...prev.guesses, newGuess],
         }))
 
-        // End game immediately after single guess
         const updatedGuesses = [...state.guesses, newGuess]
         handleGameOver(isCorrect, guessClarityLevel, updatedGuesses)
       }
@@ -527,21 +505,20 @@ export default function PosterPixelsGame() {
   }
 
   const handleGameOver = async (won: boolean, guessClarityLevel?: number, updatedGuesses?: Array<{ movieId: number; movieTitle: string; isCorrect: boolean; clarityLevel: number }>) => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-
-    // Use the clarity level from the guess, or current clarity if no guess was made (time up)
-    const finalClarityLevel = guessClarityLevel || state.clarityLevel
+    // Compute score from level index
+    const score = calculateScoreFromLevel(state.currentLevelIndex)
 
     try {
       if (isAnonymous) {
         // Save result to local storage for anonymous users
         const anonymousResult = {
           won,
-          timeElapsed: state.timeElapsed,
-          clarityLevel: finalClarityLevel,
+          timeElapsed: 0,
+          clarityLevel: guessClarityLevel || state.clarityLevel,
           guesses: updatedGuesses || state.guesses,
           puzzleId: state.puzzle!.id,
           movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
+          finalScore: score,
         }
         
         localGameStorage.saveDailyResult('poster-pixels', anonymousResult)
@@ -553,8 +530,8 @@ export default function PosterPixelsGame() {
           body: JSON.stringify({
             game_id: state.gameId,
             won,
-            total_time_ms: Math.round(state.timeElapsed * 1000),
-            final_clarity_level: finalClarityLevel,
+            total_time_ms: 0,
+            final_clarity_level: guessClarityLevel || state.clarityLevel,
           }),
         })
       }
@@ -562,15 +539,15 @@ export default function PosterPixelsGame() {
       console.error("Error completing game:", error)
     }
 
-    // Update final game state directly without celebration
+    // Update final game state
     setState(prev => ({
       ...prev,
       won,
-      clarityLevel: finalClarityLevel,
+      clarityLevel: guessClarityLevel || state.clarityLevel,
+      finalScore: score,
     }))
     setGameState('completed')
 
-    // Still fire confetti for wins and play celebration sound
     if (won) {
       confetti({
         particleCount: 100,
@@ -581,16 +558,19 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const secs = Math.floor(seconds)
-    return `${secs}s`
+  const enhance = () => {
+    const levels = getLevels()
+    setState(prev => {
+      const nextIndex = Math.min(prev.currentLevelIndex + 1, levels.length - 1)
+      return {
+        ...prev,
+        currentLevelIndex: nextIndex,
+        clarityLevel: getLevelFraction(nextIndex),
+      }
+    })
   }
 
-  const showStats = () => {
-    setModalState('stats')
-  }
-
-
+  const formatPercent = (fraction: number) => `${Math.round(fraction * 100)}%`
 
   // Don't render the game container UI if we're showing the landing page
   if (gameState === "ready" && modalState !== 'howtoplay') {
@@ -619,7 +599,7 @@ export default function PosterPixelsGame() {
         onHelpClick={() => setModalState('howtoplay')}
       >
         {(gameState === 'completed') && !isAnonymous && (
-          <Button variant="ghost" size="sm" onClick={showStats}>
+          <Button variant="ghost" size="sm" onClick={() => setModalState('stats')}>
             <BarChart3 className="w-4 h-4" />
           </Button>
         )}
@@ -639,13 +619,13 @@ export default function PosterPixelsGame() {
             <InstructionCard
               step={1}
               title="Blurry Movie Poster"
-              description="A heavily pixelated movie poster appears on screen. At first, it's almost impossible to make out any details."
+              description="A heavily pixelated movie poster appears on screen. Click Enhance to reveal more details."
               darkTheme={true}
             />
             <InstructionCard
               step={2}
-              title="Gradual Clarity"
-              description="Over 30 seconds, the poster slowly becomes clearer and more recognizable. Details start to emerge."
+              title="Enhance in 5 Steps"
+              description="Each click sharpens the poster. Fewer enhancements = higher score."
               darkTheme={true}
             />
             <InstructionCard
@@ -663,12 +643,12 @@ export default function PosterPixelsGame() {
             <InstructionCard
               step={4}
               title="Score Points"
-              description="The earlier you guess correctly, the higher your score! Challenge yourself to identify movies from minimal details."
+              description="The earlier you guess correctly, the higher your score!"
               darkTheme={true}
               example={
                 <div className="bg-muted rounded-lg p-3 text-center">
                   <div className="text-foreground text-sm font-semibold">🏆 Perfect!</div>
-                  <div className="text-muted-foreground text-xs mt-1">Guessed at 45% clarity</div>
+                  <div className="text-muted-foreground text-xs mt-1">Solved in 1 🔍</div>
                 </div>
               }
             />
@@ -729,19 +709,10 @@ export default function PosterPixelsGame() {
           </div>
         )}
 
-
         {gameState === 'playing' && (
           <div className="max-w-4xl mx-auto space-y-6 pb-40">
-            {/* Timer */}
-            <div className="text-center">
-              <div className="inline-flex items-center gap-2 text-lg font-semibold">
-                <Clock className="w-5 h-5" />
-                <span>Time Remaining: {formatTime(GAME_DURATION - state.timeElapsed)}</span>
-              </div>
-            </div>
-
             {/* Poster Display */}
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-4">
               <canvas
                 ref={canvasRef}
                 className="border border-[rgb(var(--silver))] shadow-3d-grey"
@@ -749,6 +720,16 @@ export default function PosterPixelsGame() {
                 height={450}
                 style={{ borderRadius: 0 }}
               />
+
+              {/* Enhance controls */}
+              <div className="flex items-center gap-3">
+                <Button onClick={enhance} disabled={state.currentLevelIndex >= getLevels().length - 1}>
+                  Enhance 🔍
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(state.clarityLevel)}
+                </div>
+              </div>
             </div>
 
             {/* Search Card */}
@@ -784,12 +765,12 @@ export default function PosterPixelsGame() {
           </div>
         )}
 
-
         {gameState === 'completed' && state.puzzle && (
           <PosterPixelsResult
+            puzzleId={String(state.puzzle.id)}
             puzzleNumber={state.puzzle.puzzle_number || 1}
             won={state.won}
-            timeElapsed={state.timeElapsed}
+            timeElapsed={0}
             clarityLevel={state.clarityLevel}
             movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
             movieYear={
@@ -809,6 +790,7 @@ export default function PosterPixelsGame() {
                 undefined
             }
             guesses={state.guesses}
+            finalScore={state.finalScore || 0}
           />
         )}
         

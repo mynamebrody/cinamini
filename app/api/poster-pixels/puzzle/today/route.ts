@@ -180,6 +180,7 @@ export async function GET(request: NextRequest) {
         film_title: puzzle.film_title,
         film_poster_url: puzzle.film_poster_url,
         film_release_year: puzzle.film_release_year,
+        clarity_levels: puzzle.clarity_levels,
         // Legacy movie_data for backward compatibility
         movie_data: puzzle.movie_data || {
           id: puzzle.film_id,

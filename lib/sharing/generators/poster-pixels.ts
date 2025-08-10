@@ -9,6 +9,31 @@ import type { PosterPixelsShareData, ShareResult, ShareGenerator, ShareGenerator
 export class PosterPixelsShareGenerator implements ShareGenerator {
   constructor(private config: ShareGeneratorConfig) {}
 
+  private interpretZooms(clarityLevel: number | undefined): number {
+    if (!clarityLevel && clarityLevel !== 0) return 1
+    // If the value is in [1..5], treat as zoom count
+    if (clarityLevel > 0 && clarityLevel <= 5) return Math.round(clarityLevel)
+    // If looks like fraction 0..1 -> map to steps
+    if (clarityLevel > 0 && clarityLevel <= 1) {
+      const percent = Math.round(clarityLevel * 100)
+      if (percent <= 10) return 1
+      if (percent <= 25) return 2
+      if (percent <= 50) return 3
+      if (percent <= 80) return 4
+      return 5
+    }
+    // If looks like percentage 5..100
+    if (clarityLevel > 1) {
+      const percent = Math.round(clarityLevel)
+      if (percent <= 10) return 1
+      if (percent <= 25) return 2
+      if (percent <= 50) return 3
+      if (percent <= 80) return 4
+      return 5
+    }
+    return 1
+  }
+
   async generateShareText(data: PosterPixelsShareData): Promise<ShareResult> {
     const { attempts, puzzle, result } = data;
     
@@ -16,21 +41,22 @@ export class PosterPixelsShareGenerator implements ShareGenerator {
     let resultText = '';
     
     if (attempts.length === 0 || result.timedOut) {
-      // No attempts made or timed out: "Poster Pixels #X ❌\nRan out of time! ⌛"
+      // No attempts made or timed out
       pattern = '❌';
-      resultText = result.timedOut ? 'Ran out of time! ⌛' : 'Did not guess';
+      const zooms = this.interpretZooms(undefined)
+      resultText = `Used ${zooms} 🔍 👾`;
     } else {
       const lastAttempt = attempts[attempts.length - 1];
-      const solveTimeSeconds = lastAttempt.solveTimeMs ? Math.round(lastAttempt.solveTimeMs / 1000) : 0;
+      const zooms = this.interpretZooms(lastAttempt.clarityLevel as unknown as number);
       
       if (lastAttempt.isCorrect) {
-        // Success: "Poster Pixels #X ✅\nGuessed at Y% clarity in 9s 🖼️"
+        // Success: show zooms used
         pattern = '✅';
-        resultText = `Guessed at ${lastAttempt.clarityLevel}% clarity in ${solveTimeSeconds}s 🖼️`;
+        resultText = `Solved in ${zooms} 🔍 👾`;
       } else {
-        // Unsuccessful: "Poster Pixels #X ❌\nGuessed at Y% clarity in 9s"
+        // Unsuccessful: show zooms used
         pattern = '❌';
-        resultText = `Guessed at ${lastAttempt.clarityLevel}% clarity in ${solveTimeSeconds}s`;
+        resultText = `Used ${zooms} 🔍 👾`;
       }
     }
     

@@ -206,15 +206,60 @@ async function generatePosterPixelsServerShare(
   puzzleId: string,
   userId?: string
 ): Promise<ShareResult> {
-  // For now, return a basic share result since poster-pixels tables may not exist
-  // TODO: Implement when poster-pixels database schema is available
-  
-  const puzzleNumber = 1 // Placeholder
-  
+  // Fetch puzzle data
+  const { data: puzzle } = await supabase
+    .from('poster_pixels_puzzles')
+    .select('puzzle_number')
+    .eq('id', puzzleId)
+    .single()
+
+  if (!puzzle) {
+    throw new ShareGenerationError('Puzzle not found', 'poster-pixels', puzzleId)
+  }
+
+  let attempts: Array<{ isCorrect: boolean; clarityLevel: number; solveTimeMs: number; }> = []
+  let isWin = false
+  let finalScore = 0
+
+  if (userId) {
+    // Fetch guesses for this puzzle and user
+    const { data: guesses } = await supabase
+      .from('poster_pixels_guesses')
+      .select('id, is_correct, clarity_level, guess_number')
+      .eq('user_id', userId)
+      .eq('puzzle_id', puzzleId)
+      .order('guess_number', { ascending: true })
+
+    if (guesses && guesses.length > 0) {
+      // Determine earliest correct guess if any
+      const earliestCorrect = guesses.find(g => g.is_correct)
+      const lastRelevant = earliestCorrect || guesses[guesses.length - 1]
+      isWin = !!earliestCorrect
+
+      // Build attempts up to that point
+      const relevantGuesses = guesses.filter(g => g.guess_number <= lastRelevant.guess_number)
+
+      attempts = relevantGuesses.map(g => ({
+        isCorrect: g.is_correct,
+        clarityLevel: typeof g.clarity_level === 'number' ? g.clarity_level : parseFloat(String(g.clarity_level || 0)),
+        solveTimeMs: 0,
+      }))
+
+      // Score heuristic from clarity percent (or fractional) of the relevant guess
+      const val = typeof lastRelevant.clarity_level === 'number' ? lastRelevant.clarity_level : parseFloat(String(lastRelevant.clarity_level || 0))
+      const percent = val <= 1 ? Math.round(val * 100) : Math.round(val)
+      if (percent <= 5) finalScore = 1000
+      else if (percent <= 15) finalScore = 750
+      else if (percent <= 35) finalScore = 500
+      else if (percent <= 65) finalScore = 250
+      else finalScore = 100
+    }
+  }
+
   const gameData = {
-    attempts: [],
-    puzzle: { puzzleNumber },
-    result: { isWin: false, finalScore: 0, timedOut: false }
+    attempts,
+    puzzle: { puzzleNumber: puzzle.puzzle_number },
+    result: { isWin, finalScore, timedOut: false },
   }
 
   const shareRequest: GameShareData = {

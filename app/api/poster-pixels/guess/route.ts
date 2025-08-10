@@ -17,8 +17,8 @@ export async function POST(request: NextRequest) {
       clarity_level 
     } = await request.json()
 
-    // Validate input
-    if (!game_id || !puzzle_id || !guessed_movie_id || !guessed_movie_title || !time_taken_ms || clarity_level === undefined) {
+    // Validate input (allow zero for time_taken_ms)
+    if (!game_id || !puzzle_id || !guessed_movie_id || !guessed_movie_title || time_taken_ms === undefined || clarity_level === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 

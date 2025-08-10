@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
-import { Check, X, Trophy, Clock, Target } from "lucide-react"
+import { Check, X, Trophy, Target } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import { usePosterPixelsShare } from "@/hooks/useGameShare"
@@ -42,23 +42,28 @@ export default function PosterPixelsResult({
   timedOut = false,
   finalScore = 0
 }: PosterPixelsResultProps) {
-  const formatTime = (seconds: number) => {
-    const secs = Math.floor(seconds)
-    return `${secs}s`
-  }
-
   const formatClarity = (clarity: number) => {
     return `${Math.round(clarity * 100)}%`
   }
 
+  const zoomsFromClarity = (clarity: number) => {
+    const percent = Math.round(clarity * 100)
+    if (percent <= 10) return 1
+    if (percent <= 25) return 2
+    if (percent <= 50) return 3
+    if (percent <= 80) return 4
+    return 5
+  }
+
+  const zoomsUsed = zoomsFromClarity(clarityLevel)
+
   // Use centralized sharing system - memoize to prevent infinite re-renders
   const shareData: PosterPixelsShareData = useMemo(() => ({
     attempts: guesses.map((guess, index) => ({
-      guessMovieId: guess.movieId,
-      guessMovieTitle: guess.movieTitle,
       isCorrect: guess.isCorrect,
-      clarityLevel: guess.clarityLevel,
-      solveTimeMs: timeElapsed * 1000 // Convert to milliseconds
+      // Pass zoom count to share generator for robustness
+      clarityLevel: zoomsFromClarity(guess.clarityLevel),
+      solveTimeMs: 0
     })),
     puzzle: {
       puzzleNumber
@@ -83,21 +88,17 @@ export default function PosterPixelsResult({
   // Fallback share text function for loading states or errors
   function generateFallbackShareText(): string {
     const result = won ? "✅" : "❌"
-    const clarity = formatClarity(clarityLevel)
-    const time = formatTime(timeElapsed)
+    const zooms = zoomsUsed
     
-    // Check if time ran out (game duration is 30 seconds)
-    const ranOutOfTime = timedOut || (!won && timeElapsed >= 29.5) // Allow small margin for timing
-    
-    if (ranOutOfTime) {
-      return `Poster Pixels #${puzzleNumber} ${result}\nRan out of time! ⌛`
+    if (timedOut) {
+      return `Poster Pixels #${puzzleNumber} ${result}\nUsed ${zooms} 🔍 👾`
     }
     
     if (won) {
-      return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time} 🖼️`
+      return `Poster Pixels #${puzzleNumber} ${result}\nSolved in ${zooms} 🔍 👾`
     }
     
-    return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time}`
+    return `Poster Pixels #${puzzleNumber} ${result}\nUsed ${zooms} 🔍 👾`
   }
 
   return (
@@ -185,16 +186,16 @@ export default function PosterPixelsResult({
           {/* Performance Summary */}
           <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t border-border">
             <div>
+              <div className="text-2xl font-bold">{zoomsUsed}</div>
+              <div className="text-sm text-muted-foreground">Zooms</div>
+            </div>
+            <div>
               <div className="text-2xl font-bold">{formatClarity(clarityLevel)}</div>
               <div className="text-sm text-muted-foreground">Clarity</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">{formatTime(timeElapsed)}</div>
-              <div className="text-sm text-muted-foreground">Time</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{won ? "1" : "0"}</div>
-              <div className="text-sm text-muted-foreground">Correct</div>
+              <div className="text-2xl font-bold">{finalScore}</div>
+              <div className="text-sm text-muted-foreground">Score</div>
             </div>
           </div>
 
@@ -205,7 +206,7 @@ export default function PosterPixelsResult({
                 Poster Pixels #{puzzleNumber} {won ? "✅" : "❌"}
               </div>
               <div className="text-sm text-muted-foreground">
-                {formatClarity(clarityLevel)} clarity • {formatTime(timeElapsed)}
+                Solved in {zoomsUsed} 🔍 • {finalScore} pts
               </div>
             </div>
             
@@ -216,7 +217,6 @@ export default function PosterPixelsResult({
           </div>
         </CardContent>
       </Card>
-
 
       <p className="text-center text-muted-foreground text-sm">
         Come back tomorrow for a new puzzle!
