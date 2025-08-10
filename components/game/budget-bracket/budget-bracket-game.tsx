@@ -259,8 +259,8 @@ export default function BudgetBracketGame() {
 
   const submitGame = async (choices: GameChoice[]) => {
     try {
-      // Calculate total duration as sum of individual round times
-      const totalDuration = choices.reduce((sum, choice) => sum + choice.time_taken_ms, 0)
+      // Calculate total duration from game start to completion
+      const totalDuration = Date.now() - gameStartTime
       
       console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
 
