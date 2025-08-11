@@ -19,6 +19,7 @@ interface PosterPixelsSearchProps {
   selectedMovie: { id: number; title: string } | null
   disabled?: boolean
   onAutoSubmit?: (movie: { id: number; title: string }) => void
+  excludeMovieIds?: number[]
 }
 
 export default function PosterPixelsSearch({
@@ -26,6 +27,7 @@ export default function PosterPixelsSearch({
   selectedMovie,
   disabled = false,
   onAutoSubmit,
+  excludeMovieIds = [],
 }: PosterPixelsSearchProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Movie[]>([])
@@ -87,7 +89,8 @@ export default function PosterPixelsSearch({
       const data = await response.json()
 
       if (response.ok && data.results) {
-        setSearchResults(data.results.slice(0, 8)) // Limit to 8 results
+        const filtered = data.results.filter((m: Movie) => !excludeMovieIds.includes(m.id))
+        setSearchResults(filtered.slice(0, 8)) // Limit to 8 results
         setShowDropdown(true)
         setSelectedIndex(-1)
         // Scroll dropdown into view after a short delay to ensure it's rendered

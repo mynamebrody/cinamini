@@ -70,6 +70,21 @@ export async function POST(request: NextRequest) {
 
     const guessNumber = (guessCount || 0) + 1
 
+    // Prevent duplicate movie guesses within the same game
+    if (!skipped && guessed_movie_id) {
+      const { data: priorSameGuess } = await supabase
+        .from("poster_pixels_guesses")
+        .select("id")
+        .eq("game_id", game_id)
+        .eq("guessed_movie_id", guessed_movie_id)
+        .limit(1)
+        .maybeSingle()
+
+      if (priorSameGuess) {
+        return NextResponse.json({ error: "You have already guessed that movie" }, { status: 400 })
+      }
+    }
+
     // Insert the guess
     const { data: newGuess, error: guessError } = await supabase
       .from("poster_pixels_guesses")
