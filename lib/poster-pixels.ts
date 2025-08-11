@@ -20,6 +20,7 @@ import {
   type TMDBMovieDetails 
 } from './tmdb';
 import { getBlendedMoviePool } from './tmdb-trending';
+import { POSTER_PIXELS_LEVELS, POSTER_PIXELS_MAX_ATTEMPTS, POSTER_PIXELS_SCORING } from '@/lib/poster-pixels-config'
 
 // ============================================================================
 // CORE INTERFACES AND TYPES
@@ -113,18 +114,18 @@ export interface PosterPixelsResult {
 
 export const POSTER_PIXELS_CONFIG = {
   // Clarity levels: 5% (very pixelated) to 100% (full clarity)
-  CLARITY_LEVELS: [5, 15, 35, 65, 100] as const,
-  MAX_ATTEMPTS: 5,
+  CLARITY_LEVELS: POSTER_PIXELS_LEVELS,
+  MAX_ATTEMPTS: POSTER_PIXELS_MAX_ATTEMPTS,
   MIN_VOTE_COUNT: 200,
   MIN_POPULARITY: 10,
   
   // Scoring system: Higher scores for guessing at lower clarity
   SCORING: {
-    CLARITY_5: 1000,   // Perfect guess at 5% clarity
-    CLARITY_15: 750,   // Great guess at 15% clarity
-    CLARITY_35: 500,   // Good guess at 35% clarity
-    CLARITY_65: 250,   // Fair guess at 65% clarity
-    CLARITY_100: 100,  // Basic guess at 100% clarity
+    CLARITY_5: POSTER_PIXELS_SCORING[5],
+    CLARITY_15: POSTER_PIXELS_SCORING[15],
+    CLARITY_35: POSTER_PIXELS_SCORING[35],
+    CLARITY_65: POSTER_PIXELS_SCORING[65],
+    CLARITY_100: POSTER_PIXELS_SCORING[100],
   },
   
   DIFFICULTY_LEVELS: {

@@ -14,6 +14,7 @@ import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PosterClarityPreview from "../shared/poster-clarity-preview"
 import { cn } from "@/lib/utils"
+import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
 interface Movie {
   id: number
@@ -100,7 +101,7 @@ export default function PosterPixelsEditor() {
         film_title: selectedMovie.title,
         film_poster_url: selectedMovie.poster_path,
         film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
-        clarity_levels: [5, 15, 35, 65, 100], // Default clarity progression
+        clarity_levels: Array.from(POSTER_PIXELS_LEVELS), // Default clarity progression
         fun_fact: funFact.trim() || null,
         is_published: isPublished,
         seed_value: seedValue,
@@ -271,8 +272,8 @@ export default function PosterPixelsEditor() {
           <PosterClarityPreview
             posterPath={selectedMovie.poster_path}
             movieTitle={selectedMovie.title}
-            clarityLevels={[5, 15, 35, 65, 100]}
-            currentLevel={35}
+            clarityLevels={Array.from(POSTER_PIXELS_LEVELS)}
+            currentLevel={POSTER_PIXELS_LEVELS[2]}
           />
         ) : (
           <Card>

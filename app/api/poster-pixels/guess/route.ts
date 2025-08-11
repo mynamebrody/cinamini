@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { sendGuessWebhook } from "@/lib/webhooks"
+import { POSTER_PIXELS_LEVELS, getScoreForClarityPercent } from "@/lib/poster-pixels-config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,18 +16,24 @@ export async function POST(request: NextRequest) {
       guessed_movie_id, 
       guessed_movie_title,
       time_taken_ms,
-      clarity_level 
+      clarity_level,
+      skipped = false,
     } = await request.json()
 
-    // Validate input
-    if (!game_id || !puzzle_id || !guessed_movie_id || !guessed_movie_title || !time_taken_ms || clarity_level === undefined) {
+    const maxAttempts = POSTER_PIXELS_LEVELS.length
+
+    // Validate input (allow zero for time_taken_ms)
+    if (!game_id || !puzzle_id || time_taken_ms === undefined || clarity_level === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    // If not skipped, require guess details
+    if (!skipped && (!guessed_movie_id || !guessed_movie_title)) {
+      return NextResponse.json({ error: "Missing guessed movie details" }, { status: 400 })
+    }
+
     if (!user) {
-      // For anonymous users, return a simple response
-      // Note: This is a basic implementation - full anonymous support would require more work
-      // Send webhook for anonymous guess
+      // For anonymous users, send webhook but don't save to database
       await sendGuessWebhook(request, {
         event: "guess",
         game: "poster-pixels",
@@ -34,15 +41,22 @@ export async function POST(request: NextRequest) {
         guess: {
           gameId: game_id,
           puzzleId: puzzle_id,
-          guessedMovieId: guessed_movie_id,
-          guessedMovieTitle: guessed_movie_title,
+          guessedMovieId: skipped ? null : guessed_movie_id,
+          guessedMovieTitle: skipped ? 'Skipped' : guessed_movie_title,
           timeTakenMs: time_taken_ms,
+          clarityLevel: clarity_level,
+          skipped,
         },
-        progress: { guessNumber: 1, clarityLevel: clarity_level },
+        progress: { 
+          guessNumber: 1, // Anonymous users can't track actual progress
+          clarityLevel: clarity_level,
+          maxAttempts: maxAttempts,
+          isSkipped: skipped,
+        },
       })
 
       return NextResponse.json({
-        isCorrect: false, // Would need to check against puzzle answer
+        isCorrect: false, // Anonymous users don't get the correct answer validated
         isGameCompleted: false,
         guessNumber: 1,
         anonymous: true,
@@ -68,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Check if guess is correct
     const correctMovieId = game.poster_pixels_puzzles.film_id || game.poster_pixels_puzzles.movie_data?.id
-    const isCorrect = guessed_movie_id === correctMovieId
+    const isCorrect = skipped ? false : guessed_movie_id === correctMovieId
 
     // Get current guess count
     const { count: guessCount } = await supabase
@@ -86,8 +100,8 @@ export async function POST(request: NextRequest) {
         puzzle_id,
         game_id,
         guess_number: guessNumber,
-        guessed_movie_id,
-        guessed_movie_title,
+        guessed_movie_id: skipped ? null : guessed_movie_id,
+        guessed_movie_title: skipped ? 'Skipped' : guessed_movie_title,
         is_correct: isCorrect,
         time_taken_ms,
         clarity_level,
@@ -106,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If correct or max guesses reached, complete the game
-    if (isCorrect || guessNumber >= 6) {
+    if (isCorrect || guessNumber >= maxAttempts) {
       updates.completed = true
       updates.won = isCorrect
       updates.end_time = new Date().toISOString()
@@ -124,6 +138,9 @@ export async function POST(request: NextRequest) {
       throw updateError
     }
 
+    // Calculate score for this guess if it's correct
+    const scoreForGuess = isCorrect ? getScoreForClarityPercent(clarity_level) : 0
+
     // Fire webhook for authenticated guess
     await sendGuessWebhook(request, {
       event: "guess",
@@ -132,13 +149,24 @@ export async function POST(request: NextRequest) {
       guess: {
         gameId: game_id,
         puzzleId: puzzle_id,
-        guessedMovieId: guessed_movie_id,
-        guessedMovieTitle: guessed_movie_title,
+        guessedMovieId: skipped ? null : guessed_movie_id,
+        guessedMovieTitle: skipped ? 'Skipped' : guessed_movie_title,
         timeTakenMs: time_taken_ms,
         clarityLevel: clarity_level,
+        skipped,
+        score: scoreForGuess,
       },
-      progress: { guessNumber, gameCompleted: !!updates.completed },
-      correctAnswer: { id: correctMovieId, isCorrect },
+      progress: { 
+        guessNumber, 
+        maxAttempts,
+        gameCompleted: !!updates.completed,
+        isSkipped: skipped,
+      },
+      correctAnswer: { 
+        id: correctMovieId, 
+        isCorrect,
+        title: game.poster_pixels_puzzles.film_title || game.poster_pixels_puzzles.movie_data?.title,
+      },
     })
 
     return NextResponse.json({

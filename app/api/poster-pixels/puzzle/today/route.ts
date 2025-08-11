@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
+import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
 
 // Seed for consistent daily puzzles
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_${today}`,
             difficulty_level: 1,
-            clarity_levels: [5, 15, 35, 65, 100],
+            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: {
               id: selectedMovie.id,
@@ -140,7 +141,7 @@ export async function GET(request: NextRequest) {
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_fallback_${today}`,
             difficulty_level: 1,
-            clarity_levels: [5, 15, 35, 65, 100],
+            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: selectedMovie,
           })
@@ -180,6 +181,7 @@ export async function GET(request: NextRequest) {
         film_title: puzzle.film_title,
         film_poster_url: puzzle.film_poster_url,
         film_release_year: puzzle.film_release_year,
+        clarity_levels: puzzle.clarity_levels,
         // Legacy movie_data for backward compatibility
         movie_data: puzzle.movie_data || {
           id: puzzle.film_id,
