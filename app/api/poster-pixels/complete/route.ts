@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     const { game_id, won, total_time_ms, final_clarity_level } = await request.json()
 
-    if (!game_id || won === undefined || !total_time_ms || final_clarity_level === undefined) {
+    if (!game_id || won === undefined || total_time_ms === undefined || final_clarity_level === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
         newCurrentStreak
       ),
       average_time_ms: currentStats?.games_played 
-        ? Math.round(((currentStats.average_time_ms || 0) * currentStats.games_played + total_time_ms) / (currentStats.games_played + 1))
-        : total_time_ms,
+        ? Math.round(((currentStats.average_time_ms || 0) * currentStats.games_played + (total_time_ms || 0)) / (currentStats.games_played + 1))
+        : (total_time_ms || 0),
       best_time_ms: won 
-        ? Math.min(currentStats?.best_time_ms || total_time_ms, total_time_ms)
+        ? Math.min(currentStats?.best_time_ms || (total_time_ms || 0), (total_time_ms || 0))
         : currentStats?.best_time_ms,
       last_played_date: today,
       updated_at: new Date().toISOString()

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { Film } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
@@ -23,6 +23,7 @@ export default function PosterClarityPreview({
   onClarityChange
 }: PosterClarityPreviewProps) {
   const [internalClarity, setInternalClarity] = useState(currentLevel)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   
   // Use controlled value if provided, otherwise use internal state
   const clarity = onClarityChange ? currentLevel : internalClarity
@@ -43,14 +44,135 @@ export default function PosterClarityPreview({
       setInternalClarity(level)
     }
   }, [onClarityChange])
-
-  // Calculate blur amount based on clarity percentage
-  const blurAmount = Math.max(0, (100 - clarity) / 10)
   
   // Get TMDB image URL or use fallback
   const imageUrl = posterPath 
     ? `https://image.tmdb.org/t/p/w342${posterPath}`
     : null
+
+  // Pixelation effect (same logic as the game)
+  const drawPixelatedPoster = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      console.log("No canvas ref")
+      return
+    }
+    
+    if (!imageUrl) {
+      console.log("No image URL")
+      const ctx = canvas.getContext("2d")
+      if (ctx) drawFallbackPoster(ctx, canvas)
+      return
+    }
+    
+    console.log("Drawing pixelated poster with URL:", imageUrl)
+    
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    
+    const img = new Image()
+    // Try without CORS first for TMDB images
+    img.src = imageUrl
+    
+    img.onload = () => {
+      console.log("Image loaded successfully")
+      try {
+        // Calculate pixel size based on clarity (inverted - lower clarity = more pixelation)
+        const pixelSize = Math.max(1, Math.floor((1 - clarity / 100) * 50) + 1)
+        
+        canvas.width = 300
+        canvas.height = 450
+        ctx.imageSmoothingEnabled = false
+        
+        // Create temporary canvas for downscaling
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        if (!tempCtx) return
+        
+        const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
+        const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
+        tempCanvas.width = scaledWidth
+        tempCanvas.height = scaledHeight
+        
+        // Draw image small first
+        tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+        
+        // Then scale it back up for pixelation effect
+        ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
+      } catch (error) {
+        console.error("Error drawing pixelated poster:", error)
+        drawFallbackPoster(ctx, canvas)
+      }
+    }
+    
+    img.onerror = (error) => {
+      console.error("Failed to load image:", error, "URL:", imageUrl)
+      // Try with CORS as fallback
+      const imgWithCors = new Image()
+      imgWithCors.crossOrigin = "anonymous"
+      imgWithCors.src = imageUrl
+      
+      imgWithCors.onload = () => {
+        console.log("Image loaded with CORS")
+        const pixelSize = Math.max(1, Math.floor((1 - clarity / 100) * 50) + 1)
+        
+        canvas.width = 300
+        canvas.height = 450
+        ctx.imageSmoothingEnabled = false
+        
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        if (!tempCtx) return
+        
+        const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
+        const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
+        tempCanvas.width = scaledWidth
+        tempCanvas.height = scaledHeight
+        
+        tempCtx.drawImage(imgWithCors, 0, 0, scaledWidth, scaledHeight)
+        ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
+      }
+      
+      imgWithCors.onerror = () => {
+        console.error("Failed to load image even with CORS")
+        drawFallbackPoster(ctx, canvas)
+      }
+    }
+  }, [clarity, imageUrl])
+
+  const drawFallbackPoster = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+    canvas.width = 300
+    canvas.height = 450
+    ctx.fillStyle = '#f3f4f6'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.strokeStyle = '#d1d5db'
+    ctx.lineWidth = 2
+    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2)
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '16px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('No Poster Available', canvas.width / 2, canvas.height / 2)
+  }
+
+  // Initial canvas setup
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    
+    // Initialize canvas size
+    canvas.width = 300
+    canvas.height = 450
+    
+    // Draw initial state
+    drawPixelatedPoster()
+  }, []) // Run once on mount
+
+  // Redraw when clarity changes
+  useEffect(() => {
+    if (canvasRef.current && imageUrl) {
+      drawPixelatedPoster()
+    }
+  }, [clarity, drawPixelatedPoster, imageUrl])
 
   return (
     <Card>
@@ -67,26 +189,18 @@ export default function PosterClarityPreview({
       <CardContent className="space-y-4">
         {/* Poster Preview */}
         <div className="flex justify-center">
-          <div className="relative w-48 h-72 bg-gray-100 rounded-lg overflow-hidden border">
-            {imageUrl ? (
-              <img
-                src={imageUrl}
-                alt={`${movieTitle} poster`}
-                className="w-full h-full object-cover transition-all duration-300 ease-in-out"
-                style={{
-                  filter: `blur(${blurAmount}px)`
-                }}
-              />
-            ) : (
-              <div 
-                className="w-full h-full flex items-center justify-center bg-gray-200 transition-all duration-300 ease-in-out"
-                style={{
-                  filter: `blur(${blurAmount}px)`
-                }}
-              >
-                <Film className="w-12 h-12 text-gray-400" />
-              </div>
-            )}
+          <div className="relative bg-gray-100 rounded-lg overflow-hidden border">
+            <canvas
+              ref={canvasRef}
+              className="max-w-full h-auto"
+              width={300}
+              height={450}
+              style={{ 
+                width: '192px', 
+                height: '288px',
+                imageRendering: 'pixelated'
+              }}
+            />
           </div>
         </div>
 
@@ -129,12 +243,16 @@ export default function PosterClarityPreview({
         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
           <div className="space-y-1">
             <div className="flex justify-between">
-              <span>Blur Amount:</span>
-              <span>{blurAmount.toFixed(1)}px</span>
+              <span>Pixel Size:</span>
+              <span>{Math.max(1, Math.floor((1 - clarity / 100) * 50) + 1)}px</span>
             </div>
             <div className="flex justify-between">
-              <span>Filter:</span>
-              <span className="font-mono">blur({blurAmount.toFixed(1)}px)</span>
+              <span>Effect:</span>
+              <span className="font-mono">Pixelation</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Canvas Size:</span>
+              <span>300x450px</span>
             </div>
           </div>
         </div>

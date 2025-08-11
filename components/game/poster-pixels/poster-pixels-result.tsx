@@ -1,14 +1,11 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
-import { Check, X, Trophy, Clock, Target } from "lucide-react"
+import { Check, X, Trophy } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { usePosterPixelsShare } from "@/hooks/useGameShare"
-import type { PosterPixelsShareData } from "@/lib/sharing"
+import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
 interface PosterPixelsResultProps {
   puzzleId: string
@@ -20,7 +17,7 @@ interface PosterPixelsResultProps {
   movieYear: string
   moviePosterUrl?: string
   guesses: Array<{
-    movieId: number
+    movieId: number | null
     movieTitle: string
     isCorrect: boolean
     clarityLevel: number
@@ -42,62 +39,74 @@ export default function PosterPixelsResult({
   timedOut = false,
   finalScore = 0
 }: PosterPixelsResultProps) {
-  const formatTime = (seconds: number) => {
-    const secs = Math.floor(seconds)
-    return `${secs}s`
-  }
-
   const formatClarity = (clarity: number) => {
-    return `${Math.round(clarity * 100)}%`
+    return `${Math.round(clarity)}%`
   }
 
-  // Use centralized sharing system - memoize to prevent infinite re-renders
-  const shareData: PosterPixelsShareData = useMemo(() => ({
-    attempts: guesses.map((guess, index) => ({
-      guessMovieId: guess.movieId,
-      guessMovieTitle: guess.movieTitle,
-      isCorrect: guess.isCorrect,
-      clarityLevel: guess.clarityLevel,
-      solveTimeMs: timeElapsed * 1000 // Convert to milliseconds
-    })),
-    puzzle: {
-      puzzleNumber
-    },
-    result: {
-      isWin: won,
-      finalScore,
-      timedOut
+  const formatTime = (ms: number) => {
+    const seconds = Math.round(ms / 1000)
+    if (seconds < 60) {
+      return `${seconds}s`
     }
-  }), [guesses, puzzleNumber, won, finalScore, timedOut, timeElapsed])
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
+  }
+
+  // Calculate actual number of skips/enhancements used based on guesses
+  const calculateSkipsUsed = () => {
+    // Count all skipped guesses (but not the final guess that was correct or gave up)
+    const skippedGuesses = guesses.filter(g => g.movieTitle === 'Skipped')
+    return skippedGuesses.length
+  }
+
+  const skipsUsed = calculateSkipsUsed()
+
+  // Direct share text generation without centralized system
   
-  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = usePosterPixelsShare(puzzleId)
-  
-  // Generate share text on mount
-  useEffect(() => {
-    fetchShare().catch((error) => {
-      console.log('Centralized sharing failed for Poster Pixels:', error)
-      // Fallback handled by using generateFallbackShareText()
-    })
-  }, [fetchShare])
-  
-  // Fallback share text function for loading states or errors
-  function generateFallbackShareText(): string {
-    const result = won ? "✅" : "❌"
-    const clarity = formatClarity(clarityLevel)
-    const time = formatTime(timeElapsed)
-    
-    // Check if time ran out (game duration is 30 seconds)
-    const ranOutOfTime = timedOut || (!won && timeElapsed >= 29.5) // Allow small margin for timing
-    
-    if (ranOutOfTime) {
-      return `Poster Pixels #${puzzleNumber} ${result}\nRan out of time! ⌛`
-    }
+  // Generate the new format: 🔍🔍🔍✅👾 (magnifying glasses + result + remaining aliens)
+  function generateResultEmojis(): string {
+    const magnifyingGlasses = "🔍".repeat(skipsUsed)
     
     if (won) {
-      return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time} 🖼️`
+      // If won, show result and remaining aliens (5 total - magnifying glasses used - 1 for result)
+      const remainingAliens = "👾".repeat(Math.max(0, 5 - skipsUsed - 1))
+      return `${magnifyingGlasses}✅${remainingAliens}`
+    } else {
+      // If lost/gave up, show 4 magnifying glasses and one X (always 5 total)
+      return "🔍🔍🔍🔍❌"
+    }
+  }
+
+  // Generate bonus text for special achievements
+  function generateBonusText(): string {
+    if (!won) return ""
+    
+    const clarity = Math.round(clarityLevel)
+    let bonus = `Guess with ${clarity}% clarity`
+    
+    if (skipsUsed === 0) {
+      bonus = `First guess! ${bonus}`
     }
     
-    return `Poster Pixels #${puzzleNumber} ${result}\nGuessed at ${clarity} clarity in ${time}`
+    return bonus
+  }
+
+  // Fallback share text function for loading states or errors
+  function generateFallbackShareText(): string {
+    const resultEmojis = generateResultEmojis()
+    const bonusText = generateBonusText()
+    const score = won ? finalScore : 0
+    
+    let shareText = `Poster Pixels #${puzzleNumber} ${resultEmojis}`
+    
+    if (bonusText) {
+      shareText += `\n${bonusText}`
+    }
+    
+    shareText += `\n${score} pts`
+    
+    return shareText
   }
 
   return (
@@ -156,18 +165,28 @@ export default function PosterPixelsResult({
                     "flex items-center justify-between p-3 bg-white border",
                     guess.isCorrect 
                       ? "border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]"
-                      : "border-red-300 shadow-[1px_1px_0px_rgb(252,165,165),2px_2px_0px_rgb(252,165,165),3px_3px_0px_rgb(252,165,165),4px_4px_0px_rgb(252,165,165)]"
+                      : guess.movieTitle === 'Gave Up' 
+                        ? "border-orange-400 shadow-[1px_1px_0px_rgb(251,146,60),2px_2px_0px_rgb(251,146,60),3px_3px_0px_rgb(251,146,60),4px_4px_0px_rgb(251,146,60)]"
+                        : guess.movieTitle === 'Skipped'
+                          ? "border-gray-400 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]"
+                          : "border-red-300 shadow-[1px_1px_0px_rgb(252,165,165),2px_2px_0px_rgb(252,165,165),3px_3px_0px_rgb(252,165,165),4px_4px_0px_rgb(252,165,165)]"
                   )}
                   style={{ borderRadius: 0 }}
                 >
                   <div className="flex items-center gap-3">
                     {guess.isCorrect ? (
                       <Check className="w-5 h-5 text-green-500" />
+                    ) : guess.movieTitle === 'Gave Up' ? (
+                      <span className="text-lg">🏳️</span>
+                    ) : guess.movieTitle === 'Skipped' ? (
+                      <span className="text-lg">⏭️</span>
                     ) : (
                       <X className="w-5 h-5 text-red-500" />
                     )}
                     <div>
-                      <div className="font-medium">{guess.movieTitle}</div>
+                      <div className="font-medium">
+                        {guess.movieTitle === 'Gave Up' ? 'Gave Up' : guess.movieTitle === 'Skipped' ? 'Skipped' : guess.movieTitle}
+                      </div>
                       <div className="text-sm text-muted-foreground">
                         At {formatClarity(guess.clarityLevel)} clarity
                       </div>
@@ -183,7 +202,11 @@ export default function PosterPixelsResult({
           </div>
 
           {/* Performance Summary */}
-          <div className="grid grid-cols-3 gap-4 text-center pt-4 border-t border-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center pt-4 border-t border-border">
+            <div>
+              <div className="text-2xl font-bold">{skipsUsed}</div>
+              <div className="text-sm text-muted-foreground">Enhancements</div>
+            </div>
             <div>
               <div className="text-2xl font-bold">{formatClarity(clarityLevel)}</div>
               <div className="text-sm text-muted-foreground">Clarity</div>
@@ -193,8 +216,8 @@ export default function PosterPixelsResult({
               <div className="text-sm text-muted-foreground">Time</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">{won ? "1" : "0"}</div>
-              <div className="text-sm text-muted-foreground">Correct</div>
+              <div className="text-2xl font-bold">{finalScore}</div>
+              <div className="text-sm text-muted-foreground">Score</div>
             </div>
           </div>
 
@@ -202,21 +225,25 @@ export default function PosterPixelsResult({
           <div className="border-t pt-4">
             <div className="text-center mb-3">
               <div className="text-lg font-mono tracking-wider mb-2">
-                Poster Pixels #{puzzleNumber} {won ? "✅" : "❌"}
+                Poster Pixels #{puzzleNumber} {generateResultEmojis()}
               </div>
+              {generateBonusText() && (
+                <div className="text-sm text-muted-foreground mb-1">
+                  {generateBonusText()}
+                </div>
+              )}
               <div className="text-sm text-muted-foreground">
-                {formatClarity(clarityLevel)} clarity • {formatTime(timeElapsed)}
+                {formatTime(timeElapsed)} • {won ? finalScore : 0} pts
               </div>
             </div>
             
             <ShareSection 
-              shareText={centralizedShareText || generateFallbackShareText()}
+              shareText={generateFallbackShareText()}
               shareUrl="https://cinamini.app/game/poster-pixels"
             />
           </div>
         </CardContent>
       </Card>
-
 
       <p className="text-center text-muted-foreground text-sm">
         Come back tomorrow for a new puzzle!
