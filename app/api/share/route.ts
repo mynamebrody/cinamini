@@ -249,13 +249,15 @@ async function generatePosterPixelsServerShare(
         solveTimeMs: 0,
       }))
 
-      // Score heuristic from clarity percent (or fractional) of the relevant guess
+      // Score from the config-based scoring system
       const val = typeof lastRelevant.clarity_level === 'number' ? lastRelevant.clarity_level : parseFloat(String(lastRelevant.clarity_level || 0))
       const percent = val <= 1 ? Math.round(val * 100) : Math.round(val)
-      if (percent <= 5) finalScore = 1000
-      else if (percent <= 15) finalScore = 750
-      else if (percent <= 35) finalScore = 500
-      else if (percent <= 65) finalScore = 250
+      
+      // Use the config-based scoring
+      if (percent <= 20) finalScore = 1000
+      else if (percent <= 40) finalScore = 750
+      else if (percent <= 60) finalScore = 500
+      else if (percent <= 80) finalScore = 250
       else finalScore = 100
     }
   }

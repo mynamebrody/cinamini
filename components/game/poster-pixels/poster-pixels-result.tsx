@@ -53,24 +53,28 @@ export default function PosterPixelsResult({
     return `${minutes}m ${remainingSeconds}s`
   }
 
-  // Calculate actual number of skips/enhancements used based on guesses
-  const calculateSkipsUsed = () => {
-    // Count all skipped guesses (but not the final guess that was correct or gave up)
-    const skippedGuesses = guesses.filter(g => g.movieTitle === 'Skipped')
-    return skippedGuesses.length
+  // Calculate actual number of attempts before winning (wrong guesses + skips)
+  const calculateAttemptsBeforeWin = () => {
+    if (won) {
+      // For wins, count all guesses except the final correct one
+      return Math.max(0, guesses.length - 1)
+    } else {
+      // For losses, count all skips (should be 4 for the standard 🔍🔍🔍🔍❌ format)
+      return 4
+    }
   }
 
-  const skipsUsed = calculateSkipsUsed()
+  const attemptsUsed = calculateAttemptsBeforeWin()
 
   // Direct share text generation without centralized system
   
   // Generate the new format: 🔍🔍🔍✅👾 (magnifying glasses + result + remaining aliens)
   function generateResultEmojis(): string {
-    const magnifyingGlasses = "🔍".repeat(skipsUsed)
+    const magnifyingGlasses = "🔍".repeat(attemptsUsed)
     
     if (won) {
-      // If won, show result and remaining aliens (5 total - magnifying glasses used - 1 for result)
-      const remainingAliens = "👾".repeat(Math.max(0, 5 - skipsUsed - 1))
+      // If won, show result and remaining aliens (5 total - attempts used - 1 for result)
+      const remainingAliens = "👾".repeat(Math.max(0, 5 - attemptsUsed - 1))
       return `${magnifyingGlasses}✅${remainingAliens}`
     } else {
       // If lost/gave up, show 4 magnifying glasses and one X (always 5 total)
@@ -85,7 +89,7 @@ export default function PosterPixelsResult({
     const clarity = Math.round(clarityLevel)
     let bonus = `Guess with ${clarity}% clarity`
     
-    if (skipsUsed === 0) {
+    if (attemptsUsed === 0) {
       bonus = `First guess! ${bonus}`
     }
     
@@ -204,8 +208,8 @@ export default function PosterPixelsResult({
           {/* Performance Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center pt-4 border-t border-border">
             <div>
-              <div className="text-2xl font-bold">{skipsUsed}</div>
-              <div className="text-sm text-muted-foreground">Enhancements</div>
+              <div className="text-2xl font-bold">{attemptsUsed}</div>
+              <div className="text-sm text-muted-foreground">Attempts</div>
             </div>
             <div>
               <div className="text-2xl font-bold">{formatClarity(clarityLevel)}</div>
