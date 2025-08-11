@@ -163,7 +163,11 @@ async function generateCastClimbServerShare(
   }
 
   // Fetch user guesses if authenticated
-  let gameData = {
+  let gameData: {
+    guesses: Array<{ isCorrect: boolean; actorsRevealed: number; attemptNumber: number }>
+    puzzle: { puzzleNumber: number }
+    result: { isWin: boolean; totalGuesses: number }
+  } = {
     guesses: [],
     puzzle: { puzzleNumber: puzzle.puzzle_number },
     result: { isWin: false, totalGuesses: 0 }

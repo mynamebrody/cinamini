@@ -5,6 +5,7 @@
  */
 
 import type { PosterPixelsShareData, ShareResult, ShareGenerator, ShareGeneratorConfig } from '../types';
+import { POSTER_PIXELS_LEVELS } from '@/lib/poster-pixels-config'
 
 export class PosterPixelsShareGenerator implements ShareGenerator {
   constructor(private config: ShareGeneratorConfig) {}
@@ -12,24 +13,23 @@ export class PosterPixelsShareGenerator implements ShareGenerator {
   private interpretZooms(clarityLevel: number | undefined): number {
     if (!clarityLevel && clarityLevel !== 0) return 1
     // If the value is in [1..5], treat as zoom count
-    if (clarityLevel > 0 && clarityLevel <= 5) return Math.round(clarityLevel)
+    if (clarityLevel > 0 && clarityLevel <= POSTER_PIXELS_LEVELS.length) return Math.round(clarityLevel)
     // If looks like fraction 0..1 -> map to steps
     if (clarityLevel > 0 && clarityLevel <= 1) {
       const percent = Math.round(clarityLevel * 100)
-      if (percent <= 10) return 1
-      if (percent <= 25) return 2
-      if (percent <= 50) return 3
-      if (percent <= 80) return 4
-      return 5
+      // map to nearest configured level step
+      for (let i = 0; i < POSTER_PIXELS_LEVELS.length; i++) {
+        if (percent <= POSTER_PIXELS_LEVELS[i]) return i + 1
+      }
+      return POSTER_PIXELS_LEVELS.length
     }
     // If looks like percentage 5..100
     if (clarityLevel > 1) {
       const percent = Math.round(clarityLevel)
-      if (percent <= 10) return 1
-      if (percent <= 25) return 2
-      if (percent <= 50) return 3
-      if (percent <= 80) return 4
-      return 5
+      for (let i = 0; i < POSTER_PIXELS_LEVELS.length; i++) {
+        if (percent <= POSTER_PIXELS_LEVELS[i]) return i + 1
+      }
+      return POSTER_PIXELS_LEVELS.length
     }
     return 1
   }

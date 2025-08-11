@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,19 +15,26 @@ export async function POST(request: NextRequest) {
       guessed_movie_id, 
       guessed_movie_title,
       time_taken_ms,
-      clarity_level 
+      clarity_level,
+      skipped = false,
     } = await request.json()
 
+    const maxAttempts = POSTER_PIXELS_LEVELS.length
+
     // Validate input (allow zero for time_taken_ms)
-    if (!game_id || !puzzle_id || !guessed_movie_id || !guessed_movie_title || time_taken_ms === undefined || clarity_level === undefined) {
+    if (!game_id || !puzzle_id || time_taken_ms === undefined || clarity_level === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    // If not skipped, require guess details
+    if (!skipped && (!guessed_movie_id || !guessed_movie_title)) {
+      return NextResponse.json({ error: "Missing guessed movie details" }, { status: 400 })
     }
 
     if (!user) {
       // For anonymous users, return a simple response
-      // Note: This is a basic implementation - full anonymous support would require more work
       return NextResponse.json({
-        isCorrect: false, // Would need to check against puzzle answer
+        isCorrect: false,
         isGameCompleted: false,
         guessNumber: 1,
         anonymous: true,
@@ -52,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // Check if guess is correct
     const correctMovieId = game.poster_pixels_puzzles.film_id || game.poster_pixels_puzzles.movie_data?.id
-    const isCorrect = guessed_movie_id === correctMovieId
+    const isCorrect = skipped ? false : guessed_movie_id === correctMovieId
 
     // Get current guess count
     const { count: guessCount } = await supabase
@@ -70,8 +78,8 @@ export async function POST(request: NextRequest) {
         puzzle_id,
         game_id,
         guess_number: guessNumber,
-        guessed_movie_id,
-        guessed_movie_title,
+        guessed_movie_id: skipped ? null : guessed_movie_id,
+        guessed_movie_title: skipped ? 'Skipped' : guessed_movie_title,
         is_correct: isCorrect,
         time_taken_ms,
         clarity_level,
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If correct or max guesses reached, complete the game
-    if (isCorrect || guessNumber >= 6) {
+    if (isCorrect || guessNumber >= maxAttempts) {
       updates.completed = true
       updates.won = isCorrect
       updates.end_time = new Date().toISOString()
