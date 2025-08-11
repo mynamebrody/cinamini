@@ -879,21 +879,13 @@ export default function CastClimbGame() {
                   disabled={isGuessing}
                 />
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
-                    onClick={handleNextHint} 
-                    disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
-                  >
-                    {revealedIndex >= puzzle.actors.length - 1 ? "No More Hints" : "Skip Round (Next Hint)"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
-                    onClick={handleGiveUp} 
+                  <Button
+                    variant="outline"
+                    className="w-full bg-cinema-red text-white border border-cinema-red hover:bg-white hover:text-cinema-red hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(var(--cinema-red)),2px_2px_0px_rgb(var(--cinema-red)),3px_3px_0px_rgb(var(--cinema-red)),4px_4px_0px_rgb(var(--cinema-red))]"
+                    onClick={revealedIndex >= puzzle.actors.length - 1 ? handleGiveUp : handleNextHint}
                     disabled={isGuessing}
                   >
-                    Give Up
+                    {revealedIndex >= puzzle.actors.length - 1 ? "Give Up" : "Skip Guess (Next Hint)"}
                   </Button>
                 </div>
                 </CardContent>
