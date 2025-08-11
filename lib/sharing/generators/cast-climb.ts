@@ -17,23 +17,25 @@ export class CastClimbShareGenerator implements ShareGenerator {
     let resultText = '';
     
     if (result.isWin) {
-      // Show pattern: ❌❌✅🎭 (failed attempts then success, then remaining 🎭)
-      const incorrectAttempts = guesses.length - 1;
+      // New pattern logic:
+      // - Wrong attempts shown as person emojis 🧑 (one per wrong guess before the win)
+      // - Then a ✅ when correct
+      // - Then remaining reveals as 🎭 until 4 total reveals
+      const wrongAttemptsBeforeWin = Math.max(0, guesses.length - 1);
       const remainingActors = Math.max(0, ACTORS_TO_SHOW - guesses.length);
-      
-      pattern = '❌'.repeat(incorrectAttempts) + '✅' + '🎭'.repeat(remainingActors);
-      
+
+      pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + '✅' + '🎭'.repeat(remainingActors);
+
       if (guesses.length === 1) {
-        // First try: "Cast Climb #X ✅🎭🎭🎭\nGot the 🎬 on the first try! 🥇"
         resultText = 'Got the 🎬 on the first try! 🥇';
       } else {
-        // Multiple tries: "Cast Climb #X ❌✅🎭🎭\nGot the 🎬 in 2 guesses"
         resultText = `Got the 🎬 in ${guesses.length} guesses`;
       }
     } else {
-      // All failed attempts: "Cast Climb #X ❌❌❌❌\nWas unable to guess the 🎬!"
-      pattern = '❌'.repeat(guesses.length);
-      resultText = 'Was unable to guess the 🎬!';
+      // Loss pattern: four faces then a red X
+      // Example: 🧑🧑🧑🧑❌
+      pattern = '🧑'.repeat(ACTORS_TO_SHOW) + '❌';
+      resultText = "Wasn't able to get the movie."
     }
     
     const shareText = `Cast Climb #${puzzle.puzzleNumber} ${pattern}\n${resultText}`;
