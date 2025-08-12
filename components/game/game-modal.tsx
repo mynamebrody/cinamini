@@ -61,9 +61,9 @@ export function GameModal({
       
       {/* Modal content */}
       <div className={cn(
-        "relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
+        "relative bg-white border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(192,192,192,0.8),8px_8px_0px_0px_rgba(192,192,192,0.6),12px_12px_0px_0px_rgba(192,192,192,0.4)] w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
         className
-      )}>
+      )} style={{ borderRadius: 0 }}>
         {showCloseButton && (
           <button
             onClick={() => onOpenChange(false)}

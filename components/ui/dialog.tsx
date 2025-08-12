@@ -65,9 +65,10 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div
         ref={ref}
         className={cn(
-          "bg-white rounded-lg border border-neutral-200 shadow-nyt-lg p-6 w-full max-w-lg mx-4 relative",
+          "bg-white border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(192,192,192,0.8),8px_8px_0px_0px_rgba(192,192,192,0.6),12px_12px_0px_0px_rgba(192,192,192,0.4)] p-6 w-full max-w-lg mx-4 relative",
           className
         )}
+        style={{ borderRadius: 0 }}
         {...props}
       >
         {children}
