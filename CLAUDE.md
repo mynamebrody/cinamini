@@ -30,6 +30,14 @@ Cast member guessing game with progressive reveals:
 4. Players can keep guessing until they run out of actors (❌❌❌✅)
 5. Try to guess with as few hints as possible for better scores!
 
+#### **Poster Pixels** 🎨
+Movie poster guessing game with progressive clarity:
+1. Start with heavily pixelated movie poster
+2. Guess the movie or increase clarity level
+3. 5 clarity levels: 5%, 15%, 25%, 40%, 60%
+4. Maximum 5 guesses to identify the movie
+5. Score based on clarity level when correctly guessed
+
 ## Development Commands
 
 ### Core Development
@@ -64,9 +72,11 @@ app/                          # Next.js App Router
 ├── api/                     # API routes
 │   ├── budget-bracket/      # Budget Bracket API endpoints
 │   ├── cast-climb/          # Cast Climb API endpoints  
+│   ├── poster-pixels/       # Poster Pixels API endpoints
 │   ├── retitled/            # Retitled API endpoints
 │   ├── games/              # Multi-game status API
 │   ├── movies/search/      # Movie search API
+│   ├── share/              # Centralized share card generation
 │   └── user/               # User profile and favorites API
 ├── auth/                   # Authentication pages
 │   ├── login/page.tsx
@@ -84,6 +94,7 @@ components/                   # React components
 ├── game/                    # Game-specific components
 │   ├── budget-bracket/      # Budget comparison game components
 │   ├── cast-climb/          # Cast guessing game components
+│   ├── poster-pixels/       # Poster clarity game components
 │   └── retitle/            # Localized title game components
 ├── auth-dialog.tsx         # Authentication modal
 ├── game-card.tsx           # Homepage game cards
@@ -100,7 +111,12 @@ lib/                         # Utilities and configurations
 ├── game-seeding.ts         # Unified seeding system for all games
 ├── budget-bracket.ts       # Budget Bracket game logic
 ├── cast-climb.ts           # Cast Climb game logic
+├── poster-pixels.ts        # Poster Pixels game logic
+├── poster-pixels-config.ts # Poster Pixels configuration
 ├── retitled.ts             # Retitled game logic
+├── local-game-storage.ts   # Anonymous user local storage
+├── webhooks.ts             # Webhook integration utilities
+├── sharing/                # Centralized sharing system
 ├── tmdb.ts                 # TMDB API utilities
 ├── tmdb-trending.ts        # Trending movies caching
 └── actions.ts              # Server actions
