@@ -216,8 +216,8 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               <p className="text-xs text-muted-foreground">Games Played</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{result.stats.accuracy || 0}%</p>
-              <p className="text-xs text-muted-foreground">Accuracy</p>
+              <p className="text-lg font-bold text-foreground">{result.puzzle?.localizedTitle || 'N/A'}</p>
+              <p className="text-xs text-muted-foreground">Title to Guess</p>
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">

@@ -23,6 +23,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 })
     }
 
+    // Get the last guess to show the title
+    const { data: lastGuess } = await supabase
+      .from("retitled_guesses")
+      .select(`
+        created_at,
+        puzzle_id,
+        retitled_puzzles (
+          localized_title,
+          country_code,
+          flag_emoji
+        )
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single()
+
     // Return default stats if user hasn't played yet
     if (!stats) {
       return NextResponse.json({
@@ -34,7 +51,8 @@ export async function GET(request: NextRequest) {
           longestStreak: 0,
           averageSolveTime: "0s",
           countriesGuessed: [],
-          lastPlayed: null
+          lastPlayed: null,
+          lastGuessedTitle: null
         }
       })
     }
@@ -56,7 +74,12 @@ export async function GET(request: NextRequest) {
         longestStreak: stats.longest_streak,
         averageSolveTime,
         countriesGuessed: stats.countries_guessed || [],
-        lastPlayed: stats.last_played_date
+        lastPlayed: stats.last_played_date,
+        lastGuessedTitle: lastGuess?.retitled_puzzles ? {
+          localizedTitle: lastGuess.retitled_puzzles.localized_title,
+          countryCode: lastGuess.retitled_puzzles.country_code,
+          flagEmoji: lastGuess.retitled_puzzles.flag_emoji
+        } : null
       }
     })
   } catch (error) {

@@ -17,6 +17,11 @@ interface StatsData {
   averageSolveTime: string
   countriesGuessed: string[]
   lastPlayed: string | null
+  lastGuessedTitle?: {
+    localizedTitle: string
+    countryCode: string
+    flagEmoji: string
+  } | null
 }
 
 interface RetitleStatsProps {
@@ -130,13 +135,25 @@ export default function RetitleStats({ onClose }: RetitleStatsProps) {
           </div>
         </Card>
 
-        {/* Accuracy */}
+        {/* Last Title */}
         <Card className="p-4 bg-card border">
           <div className="flex items-center gap-3">
             <Target className="w-8 h-8 text-blue-500" />
             <div>
-              <p className="text-2xl font-bold text-foreground">{stats.accuracy}%</p>
-              <p className="text-sm text-muted-foreground">Accuracy</p>
+              {stats.lastGuessedTitle ? (
+                <>
+                  <p className="text-lg font-bold text-foreground flex items-center gap-1">
+                    <span>{stats.lastGuessedTitle.flagEmoji}</span>
+                    <span className="truncate">{stats.lastGuessedTitle.localizedTitle}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">Last Title</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold text-foreground">-</p>
+                  <p className="text-sm text-muted-foreground">No Titles Yet</p>
+                </>
+              )}
             </div>
           </div>
         </Card>
