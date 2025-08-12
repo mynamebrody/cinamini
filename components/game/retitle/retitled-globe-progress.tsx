@@ -90,8 +90,6 @@ export default function RetitledGlobeProgress({
   const [showPassport, setShowPassport] = useState(false)
   const [isPulsing, setIsPulsing] = useState(false)
 
-  const visitedCount = visitedCountries.length
-
   useEffect(() => {
     if (gameState === 'traveling') {
       setIsPulsing(true)
@@ -174,23 +172,6 @@ export default function RetitledGlobeProgress({
           >
             {getGameStateText()}
           </motion.p>
-
-          {/* Progress indicator */}
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">
-              Countries Visited: {visitedCount}
-            </div>
-          </div>
-
-          {/* Achievement badges */}
-          {visitedCount > 0 && (
-            <div className="flex justify-center gap-1 mt-2">
-              {visitedCount >= 5 && <span className="text-xs" title="5+ countries">🌍</span>}
-              {visitedCount >= 10 && <span className="text-xs" title="World Traveler">✈️</span>}
-              {visitedCount >= 25 && <span className="text-xs" title="Globe Trotter">🗺️</span>}
-              {visitedCount >= 50 && <span className="text-xs" title="International Explorer">🏆</span>}
-            </div>
-          )}
         </div>
       </div>
     </div>
