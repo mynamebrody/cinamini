@@ -142,13 +142,26 @@ export default function BudgetBracketGame() {
             setModalState('howtoplay')
           }
         }
-      } else if (user && puzzleData.has_played) {
-        // Fetch complete game result for authenticated users who have already played
-        await fetchCompletedGameResult(puzzleData.id)
+      } else if (user) {
+        // Handle authenticated user states
+        if (puzzleData.has_played) {
+          // Fetch complete game result for authenticated users who have already played
+          await fetchCompletedGameResult(puzzleData.id)
+        } else {
+          // User hasn't played today
+          setGameState('ready')
+          
+          // Show how-to-play modal only if they've never played Budget Bracket before
+          if (!puzzleData.hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
+        }
       } else {
+        // Anonymous user
+        setGameState('ready')
+        
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
-        setGameState('ready')
         if (!hasPlayedBefore) {
           setModalState('howtoplay')
         }

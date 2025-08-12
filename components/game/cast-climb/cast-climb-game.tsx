@@ -172,43 +172,66 @@ export default function CastClimbGame() {
             setModalState('howtoplay')
           }
         }
-      } else if (user && data.hasPlayed) {
-        // User has already played today, show result
-        const userGuesses = data.userGuesses || []
-        setUserGuesses(userGuesses)
-        
-        let isWin = false
-        let shareText = ""
-        
-        if (userGuesses.length > 0) {
-          isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
-          shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
+      } else if (user) {
+        // Handle authenticated user states
+        if (data.hasPlayed) {
+          // User has completed the game today, show result
+          const userGuesses = data.userGuesses || []
+          setUserGuesses(userGuesses)
+          
+          let isWin = false
+          let shareText = ""
+          
+          if (userGuesses.length > 0) {
+            isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
+            shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
+          } else {
+            // No guesses found, but user has played - this shouldn't normally happen
+            console.warn("User has played Cast Climb but no guesses found")
+            shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
+          }
+          
+          // Set up result state
+          setResult({
+            correct: isWin,
+            puzzle: data.puzzle,
+            user_guesses: userGuesses,
+            stats: {
+              games_played: 0, // Will be filled by stats API
+              games_won: 0,
+              current_streak: 0,
+              longest_streak: 0,
+              perfect_games: 0,
+              average_actors_revealed: 0
+            },
+            share_text: shareText
+          })
+          setGameState("completed")
+        } else if (data.hasStarted) {
+          // User has started but not completed the game, resume from where they left off
+          const userGuesses = data.userGuesses || []
+          setUserGuesses(userGuesses)
+          setRevealedIndex(data.lastActorsRevealed - 1) // Convert to 0-based index
+          setGameState("playing")
+          setStartTime(Date.now()) // Reset timer for resumed game
+          
+          // Don't show how-to-play modal when resuming
+          setModalState("none")
         } else {
-          // No guesses found, but user has played - this shouldn't normally happen
-          console.warn("User has played Cast Climb but no guesses found")
-          shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
+          // User hasn't started the game today
+          setGameState("ready")
+          
+          // Show how-to-play modal only if they've never played Cast Climb before
+          if (!data.hasPlayedBefore) {
+            setModalState("howtoplay")
+          }
         }
-        
-        // Set up result state
-        setResult({
-          correct: isWin,
-          puzzle: data.puzzle,
-          user_guesses: userGuesses,
-          stats: {
-            games_played: 0, // Will be filled by stats API
-            games_won: 0,
-            current_streak: 0,
-            longest_streak: 0,
-            perfect_games: 0,
-            average_actors_revealed: 0
-          },
-          share_text: shareText
-        })
-        setGameState("completed")
       } else {
+        // Anonymous user
+        setGameState("ready")
+        
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('cast-climb-played')
-        setGameState("ready")
         if (!hasPlayedBefore) {
           setModalState("howtoplay")
         }
@@ -245,7 +268,26 @@ export default function CastClimbGame() {
 
     try {
       if (isAnonymous) {
-        // For anonymous users, handle game logic locally
+        // For anonymous users, call API to trigger webhook but handle game logic locally
+        const response = await fetch("/api/cast-climb/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
+            guessFilmId: movie.id,
+            guessFilmTitle: movie.title,
+            guessFilmYear: movie.releaseYear,
+            actorsRevealed,
+            solveTimeMs,
+            isSkip: false
+          })
+        })
+        
+        // We don't check response.ok for anonymous users since they may get a 401
+        // Just continue with local logic
+        
         const isCorrect = movie.id === puzzle.filmId
         
         const newGuess: CastClimbGuess = {
@@ -273,9 +315,9 @@ export default function CastClimbGame() {
             // Database-compatible guesses data (cast_climb_guesses table)
             guesses_data: newGuesses.map((guess, index) => ({
               puzzle_id: puzzle.id,
-              guess_film_id: guess.movieId,
-              guess_film_title: guess.movieTitle,
-              guess_film_year: guess.movieYear || null,
+              guess_film_id: guess.guessFilmId,
+              guess_film_title: guess.guessFilmTitle,
+              guess_film_year: guess.guessFilmYear || null,
               is_correct: guess.isCorrect,
               actors_revealed: guess.actorsRevealed,
               solve_time_ms: isCorrect && index === newGuesses.length - 1 ? Date.now() - startTime : null,
@@ -383,7 +425,8 @@ export default function CastClimbGame() {
               guessFilmTitle: "_NEXT_HINT_SKIP_",
               guessFilmYear: "Unknown",
               actorsRevealed,
-              solveTimeMs
+              solveTimeMs,
+              isSkip: true
             })
           })
           // API call succeeds or fails, we continue with local logic
@@ -521,7 +564,8 @@ export default function CastClimbGame() {
               guessFilmTitle: "_GIVE_UP_",
               guessFilmYear: "Unknown",
               actorsRevealed: revealedIndex + 1,
-              solveTimeMs: Date.now() - startTime
+              solveTimeMs: Date.now() - startTime,
+              isSkip: true
             })
           })
           // API call succeeds or fails, we continue with local logic

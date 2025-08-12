@@ -35,8 +35,20 @@ export async function GET(request: NextRequest) {
     // Check if user has already played today (only if authenticated)
     let userGuess = null
     let hasPlayed = false
+    let hasPlayedBefore = false
     
     if (user) {
+      // First check if user has EVER played Retitled before (for how-to-play modal)
+      const { data: anyPreviousGuesses } = await supabase
+        .from("retitled_guesses")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single()
+      
+      hasPlayedBefore = !!anyPreviousGuesses
+      
+      // Now check today's puzzle specifically
       const { data: userGuessData, error: guessError } = await supabase
         .from("retitled_guesses")
         .select("*")
@@ -80,6 +92,7 @@ export async function GET(request: NextRequest) {
         options: shuffledOptions
       },
       hasPlayed,
+      hasPlayedBefore,
       userGuess: userGuess ? {
         guessFilmId: userGuess.guess_film_id,
         isCorrect: userGuess.is_correct,

@@ -115,15 +115,32 @@ export async function GET() {
     }
 
     // Check if user has already played today
-    const { data: existingGame } = await supabase
-      .from('budget_bracket_games')
-      .select('*')
-      .eq('user_id', user?.id) // Use optional chaining for user.id
-      .eq('puzzle_id', puzzle.id)
-      .single()
+    let hasPlayedBefore = false
+    let existingGame = null
+    
+    if (user) {
+      // First check if user has EVER played Budget Bracket before (for how-to-play modal)
+      const { data: anyPreviousGames } = await supabase
+        .from("budget_bracket_games")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single()
+      
+      hasPlayedBefore = !!anyPreviousGames
+      
+      // Now check today's puzzle specifically
+      const { data: gameData } = await supabase
+        .from('budget_bracket_games')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('puzzle_id', puzzle.id)
+        .single()
+      
+      existingGame = gameData
+    }
 
-
-    return createPuzzleResponse(puzzle, existingGame)
+    return createPuzzleResponse(puzzle, existingGame, hasPlayedBefore)
   } catch (error) {
     console.error('Unexpected error in Budget Bracket puzzle API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -303,7 +320,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
 /**
  * Create consistent puzzle response
  */
-function createPuzzleResponse(puzzle: any, existingGame: any) {
+function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBefore: boolean = false) {
   const pairs = (puzzle.pairs as MoviePair[]).map(pair => ({
     round: pair.round,
     movieA: {
@@ -328,6 +345,7 @@ function createPuzzleResponse(puzzle: any, existingGame: any) {
     seed_value: puzzle.seed_value,
     pairs,
     has_played: !!existingGame,
+    hasPlayedBefore,
     user_result: existingGame ? {
       rounds_completed: existingGame.rounds_completed,
       final_result: existingGame.final_result,

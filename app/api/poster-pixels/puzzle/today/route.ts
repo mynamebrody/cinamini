@@ -158,7 +158,20 @@ export async function GET(request: NextRequest) {
 
     // Check if user has played today (only if authenticated)
     let todaysGame = null
+    let hasPlayedBefore = false
+    
     if (user) {
+      // First check if user has EVER played Poster Pixels before (for how-to-play modal)
+      const { data: anyPreviousGames } = await supabase
+        .from("poster_pixels_games")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single()
+      
+      hasPlayedBefore = !!anyPreviousGames
+      
+      // Now check today's puzzle specifically
       const { data: userGame } = await supabase
         .from("poster_pixels_games")
         .select(`
@@ -191,6 +204,7 @@ export async function GET(request: NextRequest) {
         },
       },
       hasPlayedToday: !!todaysGame,
+      hasPlayedBefore,
       previousGame: todaysGame ? {
         won: todaysGame.won,
         total_time_ms: todaysGame.total_time_ms,
