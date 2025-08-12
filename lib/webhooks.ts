@@ -32,6 +32,7 @@ export type GuessWebhookPayload = {
     userAgent: string | null
     deviceType: string
     browser: string
+    ipAddress: string | null
   }
   // Game-agnostic guess details
   guess: Record<string, any>
@@ -43,10 +44,36 @@ export type GuessWebhookPayload = {
 
 export async function sendGuessWebhook(request: NextRequest, payload: Omit<GuessWebhookPayload, "timestamp" | "device">) {
   const url = process.env.CINAMINI_GUESS_WEBHOOK_URL
-  if (!url) return
+  console.log("📡 WEBHOOK: sendGuessWebhook called", {
+    hasUrl: !!url,
+    url: url,
+    game: payload.game,
+    isAuthenticated: payload.user.isAuthenticated
+  })
+  if (!url) {
+    console.log("📡 WEBHOOK: No webhook URL found, exiting")
+    return
+  }
 
   const ua = request.headers.get("user-agent")
   const device = parseUserAgent(ua)
+  
+  // Extract IP address from request headers
+  const getClientIP = (req: NextRequest): string | null => {
+    const forwarded = req.headers.get('x-forwarded-for')
+    const realIP = req.headers.get('x-real-ip')
+    const cfConnectingIP = req.headers.get('cf-connecting-ip')
+    
+    if (forwarded) {
+      return forwarded.split(',')[0].trim()
+    }
+    if (realIP) return realIP
+    if (cfConnectingIP) return cfConnectingIP
+    
+    return req.ip || null
+  }
+  
+  const clientIP = getClientIP(request)
   const finalPayload: GuessWebhookPayload = {
     ...payload,
     timestamp: new Date().toISOString(),
@@ -54,22 +81,36 @@ export async function sendGuessWebhook(request: NextRequest, payload: Omit<Guess
       userAgent: ua,
       deviceType: device.deviceType,
       browser: device.browser,
+      ipAddress: clientIP,
     },
   }
 
   try {
+    console.log("📡 WEBHOOK: About to send webhook", {
+      url,
+      game: finalPayload.game,
+      isAuthenticated: finalPayload.user.isAuthenticated,
+      userId: finalPayload.user.id
+    })
+    
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 2000)
 
-    await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(finalPayload),
       signal: controller.signal,
     })
-      .catch(() => {})
-      .finally(() => clearTimeout(timeout))
-  } catch {
-    // Silently ignore webhook failures
+    
+    console.log("📡 WEBHOOK: Webhook sent successfully", {
+      status: response.status,
+      game: finalPayload.game,
+      isAuthenticated: finalPayload.user.isAuthenticated
+    })
+    
+    clearTimeout(timeout)
+  } catch (error) {
+    console.error("📡 WEBHOOK: Webhook failed", error)
   }
 }

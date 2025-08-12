@@ -233,8 +233,37 @@ export default function RetitleGame() {
 
         const data = await response.json()
         
+        // Create database-compatible structure for easier migration later
+        const anonymousResult = {
+          // Core result data for display
+          ...data,
+          // Database-compatible guess data (retitled_guesses table)
+          guess_data: {
+            puzzle_id: puzzle.id,
+            guess_film_id: guessFilmId,
+            is_correct: data.correct,
+            solve_time_ms: currentSolveTime,
+            attempt_number: 1,
+            created_at: new Date().toISOString(),
+          },
+          // Additional metadata for migration
+          puzzle_metadata: {
+            puzzle_date: new Date().toISOString().split('T')[0],
+            country_code: puzzle.countryCode,
+            localized_title: puzzle.localizedTitle,
+          },
+          // Stats tracking for anonymous users
+          anonymous_stats: {
+            games_played: 1,
+            games_correct: data.correct ? 1 : 0,
+            current_streak: data.correct ? 1 : 0,
+            countries_visited: data.correct ? [puzzle.countryCode] : [],
+            last_played_date: new Date().toISOString().split('T')[0],
+          }
+        }
+        
         // Save to local storage for anonymous users
-        localGameStorage.saveDailyResult('retitled', data)
+        localGameStorage.saveDailyResult('retitled', anonymousResult)
         
         setResult(data)
         setGameState('completed')

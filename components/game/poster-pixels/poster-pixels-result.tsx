@@ -53,11 +53,18 @@ export default function PosterPixelsResult({
     return `${minutes}m ${remainingSeconds}s`
   }
 
-  // Calculate actual number of skips/enhancements used based on guesses
+  // Calculate actual number of enhancements used (skips + wrong guesses that advance clarity)
   const calculateSkipsUsed = () => {
-    // Count all skipped guesses (but not the final guess that was correct or gave up)
-    const skippedGuesses = guesses.filter(g => g.movieTitle === 'Skipped')
-    return skippedGuesses.length
+    // In Poster Pixels, both skipping and wrong guesses advance to next clarity level
+    // So all guesses except the final winning guess should count as "enhancements" (🔍)
+    if (won) {
+      // If won, all guesses before the final correct one are enhancements
+      return Math.max(0, guesses.length - 1)
+    } else {
+      // If lost/gave up, count all non-winning attempts as enhancements
+      // This handles cases where user made wrong guesses then gave up
+      return Math.min(guesses.length, 4) // Max 4 enhancements possible in 5-level game
+    }
   }
 
   const skipsUsed = calculateSkipsUsed()

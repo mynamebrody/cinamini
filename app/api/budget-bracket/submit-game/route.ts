@@ -5,6 +5,7 @@ import {
   type GameChoice,
   type MoviePair 
 } from '@/lib/budget-bracket'
+import { sendGuessWebhook } from '@/lib/webhooks'
 
 interface SubmitGameRequest {
   puzzle_id: number
@@ -17,14 +18,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      console.log('Budget Bracket submit-game: No authenticated user found')
-      return NextResponse.json({ 
-        error: 'This endpoint requires authentication. Anonymous users should handle game submission locally.' 
-      }, { status: 401 })
-    }
+    // Get current user (optional for anonymous support)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const body: SubmitGameRequest = await request.json()
     const { puzzle_id, choices, total_duration_ms } = body
@@ -32,6 +27,46 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!puzzle_id || !choices || !Array.isArray(choices) || choices.length === 0) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
+    }
+
+    if (!user) {
+      // For anonymous users, send webhook but don't save to database
+      const roundsCompleted = choices.length
+      const correctRounds = choices.filter(c => c.correct).length
+      const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
+
+      await sendGuessWebhook(request, {
+        event: 'guess',
+        game: 'budget-bracket',
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId: puzzle_id,
+          choices: choices.map(c => ({
+            round: c.round,
+            chosenMovieTmdbId: c.chosen_movie,
+            timeTakenMs: c.time_taken_ms,
+            correct: c.correct
+          })),
+          totalDurationMs: total_duration_ms,
+          roundsCompleted,
+          correctRounds,
+          isPerfectGame
+        },
+        progress: { 
+          roundsCompleted,
+          correctRounds,
+          isPerfectGame,
+          isGameComplete: true,
+        },
+      })
+
+      return NextResponse.json({
+        message: "Anonymous play - results not saved",
+        anonymous: true,
+        rounds_completed: roundsCompleted,
+        is_perfect_game: isPerfectGame,
+        final_result: isPerfectGame ? "perfect" : `eliminated_round_${correctRounds + 1}`,
+      })
     }
 
     // Get the puzzle data to verify answers (using service client to bypass RLS)
@@ -130,6 +165,38 @@ export async function POST(request: NextRequest) {
         correct_choice: pair.correctChoice,
         budget_difference: pair.budgetDifference,
         difficulty_ratio: pair.difficultyRatio
+      }
+    })
+
+    // Fire webhook for authenticated game submission
+    await sendGuessWebhook(request, {
+      event: 'guess',
+      game: 'budget-bracket',
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId: puzzle_id,
+        choices: verifiedChoices.map(c => ({
+          round: c.round,
+          chosenMovieTmdbId: c.chosen_movie,
+          timeTakenMs: c.time_taken_ms,
+          correct: c.correct
+        })),
+        totalDurationMs: total_duration_ms,
+        roundsCompleted,
+        correctAnswers,
+        isPerfectGame
+      },
+      progress: { 
+        roundsCompleted,
+        correctAnswers,
+        isPerfectGame,
+        isGameComplete: true,
+      },
+      correctAnswer: {
+        finalResult,
+        isPerfectGame,
+        roundsCompleted,
+        correctAnswers
       }
     })
 

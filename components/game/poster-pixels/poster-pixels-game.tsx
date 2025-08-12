@@ -263,15 +263,15 @@ export default function PosterPixelsGame() {
     return getScoreForClarityPercent(percent)
   }
 
-  const advanceLevelOrEnd = (won: boolean) => {
+  const advanceLevelOrEnd = (won: boolean, currentGuesses: GuessEntry[]) => {
     const levels = getLevels()
     const isLast = state.currentLevelIndex >= levels.length - 1
     if (won) {
-      endGame(true)
+      endGame(true, currentGuesses)
       return
     }
     if (isLast) {
-      endGame(false)
+      endGame(false, currentGuesses)
     } else {
       setState(prev => ({
         ...prev,
@@ -281,11 +281,25 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const recordGuess = async (entry: GuessEntry) => {
-    setState(prev => ({ ...prev, guesses: [...prev.guesses, entry] }))
-    if (!isAnonymous && state.gameId && state.puzzle) {
+  const recordGuess = async (entry: GuessEntry, newGuessesArray: GuessEntry[]) => {
+    setState(prev => ({ ...prev, guesses: newGuessesArray }))
+    if (state.gameId && state.puzzle) {
       try {
-        await fetch("/api/poster-pixels/guess", {
+        console.log("🎬 POSTER PIXELS CLIENT: About to call guess API", {
+          gameId: state.gameId,
+          puzzleId: state.puzzle.id,
+          isAnonymous,
+          gameStartTime,
+          guessNumber: newGuessesArray.length,
+          movieTitle: entry.movieTitle
+        })
+        
+        // Calculate actual time since game start
+        const timeTakenMs = gameStartTime > 0 ? Date.now() - gameStartTime : 0
+        // Use the actual guess count from the new array
+        const guessNumber = newGuessesArray.length
+        
+        const response = await fetch("/api/poster-pixels/guess", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -293,11 +307,23 @@ export default function PosterPixelsGame() {
             puzzle_id: state.puzzle.id,
             guessed_movie_id: entry.movieId,
             guessed_movie_title: entry.movieTitle,
-            time_taken_ms: 0,
+            time_taken_ms: timeTakenMs,
             clarity_level: entry.clarityLevel,
             skipped: entry.movieId === null,
+            guess_number: guessNumber, // Use accurate guess count
           }),
         })
+        
+        console.log("🎬 POSTER PIXELS CLIENT: API response received", {
+          status: response.status,
+          isAnonymous,
+          gameId: state.gameId
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error("🎬 POSTER PIXELS CLIENT: API error", errorData)
+        }
       } catch (e) {
         console.error("Failed to persist guess", e)
       }
@@ -315,8 +341,9 @@ export default function PosterPixelsGame() {
       isCorrect,
       clarityLevel: state.clarityLevel,
     }
-    await recordGuess(entry)
-    advanceLevelOrEnd(isCorrect)
+    const newGuesses = [...state.guesses, entry]
+    await recordGuess(entry, newGuesses)
+    advanceLevelOrEnd(isCorrect, newGuesses)
   }
 
 
@@ -328,11 +355,12 @@ export default function PosterPixelsGame() {
       isCorrect: false,
       clarityLevel: state.clarityLevel,
     }
-    await recordGuess(entry)
-    advanceLevelOrEnd(false)
+    const newGuesses = [...state.guesses, entry]
+    await recordGuess(entry, newGuesses)
+    advanceLevelOrEnd(false, newGuesses)
   }
 
-  const endGame = async (won: boolean) => {
+  const endGame = async (won: boolean, currentGuesses: GuessEntry[]) => {
     const score = won ? calculateScoreForCurrent() : 0
     const totalTimeMs = gameStartTime > 0 ? Date.now() - gameStartTime : 0
     
@@ -341,14 +369,41 @@ export default function PosterPixelsGame() {
     
     try {
       if (isAnonymous) {
+        // Create database-compatible structure for easier migration later
         const anonymousResult = {
-          won,
-          timeElapsed: totalTimeMs,
-          clarityLevel: finalClarityLevel,
-          guesses: state.guesses,
-          puzzleId: state.puzzle!.id,
-          movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
-          finalScore: score,
+          // Game session data (poster_pixels_games table compatible)
+          game_session: {
+            won,
+            completed: true,
+            total_time_ms: totalTimeMs,
+            num_guesses: currentGuesses.length,
+            final_clarity_level: finalClarityLevel,
+            puzzle_id: state.puzzle!.id,
+            start_time: new Date(gameStartTime).toISOString(),
+            end_time: new Date().toISOString(),
+          },
+          // Individual guesses data (poster_pixels_guesses table compatible)  
+          guesses: currentGuesses.map((guess, index) => ({
+            guess_number: index + 1,
+            guessed_movie_id: guess.movieId,
+            guessed_movie_title: guess.movieTitle,
+            is_correct: guess.isCorrect,
+            time_taken_ms: 0, // Individual guess time not tracked in anonymous mode
+            clarity_level: guess.clarityLevel,
+            created_at: new Date().toISOString(),
+          })),
+          // Movie/puzzle metadata for display
+          movie_data: {
+            title: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
+            puzzle_id: state.puzzle!.id,
+          },
+          // Final result summary
+          result_summary: {
+            won,
+            finalScore: score,
+            timeElapsed: totalTimeMs,
+            clarityLevel: finalClarityLevel,
+          }
         }
         localGameStorage.saveDailyResult('poster-pixels', anonymousResult)
       } else if (state.gameId) {
@@ -400,8 +455,9 @@ export default function PosterPixelsGame() {
         isCorrect: false,
         clarityLevel: getClarityPercentForIndex(levels.length - 1), // Final level (90%)
       }
-      recordGuess(gaveUpEntry).then(() => {
-        endGame(false)
+      const newGuesses = [...state.guesses, gaveUpEntry]
+      recordGuess(gaveUpEntry, newGuesses).then(() => {
+        endGame(false, newGuesses)
       })
     } else {
       handleSkip()

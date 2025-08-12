@@ -19,11 +19,8 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Get current user (optional for anonymous support)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const body: GuessRequest = await request.json()
     const { puzzle_id, round, chosen_movie_tmdb_id, time_taken_ms, game_start_time } = body
@@ -31,6 +28,32 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!puzzle_id || !round || !chosen_movie_tmdb_id || round < 1 || round > 5) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
+    }
+
+    if (!user) {
+      // For anonymous users, send webhook but don't save to database
+      await sendGuessWebhook(request, {
+        event: 'guess',
+        game: 'budget-bracket',
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId: puzzle_id,
+          round,
+          chosenMovieTmdbId: chosen_movie_tmdb_id,
+          timeTakenMs: time_taken_ms,
+        },
+        progress: { 
+          round, 
+          isGameComplete: false, // Anonymous users can't track game completion server-side
+        },
+      })
+
+      return NextResponse.json({
+        message: "Anonymous play - results not saved",
+        anonymous: true,
+        correct: false, // Anonymous users don't get server-side validation
+        game_complete: false,
+      })
     }
 
     // Get the puzzle data

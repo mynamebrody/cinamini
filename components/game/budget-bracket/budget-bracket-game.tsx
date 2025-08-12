@@ -264,21 +264,34 @@ export default function BudgetBracketGame() {
       
       console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
 
+      // Always call the API to trigger webhooks for both anonymous and authenticated users
+      const response = await fetch('/api/budget-bracket/submit-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puzzle_id: puzzle!.id,
+          choices,
+          total_duration_ms: totalDuration
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to submit game')
+      }
+
+      const result: GameResult = await response.json()
+
       if (isAnonymous) {
-        // For anonymous users, calculate results locally
-        // Calculate how many answers were correct
+        // For anonymous users, also save to local storage and handle the result differently
         const correctAnswers = choices.filter(choice => choice.correct).length
-        
-        // Determine the final result based on correct answers
         let final_result: string
         if (correctAnswers === 5) {
           final_result = 'perfect'
         } else {
-          // Show how many out of 5 were correct
           final_result = `${correctAnswers}_out_of_5`
         }
-        
-        // Create a detailed game result for anonymous users
+
         const revealedPairs = choices.map((choice, index) => {
           const pair = puzzle!.pairs[index]
           return {
@@ -308,47 +321,37 @@ export default function BudgetBracketGame() {
           }
         })
 
+        // Create database-compatible structure for easier migration later
         const anonymousResult: GameResult = {
-          game_id: Date.now(), // Temporary ID
+          game_id: Date.now(), // Temporary ID for display
           rounds_completed: 5, // Always 5 rounds now
           final_result,
           is_perfect_game: correctAnswers === 5,
           total_duration_ms: totalDuration,
           revealed_pairs: revealedPairs,
+          // Database-compatible game data (budget_bracket_games table)
+          game_data: {
+            puzzle_id: puzzle!.id,
+            rounds_completed: 5,
+            final_result,
+            choices: choices, // Already in correct format for jsonb column
+            total_duration_ms: totalDuration,
+            completed_at: new Date().toISOString(),
+          },
           updated_stats: {
-            current_streak: 1, // First game for anonymous user always starts streak at 1
+            current_streak: 1, // Anonymous users start with streak of 1
             games_played: 1,
             perfect_games: correctAnswers === 5 ? 1 : 0
           }
         }
-        
+
         // Save to local storage
         localGameStorage.saveDailyResult('budget-bracket', anonymousResult)
         
         setGameResult(anonymousResult)
         setGameState('completed')
       } else {
-        // For authenticated users, submit to server
-        if (!user) {
-          throw new Error('Cannot submit game for unauthenticated users')
-        }
-        
-        const response = await fetch('/api/budget-bracket/submit-game', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            puzzle_id: puzzle!.id,
-            choices,
-            total_duration_ms: totalDuration
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.error || 'Failed to submit game')
-        }
-
-        const result: GameResult = await response.json()
+        // For authenticated users, use the server response directly
         setGameResult(result)
         setGameState('completed')
       }

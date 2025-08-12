@@ -265,10 +265,23 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - create result and save locally
+          // Create database-compatible structure for easier migration later
           const anonymousResult: CastClimbResult = {
             correct: isCorrect,
             puzzle,
             user_guesses: newGuesses,
+            // Database-compatible guesses data (cast_climb_guesses table)
+            guesses_data: newGuesses.map((guess, index) => ({
+              puzzle_id: puzzle.id,
+              guess_film_id: guess.movieId,
+              guess_film_title: guess.movieTitle,
+              guess_film_year: guess.movieYear || null,
+              is_correct: guess.isCorrect,
+              actors_revealed: guess.actorsRevealed,
+              solve_time_ms: isCorrect && index === newGuesses.length - 1 ? Date.now() - startTime : null,
+              attempt_number: index + 1,
+              created_at: new Date().toISOString(),
+            })),
             stats: {
               games_played: localGameStorage.getGameResults('cast-climb').length + 1,
               games_won: isCorrect ? 1 : 0,
@@ -357,7 +370,29 @@ export default function CastClimbGame() {
 
     try {
       if (isAnonymous) {
-        // For anonymous users, handle hint skipping locally
+        // For anonymous users, call the API to trigger webhooks, then handle locally
+        try {
+          await fetch("/api/cast-climb/guess", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              puzzleId: puzzle.id,
+              guessFilmId: -1,
+              guessFilmTitle: "_NEXT_HINT_SKIP_",
+              guessFilmYear: "Unknown",
+              actorsRevealed,
+              solveTimeMs
+            })
+          })
+          // API call succeeds or fails, we continue with local logic
+        } catch (webhookError) {
+          console.warn("Webhook call failed for anonymous skip:", webhookError)
+          // Continue with local logic even if webhook fails
+        }
+        
+        // Handle hint skipping locally
         const newGuess: CastClimbGuess = {
           id: Date.now().toString(),
           guessFilmId: -1,
@@ -375,10 +410,23 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - reached max attempts without correct guess
+          // Create database-compatible structure for easier migration later
           const anonymousResult: CastClimbResult = {
             correct: false,
             puzzle,
             user_guesses: newGuesses,
+            // Database-compatible guesses data (cast_climb_guesses table)
+            guesses_data: newGuesses.map((guess, index) => ({
+              puzzle_id: puzzle.id,
+              guess_film_id: guess.movieId,
+              guess_film_title: guess.movieTitle,
+              guess_film_year: guess.movieYear || null,
+              is_correct: guess.isCorrect,
+              actors_revealed: guess.actorsRevealed,
+              solve_time_ms: null, // No correct guess
+              attempt_number: index + 1,
+              created_at: new Date().toISOString(),
+            })),
             stats: {
               games_played: localGameStorage.getGameResults('cast-climb').length + 1,
               games_won: 0,
@@ -460,7 +508,29 @@ export default function CastClimbGame() {
     
     try {
       if (isAnonymous) {
-        // For anonymous users, handle give up locally
+        // For anonymous users, call API to trigger webhook, then handle give up locally
+        try {
+          await fetch("/api/cast-climb/guess", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              puzzleId: puzzle.id,
+              guessFilmId: -1,
+              guessFilmTitle: "_GIVE_UP_",
+              guessFilmYear: "Unknown",
+              actorsRevealed: revealedIndex + 1,
+              solveTimeMs: Date.now() - startTime
+            })
+          })
+          // API call succeeds or fails, we continue with local logic
+        } catch (webhookError) {
+          console.warn("Webhook call failed for anonymous give up:", webhookError)
+          // Continue with local logic even if webhook fails
+        }
+        
+        // Handle give up locally
         const currentGuessCount = userGuesses.length
         const maxAttempts = puzzle.totalActors || 4
         
@@ -480,11 +550,23 @@ export default function CastClimbGame() {
         
         const allGuesses = [...userGuesses, ...giveUpGuesses]
         
-        // Create the result for anonymous users
+        // Create the result for anonymous users - database-compatible structure
         const anonymousResult: CastClimbResult = {
           correct: false,
           puzzle,
           user_guesses: allGuesses,
+          // Database-compatible guesses data (cast_climb_guesses table)
+          guesses_data: allGuesses.map((guess, index) => ({
+            puzzle_id: puzzle.id,
+            guess_film_id: guess.movieId || guess.guessFilmId || -1,
+            guess_film_title: guess.movieTitle || guess.guessFilmTitle || "_GIVE_UP_",
+            guess_film_year: guess.movieYear || guess.guessFilmYear || null,
+            is_correct: guess.isCorrect,
+            actors_revealed: guess.actorsRevealed,
+            solve_time_ms: null, // No correct guess in give up scenario
+            attempt_number: index + 1,
+            created_at: new Date().toISOString(),
+          })),
           stats: {
             games_played: localGameStorage.getGameResults('cast-climb').length + 1,
             games_won: 0,
