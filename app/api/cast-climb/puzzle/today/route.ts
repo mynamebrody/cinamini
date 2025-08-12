@@ -18,14 +18,24 @@ export async function GET(request: NextRequest) {
     
     // Check if user has already played today (only if authenticated)
     let hasPlayed = false
+    let hasStarted = false
+    let hasPlayedBefore = false // Has user ever played this game (for how-to-play modal)
     let userGuesses = []
+    let lastActorsRevealed = 0
 
     // Try to get existing puzzle from database
+    console.log('Checking for existing Cast Climb puzzle for date:', todayString)
     const { data: existingPuzzle, error: puzzleError } = await supabase
       .from("cast_climb_puzzles")
       .select("*")
       .eq("puzzle_date", todayString)
       .single()
+
+    console.log('Existing puzzle query result:', { 
+      hasData: !!existingPuzzle, 
+      error: puzzleError?.message,
+      errorCode: puzzleError?.code 
+    })
 
     let puzzle = existingPuzzle
 
@@ -62,11 +72,46 @@ export async function GET(request: NextRequest) {
           .single()
 
         if (insertError) {
-          console.error('Error inserting Cast Climb puzzle:', insertError)
-          throw new Error('Failed to save puzzle')
+          // If it's a duplicate key error (race condition), try to get the existing puzzle
+          if (insertError.code === '23505') {
+            console.log('Puzzle already exists (race condition), fetching existing puzzle')
+            // Use service client for consistency and add small delay for transaction completion
+            await new Promise(resolve => setTimeout(resolve, 100))
+            const serviceSupabase = createServiceClient()
+            const { data: existingPuzzleRetry, error: retryError } = await serviceSupabase
+              .from("cast_climb_puzzles")
+              .select("*")
+              .eq("puzzle_date", todayString)
+              .single()
+            
+            if (!retryError && existingPuzzleRetry) {
+              puzzle = existingPuzzleRetry
+              console.log('Successfully fetched existing puzzle after race condition')
+            } else {
+              console.error('Error fetching existing puzzle after race condition:', retryError)
+              // If we still can't find it, there might be a database issue
+              // Let's try one more time with the original query method
+              const { data: finalRetry, error: finalError } = await supabase
+                .from("cast_climb_puzzles")
+                .select("*")
+                .eq("puzzle_date", todayString)
+                .single()
+              
+              if (!finalError && finalRetry) {
+                puzzle = finalRetry
+                console.log('Successfully fetched existing puzzle on final retry')
+              } else {
+                console.error('Final retry also failed:', finalError)
+                throw new Error('Failed to save puzzle')
+              }
+            }
+          } else {
+            console.error('Error inserting Cast Climb puzzle:', insertError)
+            throw new Error('Failed to save puzzle')
+          }
+        } else {
+          puzzle = insertedPuzzle
         }
-
-        puzzle = insertedPuzzle
       } catch (error) {
         console.error('Error generating Cast Climb puzzle:', error)
         return NextResponse.json(
@@ -85,6 +130,17 @@ export async function GET(request: NextRequest) {
 
     // Check if user has played this puzzle (only if authenticated)
     if (user) {
+      // First check if user has EVER played Cast Climb before (for how-to-play modal)
+      const { data: anyPreviousGuesses } = await supabase
+        .from("cast_climb_guesses")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single()
+      
+      hasPlayedBefore = !!anyPreviousGuesses
+      
+      // Now check today's puzzle specifically
       const { data: existingGuesses, error: guessError } = await supabase
         .from("cast_climb_guesses")
         .select("*")
@@ -93,12 +149,36 @@ export async function GET(request: NextRequest) {
         .order("created_at", { ascending: true })
 
       if (!guessError && existingGuesses && existingGuesses.length > 0) {
-        // Check if game is completed: either correct guess or max attempts reached
-        const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
-        const maxAttempts = puzzle.total_actors || 4
-        const hasReachedMaxAttempts = existingGuesses.length >= maxAttempts
-        hasPlayed = hasCorrectGuess || hasReachedMaxAttempts
+        // Game has been started if there are any guesses
+        hasStarted = true
         userGuesses = existingGuesses
+        
+        // Check if game is completed: either correct guess or all actors revealed
+        const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
+        const maxActors = puzzle.total_actors || 4
+        
+        // Check if game ended with give up or reached max actors revealed
+        const hasGiveUp = existingGuesses.some(g => g.guess_film_title === "_GIVE_UP_")
+        const maxActorsRevealed = Math.max(...existingGuesses.map(g => g.actors_revealed))
+        const hasReachedMaxActors = maxActorsRevealed >= maxActors
+        
+        // Track the last actors revealed for resuming incomplete games
+        lastActorsRevealed = maxActorsRevealed
+        
+        // Game is only "played" (complete) if it's finished
+        hasPlayed = hasCorrectGuess || hasGiveUp || hasReachedMaxActors
+        
+        console.log('Cast Climb game state:', {
+          hasStarted,
+          hasPlayed,
+          hasPlayedBefore,
+          hasCorrectGuess,
+          hasGiveUp,
+          maxActorsRevealed,
+          lastActorsRevealed,
+          hasReachedMaxActors,
+          guessCount: existingGuesses.length
+        })
       }
     }
 
@@ -118,7 +198,10 @@ export async function GET(request: NextRequest) {
         funFact: puzzle.fun_fact
       },
       hasPlayed,
-      userGuesses: hasPlayed ? userGuesses.map(guess => ({
+      hasStarted,
+      hasPlayedBefore,
+      lastActorsRevealed,
+      userGuesses: (hasPlayed || hasStarted) ? userGuesses.map(guess => ({
         id: guess.id,
         guessFilmId: guess.guess_film_id,
         guessFilmTitle: guess.guess_film_title,

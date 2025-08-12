@@ -15,25 +15,91 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (!user) {
-      // For anonymous users, return a basic response since the game logic is handled client-side
-      // Send webhook noting anonymous attempt (no DB persistence)
+      console.log("🎬 CAST CLIMB GUESS API: Processing anonymous user")
+      // For anonymous users, provide proper webhook with validation (matching Poster Pixels format)
       const body = await request.json().catch(() => ({}))
+      const { puzzleId, guessFilmId, guessFilmTitle, actorsRevealed = 1, isSkip = false, solveTimeMs } = body
+      
+      console.log("🎬 CAST CLIMB GUESS API: Anonymous user data", {
+        puzzleId, guessFilmId, guessFilmTitle, actorsRevealed, isSkip, solveTimeMs
+      })
+      
+      // Get puzzle to validate guess
+      console.log("🎬 CAST CLIMB GUESS API: Looking for puzzle with ID:", puzzleId)
+      const { data: puzzle, error: puzzleError } = await supabase
+        .from("cast_climb_puzzles")
+        .select("*")
+        .eq("id", puzzleId)
+        .single()
+
+      console.log("🎬 CAST CLIMB GUESS API: Puzzle query result", {
+        hasData: !!puzzle,
+        error: puzzleError?.message,
+        errorCode: puzzleError?.code
+      })
+
+      if (puzzleError || !puzzle) {
+        console.error("🎬 CAST CLIMB GUESS API: Puzzle not found", { puzzleId, puzzleError })
+        return NextResponse.json({ error: "Puzzle not found" }, { status: 404 })
+      }
+
+      // Validate guess
+      const isCorrect = !isSkip && guessFilmId === puzzle.film_id
+      
+      // Calculate score for anonymous users too
+      const calculateScoreForActorsRevealed = (actors: number): number => {
+        const maxScore = 1000
+        const scoreDecrement = 250
+        return Math.max(0, maxScore - ((actors - 1) * scoreDecrement))
+      }
+      
+      const scoreForGuess = isCorrect ? calculateScoreForActorsRevealed(actorsRevealed) : 0
+      const maxAttempts = puzzle.total_actors || 4
+      
+      // Game is only completed if: correct guess, give up, or reached max actors
+      const isGiveUp = guessFilmTitle === "_GIVE_UP_"
+      const hasReachedMaxActors = actorsRevealed >= maxAttempts && !isCorrect && !isSkip
+      const gameCompleted = isCorrect || isGiveUp || hasReachedMaxActors
+      
+      // Send webhook with consistent format
       await sendGuessWebhook(request, {
         event: "guess",
         game: "cast-climb",
         user: { isAuthenticated: false },
         guess: {
-          puzzleId: body?.puzzleId,
-          guessFilmId: body?.guessFilmId,
-          guessFilmTitle: body?.guessFilmTitle,
+          gameId: `anonymous-${puzzle.puzzle_number}`,
+          puzzleId: puzzle.puzzle_number,
+          guessedMovieId: guessFilmId,
+          guessedMovieTitle: guessFilmTitle,
+          timeTakenMs: solveTimeMs || null, // Include actual time from client
+          actorsRevealed,
+          skipped: isSkip,
+          score: scoreForGuess,
         },
-        progress: { attemptNumber: 1 },
+        progress: {
+          attemptNumber: actorsRevealed, // Use actors revealed as attempt number
+          maxAttempts,
+          gameCompleted,
+          isSkipped: isSkip,
+          totalAttempts: actorsRevealed,
+        },
+        correctAnswer: { 
+          id: puzzle.film_id, 
+          title: puzzle.film_title,
+          isCorrect 
+        },
       })
 
       return NextResponse.json({ 
-        error: "Anonymous mode not supported for Cast Climb API", 
-        message: "Game logic should be handled client-side for anonymous users"
-      }, { status: 400 })
+        isCorrect,
+        gameCompleted,
+        anonymous: true,
+        correctAnswer: gameCompleted ? {
+          id: puzzle.film_id,
+          title: puzzle.film_title
+        } : undefined,
+        message: "Anonymous play - results not saved"
+      })
     }
 
     const body = await request.json()
@@ -130,25 +196,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fire webhook for authenticated guess
-    await sendGuessWebhook(request, {
-      event: "guess",
-      game: "cast-climb",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
-      guess: {
-        puzzleId,
-        guessFilmId,
-        guessFilmTitle,
-        guessFilmYear,
-      },
-      progress: {
-        attemptNumber,
-        maxAttempts,
-        isSkip,
-      },
-      correctAnswer: { id: puzzle.film_id, isCorrect },
-    })
-
     // Get all user guesses for this puzzle (including the new one)
     const allGuesses = [...(existingGuesses || []), newGuess]
 
@@ -157,6 +204,51 @@ export async function POST(request: NextRequest) {
       g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
     )
     const isGameCompleted = isCorrect || allRealAttempts.length >= maxAttempts || guessFilmTitle === "_GIVE_UP_"
+    
+    // Calculate score for correct guesses (based on actors revealed - fewer actors = higher score)
+    const calculateScoreForActorsRevealed = (actors: number): number => {
+      // Score decreases as more actors are revealed
+      // 1 actor = 1000 points, 2 actors = 750, 3 actors = 500, 4 actors = 250
+      const maxScore = 1000
+      const scoreDecrement = 250
+      return Math.max(0, maxScore - ((actors - 1) * scoreDecrement))
+    }
+    
+    const scoreForGuess = isCorrect ? calculateScoreForActorsRevealed(actorsRevealed) : 0
+    
+    // Fire webhook for authenticated guess (matching Poster Pixels format)
+    const webhookPromise = sendGuessWebhook(request, {
+      event: "guess",
+      game: "cast-climb",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        gameId: `${user.id}-${puzzle.puzzle_number}`, // Use puzzle number for consistency
+        puzzleId: puzzle.puzzle_number,
+        guessedMovieId: guessFilmId,
+        guessedMovieTitle: guessFilmTitle,
+        timeTakenMs: solveTimeMs || null, // Include time for all guesses, not just correct ones
+        actorsRevealed,
+        skipped: isSkip,
+        score: scoreForGuess,
+      },
+      progress: {
+        attemptNumber,
+        maxAttempts,
+        gameCompleted: isGameCompleted,
+        isSkipped: isSkip,
+        totalAttempts: attemptNumber,
+      },
+      correctAnswer: { 
+        id: puzzle.film_id, 
+        title: puzzle.film_title,
+        isCorrect 
+      },
+    })
+
+    // Fire webhook immediately (don't await - send in background)
+    webhookPromise.catch(error => {
+      console.error("🎬 CAST CLIMB: Webhook failed:", error)
+    })
     let newStats = null
 
     if (isGameCompleted) {
