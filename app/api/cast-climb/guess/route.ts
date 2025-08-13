@@ -76,6 +76,14 @@ export async function POST(request: NextRequest) {
       g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
     ) || []
 
+    // Prevent duplicate movie guesses within the same puzzle
+    if (!isSkip && realAttempts.some(g => g.guess_film_id === guessFilmId)) {
+      return NextResponse.json(
+        { error: "You have already guessed that movie for this puzzle" },
+        { status: 400 }
+      )
+    }
+
     if (hasWon) {
       return NextResponse.json(
         { error: "You have already completed this puzzle" },

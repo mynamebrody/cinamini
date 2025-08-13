@@ -877,6 +877,9 @@ export default function CastClimbGame() {
                   loading={isGuessing}
                   placeholder="Start typing a movie title..."
                   disabled={isGuessing}
+                  excludeMovieIds={userGuesses
+                    .filter(g => g.guessFilmId && g.guessFilmId > 0)
+                    .map(g => g.guessFilmId)}
                 />
                 <div className="space-y-2">
                   <Button 

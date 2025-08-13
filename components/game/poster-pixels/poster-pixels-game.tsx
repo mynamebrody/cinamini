@@ -643,6 +643,9 @@ export default function PosterPixelsGame() {
                         }}
                         selectedMovie={null}
                         disabled={false}
+                        excludeMovieIds={state.guesses
+                          .filter(g => g.movieId !== null)
+                          .map(g => g.movieId as number)}
                       />
 
                       {/* Previous Guesses */}
