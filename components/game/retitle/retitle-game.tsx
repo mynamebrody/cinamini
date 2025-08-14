@@ -98,6 +98,14 @@ export default function RetitleGame() {
         if (hasPlayedToday) {
           const localResult = localGameStorage.getTodayResult('retitled')
           if (localResult?.result) {
+            // Extract solve time from the cached result
+            const cachedSolveTime = localResult.result.solveTimeMs || 0
+            setSolveTimeMs(cachedSolveTime)
+            
+            // Set puzzle data from API first (for puzzle number and other metadata)
+            setPuzzle(data.puzzle)
+            
+            // Then set the result
             setResult(localResult.result)
             setGameState('completed')
           } else {
@@ -233,8 +241,16 @@ export default function RetitleGame() {
 
         const data = await response.json()
         
-        // Save to local storage for anonymous users
-        localGameStorage.saveDailyResult('retitled', data)
+        // Save to local storage for anonymous users with additional metadata
+        const resultWithMetadata = {
+          ...data,
+          solveTimeMs: currentSolveTime,
+          puzzleMetadata: {
+            puzzleId: puzzle.id,
+            puzzleNumber: puzzle.puzzleNumber
+          }
+        }
+        localGameStorage.saveDailyResult('retitled', resultWithMetadata)
         
         setResult(data)
         setGameState('completed')

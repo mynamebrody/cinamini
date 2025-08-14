@@ -11,11 +11,13 @@ async function generateServerSideShare(
   supabase: SupabaseClient,
   game: GameType,
   puzzleId: string,
-  userId?: string
+  userId?: string,
+  clientSolveTimeMs?: number,
+  clientIsCorrect?: boolean
 ): Promise<ShareResult> {
   switch (game) {
     case 'retitled':
-      return await generateRetitledServerShare(supabase, puzzleId, userId)
+      return await generateRetitledServerShare(supabase, puzzleId, userId, clientSolveTimeMs, clientIsCorrect)
     
     case 'budget-bracket':
       return await generateBudgetBracketServerShare(supabase, puzzleId, userId)
@@ -36,7 +38,9 @@ async function generateServerSideShare(
 async function generateRetitledServerShare(
   supabase: SupabaseClient,
   puzzleId: string,
-  userId?: string
+  userId?: string,
+  clientSolveTimeMs?: number,
+  clientIsCorrect?: boolean
 ): Promise<ShareResult> {
   // Fetch puzzle data
   const { data: puzzle } = await supabase
@@ -65,6 +69,10 @@ async function generateRetitledServerShare(
       isCorrect = guess.is_correct
       solveTimeMs = guess.solve_time_ms || 0
     }
+  } else if (clientSolveTimeMs !== undefined || clientIsCorrect !== undefined) {
+    // For anonymous users, use client-provided data
+    if (clientSolveTimeMs !== undefined) solveTimeMs = clientSolveTimeMs
+    if (clientIsCorrect !== undefined) isCorrect = clientIsCorrect
   }
 
   // Generate share data and use centralized generator
@@ -293,7 +301,7 @@ export async function POST(request: NextRequest) {
     
     // Parse request body - now only requires game and puzzleId
     const body = await request.json()
-    const { game, puzzleId } = body
+    const { game, puzzleId, solveTimeMs, isCorrect } = body
     
     // Validate required fields
     if (!game || !puzzleId) {
@@ -304,7 +312,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Generate share text using server-side data fetching
-    const shareResult = await generateServerSideShare(supabase, game, puzzleId, user?.id)
+    const shareResult = await generateServerSideShare(supabase, game, puzzleId, user?.id, solveTimeMs, isCorrect)
     
     return NextResponse.json({
       success: true,

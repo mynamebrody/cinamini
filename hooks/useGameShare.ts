@@ -22,7 +22,8 @@ interface UseSimpleShareActions {
  */
 export function useGameShare(
   game: GameType,
-  puzzleId: string
+  puzzleId: string,
+  extraData?: any
 ): UseSimpleShareState & UseSimpleShareActions {
   const [state, setState] = useState<UseSimpleShareState>({
     shareText: null,
@@ -37,10 +38,17 @@ export function useGameShare(
     setState(prev => ({ ...prev, isLoading: true, error: null }))
     
     try {
+      const requestBody: any = { game, puzzleId }
+      
+      // Add extra data if provided (e.g., solveTimeMs for anonymous users)
+      if (extraData) {
+        Object.assign(requestBody, extraData)
+      }
+      
       const response = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game, puzzleId }),
+        body: JSON.stringify(requestBody),
       })
       
       if (!response.ok) {
@@ -65,7 +73,7 @@ export function useGameShare(
         error: err,
       }))
     }
-  }, [game, puzzleId])
+  }, [game, puzzleId, extraData])
   
   const resetShare = useCallback(() => {
     setState({
@@ -86,8 +94,11 @@ export function useGameShare(
 /**
  * Type-safe convenience hooks for specific games
  */
-export function useRetitledShare(puzzleId: string) {
-  return useGameShare('retitled', puzzleId)
+export function useRetitledShare(puzzleId: string, solveTimeMs?: number, isCorrect?: boolean) {
+  const extraData: any = {}
+  if (solveTimeMs !== undefined) extraData.solveTimeMs = solveTimeMs
+  if (isCorrect !== undefined) extraData.isCorrect = isCorrect
+  return useGameShare('retitled', puzzleId, Object.keys(extraData).length > 0 ? extraData : undefined)
 }
 
 export function useBudgetBracketShare(puzzleId: string) {
