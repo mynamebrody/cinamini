@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs } = body
+    const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs, studioTimeMs } = body
 
     // Validate input
     if (!puzzleId || !guessFilmId || !guessFilmTitle || !actorsRevealed) {
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate share text (only if game is completed)
-    const shareText = isGameCompleted ? generateShareText(puzzle.puzzle_number, allGuesses, isCorrect) : ''
+    const shareText = isGameCompleted ? generateShareText(puzzle.puzzle_number, allGuesses, isCorrect, isCorrect ? studioTimeMs : undefined) : ''
     
     // Prepare response
     const result: CastClimbResult = {
@@ -206,7 +206,8 @@ export async function POST(request: NextRequest) {
         average_actors_revealed: 0
       },
       share_text: shareText,
-      game_completed: isGameCompleted
+      game_completed: isGameCompleted,
+      studio_time_ms: isGameCompleted ? studioTimeMs : undefined
     }
 
     return NextResponse.json(result)

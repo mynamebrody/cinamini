@@ -75,10 +75,21 @@ interface CastClimbResult {
   }
   share_text: string
   game_completed?: boolean
+  studio_time_ms?: number
 }
 
 type GameState = "loading" | "ready" | "playing" | "completed" | "error"
 type ModalState = "none" | "howtoplay" | "stats"
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -242,6 +253,7 @@ export default function CastClimbGame() {
     setIsGuessing(true)
     const actorsRevealed = revealedIndex + 1
     const solveTimeMs = Date.now() - startTime
+    const studioTimeMs = Date.now() - startTime
 
     try {
       if (isAnonymous) {
@@ -265,6 +277,7 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - create result and save locally
+          const studioTimeMs = Date.now() - startTime
           const anonymousResult: CastClimbResult = {
             correct: isCorrect,
             puzzle,
@@ -277,8 +290,9 @@ export default function CastClimbGame() {
               perfect_games: isCorrect && newGuesses.length === 1 ? 1 : 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect),
-            game_completed: true
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect, studioTimeMs),
+            game_completed: true,
+            studio_time_ms: studioTimeMs
           }
           
           // Save to local storage
@@ -308,7 +322,8 @@ export default function CastClimbGame() {
             guessFilmTitle: movie.title,
             guessFilmYear: movie.releaseYear,
             actorsRevealed,
-            solveTimeMs
+            solveTimeMs,
+            studioTimeMs
           })
         })
 
@@ -354,6 +369,7 @@ export default function CastClimbGame() {
     setIsGuessing(true)
     const actorsRevealed = revealedIndex + 1
     const solveTimeMs = Date.now() - startTime
+    const studioTimeMs = Date.now() - startTime
 
     try {
       if (isAnonymous) {
@@ -375,6 +391,7 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - reached max attempts without correct guess
+          const studioTimeMs = Date.now() - startTime
           const anonymousResult: CastClimbResult = {
             correct: false,
             puzzle,
@@ -387,8 +404,9 @@ export default function CastClimbGame() {
               perfect_games: 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false),
-            game_completed: true
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false, studioTimeMs),
+            game_completed: true,
+            studio_time_ms: studioTimeMs
           }
           
           // Save to local storage
@@ -419,7 +437,8 @@ export default function CastClimbGame() {
             guessFilmTitle: invalidMovie.title,
             guessFilmYear: invalidMovie.releaseYear,
             actorsRevealed,
-            solveTimeMs
+            solveTimeMs,
+            studioTimeMs
           })
         })
 
@@ -481,6 +500,7 @@ export default function CastClimbGame() {
         const allGuesses = [...userGuesses, ...giveUpGuesses]
         
         // Create the result for anonymous users
+        const studioTimeMs = Date.now() - startTime
         const anonymousResult: CastClimbResult = {
           correct: false,
           puzzle,
@@ -493,8 +513,9 @@ export default function CastClimbGame() {
             perfect_games: 0,
             average_actors_revealed: maxAttempts
           },
-          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false),
-          game_completed: true
+          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false, studioTimeMs),
+          game_completed: true,
+          studio_time_ms: studioTimeMs
         }
         
         // Save to local storage
@@ -513,6 +534,7 @@ export default function CastClimbGame() {
         for (let i = 0; i < emptyGuessesNeeded; i++) {
           const actorsRevealed = Math.min(revealedIndex + 1 + i, maxAttempts)
           const solveTimeMs = Date.now() - startTime
+          const studioTimeMs = Date.now() - startTime
           
           const response = await fetch("/api/cast-climb/guess", {
             method: "POST",
@@ -525,7 +547,8 @@ export default function CastClimbGame() {
               guessFilmTitle: "_GIVE_UP_",
               guessFilmYear: null,
               actorsRevealed,
-              solveTimeMs
+              solveTimeMs,
+              studioTimeMs
             })
           })
 
@@ -607,7 +630,7 @@ export default function CastClimbGame() {
   }
   
   // Fallback share text generation (matches centralized format)
-  const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): string => {
+  const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean, studioTimeMs?: number): string => {
     const ACTORS_TO_SHOW = 4
     let pattern = ''
     let resultText = ''
@@ -634,7 +657,20 @@ export default function CastClimbGame() {
       resultText = "\nWasn't able to get the movie."
     }
     
-    return `Cast Climb #${puzzleNumber} ${pattern}${resultText}`
+    // Add studio time if provided
+    let timeText = ''
+    if (studioTimeMs !== undefined) {
+      const totalSeconds = Math.floor(studioTimeMs / 1000)
+      if (totalSeconds < 60) {
+        timeText = ` • ${totalSeconds}s`
+      } else {
+        const minutes = Math.floor(totalSeconds / 60)
+        const seconds = totalSeconds % 60
+        timeText = ` • ${minutes}m ${seconds}s`
+      }
+    }
+
+    return `Cast Climb #${puzzleNumber} ${pattern}${timeText}${resultText}`
   }
 
   const showStats = () => {
@@ -802,7 +838,15 @@ export default function CastClimbGame() {
         {/* Ready state is now handled by the landing page above */}
 
         {gameState === "playing" && puzzle && (
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* Studio Timer */}
+            <div className="text-center text-muted-foreground">
+              <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+                <span className="text-xs">🎬</span>
+                <p className="text-sm font-mono">Studio Time: {formatTime(Math.floor(elapsedTime / 1000))}</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Progress Visualization */}
               <div className="order-2 lg:order-1">
@@ -827,11 +871,6 @@ export default function CastClimbGame() {
                   Actor {revealedIndex + 1} of {puzzle.actors.length}
                   {userGuesses.length > 0 && ` • ${userGuesses.length} guess${userGuesses.length !== 1 ? 'es' : ''}`}
                 </p>
-                {elapsedTime > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Time: {Math.floor(elapsedTime / 1000)}s
-                  </div>
-                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-muted rounded-lg p-6 text-center space-y-4">
@@ -963,6 +1002,7 @@ export default function CastClimbGame() {
                     </CardContent>
                   </Card>
                 )}
+
 
                 {puzzle.filmPosterUrl && (
                   <div className="flex justify-center">
