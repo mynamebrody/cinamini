@@ -513,6 +513,7 @@ export default function PosterPixelsGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(58, 58, 60, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Poster Pixels</GameModalTitle>

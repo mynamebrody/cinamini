@@ -728,6 +728,7 @@ export default function CastClimbGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(153, 37, 29, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Cast Climb</GameModalTitle>
