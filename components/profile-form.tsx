@@ -294,6 +294,7 @@ export default function ProfileForm() {
             value={profile.email}
             disabled
             className="bg-gray-50 border border-[rgb(var(--silver))] text-gray-600 cursor-not-allowed"
+            style={{ borderRadius: 0 }}
           />
           <p className="text-xs text-gray-500">
             Email cannot be changed. Contact support if you need to update your email.
@@ -317,6 +318,7 @@ export default function ProfileForm() {
                 onKeyDown={handleKeyDown}
                 placeholder="Enter username (3-20 characters)"
                 className="bg-white border border-[rgb(var(--silver))] text-gray-900 placeholder:text-gray-500"
+                style={{ borderRadius: 0 }}
                 disabled={isSaving}
                 autoFocus
               />
@@ -367,6 +369,7 @@ export default function ProfileForm() {
                   value={profile.username || "Not set"}
                   disabled
                   className="bg-gray-50 border border-[rgb(var(--silver))] text-gray-900 flex-1"
+                  style={{ borderRadius: 0 }}
                 />
                 <Button
                   onClick={handleEdit}

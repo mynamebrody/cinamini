@@ -141,7 +141,7 @@ export default function BudgetBracketStats() {
   const PerformanceIcon = performance.icon
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-md mx-auto space-y-6">
       {/* Overview Stats */}
       <div className="grid grid-cols-2 gap-4">
         <Card>

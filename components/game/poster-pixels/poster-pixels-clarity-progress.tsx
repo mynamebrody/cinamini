@@ -211,14 +211,14 @@ export function PosterPixelsClarityProgress({
           <span className="text-sm font-medium text-gray-700">Restoration Timeline</span>
         </div>
         
-        <div className="flex justify-between items-center bg-black rounded-lg p-2 border-4 border-gray-800">
+        <div className="flex justify-between items-center bg-black rounded-lg p-2 border-4 border-[#3a3a3c]">
           {filmFrames.map((frame, index) => (
             <motion.div
               key={index}
               className={`flex-1 mx-1 h-12 rounded border-2 relative overflow-hidden ${
                 frame.active 
-                  ? 'border-gray-400 bg-gradient-to-br from-gray-200 to-gray-300' 
-                  : 'border-gray-600 bg-gray-700'
+                  ? 'border-[#d1d2d4] bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef]' 
+                  : 'border-[#6c757d] bg-[#495057]'
               }`}
               animate={{
                 scale: frame.active ? 1.05 : 1,

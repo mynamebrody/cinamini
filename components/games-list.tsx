@@ -210,7 +210,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                       {/* Play Status */}
                       {game.hasPlayedToday && (
                         <div className="absolute top-5 right-5">
-                          <div className="bg-white/30 backdrop-blur-sm rounded-full px-3 py-1.5 border border-white/20">
+                          <div className="bg-white/30 backdrop-blur-sm px-3 py-1.5 border border-[#d1d2d4] shadow-[1px_1px_0px_rgba(209,210,212,0.5),2px_2px_0px_rgba(209,210,212,0.5),3px_3px_0px_rgba(209,210,212,0.5),4px_4px_0px_rgba(209,210,212,0.5)]" style={{ borderRadius: 0 }}>
                             <span className="text-xs font-semibold text-white font-funnel">
                               ✓ Completed
                             </span>

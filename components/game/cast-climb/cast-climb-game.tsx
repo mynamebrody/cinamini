@@ -75,10 +75,21 @@ interface CastClimbResult {
   }
   share_text: string
   game_completed?: boolean
+  studio_time_ms?: number
 }
 
 type GameState = "loading" | "ready" | "playing" | "completed" | "error"
 type ModalState = "none" | "howtoplay" | "stats"
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${mins}:${secs.toString().padStart(2, '0')}`
+}
 
 // ============================================================================
 // MAIN COMPONENT
@@ -242,6 +253,7 @@ export default function CastClimbGame() {
     setIsGuessing(true)
     const actorsRevealed = revealedIndex + 1
     const solveTimeMs = Date.now() - startTime
+    const studioTimeMs = Date.now() - startTime
 
     try {
       if (isAnonymous) {
@@ -265,6 +277,7 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - create result and save locally
+          const studioTimeMs = Date.now() - startTime
           const anonymousResult: CastClimbResult = {
             correct: isCorrect,
             puzzle,
@@ -277,8 +290,9 @@ export default function CastClimbGame() {
               perfect_games: isCorrect && newGuesses.length === 1 ? 1 : 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect),
-            game_completed: true
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect, studioTimeMs),
+            game_completed: true,
+            studio_time_ms: studioTimeMs
           }
           
           // Save to local storage
@@ -308,7 +322,8 @@ export default function CastClimbGame() {
             guessFilmTitle: movie.title,
             guessFilmYear: movie.releaseYear,
             actorsRevealed,
-            solveTimeMs
+            solveTimeMs,
+            studioTimeMs
           })
         })
 
@@ -354,6 +369,7 @@ export default function CastClimbGame() {
     setIsGuessing(true)
     const actorsRevealed = revealedIndex + 1
     const solveTimeMs = Date.now() - startTime
+    const studioTimeMs = Date.now() - startTime
 
     try {
       if (isAnonymous) {
@@ -375,6 +391,7 @@ export default function CastClimbGame() {
         
         if (isGameCompleted) {
           // Game is completed - reached max attempts without correct guess
+          const studioTimeMs = Date.now() - startTime
           const anonymousResult: CastClimbResult = {
             correct: false,
             puzzle,
@@ -387,8 +404,9 @@ export default function CastClimbGame() {
               perfect_games: 0,
               average_actors_revealed: actorsRevealed
             },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false),
-            game_completed: true
+            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false, studioTimeMs),
+            game_completed: true,
+            studio_time_ms: studioTimeMs
           }
           
           // Save to local storage
@@ -419,7 +437,8 @@ export default function CastClimbGame() {
             guessFilmTitle: invalidMovie.title,
             guessFilmYear: invalidMovie.releaseYear,
             actorsRevealed,
-            solveTimeMs
+            solveTimeMs,
+            studioTimeMs
           })
         })
 
@@ -481,6 +500,7 @@ export default function CastClimbGame() {
         const allGuesses = [...userGuesses, ...giveUpGuesses]
         
         // Create the result for anonymous users
+        const studioTimeMs = Date.now() - startTime
         const anonymousResult: CastClimbResult = {
           correct: false,
           puzzle,
@@ -493,8 +513,9 @@ export default function CastClimbGame() {
             perfect_games: 0,
             average_actors_revealed: maxAttempts
           },
-          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false),
-          game_completed: true
+          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false, studioTimeMs),
+          game_completed: true,
+          studio_time_ms: studioTimeMs
         }
         
         // Save to local storage
@@ -513,6 +534,7 @@ export default function CastClimbGame() {
         for (let i = 0; i < emptyGuessesNeeded; i++) {
           const actorsRevealed = Math.min(revealedIndex + 1 + i, maxAttempts)
           const solveTimeMs = Date.now() - startTime
+          const studioTimeMs = Date.now() - startTime
           
           const response = await fetch("/api/cast-climb/guess", {
             method: "POST",
@@ -525,7 +547,8 @@ export default function CastClimbGame() {
               guessFilmTitle: "_GIVE_UP_",
               guessFilmYear: null,
               actorsRevealed,
-              solveTimeMs
+              solveTimeMs,
+              studioTimeMs
             })
           })
 
@@ -606,20 +629,48 @@ export default function CastClimbGame() {
     }
   }
   
-  // Fallback share text generation (matches original format)
-  const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): string => {
+  // Fallback share text generation (matches centralized format)
+  const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean, studioTimeMs?: number): string => {
+    const ACTORS_TO_SHOW = 4
     let pattern = ''
+    let resultText = ''
     
     if (isWin) {
-      // Show incorrect attempts followed by success
-      const incorrectAttempts = guesses.length - 1
-      pattern = "❌".repeat(incorrectAttempts) + "✅"
+      // New pattern logic to match centralized system:
+      // - Wrong attempts shown as person emojis 🧑 (one per wrong guess before the win)
+      // - Then a ✅ when correct
+      // - Then remaining reveals as 🎭 until 4 total reveals
+      const wrongAttemptsBeforeWin = Math.max(0, guesses.length - 1)
+      const remainingActors = Math.max(0, ACTORS_TO_SHOW - guesses.length)
+
+      pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + '✅' + '🎭'.repeat(remainingActors)
+
+      if (guesses.length === 1) {
+        resultText = '\nGot the 🎬 on the first try! 🥇'
+      } else {
+        resultText = `\nGot the 🎬 in ${guesses.length} guesses`
+      }
     } else {
-      // All attempts were incorrect  
-      pattern = "❌".repeat(guesses.length)
+      // Loss pattern: four faces then a red X
+      // Example: 🧑🧑🧑🧑❌
+      pattern = '🧑'.repeat(ACTORS_TO_SHOW) + '❌'
+      resultText = "\nWasn't able to get the movie."
     }
     
-    return `Cast Climb #${puzzleNumber} ${pattern}`
+    // Add studio time if provided
+    let timeText = ''
+    if (studioTimeMs !== undefined) {
+      const totalSeconds = Math.floor(studioTimeMs / 1000)
+      if (totalSeconds < 60) {
+        timeText = ` • ${totalSeconds}s`
+      } else {
+        const minutes = Math.floor(totalSeconds / 60)
+        const seconds = totalSeconds % 60
+        timeText = ` • ${minutes}m ${seconds}s`
+      }
+    }
+
+    return `Cast Climb #${puzzleNumber} ${pattern}${timeText}${resultText}`
   }
 
   const showStats = () => {
@@ -677,6 +728,7 @@ export default function CastClimbGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(153, 37, 29, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Cast Climb</GameModalTitle>
@@ -787,7 +839,15 @@ export default function CastClimbGame() {
         {/* Ready state is now handled by the landing page above */}
 
         {gameState === "playing" && puzzle && (
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {/* Studio Timer */}
+            <div className="text-center text-muted-foreground">
+              <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
+                <span className="text-xs">🎬</span>
+                <p className="text-sm font-mono">Studio Time: {formatTime(Math.floor(elapsedTime / 1000))}</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               {/* Progress Visualization */}
               <div className="order-2 lg:order-1">
@@ -812,17 +872,12 @@ export default function CastClimbGame() {
                   Actor {revealedIndex + 1} of {puzzle.actors.length}
                   {userGuesses.length > 0 && ` • ${userGuesses.length} guess${userGuesses.length !== 1 ? 'es' : ''}`}
                 </p>
-                {elapsedTime > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Time: {Math.floor(elapsedTime / 1000)}s
-                  </div>
-                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-muted rounded-lg p-6 text-center space-y-4">
                   {/* Actor Photo */}
                   <div className="flex justify-center">
-                    <div className="w-32 h-40 bg-muted-foreground/10 rounded-lg overflow-hidden shadow-md">
+                    <div className="w-32 h-40 bg-muted-foreground/10 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
                       {puzzle.actors[revealedIndex] && puzzle.actors[revealedIndex].profile_path ? (
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${puzzle.actors[revealedIndex].profile_path}`}
@@ -831,6 +886,7 @@ export default function CastClimbGame() {
                           height={160}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          style={{ borderRadius: 0 }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -877,23 +933,18 @@ export default function CastClimbGame() {
                   loading={isGuessing}
                   placeholder="Start typing a movie title..."
                   disabled={isGuessing}
+                  excludeMovieIds={userGuesses
+                    .filter(g => g.guessFilmId && g.guessFilmId > 0)
+                    .map(g => g.guessFilmId)}
                 />
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
-                    onClick={handleNextHint} 
-                    disabled={isGuessing || revealedIndex >= puzzle.actors.length - 1}
-                  >
-                    {revealedIndex >= puzzle.actors.length - 1 ? "No More Hints" : "Skip Round (Next Hint)"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]" 
-                    onClick={handleGiveUp} 
+                  <Button
+                    variant="ghost"
+                    className="w-full bg-[#99251d] text-white border border-[#99251d] hover:bg-white hover:text-[#99251d] hover:border-[#99251d] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
+                    onClick={revealedIndex >= puzzle.actors.length - 1 ? handleGiveUp : handleNextHint}
                     disabled={isGuessing}
                   >
-                    Give Up
+                    {revealedIndex >= puzzle.actors.length - 1 ? "Give Up" : "Skip Guess (Next Hint)"}
                   </Button>
                 </div>
                 </CardContent>
@@ -956,14 +1007,20 @@ export default function CastClimbGame() {
                   </Card>
                 )}
 
+
                 {puzzle.filmPosterUrl && (
-                  <Image 
-                    src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
-                    alt={`${puzzle.filmTitle} poster`}
-                    width={200} 
-                    height={300} 
-                    className="mx-auto rounded-lg"
-                  />
+                  <div className="flex justify-center">
+                    <div className="border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
+                      <Image 
+                        src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
+                        alt={`${puzzle.filmTitle} poster`}
+                        width={200} 
+                        height={300} 
+                        className="block"
+                        style={{ borderRadius: 0 }}
+                      />
+                    </div>
+                  </div>
                 )}
                 
                 {/* Show complete cast now that game is over */}
@@ -986,15 +1043,15 @@ export default function CastClimbGame() {
                 )}
                 <div className="bg-muted rounded-lg p-4">
                   <p className="font-mono text-lg">{result.share_text}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {result.correct ? 
-                      `Solved in ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}` :
-                      `Failed after ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}`
-                    }
-                  </p>
                 </div>
                 <ShareSection 
-                  shareText={centralizedShareText || result.share_text}
+                  shareText={
+                    // Use local share text if it indicates a win but centralized says loss
+                    // This fixes the bug where winning on 4th attempt shows as loss
+                    (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
+                      ? result.share_text 
+                      : (centralizedShareText || result.share_text)
+                  }
                   shareUrl="https://cinamini.app/game/cast-climb"
                 />
               </CardContent>

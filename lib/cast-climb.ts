@@ -331,32 +331,50 @@ export function validatePuzzleData(puzzle: any): puzzle is CastClimbPuzzle {
 export function generateShareText(
   puzzleNumber: number,
   guesses: CastClimbGuess[],
-  isWin: boolean
+  isWin: boolean,
+  studioTimeMs?: number
 ): string {
   let pattern = '';
   let resultText = '';
   
   if (isWin) {
-    // Show pattern: ❌❌✅🎭 (failed attempts then success, then remaining 🎭)
-    const incorrectAttempts = guesses.length - 1;
+    // New pattern logic:
+    // - Wrong attempts shown as person emojis 🧑 (one per wrong guess before the win)
+    // - Then a ✅ when correct
+    // - Then remaining reveals as 🎭 until 4 total reveals
+    const wrongAttemptsBeforeWin = Math.max(0, guesses.length - 1);
     const remainingActors = Math.max(0, CAST_CLIMB_CONFIG.ACTORS_TO_SHOW - guesses.length);
-    
-    pattern = CAST_CLIMB_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(incorrectAttempts) + 
-              CAST_CLIMB_CONFIG.SHARE_EMOJIS.CORRECT + 
+
+    pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + 
+              '✅' + 
               '🎭'.repeat(remainingActors);
               
     if (guesses.length === 1) {
-      resultText = 'Got the 🎬 on the first try! 🥇';
+      resultText = '\nGot the 🎬 on the first try! 🥇';
     } else {
-      resultText = `Got the 🎬 in ${guesses.length} guesses`;
+      resultText = `\nGot the 🎬 in ${guesses.length} guesses`;
     }
   } else {
-    // All failed attempts (❌❌❌❌ if exhausted all actors)
-    pattern = CAST_CLIMB_CONFIG.SHARE_EMOJIS.INCORRECT.repeat(guesses.length);
-    resultText = 'Was unable to guess the 🎬!';
+    // Loss pattern: four faces then a red X
+    // Example: 🧑🧑🧑🧑❌
+    pattern = '🧑'.repeat(CAST_CLIMB_CONFIG.ACTORS_TO_SHOW) + '❌';
+    resultText = "\nWasn't able to get the movie."
   }
   
-  return `Cast Climb #${puzzleNumber} ${pattern}\n${resultText}`;
+  // Add studio time if provided
+  let timeText = '';
+  if (studioTimeMs !== undefined) {
+    const totalSeconds = Math.floor(studioTimeMs / 1000);
+    if (totalSeconds < 60) {
+      timeText = ` • ${totalSeconds}s`;
+    } else {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      timeText = ` • ${minutes}m ${seconds}s`;
+    }
+  }
+
+  return `Cast Climb #${puzzleNumber} ${pattern}${timeText}\n${resultText}`;
 }
 
 /**

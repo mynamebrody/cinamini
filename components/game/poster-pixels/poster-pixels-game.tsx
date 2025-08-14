@@ -11,6 +11,7 @@ import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../ga
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import AnonymousResultNudge from "../anonymous-result-nudge"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
@@ -149,6 +150,14 @@ export default function PosterPixelsGame() {
         }))
 
         if (localResult) {
+          // Restore the saved game state for display
+          setState(prev => ({
+            ...prev,
+            finalScore: localResult.result?.finalScore || 0,
+            timeElapsed: localResult.result?.timeElapsed || 0,
+            clarityLevel: localResult.result?.clarityLevel || 90,
+          }))
+          setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
@@ -185,6 +194,8 @@ export default function PosterPixelsGame() {
         }))
 
         if (data.hasPlayedToday) {
+          // Set the total game time for display
+          setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
@@ -520,6 +531,7 @@ export default function PosterPixelsGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(58, 58, 60, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Poster Pixels</GameModalTitle>
@@ -662,6 +674,9 @@ export default function PosterPixelsGame() {
                         }}
                         selectedMovie={null}
                         disabled={false}
+                        excludeMovieIds={state.guesses
+                          .filter(g => g.movieId !== null)
+                          .map(g => g.movieId as number)}
                       />
 
                       {/* Previous Guesses */}
@@ -698,7 +713,7 @@ export default function PosterPixelsGame() {
             puzzleId={String(state.puzzle.id)}
             puzzleNumber={state.puzzle.puzzle_number || 1}
             won={state.won}
-            timeElapsed={state.timeElapsed}
+            timeElapsed={state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0)}
             clarityLevel={state.clarityLevel}
             movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
             movieYear={
@@ -725,6 +740,19 @@ export default function PosterPixelsGame() {
         {gameState === 'completed' && (
           <div className="max-w-md mx-auto mt-6">
             <MorePuzzlesSection currentGameId="poster-pixels" />
+            
+            {isAnonymous && (
+              <AnonymousResultNudge 
+                gameResult={{
+                  won: state.won,
+                  timeElapsed: state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0),
+                  finalScore: state.finalScore || 0,
+                  clarityLevel: state.clarityLevel,
+                  guesses: state.guesses
+                }}
+                gameName="Poster Pixels"
+              />
+            )}
           </div>
         )}
       </main>

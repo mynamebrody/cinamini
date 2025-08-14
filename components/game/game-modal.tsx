@@ -11,6 +11,7 @@ interface GameModalProps {
   children: React.ReactNode
   className?: string
   showCloseButton?: boolean
+  backdropColor?: string // Custom backdrop color for game-specific themes
 }
 
 export function GameModal({ 
@@ -18,7 +19,8 @@ export function GameModal({
   onOpenChange, 
   children, 
   className,
-  showCloseButton = true
+  showCloseButton = true,
+  backdropColor
 }: GameModalProps) {
   useEffect(() => {
     if (open) {
@@ -54,16 +56,22 @@ export function GameModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+        className="fixed inset-0 backdrop-blur-sm"
         onClick={handleBackdropClick}
         aria-hidden="true"
+        style={{
+          backgroundColor: backdropColor || 'rgba(0, 0, 0, 0.3)'
+        }}
       />
       
       {/* Modal content */}
       <div className={cn(
-        "relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
+        "relative bg-white w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
+        "border border-[#3a3a3c]",
+        "shadow-[2px_2px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60),6px_6px_0px_rgb(58,58,60),8px_8px_0px_rgb(58,58,60)]",
         className
-      )}>
+      )}
+      style={{ borderRadius: 0 }}>
         {showCloseButton && (
           <button
             onClick={() => onOpenChange(false)}

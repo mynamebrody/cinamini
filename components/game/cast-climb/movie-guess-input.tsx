@@ -13,13 +13,15 @@ interface MovieGuessInputProps {
   loading?: boolean
   placeholder?: string
   disabled?: boolean
+  excludeMovieIds?: number[]
 }
 
 export function MovieGuessInput({ 
   onGuess, 
   loading = false, 
   placeholder = "Start typing to search movies...",
-  disabled = false
+  disabled = false,
+  excludeMovieIds = []
 }: MovieGuessInputProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([])
@@ -65,7 +67,8 @@ export function MovieGuessInput({
       }
 
       const data: MovieSearchResponse = await response.json()
-      setSearchResults(data.results.slice(0, 8)) // Limit to 8 results
+      const filtered = data.results.filter((m) => !excludeMovieIds.includes(m.id))
+      setSearchResults(filtered.slice(0, 8)) // Limit to 8 results
       setShowResults(true)
       setSelectedIndex(-1)
       setError(null)
@@ -87,7 +90,7 @@ export function MovieGuessInput({
     } finally {
       setIsSearching(false)
     }
-  }, [scrollDropdownIntoView])
+  }, [scrollDropdownIntoView, excludeMovieIds])
 
   // Handle search with debouncing
   useEffect(() => {

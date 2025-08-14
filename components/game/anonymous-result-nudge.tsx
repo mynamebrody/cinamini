@@ -117,20 +117,38 @@ export default function AnonymousResultNudge({
   const getVariantStyles = () => {
     switch (nudgeContent.variant) {
       case "strong":
-        return "border-cinema-red bg-gradient-to-b from-red-50 to-white"
+        return "bg-gradient-to-b from-red-50 to-white"
       case "moderate":
-        return "border-orange-300 bg-gradient-to-b from-orange-50 to-white"
+        return "bg-gradient-to-b from-orange-50 to-white"
+      case "subtle":
+        return "bg-white"
       default:
-        return "border-neutral-200 bg-white"
+        return "bg-white"
+    }
+  }
+
+  const getBorderStyle = () => {
+    switch (nudgeContent.variant) {
+      case "strong":
+        return { border: '1px solid #99251d' } // cinema-red
+      case "moderate":
+        return { border: '1px solid #fdba74' } // orange-300
+      case "subtle":
+        return { border: '1px solid #d1d2d4' } // silver
+      default:
+        return { border: '1px solid #d1d2d4' } // silver
     }
   }
 
   return (
-    <Card className={cn(
-      "p-6 mt-6",
-      getVariantStyles(),
-      className
-    )}>
+    <Card 
+      className={cn(
+        "p-6 mt-6",
+        getVariantStyles(),
+        className
+      )}
+      style={getBorderStyle()}
+    >
       <div className="space-y-4">
         <div>
           <h3 className="text-lg font-semibold text-neutral-900">
@@ -164,7 +182,7 @@ export default function AnonymousResultNudge({
           <Button
             variant="ghost"
             onClick={() => setShouldShow(false)}
-            className="text-neutral-500"
+            className="text-neutral-500 hover:text-[#99251d]"
           >
             Maybe later
           </Button>
