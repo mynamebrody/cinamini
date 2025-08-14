@@ -172,6 +172,16 @@ export default function RetitledGlobeProgress({
           >
             {getGameStateText()}
           </motion.p>
+
+          {/* Achievement badges */}
+          {visitedCountries.length > 0 && (
+            <div className="flex justify-center gap-1 mt-2">
+              {visitedCountries.length >= 5 && <span className="text-xs" title="5+ countries">🌍</span>}
+              {visitedCountries.length >= 10 && <span className="text-xs" title="World Traveler">✈️</span>}
+              {visitedCountries.length >= 25 && <span className="text-xs" title="Globe Trotter">🗺️</span>}
+              {visitedCountries.length >= 50 && <span className="text-xs" title="International Explorer">🏆</span>}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../ga
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import AnonymousResultNudge from "../anonymous-result-nudge"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
@@ -129,18 +130,34 @@ export default function PosterPixelsGame() {
         }
 
         const initialIndex = 0
+        const rehydrated = localResult?.result
+        const wonFromStorage = rehydrated?.won || false
+        const clarityFromStorage = rehydrated?.clarityLevel ?? getClarityPercentForIndex(initialIndex)
+        const timeFromStorage = rehydrated?.timeElapsed ?? 0
+        const guessesFromStorage = rehydrated?.guesses || []
+        const scoreFromStorage = rehydrated?.finalScore ?? (wonFromStorage ? getScoreForClarityPercent(Math.round(clarityFromStorage)) : 0)
+
         setState(prev => ({
           ...prev,
           puzzle: data.puzzle,
           hasPlayedToday: localResult !== null,
-          won: localResult?.result?.won || false,
-          timeElapsed: 0,
-          clarityLevel: getClarityPercentForIndex(initialIndex),
+          won: wonFromStorage,
+          timeElapsed: timeFromStorage,
+          clarityLevel: clarityFromStorage,
           currentLevelIndex: initialIndex,
-          guesses: localResult?.result?.guesses || [],
+          guesses: guessesFromStorage,
+          finalScore: scoreFromStorage,
         }))
 
         if (localResult) {
+          // Restore the saved game state for display
+          setState(prev => ({
+            ...prev,
+            finalScore: localResult.result?.finalScore || 0,
+            timeElapsed: localResult.result?.timeElapsed || 0,
+            clarityLevel: localResult.result?.clarityLevel || 90,
+          }))
+          setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
@@ -158,20 +175,30 @@ export default function PosterPixelsGame() {
         }
 
         const initialIndex = 0
+        const wonFromDb = !!(data.hasPlayedToday && data.previousGame?.won)
+        const clarityFromDb = data.previousGame?.final_clarity_level ?? getClarityPercentForIndex(initialIndex)
+        const timeFromDb = data.previousGame?.total_time_ms ?? 0
+        const guessesFromDb = data.previousGame?.guesses || []
+        const scoreFromDb = wonFromDb ? getScoreForClarityPercent(Math.round(clarityFromDb)) : 0
+
         setState(prev => ({
           ...prev,
           puzzle: data.puzzle,
           hasPlayedToday: data.hasPlayedToday,
-          won: data.hasPlayedToday && data.previousGame?.won,
-          timeElapsed: 0,
-          clarityLevel: getClarityPercentForIndex(initialIndex),
+          won: wonFromDb,
+          timeElapsed: timeFromDb,
+          clarityLevel: clarityFromDb,
           currentLevelIndex: initialIndex,
-          guesses: data.previousGame?.guesses || [],
+          guesses: guessesFromDb,
+          finalScore: scoreFromDb,
         }))
 
         if (data.hasPlayedToday) {
+          // Set the total game time for display
+          setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
         } else {
+          const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
           setGameState('ready')
           
           // Show how-to-play modal only if they've never played Poster Pixels before
@@ -270,15 +297,15 @@ export default function PosterPixelsGame() {
     return getScoreForClarityPercent(percent)
   }
 
-  const advanceLevelOrEnd = (won: boolean, currentGuesses: GuessEntry[]) => {
+  const advanceLevelOrEnd = (won: boolean, updatedGuesses?: GuessEntry[]) => {
     const levels = getLevels()
     const isLast = state.currentLevelIndex >= levels.length - 1
     if (won) {
-      endGame(true, currentGuesses)
+      endGame(true, updatedGuesses)
       return
     }
     if (isLast) {
-      endGame(false, currentGuesses)
+      endGame(false, updatedGuesses)
     } else {
       setState(prev => ({
         ...prev,
@@ -288,25 +315,12 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const recordGuess = async (entry: GuessEntry, newGuessesArray: GuessEntry[]) => {
-    setState(prev => ({ ...prev, guesses: newGuessesArray }))
-    if (state.gameId && state.puzzle) {
+  const recordGuess = async (entry: GuessEntry): Promise<GuessEntry[]> => {
+    const newGuesses = [...state.guesses, entry]
+    setState(prev => ({ ...prev, guesses: newGuesses }))
+    if (!isAnonymous && state.gameId && state.puzzle) {
       try {
-        console.log("🎬 POSTER PIXELS CLIENT: About to call guess API", {
-          gameId: state.gameId,
-          puzzleId: state.puzzle.id,
-          isAnonymous,
-          gameStartTime,
-          guessNumber: newGuessesArray.length,
-          movieTitle: entry.movieTitle
-        })
-        
-        // Calculate actual time since game start
-        const timeTakenMs = gameStartTime > 0 ? Date.now() - gameStartTime : 0
-        // Use the actual guess count from the new array
-        const guessNumber = newGuessesArray.length
-        
-        const response = await fetch("/api/poster-pixels/guess", {
+        await fetch("/api/poster-pixels/guess", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -314,27 +328,16 @@ export default function PosterPixelsGame() {
             puzzle_id: state.puzzle.id,
             guessed_movie_id: entry.movieId,
             guessed_movie_title: entry.movieTitle,
-            time_taken_ms: timeTakenMs,
+            time_taken_ms: 0,
             clarity_level: entry.clarityLevel,
             skipped: entry.movieId === null,
-            guess_number: guessNumber, // Use accurate guess count
           }),
         })
-        
-        console.log("🎬 POSTER PIXELS CLIENT: API response received", {
-          status: response.status,
-          isAnonymous,
-          gameId: state.gameId
-        })
-        
-        if (!response.ok) {
-          const errorData = await response.json()
-          console.error("🎬 POSTER PIXELS CLIENT: API error", errorData)
-        }
       } catch (e) {
         console.error("Failed to persist guess", e)
       }
     }
+    return newGuesses
   }
 
   const handleGuessWithMovie = async (movie: { id: number; title: string }) => {
@@ -348,9 +351,8 @@ export default function PosterPixelsGame() {
       isCorrect,
       clarityLevel: state.clarityLevel,
     }
-    const newGuesses = [...state.guesses, entry]
-    await recordGuess(entry, newGuesses)
-    advanceLevelOrEnd(isCorrect, newGuesses)
+    const updated = await recordGuess(entry)
+    advanceLevelOrEnd(isCorrect, updated)
   }
 
 
@@ -362,55 +364,28 @@ export default function PosterPixelsGame() {
       isCorrect: false,
       clarityLevel: state.clarityLevel,
     }
-    const newGuesses = [...state.guesses, entry]
-    await recordGuess(entry, newGuesses)
-    advanceLevelOrEnd(false, newGuesses)
+    const updated = await recordGuess(entry)
+    advanceLevelOrEnd(false, updated)
   }
 
-  const endGame = async (won: boolean, currentGuesses: GuessEntry[]) => {
+  const endGame = async (won: boolean, guessesOverride?: GuessEntry[]) => {
     const score = won ? calculateScoreForCurrent() : 0
     const totalTimeMs = gameStartTime > 0 ? Date.now() - gameStartTime : 0
     
     // Set final clarity level - if gave up, show the final level (90%)
     const finalClarityLevel = won ? state.clarityLevel : getClarityPercentForIndex(getLevels().length - 1)
+    const finalGuesses = guessesOverride ?? state.guesses
     
     try {
       if (isAnonymous) {
-        // Create database-compatible structure for easier migration later
         const anonymousResult = {
-          // Game session data (poster_pixels_games table compatible)
-          game_session: {
-            won,
-            completed: true,
-            total_time_ms: totalTimeMs,
-            num_guesses: currentGuesses.length,
-            final_clarity_level: finalClarityLevel,
-            puzzle_id: state.puzzle!.id,
-            start_time: new Date(gameStartTime).toISOString(),
-            end_time: new Date().toISOString(),
-          },
-          // Individual guesses data (poster_pixels_guesses table compatible)  
-          guesses: currentGuesses.map((guess, index) => ({
-            guess_number: index + 1,
-            guessed_movie_id: guess.movieId,
-            guessed_movie_title: guess.movieTitle,
-            is_correct: guess.isCorrect,
-            time_taken_ms: 0, // Individual guess time not tracked in anonymous mode
-            clarity_level: guess.clarityLevel,
-            created_at: new Date().toISOString(),
-          })),
-          // Movie/puzzle metadata for display
-          movie_data: {
-            title: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
-            puzzle_id: state.puzzle!.id,
-          },
-          // Final result summary
-          result_summary: {
-            won,
-            finalScore: score,
-            timeElapsed: totalTimeMs,
-            clarityLevel: finalClarityLevel,
-          }
+          won,
+          timeElapsed: totalTimeMs,
+          clarityLevel: finalClarityLevel,
+          guesses: finalGuesses,
+          puzzleId: state.puzzle!.id,
+          movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
+          finalScore: score,
         }
         localGameStorage.saveDailyResult('poster-pixels', anonymousResult)
       } else if (state.gameId) {
@@ -436,6 +411,7 @@ export default function PosterPixelsGame() {
       finalScore: score,
       timeElapsed: totalTimeMs,
       clarityLevel: finalClarityLevel,
+      guesses: finalGuesses,
     }))
     // Store final time in totalGameTime for display consistency
     setTotalGameTime(Math.floor(totalTimeMs / 1000))
@@ -462,9 +438,8 @@ export default function PosterPixelsGame() {
         isCorrect: false,
         clarityLevel: getClarityPercentForIndex(levels.length - 1), // Final level (90%)
       }
-      const newGuesses = [...state.guesses, gaveUpEntry]
-      recordGuess(gaveUpEntry, newGuesses).then(() => {
-        endGame(false, newGuesses)
+      recordGuess(gaveUpEntry).then((updated) => {
+        endGame(false, updated)
       })
     } else {
       handleSkip()
@@ -564,6 +539,7 @@ export default function PosterPixelsGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(58, 58, 60, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Poster Pixels</GameModalTitle>
@@ -706,6 +682,9 @@ export default function PosterPixelsGame() {
                         }}
                         selectedMovie={null}
                         disabled={false}
+                        excludeMovieIds={state.guesses
+                          .filter(g => g.movieId !== null)
+                          .map(g => g.movieId as number)}
                       />
 
                       {/* Previous Guesses */}
@@ -742,7 +721,7 @@ export default function PosterPixelsGame() {
             puzzleId={String(state.puzzle.id)}
             puzzleNumber={state.puzzle.puzzle_number || 1}
             won={state.won}
-            timeElapsed={gameStartTime > 0 ? Date.now() - gameStartTime : 0}
+            timeElapsed={state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0)}
             clarityLevel={state.clarityLevel}
             movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
             movieYear={
@@ -769,6 +748,19 @@ export default function PosterPixelsGame() {
         {gameState === 'completed' && (
           <div className="max-w-md mx-auto mt-6">
             <MorePuzzlesSection currentGameId="poster-pixels" />
+            
+            {isAnonymous && (
+              <AnonymousResultNudge 
+                gameResult={{
+                  won: state.won,
+                  timeElapsed: state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0),
+                  finalScore: state.finalScore || 0,
+                  clarityLevel: state.clarityLevel,
+                  guesses: state.guesses
+                }}
+                gameName="Poster Pixels"
+              />
+            )}
           </div>
         )}
       </main>

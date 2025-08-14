@@ -38,14 +38,13 @@ export function FavoriteMovieSlot({
       <button
         onClick={onAddClick}
         className={cn(
-          "relative aspect-[2/3] w-full border-2 border-dashed",
+          "relative aspect-[2/3] w-full border-2 border-dashed border-[#d1d2d4]",
           "bg-gray-50 transition-all duration-200",
           "flex flex-col items-center justify-center gap-2",
           "hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
           "hover:bg-gray-100",
           "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-          isDragOver && "border-primary bg-primary/10 scale-105",
-          "border border-[rgb(var(--silver))]"
+          isDragOver && "border-primary bg-primary/10 scale-105"
         )}
         style={{ borderRadius: 0 }}
         aria-label={`Add movie to position ${position}`}
@@ -59,13 +58,15 @@ export function FavoriteMovieSlot({
   return (
     <div
       className={cn(
-        "relative aspect-[2/3] w-full rounded-lg overflow-hidden",
+        "relative aspect-[2/3] w-full overflow-hidden border border-[#3a3a3c]",
         "bg-gray-100 transition-all duration-200",
         "group cursor-move",
+        "shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]",
         isDragging && "opacity-50 scale-95",
         isDragOver && "ring-2 ring-primary ring-offset-2 scale-105",
-        isHovered && !isDragging && "shadow-lg scale-105"
+        isHovered && !isDragging && "scale-105"
       )}
+      style={{ borderRadius: 0 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -77,6 +78,7 @@ export function FavoriteMovieSlot({
           fill
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 150px"
           className="object-cover"
+          style={{ borderRadius: 0 }}
           onError={() => setImageError(true)}
           priority={position <= 2}
         />

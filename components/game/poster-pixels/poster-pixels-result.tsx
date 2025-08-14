@@ -53,65 +53,69 @@ export default function PosterPixelsResult({
     return `${minutes}m ${remainingSeconds}s`
   }
 
-  // Calculate actual number of enhancements used (skips + wrong guesses that advance clarity)
-  const calculateSkipsUsed = () => {
-    // In Poster Pixels, both skipping and wrong guesses advance to next clarity level
-    // So all guesses except the final winning guess should count as "enhancements" (🔍)
+  // Calculate actual number of attempts before winning (wrong guesses + skips)
+  const calculateAttemptsBeforeWin = () => {
     if (won) {
-      // If won, all guesses before the final correct one are enhancements
+      // For wins, count all attempts (wrong guesses + skips) except the final correct one
       return Math.max(0, guesses.length - 1)
     } else {
-      // If lost/gave up, count all non-winning attempts as enhancements
-      // This handles cases where user made wrong guesses then gave up
-      return Math.min(guesses.length, 4) // Max 4 enhancements possible in 5-level game
+      // For losses, count all skips (should be 4 for the standard 🔍🔍🔍🔍❌ format)
+      return 4
     }
   }
 
-  const skipsUsed = calculateSkipsUsed()
+  const attemptsUsed = calculateAttemptsBeforeWin()
 
   // Direct share text generation without centralized system
   
   // Generate the new format: 🔍🔍🔍✅👾 (magnifying glasses + result + remaining aliens)
   function generateResultEmojis(): string {
-    const magnifyingGlasses = "🔍".repeat(skipsUsed)
+    const magnifyingGlasses = "🔍".repeat(attemptsUsed)
     
     if (won) {
-      // If won, show result and remaining aliens (5 total - magnifying glasses used - 1 for result)
-      const remainingAliens = "👾".repeat(Math.max(0, 5 - skipsUsed - 1))
+      // If won, show result and remaining aliens (5 total - attempts used - 1 for result)
+      const remainingAliens = "👾".repeat(Math.max(0, 5 - attemptsUsed - 1))
       return `${magnifyingGlasses}✅${remainingAliens}`
     } else {
       // If lost/gave up, show 4 magnifying glasses and one X (always 5 total)
-      return "🔍🔍🔍🔍❌"
+      return "🔍��🔍🔍❌"
     }
   }
 
   // Generate bonus text for special achievements
   function generateBonusText(): string {
-    if (!won) return ""
-    
-    const clarity = Math.round(clarityLevel)
-    let bonus = `Guess with ${clarity}% clarity`
-    
-    if (skipsUsed === 0) {
-      bonus = `First guess! ${bonus}`
+    if (won) {
+      if (attemptsUsed === 0) {
+        return "First guess! 🥇"
+      } else if (attemptsUsed === 1) {
+        return "Second try! 🥈"
+      } else if (attemptsUsed === 2) {
+        return "Third time's the charm! 🥉"
+      } else {
+        return `Solved in ${attemptsUsed + 1} attempts! 🎯`
+      }
+    } else {
+      return "Better luck next time! 💪"
     }
-    
-    return bonus
   }
 
   // Fallback share text function for loading states or errors
   function generateFallbackShareText(): string {
+    const puzzleInfo = `Poster Pixels #${puzzleNumber}`
     const resultEmojis = generateResultEmojis()
     const bonusText = generateBonusText()
-    const score = won ? finalScore : 0
+    const timeText = formatTime(timeElapsed)
     
-    let shareText = `Poster Pixels #${puzzleNumber} ${resultEmojis}`
+    let shareText = `${puzzleInfo} ${resultEmojis}\n${bonusText}`
     
-    if (bonusText) {
-      shareText += `\n${bonusText}`
+    if (finalScore > 0) {
+      shareText += `\n${timeText} • ${finalScore} pts`
+      
+      // Add "I gave up!" if the user didn't win
+      if (!won) {
+        shareText += `\nI gave up!`
+      }
     }
-    
-    shareText += `\n${score} pts`
     
     return shareText
   }
@@ -139,7 +143,7 @@ export default function PosterPixelsResult({
           {/* Movie Poster */}
           {moviePosterUrl && (
             <div className="flex justify-center mb-4">
-              <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-lg">
+              <div className="relative w-48 h-72 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
                 <Image
                   src={moviePosterUrl}
                   alt={`${movieTitle} poster`}
@@ -202,7 +206,7 @@ export default function PosterPixelsResult({
                 </div>
               ))
             ) : (
-              <div className="p-3 bg-gray-50 border border-gray-200 text-center text-muted-foreground" style={{ borderRadius: 0 }}>
+              <div className="p-3 bg-[#f8f9fa] border border-[#d1d2d4] text-center text-muted-foreground" style={{ borderRadius: 0 }}>
                 No guess recorded
               </div>
             )}
@@ -211,8 +215,8 @@ export default function PosterPixelsResult({
           {/* Performance Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center pt-4 border-t border-border">
             <div>
-              <div className="text-2xl font-bold">{skipsUsed}</div>
-              <div className="text-sm text-muted-foreground">Enhancements</div>
+              <div className="text-2xl font-bold">{attemptsUsed}</div>
+              <div className="text-sm text-muted-foreground">Attempts</div>
             </div>
             <div>
               <div className="text-2xl font-bold">{formatClarity(clarityLevel)}</div>
@@ -242,6 +246,11 @@ export default function PosterPixelsResult({
               <div className="text-sm text-muted-foreground">
                 {formatTime(timeElapsed)} • {won ? finalScore : 0} pts
               </div>
+              {!won && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  I gave up!
+                </div>
+              )}
             </div>
             
             <ShareSection 

@@ -207,10 +207,10 @@ export default function BudgetBracketTowerProgress({
       {/* Studio Tower Building */}
       <div className="relative z-10">
         {/* Tower Structure */}
-        <div className="bg-gradient-to-t from-gray-800 to-gray-600 rounded-t-lg border-2 border-gray-500 relative" style={{ height: '300px' }}>
+        <div className="bg-gradient-to-t from-gray-800 to-gray-600 rounded-t-lg border-2 border-[#d1d2d4] relative" style={{ height: '300px' }}>
           
           {/* Elevator Shaft */}
-          <div className="absolute left-4 top-4 bottom-4 w-12 bg-gradient-to-b from-gray-700 to-gray-900 rounded border-2 border-gray-600">
+          <div className="absolute left-4 top-4 bottom-4 w-12 bg-gradient-to-b from-gray-700 to-gray-900 rounded border-2 border-[#d1d2d4]">
             {/* Elevator Car */}
             <motion.div
               className="absolute w-full bg-gradient-to-r from-yellow-300 to-yellow-500 rounded border border-yellow-200 flex items-center justify-center text-gray-900 font-bold shadow-lg"
@@ -262,7 +262,7 @@ export default function BudgetBracketTowerProgress({
               return (
                 <motion.div
                   key={floor.level}
-                  className={`relative h-12 border-b border-gray-600 flex items-center justify-between px-4 ${
+                  className={`relative h-12 border-b border-[#d1d2d4] flex items-center justify-between px-4 ${
                     isCompleted 
                       ? `bg-gradient-to-r ${floor.color} text-white shadow-inner` 
                       : isCurrent

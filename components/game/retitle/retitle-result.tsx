@@ -58,21 +58,32 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
     }
   }), [result.correct, solveTimeMs, puzzleNumber, result.puzzle?.countryCode, result.puzzle?.localizedTitle])
   
-  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId)
+  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
   
   const generateFallbackShareText = () => {
     const resultEmoji = result.correct ? "✅" : "❌"
     const flagEmoji = result.puzzle?.flagEmoji || "🏳️"
-    return `Retitled ${flagEmoji} • ${resultEmoji}`
+    const timeText = solveTimeMs > 0 ? ` • ${Math.round(solveTimeMs / 1000)}s` : ""
+    return `Retitled #${puzzleNumber} ${flagEmoji} • ${resultEmoji}${timeText}`
   }
 
   useEffect(() => {
-    // Try centralized sharing first, fallback to legacy API if it fails
-    fetchShare().catch(() => {
-      console.log('Centralized sharing failed, falling back to legacy API')
-      fetchLegacyShareText()
-    })
-  }, [fetchShare])
+    // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
+    const shouldUseFallback = !centralizedShareText || 
+      (solveTimeMs > 0 && centralizedShareText && centralizedShareText.includes('0s'))
+    
+    if (shouldUseFallback) {
+      console.log('Using fallback share text generation')
+      setShareText(generateFallbackShareText())
+      setLoadingShare(false)
+    } else {
+      // Try centralized sharing first, fallback to legacy API if it fails
+      fetchShare().catch(() => {
+        console.log('Centralized sharing failed, falling back to legacy API')
+        fetchLegacyShareText()
+      })
+    }
+  }, [fetchShare, centralizedShareText, solveTimeMs])
   
   // Fallback to legacy share API if centralized system fails
   const fetchLegacyShareText = async () => {
@@ -86,7 +97,14 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
       }
       
       const { shareText } = await response.json()
-      setShareText(shareText)
+      
+      // Check if legacy API also returns incorrect time data
+      if (solveTimeMs > 0 && shareText && shareText.includes('0s')) {
+        console.log('Legacy API also returned incorrect time, using fallback')
+        setShareText(generateFallbackShareText())
+      } else {
+        setShareText(shareText)
+      }
     } catch (err) {
       console.error("Error fetching share text:", err)
       // Use fallback instead of showing error for anonymous users
@@ -143,7 +161,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         {/* Movie Poster */}
         {result.correctAnswer.posterPath && (
           <div className="flex justify-center mb-4">
-            <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-lg">
+            <div className="relative w-48 h-72 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
               <Image
                 src={`https://image.tmdb.org/t/p/w342${result.correctAnswer.posterPath}`}
                 alt={`${result.correctAnswer.title} poster`}
@@ -163,12 +181,12 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
           
           {/* Travel Ticket Style Display */}
           {result.puzzle && (
-            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]" style={{ borderRadius: 0, borderColor: 'rgb(156,163,175)' }}>
+            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0, borderColor: 'rgb(209,210,212)' }}>
               {/* Ticket header */}
-              <div className="text-center border-b border-dashed border-gray-400 pb-2">
+              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2">
                 <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
-              <div className="text-center border-b border-dashed border-gray-400 pb-2 mt-2">
+              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2 mt-2">
                 <div className="text-xs font-mono text-muted-foreground">
                   Retitled #{puzzleNumber}
                 </div>
@@ -184,7 +202,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               </div>
               
               {result.puzzle.englishTranslation && (
-                <div className="text-center border-t border-dashed border-gray-400 pt-2">
+                <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
                   <p className="text-base text-muted-foreground italic">
                     "{result.puzzle.englishTranslation}"
                   </p>
@@ -200,9 +218,16 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
                 </div>
               )}
               
-              {/* Ticket stub */}
-              <div className="text-center text-xs text-muted-foreground font-mono pt-2 border-t border-dashed border-gray-400">
-                {result.correct ? '✅ VALID JOURNEY' : '📋 LEARNING EXPERIENCE'}
+              {/* Travel time and ticket stub */}
+              <div className="text-center pt-2 border-t border-dashed border-[#d1d2d4]">
+                {solveTimeMs > 0 && (
+                  <div className="text-xs text-muted-foreground font-mono mb-1">
+                    ⏱️ TRAVEL TIME: {Math.round(solveTimeMs / 1000)}s
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground font-mono">
+                  {result.correct ? '✅ VALID JOURNEY' : '📋 LEARNING EXPERIENCE'}
+                </div>
               </div>
             </div>
           )}
@@ -228,10 +253,16 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
             </div>
           </div>
         )}
-      </Card>
 
-      {/* Actions */}
+        {/* Actions */}
       <div className="space-y-3">
+        {/* Share Preview */}
+        <div className="bg-muted rounded-lg p-4 text-center">
+          <p className="font-mono text-lg">
+            {centralizedShareText || shareText || generateFallbackShareText()}
+          </p>
+        </div>
+        
         <ShareSection 
           shareText={centralizedShareText || shareText || generateFallbackShareText()}
           shareUrl="https://cinamini.app/game/retitled"
@@ -245,6 +276,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
           </p>
         </div>
       </div>
+      </Card>
     </div>
   )
 }
