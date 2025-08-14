@@ -565,11 +565,15 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
                         <img
                           src={getPosterUrl(roundData.movieA.poster_path, 'w185')}
                           alt={`${roundData.movieA.title} poster`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${
+                            roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
+                              ? 'opacity-60' 
+                              : ''
+                          }`}
                           loading="lazy"
                         />
                       </div>
@@ -605,11 +609,15 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
                         <img
                           src={getPosterUrl(roundData.movieB.poster_path, 'w185')}
                           alt={`${roundData.movieB.title} poster`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${
+                            roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
+                              ? 'opacity-60' 
+                              : ''
+                          }`}
                           loading="lazy"
                         />
                       </div>
@@ -691,11 +699,15 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
                         <img
                           src={getPosterUrl(pair.movieA.poster_path, 'w185')}
                           alt={`${pair.movieA.title} poster`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${
+                            roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
+                              ? 'opacity-60' 
+                              : ''
+                          }`}
                           loading="lazy"
                         />
                       </div>
@@ -725,11 +737,15 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto">
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
                         <img
                           src={getPosterUrl(pair.movieB.poster_path, 'w185')}
                           alt={`${pair.movieB.title} poster`}
-                          className="w-full h-full object-cover"
+                          className={`w-full h-full object-cover ${
+                            roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
+                              ? 'opacity-60' 
+                              : ''
+                          }`}
                           loading="lazy"
                         />
                       </div>

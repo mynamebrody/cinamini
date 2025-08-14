@@ -314,7 +314,7 @@ export default function BudgetBracketRound({
                   : showingFeedback && budgetA && budgetB && budgetA < budgetB && chosenMovie === 'B'
                     ? 'shadow-3d-red'
                     : ''
-              : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+              : ''
           }`}
         >
           <Card 
@@ -323,18 +323,20 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'A' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'border-2 border-green-500 bg-green-50' 
-                      : 'border-2 border-red-500 bg-red-50'
+                      ? 'border-2 border-green-500 bg-green-50 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                      : 'border-2 border-red-500 bg-red-50 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                     : 'border-2 border-blue-500 bg-blue-50'
                   : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                    ? 'border-2 border-green-500 bg-green-50'
-                    : 'opacity-60 grayscale'
-                : 'border-2 border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)]'
+                    ? 'border-2 border-green-500 bg-green-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]'
+                    : showingFeedback && budgetA && budgetB && budgetA < budgetB && chosenMovie === 'B'
+                      ? 'border-2 border-red-500 bg-red-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
+                      : 'opacity-60 grayscale'
+                : 'border-2 border border-[rgb(var(--silver))] hover:border-[#3a3a3c] hover:shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]'
             }`}
             onClick={() => handleMovieChoice('A')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0">
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
               <img
                 src={getPosterUrl(pair.movieA.poster_path, 'w342')}
                 alt={`${pair.movieA.title} poster`}
@@ -404,7 +406,7 @@ export default function BudgetBracketRound({
                   : showingFeedback && budgetA && budgetB && budgetB < budgetA && chosenMovie === 'A'
                     ? 'shadow-3d-red'
                     : ''
-              : 'hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
+              : ''
           }`}
         >
           <Card 
@@ -413,18 +415,20 @@ export default function BudgetBracketRound({
                 ? chosenMovie === 'B' 
                   ? showingFeedback && isCorrect !== null
                     ? isCorrect 
-                      ? 'border-2 border-green-500 bg-green-50' 
-                      : 'border-2 border-red-500 bg-red-50'
+                      ? 'border-2 border-green-500 bg-green-50 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                      : 'border-2 border-red-500 bg-red-50 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                     : 'border-2 border-blue-500 bg-blue-50'
                   : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                    ? 'border-2 border-green-500 bg-green-50'
-                    : 'opacity-60 grayscale'
-                : 'border-2 border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)]'
+                    ? 'border-2 border-green-500 bg-green-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]'
+                    : showingFeedback && budgetA && budgetB && budgetB < budgetA && chosenMovie === 'A'
+                      ? 'border-2 border-red-500 bg-red-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
+                      : 'opacity-60 grayscale'
+                : 'border-2 border border-[rgb(var(--silver))] hover:border-[#3a3a3c] hover:shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]'
             }`}
             onClick={() => handleMovieChoice('B')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted rounded-lg overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0">
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
               <img
                 src={getPosterUrl(pair.movieB.poster_path, 'w342')}
                 alt={`${pair.movieB.title} poster`}
