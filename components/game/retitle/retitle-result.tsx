@@ -143,7 +143,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         {/* Movie Poster */}
         {result.correctAnswer.posterPath && (
           <div className="flex justify-center mb-4">
-            <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-lg">
+            <div className="relative w-48 h-72 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
               <Image
                 src={`https://image.tmdb.org/t/p/w342${result.correctAnswer.posterPath}`}
                 alt={`${result.correctAnswer.title} poster`}
@@ -163,12 +163,12 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
           
           {/* Travel Ticket Style Display */}
           {result.puzzle && (
-            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]" style={{ borderRadius: 0, borderColor: 'rgb(156,163,175)' }}>
+            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0, borderColor: 'rgb(209,210,212)' }}>
               {/* Ticket header */}
-              <div className="text-center border-b border-dashed border-gray-400 pb-2">
+              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2">
                 <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
-              <div className="text-center border-b border-dashed border-gray-400 pb-2 mt-2">
+              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2 mt-2">
                 <div className="text-xs font-mono text-muted-foreground">
                   Retitled #{puzzleNumber}
                 </div>
@@ -184,7 +184,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               </div>
               
               {result.puzzle.englishTranslation && (
-                <div className="text-center border-t border-dashed border-gray-400 pt-2">
+                <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
                   <p className="text-base text-muted-foreground italic">
                     "{result.puzzle.englishTranslation}"
                   </p>
@@ -201,7 +201,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               )}
               
               {/* Ticket stub */}
-              <div className="text-center text-xs text-muted-foreground font-mono pt-2 border-t border-dashed border-gray-400">
+              <div className="text-center text-xs text-muted-foreground font-mono pt-2 border-t border-dashed border-[#d1d2d4]">
                 {result.correct ? '✅ VALID JOURNEY' : '📋 LEARNING EXPERIENCE'}
               </div>
             </div>
@@ -228,10 +228,16 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
             </div>
           </div>
         )}
-      </Card>
 
-      {/* Actions */}
+        {/* Actions */}
       <div className="space-y-3">
+        {/* Share Preview */}
+        <div className="bg-muted rounded-lg p-4 text-center">
+          <p className="font-mono text-lg">
+            {centralizedShareText || shareText || generateFallbackShareText()}
+          </p>
+        </div>
+        
         <ShareSection 
           shareText={centralizedShareText || shareText || generateFallbackShareText()}
           shareUrl="https://cinamini.app/game/retitled"
@@ -245,6 +251,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
           </p>
         </div>
       </div>
+      </Card>
     </div>
   )
 }

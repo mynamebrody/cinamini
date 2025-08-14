@@ -175,13 +175,6 @@ export default function RetitledGlobeProgress({
             {getGameStateText()}
           </motion.p>
 
-          {/* Progress indicator */}
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">
-              Countries Visited: {visitedCount}
-            </div>
-          </div>
-
           {/* Achievement badges */}
           {visitedCount > 0 && (
             <div className="flex justify-center gap-1 mt-2">

@@ -56,7 +56,7 @@ export default function PosterPixelsResult({
   // Calculate actual number of attempts before winning (wrong guesses + skips)
   const calculateAttemptsBeforeWin = () => {
     if (won) {
-      // For wins, count all guesses except the final correct one
+      // For wins, count all attempts (wrong guesses + skips) except the final correct one
       return Math.max(0, guesses.length - 1)
     } else {
       // For losses, count all skips (should be 4 for the standard 🔍🔍🔍🔍❌ format)
@@ -101,6 +101,7 @@ export default function PosterPixelsResult({
     const resultEmojis = generateResultEmojis()
     const bonusText = generateBonusText()
     const score = won ? finalScore : 0
+    const timeText = formatTime(timeElapsed)
     
     let shareText = `Poster Pixels #${puzzleNumber} ${resultEmojis}`
     
@@ -108,7 +109,12 @@ export default function PosterPixelsResult({
       shareText += `\n${bonusText}`
     }
     
-    shareText += `\n${score} pts`
+    shareText += `\n${timeText} • ${score} pts`
+    
+    // Add "I gave up!" if the user didn't win
+    if (!won) {
+      shareText += `\nI gave up!`
+    }
     
     return shareText
   }
@@ -136,7 +142,7 @@ export default function PosterPixelsResult({
           {/* Movie Poster */}
           {moviePosterUrl && (
             <div className="flex justify-center mb-4">
-              <div className="relative w-48 h-72 rounded-lg overflow-hidden shadow-lg">
+              <div className="relative w-48 h-72 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
                 <Image
                   src={moviePosterUrl}
                   alt={`${movieTitle} poster`}
@@ -172,7 +178,7 @@ export default function PosterPixelsResult({
                       : guess.movieTitle === 'Gave Up' 
                         ? "border-orange-400 shadow-[1px_1px_0px_rgb(251,146,60),2px_2px_0px_rgb(251,146,60),3px_3px_0px_rgb(251,146,60),4px_4px_0px_rgb(251,146,60)]"
                         : guess.movieTitle === 'Skipped'
-                          ? "border-gray-400 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]"
+                          ? "border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]"
                           : "border-red-300 shadow-[1px_1px_0px_rgb(252,165,165),2px_2px_0px_rgb(252,165,165),3px_3px_0px_rgb(252,165,165),4px_4px_0px_rgb(252,165,165)]"
                   )}
                   style={{ borderRadius: 0 }}
@@ -199,7 +205,7 @@ export default function PosterPixelsResult({
                 </div>
               ))
             ) : (
-              <div className="p-3 bg-gray-50 border border-gray-200 text-center text-muted-foreground" style={{ borderRadius: 0 }}>
+              <div className="p-3 bg-[#f8f9fa] border border-[#d1d2d4] text-center text-muted-foreground" style={{ borderRadius: 0 }}>
                 No guess recorded
               </div>
             )}
@@ -239,6 +245,11 @@ export default function PosterPixelsResult({
               <div className="text-sm text-muted-foreground">
                 {formatTime(timeElapsed)} • {won ? finalScore : 0} pts
               </div>
+              {!won && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  I gave up!
+                </div>
+              )}
             </div>
             
             <ShareSection 

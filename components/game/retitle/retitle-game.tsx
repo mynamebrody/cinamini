@@ -326,6 +326,7 @@ export default function RetitleGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(235, 187, 74, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Retitled</GameModalTitle>

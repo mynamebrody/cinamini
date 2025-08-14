@@ -148,13 +148,18 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
           {/* Movie Poster */}
           {puzzle.filmPosterUrl && (
-            <Image 
-              src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
-              alt={`${puzzle.filmTitle} poster`}
-              width={200} 
-              height={300} 
-              className="mx-auto rounded-lg shadow-lg"
-            />
+            <div className="flex justify-center">
+              <div className="border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
+                <Image 
+                  src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
+                  alt={`${puzzle.filmTitle} poster`}
+                  width={200} 
+                  height={300} 
+                  className="block"
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Fun Fact */}
@@ -188,16 +193,6 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
             )}
           </div>
 
-          {/* Share Result */}
-          <div className="bg-muted rounded-lg p-4">
-            <p className="font-mono text-lg mb-2">{share_text}</p>
-            <p className="text-sm text-muted-foreground">
-              Solved in {user_guesses.length} guess{user_guesses.length !== 1 ? 'es' : ''}
-              {correct && solveTime && (
-                <> • {formatTime(solveTime)}</>
-              )}
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -223,6 +218,20 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
       {/* Action Buttons */}
       <div className="space-y-2">
+        {/* Share Preview */}
+        <div className="bg-muted rounded-lg p-4 text-center">
+          {share_text.split('\n').map((line, index) => (
+            <p key={index} className={index === 0 ? "font-mono text-lg mb-1" : "text-sm text-muted-foreground"}>
+              {line}
+            </p>
+          ))}
+          {correct && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {formatTime(solveTime || 0)}
+            </p>
+          )}
+        </div>
+        
         <ShareDrawer 
           shareText={share_text}
           shareUrl="https://cinamini.app/game/cast-climb"

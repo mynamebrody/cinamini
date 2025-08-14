@@ -93,7 +93,7 @@ export function MovieSearchModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!w-[75vw] !h-[75vh] !max-w-none !max-h-none !min-h-0 overflow-hidden flex flex-col bg-white border-neutral-200" style={{ borderRadius: 0, width: '75vw', height: '75vh', maxWidth: 'none', maxHeight: 'none' }}>
+      <DialogContent className="!w-[75vw] !h-[75vh] !max-w-none !max-h-none !min-h-0 overflow-hidden flex flex-col bg-white" style={{ borderRadius: 0, width: '75vw', height: '75vh', maxWidth: 'none', maxHeight: 'none' }}>
         <DialogHeader className="relative">
           <DialogTitle className="text-neutral-900">
             Add Movie to Favorites
@@ -149,13 +149,19 @@ export function MovieSearchModal({
                             disabled={isAlreadyFavorited}
                             className={cn(
                               "group relative text-left transition-all duration-200",
-                              "focus:outline-none focus:ring-2 focus:ring-cinema-red focus:ring-offset-2 rounded-lg",
+                              "focus:outline-none focus:ring-2 focus:ring-cinema-red focus:ring-offset-2",
                               isAlreadyFavorited
                                 ? "opacity-50 cursor-not-allowed"
                                 : "hover:scale-105"
                             )}
+                            style={{ borderRadius: 0 }}
                           >
-                            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-neutral-100">
+                            <div className={cn(
+                              "relative aspect-[2/3] overflow-hidden bg-neutral-100 border transition-all duration-200",
+                              "shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212)]",
+                              "border-[#d1d2d4]",
+                              !isAlreadyFavorited && "group-hover:border-[#3a3a3c] group-hover:shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]"
+                            )} style={{ borderRadius: 0 }}>
                               {movie.posterUrl ? (
                                 <Image
                                   src={movie.posterUrl}
@@ -163,6 +169,7 @@ export function MovieSearchModal({
                                   fill
                                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 16vw"
                                   className="object-cover"
+                                  style={{ borderRadius: 0 }}
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
@@ -196,7 +203,8 @@ export function MovieSearchModal({
                         </TooltipTrigger>
                         <TooltipContent 
                           side="bottom" 
-                          className="bg-white border-neutral-200 text-neutral-900 max-w-xs font-funnel"
+                          className="bg-white border border-[#d1d2d4] text-neutral-900 max-w-xs font-funnel shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212)]"
+                          style={{ borderRadius: 0 }}
                         >
                           <p className="text-sm">{displayTitle}</p>
                         </TooltipContent>

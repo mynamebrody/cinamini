@@ -407,6 +407,7 @@ export default function BudgetBracketGame() {
         open={modalState === 'howtoplay'}
         onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
         className="max-w-2xl"
+        backdropColor="rgba(39, 134, 70, 0.3)"
       >
         <GameModalHeader>
           <GameModalTitle>How to Play Budget Bracket</GameModalTitle>

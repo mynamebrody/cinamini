@@ -63,11 +63,16 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
         <div className="text-sm text-muted-foreground font-medium">
           📍 Now exploring: {puzzle.countryName}
         </div>
-        <div className="rounded-lg p-4 border border-yellow-200" style={{ backgroundColor: '#ebbb4a' }}>
-          <h2 className="text-3xl font-bold text-white mb-2">"{puzzle.localizedTitle}"</h2>
-          {puzzle.englishTranslation && (
-            <p className="text-lg text-white/90 italic">"{puzzle.englishTranslation}"</p>
-          )}
+        <div className="max-w-2xl mx-auto">
+          <div 
+            className="p-4 border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" 
+            style={{ backgroundColor: '#ebbb4a', borderRadius: 0 }}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 line-clamp-2">"{puzzle.localizedTitle}"</h2>
+            {puzzle.englishTranslation && (
+              <p className="text-base md:text-lg text-white/90 italic line-clamp-2">"{puzzle.englishTranslation}"</p>
+            )}
+          </div>
         </div>
         <p className="text-muted-foreground flex items-center justify-center gap-2">
           <span>🎫</span>
