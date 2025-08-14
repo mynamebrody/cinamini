@@ -132,7 +132,7 @@ export function CastClimbProgress({
               <div className="flex-1 relative">
                 <div 
                   className={cn(
-                    "h-8 border transition-all duration-700 ease-out relative overflow-hidden shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]",
+                    "h-8 border transition-all duration-700 ease-out relative overflow-hidden shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]",
                     {
                       // Empty state
                       "bg-muted/30 border-muted": stepState === "empty",
@@ -198,7 +198,7 @@ export function CastClimbProgress({
               {/* Position indicator */}
               <div className="w-6 sm:w-8 text-center">
                 <div className={cn(
-                  "w-5 h-5 sm:w-6 sm:h-6 border flex items-center justify-center text-xs font-bold transition-all duration-500 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]",
+                  "w-5 h-5 sm:w-6 sm:h-6 border flex items-center justify-center text-xs font-bold transition-all duration-500 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]",
                   {
                     "bg-muted border-muted-foreground/30 text-muted-foreground": stepState === "empty",
                     "bg-cinema-red border-red-700 text-white animate-bounce": stepState === "current",

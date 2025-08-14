@@ -837,7 +837,7 @@ export default function CastClimbGame() {
                 <div className="bg-muted rounded-lg p-6 text-center space-y-4">
                   {/* Actor Photo */}
                   <div className="flex justify-center">
-                    <div className="w-32 h-40 bg-muted-foreground/10 rounded-lg overflow-hidden shadow-md">
+                    <div className="w-32 h-40 bg-muted-foreground/10 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
                       {puzzle.actors[revealedIndex] && puzzle.actors[revealedIndex].profile_path ? (
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${puzzle.actors[revealedIndex].profile_path}`}
@@ -846,6 +846,7 @@ export default function CastClimbGame() {
                           height={160}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          style={{ borderRadius: 0 }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -964,13 +965,18 @@ export default function CastClimbGame() {
                 )}
 
                 {puzzle.filmPosterUrl && (
-                  <Image 
-                    src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
-                    alt={`${puzzle.filmTitle} poster`}
-                    width={200} 
-                    height={300} 
-                    className="mx-auto rounded-lg"
-                  />
+                  <div className="flex justify-center">
+                    <div className="border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
+                      <Image 
+                        src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
+                        alt={`${puzzle.filmTitle} poster`}
+                        width={200} 
+                        height={300} 
+                        className="block"
+                        style={{ borderRadius: 0 }}
+                      />
+                    </div>
+                  </div>
                 )}
                 
                 {/* Show complete cast now that game is over */}

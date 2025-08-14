@@ -148,13 +148,18 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
           {/* Movie Poster */}
           {puzzle.filmPosterUrl && (
-            <Image 
-              src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
-              alt={`${puzzle.filmTitle} poster`}
-              width={200} 
-              height={300} 
-              className="mx-auto rounded-lg shadow-lg"
-            />
+            <div className="flex justify-center">
+              <div className="border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
+                <Image 
+                  src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
+                  alt={`${puzzle.filmTitle} poster`}
+                  width={200} 
+                  height={300} 
+                  className="block"
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Fun Fact */}
