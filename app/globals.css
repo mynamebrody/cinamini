@@ -1042,3 +1042,123 @@
       0 0 0 1px rgba(251, 191, 36, 0.1);
   }
 }
+
+/* Admin Panel Styles */
+@layer components {
+  /* Admin Cards - Squared corners with box shadow */
+  .admin-card {
+    @apply bg-white border-2 border-neutral-200;
+    border-radius: 0;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+  }
+
+  .admin-card:hover {
+    @apply border-cinema-red;
+    box-shadow: 6px 6px 0px 0px rgba(153, 37, 29, 0.15);
+    transform: translate(-1px, -1px);
+  }
+
+  /* Admin Buttons */
+  .admin-btn {
+    @apply font-funnel font-medium px-4 py-2 border-2 transition-all duration-200;
+    border-radius: 0;
+  }
+
+  .admin-btn-primary {
+    @apply admin-btn bg-cinema-red text-white border-cinema-red;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.1);
+  }
+
+  .admin-btn-primary:hover {
+    @apply bg-cinema-red-dark border-cinema-red-dark;
+    box-shadow: 4px 4px 0px 0px rgba(0,0,0,0.15);
+    transform: translate(-1px, -1px);
+  }
+
+  .admin-btn-secondary {
+    @apply admin-btn bg-white text-neutral-700 border-neutral-300;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.05);
+  }
+
+  .admin-btn-secondary:hover {
+    @apply bg-neutral-50 text-cinema-red border-cinema-red;
+    box-shadow: 4px 4px 0px 0px rgba(153, 37, 29, 0.1);
+    transform: translate(-1px, -1px);
+  }
+
+  /* Admin Input Fields */
+  .admin-input {
+    @apply font-funnel border-2 border-neutral-300 px-4 py-2 focus:border-cinema-red focus:outline-none transition-all duration-200;
+    border-radius: 0;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  }
+
+  .admin-input:focus {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.05), 0 0 0 3px rgba(153, 37, 29, 0.1);
+  }
+
+  /* Admin Tables */
+  .admin-table {
+    @apply w-full border-2 border-neutral-200;
+    border-radius: 0;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.05);
+  }
+
+  .admin-table th {
+    @apply bg-neutral-100 font-funnel-display-bold text-left px-4 py-3 border-b-2 border-neutral-200;
+  }
+
+  .admin-table td {
+    @apply font-funnel px-4 py-3 border-b border-neutral-200;
+  }
+
+  .admin-table tr:hover {
+    @apply bg-neutral-50;
+  }
+
+  /* Admin Alerts */
+  .admin-alert {
+    @apply border-2 px-4 py-3 font-funnel;
+    border-radius: 0;
+    box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.05);
+  }
+
+  .admin-alert-info {
+    @apply admin-alert bg-blue-50 border-blue-200 text-blue-900;
+  }
+
+  .admin-alert-success {
+    @apply admin-alert bg-green-50 border-green-200 text-green-900;
+  }
+
+  .admin-alert-warning {
+    @apply admin-alert bg-amber-50 border-amber-200 text-amber-900;
+  }
+
+  .admin-alert-error {
+    @apply admin-alert bg-red-50 border-red-200 text-red-900;
+  }
+
+  /* Admin Badge */
+  .admin-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 text-xs font-medium font-funnel border-2;
+    border-radius: 0;
+  }
+
+  .admin-badge-default {
+    @apply admin-badge bg-neutral-100 text-neutral-800 border-neutral-300;
+  }
+
+  .admin-badge-success {
+    @apply admin-badge bg-green-100 text-green-800 border-green-300;
+  }
+
+  .admin-badge-warning {
+    @apply admin-badge bg-amber-100 text-amber-800 border-amber-300;
+  }
+
+  .admin-badge-error {
+    @apply admin-badge bg-red-100 text-red-800 border-red-300;
+  }
+}

@@ -131,11 +131,11 @@ export default function SchedulePage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <CalendarDays className="w-8 h-8" />
+          <h1 className="text-3xl font-funnel-display-bold text-neutral-900 flex items-center gap-2">
+            <CalendarDays className="w-8 h-8 text-cinema-red" />
             Puzzle Schedule
           </h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-neutral-600 mt-1 font-funnel">
             Manage and schedule puzzles across all games
           </p>
         </div>
@@ -143,79 +143,67 @@ export default function SchedulePage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-primary/10 rounded-bl-full" />
+        <Card className="admin-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-cinema-red/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CalendarDays className="w-4 h-4" />
+            <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-cinema-red" />
               Total Scheduled
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalScheduled}</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-funnel-display-bold text-neutral-900">{stats.totalScheduled}</div>
+            <p className="text-xs text-neutral-600 font-funnel">This month</p>
           </CardContent>
         </Card>
         
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/10 rounded-bl-full" />
+        <Card className="admin-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Package className="w-4 h-4" />
+            <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
+              <Package className="w-4 h-4 text-amber-600" />
               Draft Puzzles
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.totalDrafts}</div>
-            <p className="text-xs text-muted-foreground">Ready to schedule</p>
+            <div className="text-2xl font-funnel-display-bold text-amber-600">{stats.totalDrafts}</div>
+            <p className="text-xs text-neutral-600 font-funnel">Ready to schedule</p>
           </CardContent>
         </Card>
         
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full" />
+        <Card className="admin-card relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
+            <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
               Game Coverage
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Retitled</span>
-                <Badge 
-                  variant="outline" 
-                  className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/30"
-                >
+                <span className="text-xs font-medium font-funnel">Retitled</span>
+                <span className="admin-badge admin-badge-default text-xs">
                   {stats.gamesWithPuzzles.retitled}
-                </Badge>
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Budget Bracket</span>
-                <Badge 
-                  variant="outline" 
-                  className="text-xs bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                >
+                <span className="text-xs font-medium font-funnel">Budget Bracket</span>
+                <span className="admin-badge admin-badge-success text-xs">
                   {stats.gamesWithPuzzles.budget_bracket}
-                </Badge>
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Cast Climb</span>
-                <Badge 
-                  variant="outline" 
-                  className="text-xs bg-violet-500/10 text-violet-600 border-violet-500/30"
-                >
+                <span className="text-xs font-medium font-funnel">Cast Climb</span>
+                <span className="admin-badge admin-badge-default text-xs">
                   {stats.gamesWithPuzzles.cast_climb}
-                </Badge>
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium">Poster Pixels</span>
-                <Badge 
-                  variant="outline" 
-                  className="text-xs bg-purple-500/10 text-purple-600 border-purple-500/30"
-                >
+                <span className="text-xs font-medium font-funnel">Poster Pixels</span>
+                <span className="admin-badge admin-badge-default text-xs">
                   {stats.gamesWithPuzzles.poster_pixels}
-                </Badge>
+                </span>
               </div>
             </div>
           </CardContent>
@@ -224,19 +212,19 @@ export default function SchedulePage() {
       </div>
 
       {drafts.length > 5 && (
-        <Alert className="border-amber-500/50 bg-amber-50/50">
+        <Alert className="admin-alert admin-alert-warning">
           <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
+          <AlertDescription className="text-amber-800 font-funnel">
             <span className="font-semibold">{drafts.length} draft puzzles</span> are waiting to be scheduled. 
             Use the bulk schedule feature to quickly assign dates to multiple puzzles.
           </AlertDescription>
         </Alert>
       )}
 
-      <Card>
+      <Card className="admin-card">
         <CardHeader>
-          <CardTitle>Calendar View</CardTitle>
-          <CardDescription>
+          <CardTitle className="font-funnel-display-bold text-neutral-900">Calendar View</CardTitle>
+          <CardDescription className="font-funnel text-neutral-600">
             Click on any date to view or edit scheduled puzzles. Drag and drop puzzles to reschedule them.
           </CardDescription>
         </CardHeader>

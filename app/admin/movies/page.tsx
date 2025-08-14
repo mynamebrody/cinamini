@@ -222,7 +222,7 @@ export default function AdminMovieSearch() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Movie Search</h1>
+      <h1 className="text-3xl font-funnel-display-bold text-neutral-900 mb-8">Movie Search</h1>
       
       {/* Search Bar with Animation */}
       <div className="mb-8">
@@ -233,12 +233,12 @@ export default function AdminMovieSearch() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && searchMovies()}
             placeholder="Search for movies..."
-            className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cinema-red focus:border-cinema-red transition-all duration-200 group-hover:border border-[rgb(var(--silver))]"
+            className="admin-input w-full pr-12"
           />
           <button
             onClick={searchMovies}
             disabled={loading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:text-cinema-red disabled:opacity-50 transition-all duration-200 hover:scale-110"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-500 hover:text-cinema-red disabled:opacity-50 transition-all duration-200 hover:scale-110"
           >
             <Search className={`w-5 h-5 ${loading ? 'animate-pulse' : ''}`} />
           </button>
@@ -255,13 +255,14 @@ export default function AdminMovieSearch() {
                 key={filter.value}
                 onClick={() => setFilterStatus(filter.value)}
                 className={`
-                  flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium
-                  transition-all duration-200 transform hover:scale-105
+                  flex items-center gap-2 px-4 py-2 text-sm font-funnel font-medium border-2
+                  transition-all duration-200 transform hover:scale-[1.02]
                   ${filterStatus === filter.value 
-                    ? 'bg-cinema-red text-white shadow-lg' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'admin-btn-primary' 
+                    : 'admin-btn-secondary'
                   }
                 `}
+                style={{ borderRadius: 0 }}
               >
                 <Icon className="w-4 h-4" />
                 <span>{filter.label}</span>
@@ -308,7 +309,9 @@ export default function AdminMovieSearch() {
                   isUnavailable ? "opacity-75" : ""
                 }`}
               >
-                <div className="relative overflow-hidden rounded-xl shadow-md transition-all duration-300 group-hover:shadow-xl">
+                <div className="relative overflow-hidden border-2 border-neutral-200 transition-all duration-300 group-hover:border-cinema-red" style={{
+                  boxShadow: '3px 3px 0px 0px rgba(0,0,0,0.1)'
+                }}>
                   {movie.poster_path ? (
                     <img
                       src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
@@ -412,7 +415,7 @@ export default function AdminMovieSearch() {
           onClick={() => setSelectedMovie(null)}
         >
           <div
-            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto admin-card"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
@@ -421,7 +424,8 @@ export default function AdminMovieSearch() {
                   <img
                     src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
                     alt={selectedMovie.title}
-                    className="w-48 rounded-xl shadow-lg transform transition-transform duration-300 hover:scale-105"
+                    className="w-48 border-2 border-neutral-200 transform transition-transform duration-300 hover:scale-[1.02]"
+                    style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                   />
                 ) : (
                   <div className="w-48 aspect-[2/3] bg-gray-200 rounded-xl flex items-center justify-center">
@@ -430,11 +434,11 @@ export default function AdminMovieSearch() {
                 )}
                 
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{selectedMovie.title}</h3>
+                  <h3 className="text-2xl font-funnel-display-bold text-neutral-900 mb-2">{selectedMovie.title}</h3>
                   
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm font-funnel">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <Calendar className="w-4 h-4 text-neutral-500" />
                       <span>
                         Release: {selectedMovie.release_date 
                           ? format(new Date(selectedMovie.release_date), "MMMM d, yyyy")
@@ -512,7 +516,7 @@ export default function AdminMovieSearch() {
                       onClick={() => {
                         router.push(`/admin/puzzle-editor?movieId=${selectedMovie.id}`)
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-cinema-red text-white rounded-lg hover:bg-red-700 transition-all duration-200 transform hover:scale-105"
+                      className="admin-btn-primary flex items-center gap-2"
                     >
                       <PenTool className="w-4 h-4" />
                       Use in Puzzle
@@ -524,7 +528,7 @@ export default function AdminMovieSearch() {
                     setSelectedMovie(null)
                     setMovieUsageData(null)
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
+                  className="admin-btn-secondary"
                 >
                   Close
                 </button>

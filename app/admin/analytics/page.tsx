@@ -179,9 +179,9 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+        <h1 className="text-3xl font-funnel-display-bold text-neutral-900">Analytics Dashboard</h1>
         <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-32 admin-input">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -194,23 +194,23 @@ export default function AnalyticsPage() {
 
       {/* Overview Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="admin-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium font-funnel">Total Players</CardTitle>
+            <Users className="h-4 w-4 text-cinema-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(overviewStats.totalPlayers)}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-funnel-display-bold text-neutral-900">{formatNumber(overviewStats.totalPlayers)}</div>
+            <p className="text-xs text-neutral-600 font-funnel">
               {overviewStats.weekOverWeekGrowth > 0 ? '+' : ''}{overviewStats.weekOverWeekGrowth.toFixed(1)}% from last week
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Daily Active Users</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium font-funnel">Daily Active Users</CardTitle>
+            <TrendingUp className="h-4 w-4 text-cinema-red" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(overviewStats.dailyActiveUsers)}</div>
@@ -220,45 +220,48 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Session</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium font-funnel">Avg Session</CardTitle>
+            <Clock className="h-4 w-4 text-cinema-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(overviewStats.avgSessionDuration)}</div>
-            <p className="text-xs text-muted-foreground">Per user per day</p>
+            <div className="text-2xl font-funnel-display-bold text-neutral-900">{formatDuration(overviewStats.avgSessionDuration)}</div>
+            <p className="text-xs text-neutral-600 font-funnel">Per user per day</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="admin-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Games</CardTitle>
-            <GamepadIcon className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium font-funnel">Total Games</CardTitle>
+            <GamepadIcon className="h-4 w-4 text-cinema-red" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(overviewStats.totalGamesPlayed)}</div>
-            <p className="text-xs text-muted-foreground">Across all game types</p>
+            <div className="text-2xl font-funnel-display-bold text-neutral-900">{formatNumber(overviewStats.totalGamesPlayed)}</div>
+            <p className="text-xs text-neutral-600 font-funnel">Across all game types</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Analytics Tabs */}
       <Tabs defaultValue="engagement" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          <TabsTrigger value="games">Games</TabsTrigger>
-          <TabsTrigger value="movies">Movies</TabsTrigger>
-          <TabsTrigger value="retention">Retention</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 h-auto p-0 bg-white border-2 border-neutral-200" style={{
+          boxShadow: '2px 2px 0px 0px rgba(0,0,0,0.05)',
+          borderRadius: 0
+        }}>
+          <TabsTrigger value="engagement" className="font-funnel font-medium">Engagement</TabsTrigger>
+          <TabsTrigger value="games" className="font-funnel font-medium">Games</TabsTrigger>
+          <TabsTrigger value="movies" className="font-funnel font-medium">Movies</TabsTrigger>
+          <TabsTrigger value="retention" className="font-funnel font-medium">Retention</TabsTrigger>
         </TabsList>
 
         {/* Engagement Tab */}
         <TabsContent value="engagement" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+            <Card className="admin-card">
               <CardHeader>
-                <CardTitle>Daily Active Users</CardTitle>
-                <CardDescription>User activity over time</CardDescription>
+                <CardTitle className="font-funnel-display-bold text-neutral-900">Daily Active Users</CardTitle>
+                <CardDescription className="font-funnel text-neutral-600">User activity over time</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height="300">
@@ -294,10 +297,10 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="admin-card">
               <CardHeader>
-                <CardTitle>Game Popularity</CardTitle>
-                <CardDescription>Distribution of plays by game</CardDescription>
+                <CardTitle className="font-funnel-display-bold text-neutral-900">Game Popularity</CardTitle>
+                <CardDescription className="font-funnel text-neutral-600">Distribution of plays by game</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height="300">
