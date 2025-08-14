@@ -11,6 +11,7 @@ import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../ga
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import AnonymousResultNudge from "../anonymous-result-nudge"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
@@ -717,6 +718,19 @@ export default function PosterPixelsGame() {
         {gameState === 'completed' && (
           <div className="max-w-md mx-auto mt-6">
             <MorePuzzlesSection currentGameId="poster-pixels" />
+            
+            {isAnonymous && (
+              <AnonymousResultNudge 
+                gameResult={{
+                  won: state.won,
+                  timeElapsed: state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0),
+                  finalScore: state.finalScore || 0,
+                  clarityLevel: state.clarityLevel,
+                  guesses: state.guesses
+                }}
+                gameName="Poster Pixels"
+              />
+            )}
           </div>
         )}
       </main>
