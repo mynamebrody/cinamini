@@ -228,10 +228,16 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
             </div>
           </div>
         )}
-      </Card>
 
-      {/* Actions */}
+        {/* Actions */}
       <div className="space-y-3">
+        {/* Share Preview */}
+        <div className="bg-muted rounded-lg p-4 text-center">
+          <p className="font-mono text-lg">
+            {centralizedShareText || shareText || generateFallbackShareText()}
+          </p>
+        </div>
+        
         <ShareSection 
           shareText={centralizedShareText || shareText || generateFallbackShareText()}
           shareUrl="https://cinamini.app/game/retitled"
@@ -245,6 +251,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
           </p>
         </div>
       </div>
+      </Card>
     </div>
   )
 }

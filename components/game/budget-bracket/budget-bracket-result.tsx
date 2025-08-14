@@ -460,21 +460,25 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
               className="border-t pt-4"
-            >
-              <div className="text-center mb-3">
-                <div className="text-lg font-mono tracking-wider mb-2 bg-gray-50 p-2 rounded border">
-                  {generateSharePattern(result.revealed_pairs.map(p => ({
-                    round: p.round,
-                    chosen_movie: p.chosen_movie,
-                    correct: p.correct,
-                    time_taken_ms: p.time_taken_ms
-                  })))}
-                </div>
-                <div className="text-sm text-muted-foreground flex items-center justify-center space-x-1">
-                  <span>🎬</span>
-                  <span>Budget Bracket #{puzzle.puzzle_number}</span>
-                  <span>💰</span>
-                </div>
+            > 
+              {/* Share Preview */}
+              <div className="bg-muted rounded-lg p-4 text-center mb-3">
+                <p className="font-mono text-lg">
+                  {
+                    // Prefer local data if centralized sharing returns wrong data (0/5 when we have correct answers)
+                    (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
+                      ? centralizedShareText.split('\n')[0] // First line with pattern
+                      : generateFallbackShareText().split('\n')[0]
+                  }
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {
+                    // Get the second line (score details)
+                    (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
+                      ? centralizedShareText.split('\n')[1] 
+                      : generateFallbackShareText().split('\n')[1]
+                  }
+                </p>
               </div>
               
               <ShareSection 

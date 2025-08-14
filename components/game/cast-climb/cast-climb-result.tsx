@@ -188,16 +188,6 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
             )}
           </div>
 
-          {/* Share Result */}
-          <div className="bg-muted rounded-lg p-4">
-            <p className="font-mono text-lg mb-2">{share_text}</p>
-            <p className="text-sm text-muted-foreground">
-              Solved in {user_guesses.length} guess{user_guesses.length !== 1 ? 'es' : ''}
-              {correct && solveTime && (
-                <> • {formatTime(solveTime)}</>
-              )}
-            </p>
-          </div>
         </CardContent>
       </Card>
 
@@ -223,6 +213,20 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
       {/* Action Buttons */}
       <div className="space-y-2">
+        {/* Share Preview */}
+        <div className="bg-muted rounded-lg p-4 text-center">
+          {share_text.split('\n').map((line, index) => (
+            <p key={index} className={index === 0 ? "font-mono text-lg mb-1" : "text-sm text-muted-foreground"}>
+              {line}
+            </p>
+          ))}
+          {correct && (
+            <p className="text-sm text-muted-foreground mt-2">
+              {formatTime(solveTime || 0)}
+            </p>
+          )}
+        </div>
+        
         <ShareDrawer 
           shareText={share_text}
           shareUrl="https://cinamini.app/game/cast-climb"

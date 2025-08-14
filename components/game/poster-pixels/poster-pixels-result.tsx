@@ -56,7 +56,7 @@ export default function PosterPixelsResult({
   // Calculate actual number of attempts before winning (wrong guesses + skips)
   const calculateAttemptsBeforeWin = () => {
     if (won) {
-      // For wins, count all guesses except the final correct one
+      // For wins, count all attempts (wrong guesses + skips) except the final correct one
       return Math.max(0, guesses.length - 1)
     } else {
       // For losses, count all skips (should be 4 for the standard 🔍🔍🔍🔍❌ format)
@@ -101,6 +101,7 @@ export default function PosterPixelsResult({
     const resultEmojis = generateResultEmojis()
     const bonusText = generateBonusText()
     const score = won ? finalScore : 0
+    const timeText = formatTime(timeElapsed)
     
     let shareText = `Poster Pixels #${puzzleNumber} ${resultEmojis}`
     
@@ -108,7 +109,12 @@ export default function PosterPixelsResult({
       shareText += `\n${bonusText}`
     }
     
-    shareText += `\n${score} pts`
+    shareText += `\n${timeText} • ${score} pts`
+    
+    // Add "I gave up!" if the user didn't win
+    if (!won) {
+      shareText += `\nI gave up!`
+    }
     
     return shareText
   }
@@ -239,6 +245,11 @@ export default function PosterPixelsResult({
               <div className="text-sm text-muted-foreground">
                 {formatTime(timeElapsed)} • {won ? finalScore : 0} pts
               </div>
+              {!won && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  I gave up!
+                </div>
+              )}
             </div>
             
             <ShareSection 

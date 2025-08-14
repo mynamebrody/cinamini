@@ -606,20 +606,35 @@ export default function CastClimbGame() {
     }
   }
   
-  // Fallback share text generation (matches original format)
+  // Fallback share text generation (matches centralized format)
   const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): string => {
+    const ACTORS_TO_SHOW = 4
     let pattern = ''
+    let resultText = ''
     
     if (isWin) {
-      // Show incorrect attempts followed by success
-      const incorrectAttempts = guesses.length - 1
-      pattern = "❌".repeat(incorrectAttempts) + "✅"
+      // New pattern logic to match centralized system:
+      // - Wrong attempts shown as person emojis 🧑 (one per wrong guess before the win)
+      // - Then a ✅ when correct
+      // - Then remaining reveals as 🎭 until 4 total reveals
+      const wrongAttemptsBeforeWin = Math.max(0, guesses.length - 1)
+      const remainingActors = Math.max(0, ACTORS_TO_SHOW - guesses.length)
+
+      pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + '✅' + '🎭'.repeat(remainingActors)
+
+      if (guesses.length === 1) {
+        resultText = '\nGot the 🎬 on the first try! 🥇'
+      } else {
+        resultText = `\nGot the 🎬 in ${guesses.length} guesses`
+      }
     } else {
-      // All attempts were incorrect  
-      pattern = "❌".repeat(guesses.length)
+      // Loss pattern: four faces then a red X
+      // Example: 🧑🧑🧑🧑❌
+      pattern = '🧑'.repeat(ACTORS_TO_SHOW) + '❌'
+      resultText = "\nWasn't able to get the movie."
     }
     
-    return `Cast Climb #${puzzleNumber} ${pattern}`
+    return `Cast Climb #${puzzleNumber} ${pattern}${resultText}`
   }
 
   const showStats = () => {
@@ -880,8 +895,8 @@ export default function CastClimbGame() {
                 />
                 <div className="space-y-2">
                   <Button
-                    variant="outline"
-                    className="w-full bg-cinema-red text-white border border-cinema-red hover:bg-white hover:text-cinema-red hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(var(--cinema-red)),2px_2px_0px_rgb(var(--cinema-red)),3px_3px_0px_rgb(var(--cinema-red)),4px_4px_0px_rgb(var(--cinema-red))]"
+                    variant="ghost"
+                    className="w-full bg-[#99251d] text-white border border-[#99251d] hover:bg-white hover:text-[#99251d] hover:border-[#99251d] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
                     onClick={revealedIndex >= puzzle.actors.length - 1 ? handleGiveUp : handleNextHint}
                     disabled={isGuessing}
                   >
@@ -978,15 +993,15 @@ export default function CastClimbGame() {
                 )}
                 <div className="bg-muted rounded-lg p-4">
                   <p className="font-mono text-lg">{result.share_text}</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {result.correct ? 
-                      `Solved in ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}` :
-                      `Failed after ${result.user_guesses.length} guess${result.user_guesses.length !== 1 ? 'es' : ''}`
-                    }
-                  </p>
                 </div>
                 <ShareSection 
-                  shareText={centralizedShareText || result.share_text}
+                  shareText={
+                    // Use local share text if it indicates a win but centralized says loss
+                    // This fixes the bug where winning on 4th attempt shows as loss
+                    (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
+                      ? result.share_text 
+                      : (centralizedShareText || result.share_text)
+                  }
                   shareUrl="https://cinamini.app/game/cast-climb"
                 />
               </CardContent>

@@ -141,6 +141,14 @@ export default function PosterPixelsGame() {
         }))
 
         if (localResult) {
+          // Restore the saved game state for display
+          setState(prev => ({
+            ...prev,
+            finalScore: localResult.result?.finalScore || 0,
+            timeElapsed: localResult.result?.timeElapsed || 0,
+            clarityLevel: localResult.result?.clarityLevel || 90,
+          }))
+          setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
@@ -163,13 +171,16 @@ export default function PosterPixelsGame() {
           puzzle: data.puzzle,
           hasPlayedToday: data.hasPlayedToday,
           won: data.hasPlayedToday && data.previousGame?.won,
-          timeElapsed: 0,
-          clarityLevel: getClarityPercentForIndex(initialIndex),
+          timeElapsed: data.previousGame?.totalTimeMs || 0,
+          clarityLevel: data.previousGame?.finalClarityLevel || getClarityPercentForIndex(initialIndex),
           currentLevelIndex: initialIndex,
           guesses: data.previousGame?.guesses || [],
+          finalScore: data.previousGame?.finalScore || 0,
         }))
 
         if (data.hasPlayedToday) {
+          // Set the total game time for display
+          setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
@@ -679,7 +690,7 @@ export default function PosterPixelsGame() {
             puzzleId={String(state.puzzle.id)}
             puzzleNumber={state.puzzle.puzzle_number || 1}
             won={state.won}
-            timeElapsed={gameStartTime > 0 ? Date.now() - gameStartTime : 0}
+            timeElapsed={state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0)}
             clarityLevel={state.clarityLevel}
             movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
             movieYear={
