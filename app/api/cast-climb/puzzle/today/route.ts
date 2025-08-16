@@ -24,7 +24,6 @@ export async function GET(request: NextRequest) {
     let lastActorsRevealed = 0
 
     // Try to get existing puzzle from database
-    console.log('Checking for existing Cast Climb puzzle for date:', todayString)
     const { data: existingPuzzle, error: puzzleError } = await supabase
       .from("cast_climb_puzzles")
       .select("*")
