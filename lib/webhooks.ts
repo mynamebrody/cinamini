@@ -44,11 +44,6 @@ export type GuessWebhookPayload = {
 
 export async function sendGuessWebhook(request: NextRequest, payload: Omit<GuessWebhookPayload, "timestamp" | "device">) {
   const url = process.env.CINAMINI_GUESS_WEBHOOK_URL
-  console.log("📡 WEBHOOK: sendGuessWebhook called", {
-    hasUrl: !!url,
-    url: url,
-    game: payload.game,
-    isAuthenticated: payload.user.isAuthenticated
   if (process.env.NODE_ENV !== "production") {
     console.log("📡 WEBHOOK: sendGuessWebhook called", {
       hasUrl: !!url,

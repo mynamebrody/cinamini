@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       const roundsCompleted = choices.length
       const correctRounds = choices.filter(c => c.correct).length
       const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
+      const finalResult = calculateFinalResult(choices)
 
       sendGuessWebhook(request, {
         event: 'guess',
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
         anonymous: true,
         rounds_completed: roundsCompleted,
         is_perfect_game: isPerfectGame,
-        final_result: isPerfectGame ? "perfect" : `eliminated_round_${correctRounds + 1}`,
+        final_result: finalResult,
       })
     }
 
