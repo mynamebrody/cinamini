@@ -30,13 +30,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // For anonymous users, send webhook but don't save to database
+      // For anonymous users - only send webhook if not all 5 rounds (to avoid duplicate with round-guess)
       const roundsCompleted = choices.length
       const correctRounds = choices.filter(c => c.correct).length
       const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
       const finalResult = calculateFinalResult(choices)
 
-      sendGuessWebhook(request, {
+      // Only send webhook if this is NOT a full 5-round completion (to avoid duplicating round-guess webhooks)
+      if (roundsCompleted < 5) {
+        sendGuessWebhook(request, {
         event: 'guess',
         game: 'budget-bracket',
         user: { isAuthenticated: false },
@@ -63,6 +65,7 @@ export async function POST(request: NextRequest) {
           gameEndTime: new Date().toISOString()
         },
       }).catch(error => console.error('Webhook error (anonymous final game):', error))
+      }
 
       return NextResponse.json({
         message: "Anonymous play - results not saved",
@@ -173,7 +176,9 @@ export async function POST(request: NextRequest) {
     })
 
     // Fire webhook for authenticated game submission (fire-and-forget) - final summary
-    sendGuessWebhook(request, {
+    // Only send if this is NOT a full 5-round completion (to avoid duplicating round-guess webhooks)
+    if (roundsCompleted < 5) {
+      sendGuessWebhook(request, {
       event: 'guess',
       game: 'budget-bracket',
       user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
@@ -206,6 +211,7 @@ export async function POST(request: NextRequest) {
         correctAnswers
       }
     }).catch(error => console.error('Webhook error (authenticated final game):', error))
+    }
 
     const response = {
       game_id: gameResult.id,

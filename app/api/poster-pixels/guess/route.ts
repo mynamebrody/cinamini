@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         score: scoreForGuess
       })
       
-      // Send webhook immediately with correct validation
+      // Send webhook for every guess/skip
       await sendGuessWebhook(request, {
         event: "guess",
         game: "poster-pixels",
@@ -162,6 +162,54 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Calculate game completion status  
+    const gameCompleted = isCorrect || guessNumber >= maxAttempts
+    
+    // Calculate score for this guess if it's correct
+    const scoreForGuess = isCorrect ? getScoreForClarityPercent(clarity_level) : 0
+
+    // Fire webhook for every guess/skip (BEFORE database operations to ensure it always sends)
+    console.log("🚀 POSTER PIXELS GUESS API: About to send authenticated webhook", {
+      gameId: game_id,
+      webhookUrl: process.env.CINAMINI_GUESS_WEBHOOK_URL,
+      hasWebhookUrl: !!process.env.CINAMINI_GUESS_WEBHOOK_URL,
+      guessNumber,
+      isCorrect,
+      gameCompleted
+    })
+
+    const webhookPromise = sendGuessWebhook(request, {
+      event: "guess",
+      game: "poster-pixels",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        gameId: game_id,
+        puzzleId: puzzle_id,
+        guessedMovieId: skipped ? null : guessed_movie_id,
+        guessedMovieTitle: skipped ? 'Skipped' : guessed_movie_title,
+        timeTakenMs: time_taken_ms,
+        clarityLevel: clarity_level,
+        skipped,
+        score: scoreForGuess,
+      },
+      progress: { 
+        guessNumber, 
+        maxAttempts,
+        gameCompleted,
+        isSkipped: skipped,
+      },
+      correctAnswer: { 
+        id: correctMovieId, 
+        isCorrect,
+        title: game.poster_pixels_puzzles.film_title || game.poster_pixels_puzzles.movie_data?.title,
+      },
+    })
+
+    // Fire webhook immediately (don't await - send in background)
+    webhookPromise.catch(error => {
+      console.error("🚀 POSTER PIXELS: Webhook failed:", error)
+    })
+
     // Insert the guess
     const { data: newGuess, error: guessError } = await supabase
       .from("poster_pixels_guesses")
@@ -190,7 +238,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If correct or max guesses reached, complete the game
-    if (isCorrect || guessNumber >= maxAttempts) {
+    if (gameCompleted) {
       updates.completed = true
       updates.won = isCorrect
       updates.end_time = new Date().toISOString()
@@ -208,56 +256,11 @@ export async function POST(request: NextRequest) {
       throw updateError
     }
 
-    // Calculate score for this guess if it's correct
-    const scoreForGuess = isCorrect ? getScoreForClarityPercent(clarity_level) : 0
-
-    // Fire webhook immediately after database operations (no delay)
-    console.log("🚀 POSTER PIXELS GUESS API: About to send authenticated webhook", {
-      gameId: game_id,
-      webhookUrl: process.env.CINAMINI_GUESS_WEBHOOK_URL,
-      hasWebhookUrl: !!process.env.CINAMINI_GUESS_WEBHOOK_URL,
-      guessNumber,
-      isCorrect,
-      gameCompleted: !!updates.completed
-    })
-
-    const webhookPromise = sendGuessWebhook(request, {
-      event: "guess",
-      game: "poster-pixels",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
-      guess: {
-        gameId: game_id,
-        puzzleId: puzzle_id,
-        guessedMovieId: skipped ? null : guessed_movie_id,
-        guessedMovieTitle: skipped ? 'Skipped' : guessed_movie_title,
-        timeTakenMs: time_taken_ms,
-        clarityLevel: clarity_level,
-        skipped,
-        score: scoreForGuess,
-      },
-      progress: { 
-        guessNumber, 
-        maxAttempts,
-        gameCompleted: !!updates.completed,
-        isSkipped: skipped,
-      },
-      correctAnswer: { 
-        id: correctMovieId, 
-        isCorrect,
-        title: game.poster_pixels_puzzles.film_title || game.poster_pixels_puzzles.movie_data?.title,
-      },
-    })
-
-    // Fire webhook immediately (don't await - send in background)
-    webhookPromise.catch(error => {
-      console.error("🚀 POSTER PIXELS: Webhook failed:", error)
-    })
-
     return NextResponse.json({
       guess: newGuess,
       isCorrect,
-      gameCompleted: updates.completed || false,
-      won: updates.won || false,
+      gameCompleted: gameCompleted,
+      won: isCorrect,
     })
   } catch (error) {
     console.error("Error processing guess:", error)
