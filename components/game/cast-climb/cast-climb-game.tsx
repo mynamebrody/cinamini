@@ -714,7 +714,10 @@ export default function CastClimbGame() {
       
       const shareData = generateShareData(puzzleNumber, guesses, isWin)
       // Note: generateShare is not available in this context, so we'll just return the centralized text
-      
+      // Use generateShare as a fallback if centralizedShareText is not available
+      if (typeof generateShare === "function") {
+        return centralizedShareText || generateShare(shareData)
+      }
       // Return centralized share text or fallback
       return centralizedShareText || generateFallbackShareText(puzzleNumber, guesses, isWin)
     } catch (error) {
