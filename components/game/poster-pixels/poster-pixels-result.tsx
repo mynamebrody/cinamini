@@ -84,36 +84,37 @@ export default function PosterPixelsResult({
 
   // Generate bonus text for special achievements
   function generateBonusText(): string {
-    if (!won) return ""
-    
-    const clarity = Math.round(clarityLevel)
-    let bonus = `Guess with ${clarity}% clarity`
-    
-    if (attemptsUsed === 0) {
-      bonus = `First guess! ${bonus}`
+    if (won) {
+      if (attemptsUsed === 0) {
+        return "First guess! 🥇"
+      } else if (attemptsUsed === 1) {
+        return "Second try! 🥈"
+      } else if (attemptsUsed === 2) {
+        return "Third time's the charm! 🥉"
+      } else {
+        return `Solved in ${attemptsUsed + 1} attempts! 🎯`
+      }
+    } else {
+      return "Better luck next time! 💪"
     }
-    
-    return bonus
   }
 
   // Fallback share text function for loading states or errors
   function generateFallbackShareText(): string {
+    const puzzleInfo = `Poster Pixels #${puzzleNumber}`
     const resultEmojis = generateResultEmojis()
     const bonusText = generateBonusText()
-    const score = won ? finalScore : 0
     const timeText = formatTime(timeElapsed)
     
-    let shareText = `Poster Pixels #${puzzleNumber} ${resultEmojis}`
+    let shareText = `${puzzleInfo} ${resultEmojis}\n${bonusText}`
     
-    if (bonusText) {
-      shareText += `\n${bonusText}`
-    }
-    
-    shareText += `\n${timeText} • ${score} pts`
-    
-    // Add "I gave up!" if the user didn't win
-    if (!won) {
-      shareText += `\nI gave up!`
+    if (finalScore > 0) {
+      shareText += `\n${timeText} • ${finalScore} pts`
+      
+      // Add "I gave up!" if the user didn't win
+      if (!won) {
+        shareText += `\nI gave up!`
+      }
     }
     
     return shareText
@@ -178,7 +179,7 @@ export default function PosterPixelsResult({
                       : guess.movieTitle === 'Gave Up' 
                         ? "border-orange-400 shadow-[1px_1px_0px_rgb(251,146,60),2px_2px_0px_rgb(251,146,60),3px_3px_0px_rgb(251,146,60),4px_4px_0px_rgb(251,146,60)]"
                         : guess.movieTitle === 'Skipped'
-                          ? "border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]"
+                          ? "border-gray-400 shadow-[1px_1px_0px_rgb(156,163,175),2px_2px_0px_rgb(156,163,175),3px_3px_0px_rgb(156,163,175),4px_4px_0px_rgb(156,163,175)]"
                           : "border-red-300 shadow-[1px_1px_0px_rgb(252,165,165),2px_2px_0px_rgb(252,165,165),3px_3px_0px_rgb(252,165,165),4px_4px_0px_rgb(252,165,165)]"
                   )}
                   style={{ borderRadius: 0 }}

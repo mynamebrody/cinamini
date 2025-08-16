@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
 import { getCountryFlag } from "@/lib/retitled"
+import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     
     if (!user) {
       // For anonymous users, we can't save guesses but we can validate and return results
-      const { puzzleId, guessFilmId } = await request.json()
+      const { puzzleId, guessFilmId, solveTimeMs } = await request.json()
       
       if (!puzzleId || !guessFilmId) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       // Get the puzzle to check the correct answer
       const { data: puzzle, error: puzzleError } = await supabase
         .from("retitled_puzzles")
-        .select("*")
+        .select("*, puzzle_number")
         .eq("id", puzzleId)
         .single()
 
@@ -38,6 +39,32 @@ export async function POST(request: NextRequest) {
       if (!correctMovie) {
         return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
       }
+
+      // Get the guessed movie data from TMDB for webhook
+      const guessedMovie = await getMovieById(guessFilmId)
+      const guessedMovieTitle = guessedMovie?.title || 'Unknown Movie'
+
+      // Fire webhook for anonymous guess (fire-and-forget)
+      sendGuessWebhook(request, {
+        event: "guess",
+        game: "retitled",
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId,
+          puzzleNumber: puzzle.puzzle_number,
+          guessFilmId,
+          guessedMovieTitle,
+          solveTimeMs,
+        },
+        progress: { attemptNumber: 1 },
+        correctAnswer: {
+          id: puzzle.film_id,
+          title: correctMovie.title,
+          originalTitle: correctMovie.original_title,
+          releaseYear: getReleaseYear(correctMovie.release_date),
+          isCorrect,
+        },
+      }).catch(error => console.error('Webhook error (anonymous):', error))
 
       return NextResponse.json({
         correct: isCorrect,
@@ -74,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Get the puzzle to check the correct answer
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("*")
+      .select("*, puzzle_number")
       .eq("id", puzzleId)
       .single()
 
@@ -216,6 +243,32 @@ export async function POST(request: NextRequest) {
     if (!correctMovie) {
       return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
     }
+
+    // Get the guessed movie data from TMDB for webhook
+    const guessedMovie = await getMovieById(guessFilmId)
+    const guessedMovieTitle = guessedMovie?.title || 'Unknown Movie'
+
+    // Fire webhook for authenticated guess (fire-and-forget)
+    sendGuessWebhook(request, {
+      event: "guess",
+      game: "retitled",
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId,
+        puzzleNumber: puzzle.puzzle_number,
+        guessFilmId,
+        guessedMovieTitle,
+        solveTimeMs,
+      },
+      progress: { attemptNumber: 1 },
+      correctAnswer: {
+        id: puzzle.film_id,
+        title: correctMovie.title,
+        originalTitle: correctMovie.original_title,
+        releaseYear: getReleaseYear(correctMovie.release_date),
+        isCorrect,
+      },
+    }).catch(error => console.error('Webhook error (authenticated):', error))
 
     return NextResponse.json({
       correct: isCorrect,

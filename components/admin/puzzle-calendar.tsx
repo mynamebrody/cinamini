@@ -58,7 +58,7 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
   const isDraggingDisabled = !puzzleDate || puzzleDate <= today
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: puzzle.id,
+    id: `${puzzle.game_type}-${puzzle.id}`,
     data: puzzle,
     disabled: isDraggingDisabled
   })
@@ -142,7 +142,7 @@ function DroppableDate({ date, puzzles, onAddPuzzle, onPuzzleClick }: { date: Da
       </div>
       <div className="space-y-1.5">
         {puzzles.map(puzzle => (
-          <DraggablePuzzle key={puzzle.id} puzzle={puzzle} onPuzzleClick={onPuzzleClick} />
+          <DraggablePuzzle key={`${puzzle.game_type}-${puzzle.id}`} puzzle={puzzle} onPuzzleClick={onPuzzleClick} />
         ))}
       </div>
       {puzzles.length === 0 && (
@@ -389,7 +389,7 @@ export function PuzzleCalendar({ onDateClick, onPuzzleClick, onAddPuzzle }: Puzz
                 {puzzles.drafts.length > 0 ? (
                   puzzles.drafts.map((puzzle) => (
                     <motion.div
-                      key={puzzle.id}
+                      key={`${puzzle.game_type}-${puzzle.id}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.2 }}

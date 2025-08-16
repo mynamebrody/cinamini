@@ -30,6 +30,14 @@ Cast member guessing game with progressive reveals:
 4. Players can keep guessing until they run out of actors (❌❌❌✅)
 5. Try to guess with as few hints as possible for better scores!
 
+#### **Poster Pixels** 🎨
+Movie poster guessing game with progressive clarity:
+1. Start with heavily pixelated movie poster (5% clarity)
+2. Guess the movie or reveal more clarity
+3. 5 clarity levels: 5%, 15%, 35%, 65%, 100%
+4. Maximum 5 attempts to identify the movie
+5. Scoring: 1000 pts (5%), 750 pts (15%), 500 pts (35%), 250 pts (65%), 100 pts (100%)
+
 ## Development Commands
 
 ### Core Development
@@ -64,9 +72,11 @@ app/                          # Next.js App Router
 ├── api/                     # API routes
 │   ├── budget-bracket/      # Budget Bracket API endpoints
 │   ├── cast-climb/          # Cast Climb API endpoints  
+│   ├── poster-pixels/       # Poster Pixels API endpoints
 │   ├── retitled/            # Retitled API endpoints
 │   ├── games/              # Multi-game status API
 │   ├── movies/search/      # Movie search API
+│   ├── share/              # Centralized share card generation
 │   └── user/               # User profile and favorites API
 ├── auth/                   # Authentication pages
 │   ├── login/page.tsx
@@ -84,6 +94,7 @@ components/                   # React components
 ├── game/                    # Game-specific components
 │   ├── budget-bracket/      # Budget comparison game components
 │   ├── cast-climb/          # Cast guessing game components
+│   ├── poster-pixels/       # Poster clarity game components
 │   └── retitle/            # Localized title game components
 ├── auth-dialog.tsx         # Authentication modal
 ├── game-card.tsx           # Homepage game cards
@@ -100,7 +111,12 @@ lib/                         # Utilities and configurations
 ├── game-seeding.ts         # Unified seeding system for all games
 ├── budget-bracket.ts       # Budget Bracket game logic
 ├── cast-climb.ts           # Cast Climb game logic
+├── poster-pixels.ts        # Poster Pixels game logic
+├── poster-pixels-config.ts # Poster Pixels configuration
 ├── retitled.ts             # Retitled game logic
+├── local-game-storage.ts   # Anonymous user local storage
+├── webhooks.ts             # Webhook integration utilities
+├── sharing/                # Centralized sharing system
 ├── tmdb.ts                 # TMDB API utilities
 ├── tmdb-trending.ts        # Trending movies caching
 └── actions.ts              # Server actions
@@ -400,6 +416,58 @@ const selectedMovie = rng.choice(moviePool);
 --text-secondary: #gray-400;
 ```
 
+### 3D Box Shadow Styling Pattern
+
+The app uses a distinctive 3D layered shadow effect throughout the UI to create depth and visual interest:
+
+```css
+/* Standard 3D shadow effect (used on most elements) */
+.shadow-3d {
+  shadow: [1px_1px_0px_rgb(153,37,29),
+           2px_2px_0px_rgb(153,37,29),
+           3px_3px_0px_rgb(153,37,29),
+           4px_4px_0px_rgb(153,37,29)];
+}
+
+/* Hover state with elevated shadow */
+.shadow-3d-hover {
+  shadow: [2px_2px_0px_rgb(153,37,29),
+           4px_4px_0px_rgb(153,37,29),
+           6px_6px_0px_rgb(153,37,29),
+           8px_8px_0px_rgb(153,37,29)];
+}
+
+/* Active/pressed state with reduced shadow */
+.shadow-3d-active {
+  shadow: [1px_1px_0px_rgb(153,37,29),
+           2px_2px_0px_rgb(153,37,29)];
+  transform: translate(2px, 2px);
+}
+```
+
+**Common Applications:**
+- Game cards on homepage
+- Modal dialogs and overlays
+- Buttons and interactive elements
+- Input fields and form controls
+- Stats cards and result displays
+- Navigation elements
+
+**Implementation Example:**
+```tsx
+<button className="bg-cinema-red text-white px-6 py-3 rounded-lg 
+                   shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),
+                           3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]
+                   hover:shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29),
+                                 6px_6px_0px_rgb(153,37,29),8px_8px_0px_rgb(153,37,29)]
+                   hover:translate-y-[-2px]
+                   active:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]
+                   active:translate-x-[2px] active:translate-y-[2px]
+                   transition-all duration-150">
+  Play Game
+</button>
+```
+
 ### Mobile-First Patterns
 - **Touch Targets**: Minimum 44px tap areas
 - **Haptic Feedback**: Use `navigator.vibrate()` for correct/incorrect
@@ -488,6 +556,9 @@ TMDB_BASE_URL=https://api.themoviedb.org/3
 
 # Share card generation
 SHARE_CARD_SECRET=  # For secure share URLs
+
+# Webhook Integration (Zapier/Make/n8n)
+CINAMINI_GUESS_WEBHOOK_URL=  # URL for guess event webhooks
 ```
 
 ## Development Workflow
@@ -516,12 +587,161 @@ SHARE_CARD_SECRET=  # For secure share URLs
 - **Stats Modals**: Use `setGameState('stats')` pattern, never redirect to `/stats` from games
 - **Share Functionality**: Include clipboard fallback and mobile Web Share API support
 
+## Webhook Integration System
+
+### Overview
+The app includes a comprehensive webhook system for tracking game events and user interactions across all games. This enables integration with external services like Zapier, Make, or n8n for analytics, notifications, and automation.
+
+### Webhook Configuration
+```bash
+# Set webhook URL in environment variable
+CINAMINI_GUESS_WEBHOOK_URL=https://hooks.zapier.com/hooks/catch/xxx/yyy/
+```
+
+### Webhook Payload Structure
+```typescript
+export type GuessWebhookPayload = {
+  event: "guess"
+  game: "retitled" | "poster-pixels" | "cast-climb" | "budget-bracket"
+  timestamp: string // ISO 8601 format
+  user: {
+    isAuthenticated: boolean
+    id?: string | null       // User ID if authenticated
+    email?: string | null    // User email if authenticated
+  }
+  device: {
+    userAgent: string | null
+    deviceType: "mobile" | "tablet" | "desktop"
+    browser: string          // chrome, safari, firefox, edge, etc.
+    ipAddress: string | null // Client IP from headers
+  }
+  guess: Record<string, any> // Game-specific guess details
+  progress?: Record<string, any> // Game progress info
+  correctAnswer?: Record<string, any> // Answer details
+}
+```
+
+### Game-Specific Webhook Data
+
+#### Retitled Webhooks
+```typescript
+guess: {
+  gameId: string         // Unique game session ID
+  puzzleId: number       // Puzzle number (not UUID)
+  guessedMovieId: number // TMDB movie ID guessed
+  guessedMovieTitle: string
+  timeTakenMs: number | null
+  score: number          // Points earned
+}
+progress: {
+  isCorrect: boolean
+  gameCompleted: boolean
+}
+```
+
+#### Cast Climb Webhooks
+```typescript
+guess: {
+  gameId: string         // Format: "{userId}-{puzzleNumber}"
+  puzzleId: number       // Puzzle number (not UUID)
+  guessedMovieId: number
+  guessedMovieTitle: string
+  timeTakenMs: number | null
+  actorsRevealed: number // 1-4 actors shown
+  skipped: boolean       // If user skipped to next actor
+  score: number          // 1000, 750, 500, 250, or 0
+}
+progress: {
+  attemptNumber: number  // Current attempt count
+  maxAttempts: number    // Usually 4 (one per actor)
+  gameCompleted: boolean
+  isSkipped: boolean
+  totalAttempts: number
+}
+```
+
+#### Budget Bracket Webhooks
+```typescript
+guess: {
+  gameId: string         // Session ID
+  puzzleId: number       // Puzzle number
+  round: number          // 1-5
+  choices: Array<{       // All choices made
+    round: number
+    pairIndex: number
+    selectedMovieId: number
+    selectedMovieTitle: string
+    isCorrect: boolean
+  }>
+  timeTakenMs: number | null
+}
+progress: {
+  roundsCompleted: number
+  isPerfectGame: boolean
+  finalResult: string    // "perfect" or "eliminated_round_X"
+}
+```
+
+#### Poster Pixels Webhooks
+```typescript
+guess: {
+  gameId: string         // Session ID
+  puzzleId: number       // Puzzle number
+  guessedMovieId: number
+  guessedMovieTitle: string
+  clarityLevel: number   // 5, 15, 35, 65, or 100
+  timeTakenMs: number | null
+  score: number          // Points based on clarity level
+}
+progress: {
+  attemptNumber: number
+  maxAttempts: number    // Usually 5
+  gameCompleted: boolean
+  isCorrect: boolean
+}
+```
+
+### Anonymous User Support
+- Webhooks fire for both authenticated and anonymous users
+- Anonymous users have `isAuthenticated: false` and no `id` or `email`
+- Game ID for anonymous users uses format: `anonymous-{puzzleNumber}`
+- Anonymous gameplay is tracked for analytics but not saved to database
+
+### Webhook Implementation Details
+- **Timeout**: 2-second timeout for webhook requests (non-blocking)
+- **Fire-and-forget**: Webhooks are sent asynchronously, don't block gameplay
+- **Error Handling**: Webhook failures are logged but don't affect game flow
+- **IP Detection**: Attempts to get client IP from various headers (x-forwarded-for, x-real-ip, cf-connecting-ip)
+- **User Agent Parsing**: Basic device type and browser detection from UA string
+
+### Testing Webhooks Locally
+```bash
+# Use ngrok to expose local webhook endpoint
+ngrok http 3000
+
+# Or use the quick-dev command which includes ngrok
+npm run quick-dev
+
+# Test with webhook.site or requestbin for debugging
+CINAMINI_GUESS_WEBHOOK_URL=https://webhook.site/your-unique-url
+```
+
+### Common Webhook Use Cases
+- **Analytics**: Track game completion rates, difficulty metrics
+- **Notifications**: Send alerts for perfect games or streaks
+- **Leaderboards**: Update external leaderboard systems
+- **Marketing**: Trigger emails for milestone achievements
+- **Data Export**: Stream game data to data warehouses
+- **A/B Testing**: Track experimental feature usage
+
 ## Performance Considerations
 
 - **TMDB Caching**: Store film data in database after first fetch
 - **Image Optimization**: Use Next.js Image component for film posters
 - **Bundle Size**: Import only needed Radix UI components
 - **Database Indexing**: Index on `puzzle_date`, `user_id`, `created_at`
+- **Webhook Performance**: Non-blocking with 2s timeout
+- **Anonymous Play**: Minimal server processing for non-authenticated users
 
 ## Current Status & Roadmap
 
@@ -547,6 +767,45 @@ SHARE_CARD_SECRET=  # For secure share URLs
 - **Advanced Features**: Tournaments, custom puzzles, user-generated content
 - **Monetization**: Premium features, ad-free experience, exclusive games
 
+## Common Development Patterns
+
+### Database Precision Types
+When defining numeric fields in database migrations, always specify precision:
+```sql
+-- Good: Specifies precision
+average_actors_revealed NUMERIC(3,2)  -- 3 digits total, 2 after decimal
+average_round_reached DECIMAL(3,2)
+
+-- Avoid: No precision specified
+average_score NUMERIC  -- Can cause TypeScript type issues
+```
+
+### Race Condition Prevention
+- **Webhook Timing**: Fire webhooks immediately, don't await
+- **State Updates**: Update local state before async operations
+- **Database Writes**: Use upsert for stats to prevent duplicate key errors
+
+### Error Recovery Patterns
+```typescript
+// Webhook error handling (non-blocking)
+const webhookPromise = sendGuessWebhook(request, payload)
+webhookPromise.catch(error => {
+  console.error("Webhook failed:", error)
+  // Don't throw - let game continue
+})
+
+// Database error recovery
+if (statsError) {
+  console.error('Stats update failed:', statsError)
+  // Continue - don't fail the whole request
+}
+```
+
+### Client-Server Synchronization
+- **Anonymous Users**: Client handles game logic, server fires webhooks
+- **Authenticated Users**: Server handles game logic and persistence
+- **Hybrid Approach**: Always call API to maintain consistent analytics
+
 ## Testing Strategy
 
 ### Game-Specific Testing
@@ -571,3 +830,10 @@ SHARE_CARD_SECRET=  # For secure share URLs
 - **Database Queries**: Test query performance with indexes
 - **TMDB Caching**: Verify trending movie cache effectiveness
 - **Image Loading**: Test poster loading and Next.js Image optimization
+
+### Edge Case Testing
+- **Skip vs Give Up**: Ensure skips don't mark game as completed
+- **Max Attempts**: Test behavior at maximum attempt limits
+- **Time Zones**: Verify UTC midnight puzzle transitions
+- **Network Failures**: Test offline gameplay for anonymous users
+- **Concurrent Play**: Test multiple tabs/devices with same account

@@ -183,7 +183,7 @@ export function PuzzleDetailDialog({
             const Icon = config.icon
 
             return (
-              <div key={puzzle.id} className={cn("rounded-lg p-4 -mx-2", index > 0 && "mt-4", config.bgColor)}>
+              <div key={`${puzzle.game_type}-${puzzle.id}`} className={cn("rounded-lg p-4 -mx-2", index > 0 && "mt-4", config.bgColor)}>
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">

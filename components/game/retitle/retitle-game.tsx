@@ -121,7 +121,9 @@ export default function RetitleGame() {
             setModalState('howtoplay')
           }
         }
-      } else if (user && data.hasPlayed) {
+      } else if (user) {
+        // Handle authenticated user states
+        if (data.hasPlayed) {
         // User has already played today, show the result
         setPuzzle(data.puzzle) // Set puzzle data for the result display
         
@@ -185,13 +187,25 @@ export default function RetitleGame() {
               }
             })
           }
+          }
+          setGameState('completed')
+        } else {
+          // User hasn't played today
+          setPuzzle(data.puzzle)
+          setGameState('ready')
+          
+          // Show how-to-play modal only if they've never played Retitled before
+          if (!data.hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
         }
-        setGameState('completed')
       } else {
+        // Anonymous user
         setPuzzle(data.puzzle)
+        setGameState('ready')
+        
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('retitled-played')
-        setGameState('ready')
         if (!hasPlayedBefore) {
           setModalState('howtoplay')
         }

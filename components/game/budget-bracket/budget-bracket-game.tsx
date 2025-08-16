@@ -142,13 +142,26 @@ export default function BudgetBracketGame() {
             setModalState('howtoplay')
           }
         }
-      } else if (user && puzzleData.has_played) {
-        // Fetch complete game result for authenticated users who have already played
-        await fetchCompletedGameResult(puzzleData.id)
+      } else if (user) {
+        // Handle authenticated user states
+        if (puzzleData.has_played) {
+          // Fetch complete game result for authenticated users who have already played
+          await fetchCompletedGameResult(puzzleData.id)
+        } else {
+          // User hasn't played today
+          setGameState('ready')
+          
+          // Show how-to-play modal only if they've never played Budget Bracket before
+          if (!puzzleData.hasPlayedBefore) {
+            setModalState('howtoplay')
+          }
+        }
       } else {
+        // Anonymous user
+        setGameState('ready')
+        
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
-        setGameState('ready')
         if (!hasPlayedBefore) {
           setModalState('howtoplay')
         }
@@ -194,30 +207,33 @@ export default function BudgetBracketGame() {
 
   const fetchMovieBudgetsAndContinue = async (choices: GameChoice[], chosenMovieTmdbId: number) => {
     try {
-      const currentPair = puzzle!.pairs[currentRound - 1]
-      const response = await fetch('/api/budget-bracket/movie-budgets', {
+      // Calculate cumulative time from game start
+      const cumulativeTime = Date.now() - gameStartTime
+      
+      // Get the current round's choice to send time data
+      const currentChoice = choices[choices.length - 1]
+      
+      // Submit the round guess with webhook
+      const response = await fetch('/api/budget-bracket/round-guess', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          movieA_tmdb_id: currentPair.movieA.tmdb_id,
-          movieB_tmdb_id: currentPair.movieB.tmdb_id
+          puzzle_id: puzzle!.id,
+          puzzle_number: puzzle!.puzzle_number,
+          round: currentRound,
+          chosen_movie_tmdb_id: chosenMovieTmdbId,
+          round_time_ms: currentChoice.time_taken_ms,
+          cumulative_time_ms: cumulativeTime,
+          game_choices: gameChoices // Send previous choices for progress tracking
         })
       })
 
       if (response.ok) {
-        const budgetData = await response.json()
-        const movieABudget = budgetData.movieA.budget
-        const movieBBudget = budgetData.movieB.budget
+        const roundResult = await response.json()
         
-        // Determine if the choice was correct
-        const chosenMovieA = chosenMovieTmdbId === currentPair.movieA.tmdb_id
-        const chosenBudget = chosenMovieA ? movieABudget : movieBBudget
-        const otherBudget = chosenMovieA ? movieBBudget : movieABudget
-        const isCorrect = chosenBudget > otherBudget
-        
-        // Update the choice with the correct status
+        // Update the choice with the correct status from server
         const updatedChoices = choices.map((choice, index) => 
-          index === choices.length - 1 ? { ...choice, correct: isCorrect } : choice
+          index === choices.length - 1 ? { ...choice, correct: roundResult.correct } : choice
         )
         setGameChoices(updatedChoices)
         
@@ -225,34 +241,51 @@ export default function BudgetBracketGame() {
         if (currentRound < 5) {
           setCurrentRound(currentRound + 1)
         } else {
-          // Game complete after 5 rounds
+          // Game complete after 5 rounds - also submit final game
           submitGame(updatedChoices)
         }
       } else {
-        // API error - assume correct for now and continue
-        const updatedChoices = choices.map((choice, index) => 
-          index === choices.length - 1 ? { ...choice, correct: true } : choice
-        )
-        setGameChoices(updatedChoices)
+        // API error - fall back to the old budget checking method
+        console.error('Round guess API error, falling back to movie-budgets')
+        const currentPair = puzzle!.pairs[currentRound - 1]
+        const fallbackResponse = await fetch('/api/budget-bracket/movie-budgets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            movieA_tmdb_id: currentPair.movieA.tmdb_id,
+            movieB_tmdb_id: currentPair.movieB.tmdb_id
+          })
+        })
+
+        if (fallbackResponse.ok) {
+          const budgetData = await fallbackResponse.json()
+          const movieABudget = budgetData.movieA.budget
+          const movieBBudget = budgetData.movieB.budget
+          
+          const chosenMovieA = chosenMovieTmdbId === currentPair.movieA.tmdb_id
+          const chosenBudget = chosenMovieA ? movieABudget : movieBBudget
+          const otherBudget = chosenMovieA ? movieBBudget : movieABudget
+          const isCorrect = chosenBudget > otherBudget
+          
+          const updatedChoices = choices.map((choice, index) => 
+            index === choices.length - 1 ? { ...choice, correct: isCorrect } : choice
+          )
+          setGameChoices(updatedChoices)
+        }
         
-        if (currentRound < 4) {
+        if (currentRound < 5) {
           setCurrentRound(currentRound + 1)
         } else {
-          submitGame(updatedChoices)
+          submitGame(choices)
         }
       }
     } catch (error) {
-      console.error('Error fetching budget data for game logic:', error)
-      // Error - assume correct for now and continue
-      const updatedChoices = choices.map((choice, index) => 
-        index === choices.length - 1 ? { ...choice, correct: true } : choice
-      )
-      setGameChoices(updatedChoices)
-      
+      console.error('Error in round submission:', error)
+      // Error fallback - continue game
       if (currentRound < 5) {
         setCurrentRound(currentRound + 1)
       } else {
-        submitGame(updatedChoices)
+        submitGame(choices)
       }
     }
   }
@@ -264,21 +297,34 @@ export default function BudgetBracketGame() {
       
       console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
 
+      // Always call the API to trigger webhooks for both anonymous and authenticated users
+      const response = await fetch('/api/budget-bracket/submit-game', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          puzzle_id: puzzle!.id,
+          choices,
+          total_duration_ms: totalDuration
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'Failed to submit game')
+      }
+
+      const result: GameResult = await response.json()
+
       if (isAnonymous) {
-        // For anonymous users, calculate results locally
-        // Calculate how many answers were correct
+        // For anonymous users, also save to local storage and handle the result differently
         const correctAnswers = choices.filter(choice => choice.correct).length
-        
-        // Determine the final result based on correct answers
         let final_result: string
         if (correctAnswers === 5) {
           final_result = 'perfect'
         } else {
-          // Show how many out of 5 were correct
           final_result = `${correctAnswers}_out_of_5`
         }
-        
-        // Create a detailed game result for anonymous users
+
         const revealedPairs = choices.map((choice, index) => {
           const pair = puzzle!.pairs[index]
           return {
@@ -308,47 +354,37 @@ export default function BudgetBracketGame() {
           }
         })
 
+        // Create database-compatible structure for easier migration later
         const anonymousResult: GameResult = {
-          game_id: Date.now(), // Temporary ID
+          game_id: Date.now(), // Temporary ID for display
           rounds_completed: 5, // Always 5 rounds now
           final_result,
           is_perfect_game: correctAnswers === 5,
           total_duration_ms: totalDuration,
           revealed_pairs: revealedPairs,
+          // Database-compatible game data (budget_bracket_games table)
+          game_data: {
+            puzzle_id: puzzle!.id,
+            rounds_completed: 5,
+            final_result,
+            choices: choices, // Already in correct format for jsonb column
+            total_duration_ms: totalDuration,
+            completed_at: new Date().toISOString(),
+          },
           updated_stats: {
-            current_streak: 1, // First game for anonymous user always starts streak at 1
+            current_streak: 1, // Anonymous users start with streak of 1
             games_played: 1,
             perfect_games: correctAnswers === 5 ? 1 : 0
           }
         }
-        
+
         // Save to local storage
         localGameStorage.saveDailyResult('budget-bracket', anonymousResult)
         
         setGameResult(anonymousResult)
         setGameState('completed')
       } else {
-        // For authenticated users, submit to server
-        if (!user) {
-          throw new Error('Cannot submit game for unauthenticated users')
-        }
-        
-        const response = await fetch('/api/budget-bracket/submit-game', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            puzzle_id: puzzle!.id,
-            choices,
-            total_duration_ms: totalDuration
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-          throw new Error(errorData.error || 'Failed to submit game')
-        }
-
-        const result: GameResult = await response.json()
+        // For authenticated users, use the server response directly
         setGameResult(result)
         setGameState('completed')
       }

@@ -183,43 +183,66 @@ export default function CastClimbGame() {
             setModalState('howtoplay')
           }
         }
-      } else if (user && data.hasPlayed) {
-        // User has already played today, show result
-        const userGuesses = data.userGuesses || []
-        setUserGuesses(userGuesses)
-        
-        let isWin = false
-        let shareText = ""
-        
-        if (userGuesses.length > 0) {
-          isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
-          shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
+      } else if (user) {
+        // Handle authenticated user states
+        if (data.hasPlayed) {
+          // User has completed the game today, show result
+          const userGuesses = data.userGuesses || []
+          setUserGuesses(userGuesses)
+          
+          let isWin = false
+          let shareText = ""
+          
+          if (userGuesses.length > 0) {
+            isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
+            shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
+          } else {
+            // No guesses found, but user has played - this shouldn't normally happen
+            console.warn("User has played Cast Climb but no guesses found")
+            shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
+          }
+          
+          // Set up result state
+          setResult({
+            correct: isWin,
+            puzzle: data.puzzle,
+            user_guesses: userGuesses,
+            stats: {
+              games_played: 0, // Will be filled by stats API
+              games_won: 0,
+              current_streak: 0,
+              longest_streak: 0,
+              perfect_games: 0,
+              average_actors_revealed: 0
+            },
+            share_text: shareText
+          })
+          setGameState("completed")
+        } else if (data.hasStarted) {
+          // User has started but not completed the game, resume from where they left off
+          const userGuesses = data.userGuesses || []
+          setUserGuesses(userGuesses)
+          setRevealedIndex(data.lastActorsRevealed - 1) // Convert to 0-based index
+          setGameState("playing")
+          setStartTime(Date.now()) // Reset timer for resumed game
+          
+          // Don't show how-to-play modal when resuming
+          setModalState("none")
         } else {
-          // No guesses found, but user has played - this shouldn't normally happen
-          console.warn("User has played Cast Climb but no guesses found")
-          shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
+          // User hasn't started the game today
+          setGameState("ready")
+          
+          // Show how-to-play modal only if they've never played Cast Climb before
+          if (!data.hasPlayedBefore) {
+            setModalState("howtoplay")
+          }
         }
-        
-        // Set up result state
-        setResult({
-          correct: isWin,
-          puzzle: data.puzzle,
-          user_guesses: userGuesses,
-          stats: {
-            games_played: 0, // Will be filled by stats API
-            games_won: 0,
-            current_streak: 0,
-            longest_streak: 0,
-            perfect_games: 0,
-            average_actors_revealed: 0
-          },
-          share_text: shareText
-        })
-        setGameState("completed")
       } else {
+        // Anonymous user
+        setGameState("ready")
+        
         // Check if this is the user's first time playing
         const hasPlayedBefore = localStorage.getItem('cast-climb-played')
-        setGameState("ready")
         if (!hasPlayedBefore) {
           setModalState("howtoplay")
         }
@@ -257,7 +280,26 @@ export default function CastClimbGame() {
 
     try {
       if (isAnonymous) {
-        // For anonymous users, handle game logic locally
+        // For anonymous users, call API to trigger webhook but handle game logic locally
+        const response = await fetch("/api/cast-climb/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
+            guessFilmId: movie.id,
+            guessFilmTitle: movie.title,
+            guessFilmYear: movie.releaseYear,
+            actorsRevealed,
+            solveTimeMs,
+            isSkip: false
+          })
+        })
+        
+        // We don't check response.ok for anonymous users since they may get a 401
+        // Just continue with local logic
+        
         const isCorrect = movie.id === puzzle.filmId
         
         const newGuess: CastClimbGuess = {
@@ -267,7 +309,9 @@ export default function CastClimbGame() {
           guessFilmYear: movie.releaseYear || null,
           isCorrect,
           actorsRevealed,
-          solveTimeMs
+          solveTimeMs,
+          attemptNumber: userGuesses.length + 1,
+          createdAt: new Date().toISOString()
         }
         
         const newGuesses = [...userGuesses, newGuess]
@@ -373,7 +417,30 @@ export default function CastClimbGame() {
 
     try {
       if (isAnonymous) {
-        // For anonymous users, handle hint skipping locally
+        // For anonymous users, call the API to trigger webhooks, then handle locally
+        try {
+          await fetch("/api/cast-climb/guess", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              puzzleId: puzzle.id,
+              guessFilmId: -1,
+              guessFilmTitle: "_NEXT_HINT_SKIP_",
+              guessFilmYear: "Unknown",
+              actorsRevealed,
+              solveTimeMs,
+              isSkip: true
+            })
+          })
+          // API call succeeds or fails, we continue with local logic
+        } catch (webhookError) {
+          console.warn("Webhook call failed for anonymous skip:", webhookError)
+          // Continue with local logic even if webhook fails
+        }
+        
+        // Handle hint skipping locally
         const newGuess: CastClimbGuess = {
           id: Date.now().toString(),
           guessFilmId: -1,
@@ -381,7 +448,9 @@ export default function CastClimbGame() {
           guessFilmYear: "Unknown",
           isCorrect: false,
           actorsRevealed,
-          solveTimeMs
+          solveTimeMs,
+          attemptNumber: userGuesses.length + 1,
+          createdAt: new Date().toISOString()
         }
         
         const newGuesses = [...userGuesses, newGuess]
@@ -479,7 +548,30 @@ export default function CastClimbGame() {
     
     try {
       if (isAnonymous) {
-        // For anonymous users, handle give up locally
+        // For anonymous users, call API to trigger webhook, then handle give up locally
+        try {
+          await fetch("/api/cast-climb/guess", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              puzzleId: puzzle.id,
+              guessFilmId: -1,
+              guessFilmTitle: "_GIVE_UP_",
+              guessFilmYear: "Unknown",
+              actorsRevealed: revealedIndex + 1,
+              solveTimeMs: Date.now() - startTime,
+              isSkip: true
+            })
+          })
+          // API call succeeds or fails, we continue with local logic
+        } catch (webhookError) {
+          console.warn("Webhook call failed for anonymous give up:", webhookError)
+          // Continue with local logic even if webhook fails
+        }
+        
+        // Handle give up locally
         const currentGuessCount = userGuesses.length
         const maxAttempts = puzzle.totalActors || 4
         
@@ -493,7 +585,9 @@ export default function CastClimbGame() {
             guessFilmYear: null,
             isCorrect: false,
             actorsRevealed: i + 1,
-            solveTimeMs: Date.now() - startTime
+            solveTimeMs: Date.now() - startTime,
+            attemptNumber: i + 1,
+            createdAt: new Date().toISOString()
           })
         }
         
@@ -619,8 +713,11 @@ export default function CastClimbGame() {
       }
       
       const shareData = generateShareData(puzzleNumber, guesses, isWin)
-      await generateShare(shareData)
-      
+      // Note: generateShare is not available in this context, so we'll just return the centralized text
+      // Use generateShare as a fallback if centralizedShareText is not available
+      if (typeof generateShare === "function") {
+        return centralizedShareText || generateShare(shareData)
+      }
       // Return centralized share text or fallback
       return centralizedShareText || generateFallbackShareText(puzzleNumber, guesses, isWin)
     } catch (error) {
