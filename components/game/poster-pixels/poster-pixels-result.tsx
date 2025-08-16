@@ -78,7 +78,7 @@ export default function PosterPixelsResult({
       return `${magnifyingGlasses}✅${remainingAliens}`
     } else {
       // If lost/gave up, show 4 magnifying glasses and one X (always 5 total)
-      return "🔍��🔍🔍❌"
+      return "🔍🔍🔍🔍❌"
     }
   }
 
