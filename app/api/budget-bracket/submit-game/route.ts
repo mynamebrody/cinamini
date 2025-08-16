@@ -35,12 +35,13 @@ export async function POST(request: NextRequest) {
       const correctRounds = choices.filter(c => c.correct).length
       const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
 
-      await sendGuessWebhook(request, {
+      sendGuessWebhook(request, {
         event: 'guess',
         game: 'budget-bracket',
         user: { isAuthenticated: false },
         guess: {
           puzzleId: puzzle_id,
+          gameType: 'final_summary',
           choices: choices.map(c => ({
             round: c.round,
             chosenMovieTmdbId: c.chosen_movie,
@@ -50,15 +51,17 @@ export async function POST(request: NextRequest) {
           totalDurationMs: total_duration_ms,
           roundsCompleted,
           correctRounds,
-          isPerfectGame
+          isPerfectGame,
+          finalResult
         },
         progress: { 
           roundsCompleted,
           correctRounds,
           isPerfectGame,
           isGameComplete: true,
+          gameEndTime: new Date().toISOString()
         },
-      })
+      }).catch(error => console.error('Webhook error (anonymous final game):', error))
 
       return NextResponse.json({
         message: "Anonymous play - results not saved",
@@ -168,13 +171,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Fire webhook for authenticated game submission
-    await sendGuessWebhook(request, {
+    // Fire webhook for authenticated game submission (fire-and-forget) - final summary
+    sendGuessWebhook(request, {
       event: 'guess',
       game: 'budget-bracket',
       user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
       guess: {
         puzzleId: puzzle_id,
+        gameType: 'final_summary',
         choices: verifiedChoices.map(c => ({
           round: c.round,
           chosenMovieTmdbId: c.chosen_movie,
@@ -184,13 +188,15 @@ export async function POST(request: NextRequest) {
         totalDurationMs: total_duration_ms,
         roundsCompleted,
         correctAnswers,
-        isPerfectGame
+        isPerfectGame,
+        finalResult
       },
       progress: { 
         roundsCompleted,
         correctAnswers,
         isPerfectGame,
         isGameComplete: true,
+        gameEndTime: new Date().toISOString()
       },
       correctAnswer: {
         finalResult,
@@ -198,7 +204,7 @@ export async function POST(request: NextRequest) {
         roundsCompleted,
         correctAnswers
       }
-    })
+    }).catch(error => console.error('Webhook error (authenticated final game):', error))
 
     const response = {
       game_id: gameResult.id,
