@@ -167,7 +167,7 @@ export function BulkScheduleDialog({
             
             <div className="border rounded-lg p-3 space-y-2 max-h-[200px] overflow-y-auto">
               {drafts.map((puzzle) => (
-                <div key={puzzle.id} className="flex items-center space-x-2">
+                <div key={`${puzzle.game_type}-${puzzle.id}`} className="flex items-center space-x-2">
                   <Checkbox
                     id={puzzle.id}
                     checked={selectedPuzzles.has(puzzle.id)}

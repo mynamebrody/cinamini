@@ -5,6 +5,7 @@ import {
   type GameChoice,
   type MoviePair 
 } from '@/lib/budget-bracket'
+import { sendGuessWebhook } from '@/lib/webhooks'
 
 interface SubmitGameRequest {
   puzzle_id: number
@@ -17,14 +18,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
-    // Check if user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      console.log('Budget Bracket submit-game: No authenticated user found')
-      return NextResponse.json({ 
-        error: 'This endpoint requires authentication. Anonymous users should handle game submission locally.' 
-      }, { status: 401 })
-    }
+    // Get current user (optional for anonymous support)
+    const { data: { user } } = await supabase.auth.getUser()
 
     const body: SubmitGameRequest = await request.json()
     const { puzzle_id, choices, total_duration_ms } = body
@@ -32,6 +27,53 @@ export async function POST(request: NextRequest) {
     // Validate input
     if (!puzzle_id || !choices || !Array.isArray(choices) || choices.length === 0) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
+    }
+
+    if (!user) {
+      // For anonymous users - only send webhook if not all 5 rounds (to avoid duplicate with round-guess)
+      const roundsCompleted = choices.length
+      const correctRounds = choices.filter(c => c.correct).length
+      const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
+      const finalResult = calculateFinalResult(choices)
+
+      // Only send webhook if this is NOT a full 5-round completion (to avoid duplicating round-guess webhooks)
+      if (roundsCompleted < 5) {
+        sendGuessWebhook(request, {
+        event: 'guess',
+        game: 'budget-bracket',
+        user: { isAuthenticated: false },
+        guess: {
+          puzzleId: puzzle_id,
+          gameType: 'final_summary',
+          choices: choices.map(c => ({
+            round: c.round,
+            chosenMovieTmdbId: c.chosen_movie,
+            timeTakenMs: c.time_taken_ms,
+            correct: c.correct
+          })),
+          totalDurationMs: total_duration_ms,
+          roundsCompleted,
+          correctRounds,
+          isPerfectGame,
+          finalResult
+        },
+        progress: { 
+          roundsCompleted,
+          correctRounds,
+          isPerfectGame,
+          isGameComplete: true,
+          gameEndTime: new Date().toISOString()
+        },
+      }).catch(error => console.error('Webhook error (anonymous final game):', error))
+      }
+
+      return NextResponse.json({
+        message: "Anonymous play - results not saved",
+        anonymous: true,
+        rounds_completed: roundsCompleted,
+        is_perfect_game: isPerfectGame,
+        final_result: finalResult,
+      })
     }
 
     // Get the puzzle data to verify answers (using service client to bypass RLS)
@@ -132,6 +174,44 @@ export async function POST(request: NextRequest) {
         difficulty_ratio: pair.difficultyRatio
       }
     })
+
+    // Fire webhook for authenticated game submission (fire-and-forget) - final summary
+    // Only send if this is NOT a full 5-round completion (to avoid duplicating round-guess webhooks)
+    if (roundsCompleted < 5) {
+      sendGuessWebhook(request, {
+      event: 'guess',
+      game: 'budget-bracket',
+      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      guess: {
+        puzzleId: puzzle_id,
+        gameType: 'final_summary',
+        choices: verifiedChoices.map(c => ({
+          round: c.round,
+          chosenMovieTmdbId: c.chosen_movie,
+          timeTakenMs: c.time_taken_ms,
+          correct: c.correct
+        })),
+        totalDurationMs: total_duration_ms,
+        roundsCompleted,
+        correctAnswers,
+        isPerfectGame,
+        finalResult
+      },
+      progress: { 
+        roundsCompleted,
+        correctAnswers,
+        isPerfectGame,
+        isGameComplete: true,
+        gameEndTime: new Date().toISOString()
+      },
+      correctAnswer: {
+        finalResult,
+        isPerfectGame,
+        roundsCompleted,
+        correctAnswers
+      }
+    }).catch(error => console.error('Webhook error (authenticated final game):', error))
+    }
 
     const response = {
       game_id: gameResult.id,

@@ -63,7 +63,7 @@ type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'complete
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function PosterPixelsGame() {
-  const { isAnonymous, loading: authLoading } = useGameMode()
+  const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [gameStartTime, setGameStartTime] = useState<number>(0)
@@ -200,8 +200,16 @@ export default function PosterPixelsGame() {
         } else {
           const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
           setGameState('ready')
-          if (!hasPlayedBefore) {
+          
+          // Show how-to-play modal only if they've never played Poster Pixels before
+          if (user && !data.hasPlayedBefore) {
             setModalState('howtoplay')
+          } else if (!user) {
+            // Anonymous user - check localStorage
+            const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
+            if (!hasPlayedBefore) {
+              setModalState('howtoplay')
+            }
           }
         }
       }
@@ -310,7 +318,7 @@ export default function PosterPixelsGame() {
   const recordGuess = async (entry: GuessEntry): Promise<GuessEntry[]> => {
     const newGuesses = [...state.guesses, entry]
     setState(prev => ({ ...prev, guesses: newGuesses }))
-    if (!isAnonymous && state.gameId && state.puzzle) {
+    if (state.gameId && state.puzzle) {
       try {
         await fetch("/api/poster-pixels/guess", {
           method: "POST",
@@ -323,6 +331,7 @@ export default function PosterPixelsGame() {
             time_taken_ms: 0,
             clarity_level: entry.clarityLevel,
             skipped: entry.movieId === null,
+            guess_number: newGuesses.length, // Track which attempt this is
           }),
         })
       } catch (e) {
