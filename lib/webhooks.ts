@@ -49,7 +49,14 @@ export async function sendGuessWebhook(request: NextRequest, payload: Omit<Guess
     url: url,
     game: payload.game,
     isAuthenticated: payload.user.isAuthenticated
-  })
+  if (process.env.NODE_ENV !== "production") {
+    console.log("📡 WEBHOOK: sendGuessWebhook called", {
+      hasUrl: !!url,
+      url: url,
+      game: payload.game,
+      isAuthenticated: payload.user.isAuthenticated
+    })
+  }
   if (!url) {
     console.log("📡 WEBHOOK: No webhook URL found, exiting")
     return
