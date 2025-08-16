@@ -26,7 +26,7 @@ export default function PuzzleEditor() {
         }}>
           <TabsTrigger 
             value="retitled" 
-            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-cinema-red data-[state=active]:text-white data-[state=active]:border-cinema-red hover:bg-neutral-50 transition-all duration-200"
+            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-white data-[state=active]:text-cinema-red data-[state=active]:border-cinema-red hover:bg-neutral-50 hover:text-cinema-charcoal transition-all duration-200"
             style={{ borderRadius: 0 }}
           >
             <Film className="w-4 h-4" />
@@ -34,7 +34,7 @@ export default function PuzzleEditor() {
           </TabsTrigger>
           <TabsTrigger 
             value="budget-bracket" 
-            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-cinema-red data-[state=active]:text-white data-[state=active]:border-cinema-red hover:bg-neutral-50 transition-all duration-200"
+            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-white data-[state=active]:text-cinema-red data-[state=active]:border-cinema-red hover:bg-neutral-50 hover:text-cinema-charcoal transition-all duration-200"
             style={{ borderRadius: 0 }}
           >
             <DollarSign className="w-4 h-4" />
@@ -42,7 +42,7 @@ export default function PuzzleEditor() {
           </TabsTrigger>
           <TabsTrigger 
             value="cast-climb" 
-            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-cinema-red data-[state=active]:text-white data-[state=active]:border-cinema-red hover:bg-neutral-50 transition-all duration-200"
+            className="flex items-center gap-2 py-3 px-4 font-funnel font-medium border-r-2 border-neutral-200 data-[state=active]:bg-white data-[state=active]:text-cinema-red data-[state=active]:border-cinema-red hover:bg-neutral-50 hover:text-cinema-charcoal transition-all duration-200"
             style={{ borderRadius: 0 }}
           >
             <Users className="w-4 h-4" />

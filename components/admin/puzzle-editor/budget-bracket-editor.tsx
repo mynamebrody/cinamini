@@ -364,7 +364,7 @@ export default function BudgetBracketEditor() {
 
         <div className="space-y-4">
           {moviePairs.map((pair, pairIdx) => (
-            <Card key={pairIdx} className="p-4">
+            <Card key={`pair-${pairIdx}`} className="p-4">
               <div className="flex items-center gap-4">
                 <div className="flex-shrink-0 text-sm font-medium text-gray-600 w-20">
                   Round {pairIdx + 1}

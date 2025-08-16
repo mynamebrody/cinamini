@@ -127,7 +127,7 @@ function RetitledPreview({
       <div className="space-y-2 max-w-md mx-auto">
         {options.map((option, idx) => (
           <div
-            key={option.id || idx}
+            key={`option-${option.id || option.title || idx}`}
             className={cn(
               "p-3 rounded-lg border transition-all",
               option.isCorrect
@@ -158,7 +158,7 @@ function BudgetBracketPreview({ rounds }: BudgetBracketPreviewProps["data"]) {
 
       <div className="space-y-4">
         {rounds.slice(0, 2).map((round, roundIdx) => (
-          <div key={roundIdx}>
+          <div key={`round-${roundIdx}`}>
             <p className="text-sm font-medium text-gray-600 mb-2">
               Round {roundIdx + 1}
             </p>
@@ -256,7 +256,7 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
         <div className="flex-1 space-y-2">
           <p className="text-sm font-medium text-gray-600 mb-2">Cast (4 actors):</p>
           {actors.slice(0, 4).map((actor, idx) => (
-            <div key={idx} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
+            <div key={`actor-${actor.id || actor.name}-${idx}`} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
               {actor.profile_path ? (
                 <img
                   src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
@@ -325,7 +325,7 @@ function PosterPixelsPreview({ movie, clarityLevels, funFact }: PosterPixelsPrev
           <p className="text-sm font-medium text-gray-600">Clarity Progression:</p>
           <div className="flex gap-2 justify-center">
             {clarityLevels.map((level, idx) => (
-              <Badge key={level} variant="outline" className="text-xs">
+              <Badge key={`clarity-${level}-${idx}`} variant="outline" className="text-xs">
                 {idx + 1}: {level}%
               </Badge>
             ))}

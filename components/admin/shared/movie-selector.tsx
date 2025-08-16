@@ -255,7 +255,7 @@ export default function MovieSelector({
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse">
+              <div key={`movie-skeleton-${i}`} className="animate-pulse">
                 <div className="bg-gray-200 h-24 rounded-lg"></div>
               </div>
             ))}

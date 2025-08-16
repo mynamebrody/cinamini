@@ -421,7 +421,7 @@ export default function CastClimbEditor() {
           ) : (
             <Button
               variant="outline"
-              className="w-full justify-start"
+              className="w-full justify-start border-2 border-cinema-silver hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]"
               onClick={() => setShowMovieSelector(true)}
             >
               <Film className="w-4 h-4 mr-2" />

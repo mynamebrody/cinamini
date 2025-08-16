@@ -330,7 +330,7 @@ export function PuzzleCalendar({ onDateClick, onPuzzleClick, onAddPuzzle }: Puzz
             <>
               {[...Array(35)].map((_, index) => (
                 <div
-                  key={index}
+                  key={`skeleton-${index}`}
                   className="min-h-[120px] p-3 border rounded-lg bg-card animate-pulse"
                 >
                   <div className="h-4 w-8 bg-muted rounded mb-2" />
@@ -379,7 +379,7 @@ export function PuzzleCalendar({ onDateClick, onPuzzleClick, onAddPuzzle }: Puzz
             {loading ? (
               <div className="space-y-2">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
+                  <div key={`draft-skeleton-${i}`} className="animate-pulse">
                     <div className="h-10 bg-muted rounded-md" />
                   </div>
                 ))}

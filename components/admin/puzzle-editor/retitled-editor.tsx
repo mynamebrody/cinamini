@@ -391,7 +391,7 @@ export default function RetitledEditor() {
           ) : (
             <Button
               variant="outline"
-              className="w-full justify-start"
+              className="w-full justify-start border-2 border-cinema-silver hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]"
               onClick={() => {
                 setSelectingDistractorIndex(null)
                 setShowMovieSelector(true)
@@ -431,7 +431,7 @@ export default function RetitledEditor() {
                 <SelectContent className="z-[100] bg-white border border-gray-200">
                   {alternativeTitles.map((title, idx) => (
                     <SelectItem 
-                      key={idx} 
+                      key={`title-${title.iso_3166_1}-${title.title}-${idx}`} 
                       value={`${title.iso_3166_1}:${title.title}`}
                       className="hover:bg-gray-100 cursor-pointer"
                     >
@@ -515,7 +515,7 @@ export default function RetitledEditor() {
             
             <div className="space-y-2">
               {distractors.map((movie, index) => (
-                <Card key={index} className="p-2">
+                <Card key={`distractor-${movie.id}-${index}`} className="p-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500 w-6">{index + 1}.</span>
                     <div className="flex-1">
@@ -535,7 +535,7 @@ export default function RetitledEditor() {
               {distractors.length < 5 && (
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full border-2 border-cinema-silver hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]"
                   onClick={addDistractor}
                 >
                   <Plus className="w-4 h-4 mr-2" />
