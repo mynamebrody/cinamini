@@ -93,10 +93,11 @@ function MovieCard({ movie }: { movie: Movie }) {
 }
 
 // Draggable MovieCard component
-function DraggableMovieCard({ movie, dragId, onRemove }: { 
+function DraggableMovieCard({ movie, dragId, onRemove, recentlyUsedMoviesMap }: { 
   movie: Movie, 
   dragId: string, 
-  onRemove: () => void 
+  onRemove: () => void,
+  recentlyUsedMoviesMap?: Map<number, {date: string, isFuture: boolean}>
 }) {
   const {
     attributes,
@@ -157,6 +158,21 @@ function DraggableMovieCard({ movie, dragId, onRemove }: {
           </div>
         </div>
       </div>
+      
+      {/* Recently used/scheduled badge */}
+      {recentlyUsedMoviesMap?.has(movie.id) && (
+        <div 
+          className="absolute bottom-1 right-1 px-1.5 py-0.5 text-[10px] font-semibold rounded shadow-sm z-10"
+          style={{
+            backgroundColor: recentlyUsedMoviesMap.get(movie.id)?.isFuture ? '#fbbf24' : '#ef4444',
+            color: 'white'
+          }}
+          title={`${recentlyUsedMoviesMap.get(movie.id)?.isFuture ? 'Scheduled for' : 'Used on'} ${recentlyUsedMoviesMap.get(movie.id)?.date}`}
+        >
+          {recentlyUsedMoviesMap.get(movie.id)?.isFuture ? 'Scheduled' : 'Used'}
+        </div>
+      )}
+      
       <button
         onClick={(e) => {
           e.stopPropagation()
@@ -176,13 +192,15 @@ function DraggableRound({
   pair, 
   onOpenMovieSelector,
   onRemoveMovie,
-  isDragDisabled = false 
+  isDragDisabled = false,
+  recentlyUsedMoviesMap
 }: {
   pairIndex: number
   pair: MoviePair
   onOpenMovieSelector: (pairIndex: number, slot: "A" | "B") => void
   onRemoveMovie: (pairIndex: number, slot: "A" | "B") => void
   isDragDisabled?: boolean
+  recentlyUsedMoviesMap?: Map<number, {date: string, isFuture: boolean}>
 }) {
   const {
     attributes,
@@ -230,6 +248,7 @@ function DraggableRound({
                 movie={pair.movieA}
                 dragId={`movie-${pairIndex}-A`}
                 onRemove={() => onRemoveMovie(pairIndex, "A")}
+                recentlyUsedMoviesMap={recentlyUsedMoviesMap}
               />
             ) : (
               <button
@@ -253,6 +272,7 @@ function DraggableRound({
                 movie={pair.movieB}
                 dragId={`movie-${pairIndex}-B`}
                 onRemove={() => onRemoveMovie(pairIndex, "B")}
+                recentlyUsedMoviesMap={recentlyUsedMoviesMap}
               />
             ) : (
               <button
@@ -299,8 +319,10 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   // Auto-fill state
   const [cachedMovies, setCachedMovies] = useState<Movie[]>([])
   const [recentlyUsedMovies, setRecentlyUsedMovies] = useState<Set<number>>(new Set())
+  const [recentlyUsedMoviesMap, setRecentlyUsedMoviesMap] = useState<Map<number, {date: string, isFuture: boolean}>>(new Map())
   const [autoFilling, setAutoFilling] = useState(false)
   const [cachedMoviesLoaded, setCachedMoviesLoaded] = useState(false)
+  const [cachedMoviesLoading, setCachedMoviesLoading] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -343,11 +365,10 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
   }, [puzzleId])
 
-  // Load recently used movies and cached movies on component mount
+  // Load recently used movies on component mount
   useEffect(() => {
-    fetchRecentlyUsedMovies()
-    fetchCachedMovies() // Also preload cached movies
-  }, [])
+    fetchRecentlyUsedMovies(puzzleId || undefined)
+  }, [puzzleId])
 
   const loadPuzzleData = async (puzzleId: string) => {
     setLoadingPuzzle(true)
@@ -411,65 +432,218 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
   }
 
-  const fetchRecentlyUsedMovies = async () => {
+  const fetchRecentlyUsedMovies = async (excludePuzzleId?: string) => {
     try {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const dateStr = thirtyDaysAgo.toISOString().split('T')[0]
+      const pastDateStr = thirtyDaysAgo.toISOString().split('T')[0]
+      
+      const today = new Date()
+      const todayStr = today.toISOString().split('T')[0]
 
       const usedMovieIds = new Set<number>()
+      const movieDateMap = new Map<number, {date: string, isFuture: boolean}>()
 
-      // Check retitled puzzles
-      const { data: retitledData } = await supabase
+      // Check retitled puzzles (past 30 days)
+      const retitledPastQuery = supabase
         .from('retitled_puzzles')
-        .select('film_id')
-        .gte('puzzle_date', dateStr)
-
-      if (retitledData) {
-        retitledData.forEach(puzzle => usedMovieIds.add(puzzle.film_id))
+        .select('id, film_id, puzzle_date')
+        .gte('puzzle_date', pastDateStr)
+        .lte('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for retitled game type)
+      if (excludePuzzleId) {
+        retitledPastQuery.neq('id', excludePuzzleId)
       }
 
-      // Check cast climb puzzles
-      const { data: castClimbData } = await supabase
+      const { data: retitledPastData } = await retitledPastQuery
+
+      if (retitledPastData) {
+        retitledPastData.forEach(puzzle => {
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: false })
+        })
+      }
+
+      // Check retitled puzzles (future scheduled)
+      const retitledFutureQuery = supabase
+        .from('retitled_puzzles')
+        .select('id, film_id, puzzle_date')
+        .gt('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for retitled game type)
+      if (excludePuzzleId) {
+        retitledFutureQuery.neq('id', excludePuzzleId)
+      }
+
+      const { data: retitledFutureData } = await retitledFutureQuery
+
+      if (retitledFutureData) {
+        retitledFutureData.forEach(puzzle => {
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: true })
+        })
+      }
+
+      // Check cast climb puzzles (past 30 days)
+      const castClimbPastQuery = supabase
         .from('cast_climb_puzzles')
-        .select('film_id')
-        .gte('puzzle_date', dateStr)
-
-      if (castClimbData) {
-        castClimbData.forEach(puzzle => usedMovieIds.add(puzzle.film_id))
+        .select('id, film_id, puzzle_date')
+        .gte('puzzle_date', pastDateStr)
+        .lte('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for cast climb game type)
+      if (excludePuzzleId) {
+        castClimbPastQuery.neq('id', excludePuzzleId)
       }
 
-      // Check budget bracket puzzles
-      const { data: budgetBracketData } = await supabase
-        .from('budget_bracket_puzzles')
-        .select('pairs')
-        .gte('puzzle_date', dateStr)
+      const { data: castClimbPastData } = await castClimbPastQuery
 
-      if (budgetBracketData) {
-        budgetBracketData.forEach(puzzle => {
+      if (castClimbPastData) {
+        castClimbPastData.forEach(puzzle => {
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: false })
+        })
+      }
+
+      // Check cast climb puzzles (future scheduled)
+      const castClimbFutureQuery = supabase
+        .from('cast_climb_puzzles')
+        .select('id, film_id, puzzle_date')
+        .gt('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for cast climb game type)
+      if (excludePuzzleId) {
+        castClimbFutureQuery.neq('id', excludePuzzleId)
+      }
+
+      const { data: castClimbFutureData } = await castClimbFutureQuery
+
+      if (castClimbFutureData) {
+        castClimbFutureData.forEach(puzzle => {
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: true })
+        })
+      }
+
+      // Check budget bracket puzzles (past 30 days)
+      const budgetBracketPastQuery = supabase
+        .from('budget_bracket_puzzles')
+        .select('id, pairs, puzzle_date')
+        .gte('puzzle_date', pastDateStr)
+        .lte('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing
+      if (excludePuzzleId) {
+        budgetBracketPastQuery.neq('id', excludePuzzleId)
+      }
+
+      const { data: budgetBracketPastData } = await budgetBracketPastQuery
+
+      if (budgetBracketPastData) {
+        budgetBracketPastData.forEach(puzzle => {
           if (puzzle.pairs) {
             puzzle.pairs.forEach((pair: any) => {
-              if (pair.movieA?.id) usedMovieIds.add(pair.movieA.id)
-              if (pair.movieB?.id) usedMovieIds.add(pair.movieB.id)
+              if (pair.movieA?.id) {
+                usedMovieIds.add(pair.movieA.id)
+                movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: false })
+              }
+              if (pair.movieB?.id) {
+                usedMovieIds.add(pair.movieB.id)
+                movieDateMap.set(pair.movieB.id, { date: puzzle.puzzle_date, isFuture: false })
+              }
             })
           }
         })
       }
 
-      // Check poster pixels puzzles
-      const { data: posterPixelsData } = await supabase
-        .from('poster_pixels_puzzles')
-        .select('film_id')
-        .gte('puzzle_date', dateStr)
+      // Check budget bracket puzzles (future scheduled)
+      const budgetBracketFutureQuery = supabase
+        .from('budget_bracket_puzzles')
+        .select('id, pairs, puzzle_date')
+        .gt('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing
+      if (excludePuzzleId) {
+        budgetBracketFutureQuery.neq('id', excludePuzzleId)
+      }
 
-      if (posterPixelsData) {
-        posterPixelsData.forEach(puzzle => {
-          if (puzzle.film_id) usedMovieIds.add(puzzle.film_id)
+      const { data: budgetBracketFutureData } = await budgetBracketFutureQuery
+
+      if (budgetBracketFutureData) {
+        budgetBracketFutureData.forEach(puzzle => {
+          if (puzzle.pairs) {
+            puzzle.pairs.forEach((pair: any) => {
+              if (pair.movieA?.id) {
+                usedMovieIds.add(pair.movieA.id)
+                movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: true })
+              }
+              if (pair.movieB?.id) {
+                usedMovieIds.add(pair.movieB.id)
+                movieDateMap.set(pair.movieB.id, { date: puzzle.puzzle_date, isFuture: true })
+              }
+            })
+          }
+        })
+      }
+
+      // Check poster pixels puzzles (past 30 days)
+      const posterPixelsPastQuery = supabase
+        .from('poster_pixels_puzzles')
+        .select('id, film_id, puzzle_date')
+        .gte('puzzle_date', pastDateStr)
+        .lte('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for poster pixels game type)
+      if (excludePuzzleId) {
+        posterPixelsPastQuery.neq('id', excludePuzzleId)
+      }
+
+      const { data: posterPixelsPastData } = await posterPixelsPastQuery
+
+      if (posterPixelsPastData) {
+        posterPixelsPastData.forEach(puzzle => {
+          if (puzzle.film_id) {
+            usedMovieIds.add(puzzle.film_id)
+            movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: false })
+          }
+        })
+      }
+
+      // Check poster pixels puzzles (future scheduled)
+      const posterPixelsFutureQuery = supabase
+        .from('poster_pixels_puzzles')
+        .select('id, film_id, puzzle_date')
+        .gt('puzzle_date', todayStr)
+        .not('puzzle_date', 'is', null)
+      
+      // Exclude current puzzle if editing (only relevant for poster pixels game type)
+      if (excludePuzzleId) {
+        posterPixelsFutureQuery.neq('id', excludePuzzleId)
+      }
+
+      const { data: posterPixelsFutureData } = await posterPixelsFutureQuery
+
+      if (posterPixelsFutureData) {
+        posterPixelsFutureData.forEach(puzzle => {
+          if (puzzle.film_id) {
+            usedMovieIds.add(puzzle.film_id)
+            movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: true })
+          }
         })
       }
 
       setRecentlyUsedMovies(usedMovieIds)
-      console.log('Recently used movies in last 30 days:', usedMovieIds.size)
+      setRecentlyUsedMoviesMap(movieDateMap)
+      console.log('Recently used movies in last 30 days + future scheduled:', usedMovieIds.size, excludePuzzleId ? `(excluding puzzle ${excludePuzzleId})` : '')
+      console.log('Movie date mapping:', movieDateMap.size)
 
     } catch (error) {
       console.error('Error fetching recently used movies:', error)
@@ -477,8 +651,9 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   }
 
   const fetchCachedMovies = async () => {
-    if (cachedMoviesLoaded) return
+    if (cachedMoviesLoaded || cachedMoviesLoading) return
 
+    setCachedMoviesLoading(true)
     try {
       const endpoints = [
         '/api/movies/popular',
@@ -511,6 +686,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
     } catch (error) {
       console.error('Error fetching cached movies:', error)
+    } finally {
+      setCachedMoviesLoading(false)
     }
   }
 
@@ -618,13 +795,107 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     return uniqueMovies
   }
 
+  // Helper function to create optimal budget pairs from sorted movies
+  const createOptimalBudgetPairs = (sortedMovies: Movie[]): Array<{movieA: Movie, movieB: Movie}> => {
+    const pairs = []
+    const used = new Set<number>()
+    
+    console.log('Creating optimal budget pairs from', sortedMovies.length, 'sorted movies')
+    
+    // Strategy: Pair movies with similar budgets, allowing some variance for interest
+    for (let i = 0; i < sortedMovies.length - 1; i++) {
+      if (used.has(i)) continue
+      
+      const baseBudget = sortedMovies[i].budget || 0
+      let bestPartnerIdx = -1
+      let bestDifference = Infinity
+      
+      // Look ahead for movies within reasonable budget range (up to 5 positions)
+      for (let j = i + 1; j < Math.min(i + 6, sortedMovies.length); j++) {
+        if (used.has(j)) continue
+        
+        const candidateBudget = sortedMovies[j].budget || 0
+        const difference = Math.abs(candidateBudget - baseBudget)
+        const percentDifference = baseBudget > 0 ? (difference / baseBudget) : 1
+        
+        // Skip movies with identical budgets - there must be a difference
+        if (difference === 0) continue
+        
+        // Prefer movies with smaller budget differences
+        // But allow up to 50% difference to ensure we can make pairs
+        if (percentDifference <= 0.5 && difference < bestDifference) {
+          bestDifference = difference
+          bestPartnerIdx = j
+        }
+      }
+      
+      // If no good match found within range, take the next available movie (but not same budget)
+      if (bestPartnerIdx === -1) {
+        for (let j = i + 1; j < sortedMovies.length; j++) {
+          if (!used.has(j)) {
+            const candidateBudget = sortedMovies[j].budget || 0
+            const difference = Math.abs(candidateBudget - baseBudget)
+            // Only accept if budgets are different
+            if (difference > 0) {
+              bestPartnerIdx = j
+              break
+            }
+          }
+        }
+      }
+      
+      if (bestPartnerIdx !== -1 && !used.has(bestPartnerIdx)) {
+        const movieA = sortedMovies[i]
+        const movieB = sortedMovies[bestPartnerIdx]
+        const budgetA = movieA.budget || 0
+        const budgetB = movieB.budget || 0
+        const difference = Math.abs(budgetA - budgetB)
+        const percentDiff = budgetA > 0 ? ((difference / Math.min(budgetA, budgetB)) * 100) : 0
+        
+        pairs.push({ movieA, movieB })
+        used.add(i)
+        used.add(bestPartnerIdx)
+        
+        console.log(`Pair ${pairs.length}: ${movieA.title} ($${budgetA.toLocaleString()}) vs ${movieB.title} ($${budgetB.toLocaleString()}) - Difference: $${difference.toLocaleString()} (${percentDiff.toFixed(1)}%)`)
+      }
+    }
+    
+    console.log(`Created ${pairs.length} optimal budget pairs`)
+    return pairs
+  }
+
+  // Helper function to find best budget match for a single movie
+  const findBestBudgetMatch = (targetMovie: Movie, availableMovies: Movie[], usedIds: Set<number>): Movie | null => {
+    const targetBudget = targetMovie.budget || 0
+    let bestMatch = null
+    let bestDifference = Infinity
+    
+    for (const candidate of availableMovies) {
+      // Skip if already used
+      if (usedIds.has(candidate.id)) continue
+      
+      const candidateBudget = candidate.budget || 0
+      const difference = Math.abs(candidateBudget - targetBudget)
+      
+      if (difference < bestDifference) {
+        bestDifference = difference
+        bestMatch = candidate
+      }
+    }
+    
+    if (bestMatch) {
+      const difference = Math.abs((bestMatch.budget || 0) - targetBudget)
+      const percentDiff = targetBudget > 0 ? ((difference / Math.min(targetBudget, bestMatch.budget || 0)) * 100) : 0
+      console.log(`Best match for ${targetMovie.title} ($${targetBudget.toLocaleString()}): ${bestMatch.title} ($${(bestMatch.budget || 0).toLocaleString()}) - Difference: ${percentDiff.toFixed(1)}%`)
+    }
+    
+    return bestMatch
+  }
+
   const autoFillPairs = async () => {
     setAutoFilling(true)
     
     try {
-      // Ensure cached movies are loaded
-      await fetchCachedMovies()
-      
       // Get currently used movie IDs
       const usedIds = getUsedMovieIds()
       
@@ -677,9 +948,23 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         
         console.log('Using random base movie for cascading discovery:', baseMovie.title, '(', baseMovie.id, ')')
         
+        // IMMEDIATELY place the base movie in the first empty slot for visual feedback
+        const newPairs = [...moviePairs]
+        const firstEmptyPairIndex = newPairs.findIndex(pair => !pair.movieA || !pair.movieB)
+        if (firstEmptyPairIndex !== -1) {
+          if (!newPairs[firstEmptyPairIndex].movieA) {
+            newPairs[firstEmptyPairIndex].movieA = baseMovie
+            console.log(`Pre-filled Round ${firstEmptyPairIndex + 1} Movie A with base movie:`, baseMovie.title)
+          } else if (!newPairs[firstEmptyPairIndex].movieB) {
+            newPairs[firstEmptyPairIndex].movieB = baseMovie
+            console.log(`Pre-filled Round ${firstEmptyPairIndex + 1} Movie B with base movie:`, baseMovie.title)
+          }
+          setMoviePairs(newPairs)
+        }
+        
         try {
           availableMovies = await fetchMoviesWithFallback(baseMovie.id)
-          // Include the base movie as first option
+          // Include the base movie as first option (for consistency with existing logic)
           availableMovies.unshift(baseMovie)
           console.log('Total movies after cascade:', availableMovies.length)
         } catch (error) {
@@ -688,15 +973,18 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         }
       }
 
+      // Recalculate used IDs after potential pre-filling
+      const currentlyUsedIds = getUsedMovieIds()
+      
       // Add debugging to see what we have
       console.log('Available movies count:', availableMovies.length)
       console.log('Recently used movie IDs:', Array.from(recentlyUsedMovies))
-      console.log('Currently used movie IDs:', usedIds)
+      console.log('Currently used movie IDs after pre-fill:', currentlyUsedIds)
       
       // Filter out recently used and already selected movies
       let filteredMovies = availableMovies.filter(movie => {
         const notRecentlyUsed = !recentlyUsedMovies.has(movie.id)
-        const notCurrentlyUsed = !usedIds.includes(movie.id)
+        const notCurrentlyUsed = !currentlyUsedIds.includes(movie.id)
         const hasBudget = movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
         
         if (!notRecentlyUsed) {
@@ -721,7 +1009,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         // Try without budget requirement first (we can fetch details later)
         filteredMovies = availableMovies.filter(movie => {
           return !recentlyUsedMovies.has(movie.id) && 
-                 !usedIds.includes(movie.id)
+                 !currentlyUsedIds.includes(movie.id)
         })
         
         console.log('Movies after lenient filtering (no budget check):', filteredMovies.length)
@@ -769,31 +1057,71 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         return
       }
 
-      // Shuffle the filtered movies for randomness
-      const shuffledMovies = filteredMovies.sort(() => Math.random() - 0.5)
+      // Sort movies by budget for optimal pairing
+      const sortedMovies = filteredMovies.sort((a, b) => (a.budget || 0) - (b.budget || 0))
+      console.log('Sorted movies by budget:', sortedMovies.map(m => `${m.title}: $${(m.budget || 0).toLocaleString()}`))
 
-      // Fill empty slots
-      const newPairs = [...moviePairs]
-      let movieIndex = 0
+      // Create optimal budget pairs from available movies
+      const optimalPairs = createOptimalBudgetPairs(sortedMovies)
+      console.log(`Created ${optimalPairs.length} optimal pairs from ${sortedMovies.length} movies`)
 
-      for (let pairIdx = 0; pairIdx < newPairs.length && movieIndex < shuffledMovies.length; pairIdx++) {
-        const pair = newPairs[pairIdx]
+      // Get current state of pairs (which may include pre-filled movie from empty state)
+      const currentPairs = [...moviePairs]
+      let pairIndex = 0
+
+      // First, fill completely empty slots with pre-paired movies
+      for (let pairIdx = 0; pairIdx < currentPairs.length && pairIndex < optimalPairs.length; pairIdx++) {
+        const pair = currentPairs[pairIdx]
         
-        if (!pair.movieA && movieIndex < shuffledMovies.length) {
-          pair.movieA = shuffledMovies[movieIndex]
-          movieIndex++
-        }
-        
-        if (!pair.movieB && movieIndex < shuffledMovies.length) {
-          pair.movieB = shuffledMovies[movieIndex]
-          movieIndex++
+        // Only use optimal pairs for completely empty slots (both movies missing)
+        if (!pair.movieA && !pair.movieB) {
+          const optimalPair = optimalPairs[pairIndex]
+          pair.movieA = optimalPair.movieA
+          pair.movieB = optimalPair.movieB
+          pairIndex++
         }
       }
 
-      setMoviePairs(newPairs)
+      // Then fill remaining single empty slots with best budget matches
+      const usedMovieIds = new Set<number>()
+      currentPairs.forEach(pair => {
+        if (pair.movieA) usedMovieIds.add(pair.movieA.id)
+        if (pair.movieB) usedMovieIds.add(pair.movieB.id)
+      })
+
+      for (let pairIdx = 0; pairIdx < currentPairs.length; pairIdx++) {
+        const pair = currentPairs[pairIdx]
+        
+        // Fill single empty slots (movieA exists but movieB is missing, or vice versa)
+        if (pair.movieA && !pair.movieB) {
+          const bestMatch = findBestBudgetMatch(pair.movieA, sortedMovies, usedMovieIds)
+          if (bestMatch) {
+            pair.movieB = bestMatch
+            usedMovieIds.add(bestMatch.id)
+          }
+        } else if (!pair.movieA && pair.movieB) {
+          const bestMatch = findBestBudgetMatch(pair.movieB, sortedMovies, usedMovieIds)
+          if (bestMatch) {
+            pair.movieA = bestMatch
+            usedMovieIds.add(bestMatch.id)
+          }
+        }
+      }
+
+      setMoviePairs(currentPairs)
       
-      const filledSlots = Math.min(emptySlots, shuffledMovies.length)
-      console.log(`Auto-filled ${filledSlots} movie slots`)
+      // Count how many slots we actually filled
+      let actuallyFilled = 0
+      currentPairs.forEach(pair => {
+        if (pair.movieA) actuallyFilled++
+        if (pair.movieB) actuallyFilled++
+      })
+      
+      const totalSlots = currentPairs.length * 2
+      const filledSlots = actuallyFilled
+      const newlyFilled = filledSlots - (totalSlots - emptySlots)
+      
+      console.log(`Auto-filled ${newlyFilled} movie slots using budget-based pairing (${filledSlots}/${totalSlots} total)`)
 
     } catch (error) {
       console.error('Error auto-filling movies:', error)
@@ -1190,7 +1518,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
                 variant="outline"
                 size="sm"
                 onClick={autoFillPairs}
-                disabled={autoFilling || moviePairs.every(p => p.movieA && p.movieB)}
+                disabled={autoFilling}
                 className="flex items-center gap-1.5 text-xs"
                 title="Auto-fill empty slots with similar movies"
               >
@@ -1227,6 +1555,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
                   pair={pair}
                   onOpenMovieSelector={openMovieSelector}
                   onRemoveMovie={removeMovie}
+                  recentlyUsedMoviesMap={recentlyUsedMoviesMap}
                 />
               ))}
             </div>
