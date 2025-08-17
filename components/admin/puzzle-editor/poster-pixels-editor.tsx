@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, Film, Image } from "lucide-react"
+import { Calendar, Save, Loader2, Plus, X, Film, Image, Check } from "lucide-react"
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -30,6 +30,17 @@ interface Movie {
   vote_average?: number
 }
 
+interface PosterOption {
+  file_path: string
+  aspect_ratio: number
+  height: number
+  width: number
+  vote_average: number
+  vote_count: number
+  iso_639_1: string
+  isDefault?: boolean
+}
+
 interface PosterPixelsEditorProps {
   prefilledDate?: string | null
   prefilledMovieId?: string | null
@@ -47,6 +58,12 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   const [showMovieSelector, setShowMovieSelector] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
+  
+  // Alternative poster states
+  const [showAlternativesModal, setShowAlternativesModal] = useState(false)
+  const [alternativePosters, setAlternativePosters] = useState<PosterOption[]>([])
+  const [selectedPosterPath, setSelectedPosterPath] = useState<string | null>(null)
+  const [loadingAlternatives, setLoadingAlternatives] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -55,11 +72,14 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
       if (e.key === 'Escape' && showMovieSelector) {
         setShowMovieSelector(false)
       }
+      if (e.key === 'Escape' && showAlternativesModal) {
+        setShowAlternativesModal(false)
+      }
     }
     
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
-  }, [showMovieSelector])
+  }, [showMovieSelector, showAlternativesModal])
 
   // Handle prefilled values from URL parameters
   useEffect(() => {
@@ -87,10 +107,13 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=poster_pixels`)
       
       if (!response.ok) {
-        throw new Error('Failed to load puzzle data')
+        const errorData = await response.json()
+        console.error('API error:', errorData)
+        throw new Error(errorData.error || 'Failed to load puzzle data')
       }
       
       const response_data = await response.json()
+      console.log('Loaded puzzle data:', response_data)
       
       // Extract puzzle data from the response
       const puzzleData = response_data.puzzle
@@ -116,6 +139,13 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
           vote_average: 0
         }
         setSelectedMovie(movie)
+        
+        // Load poster override if it exists (handle older puzzles without this field)
+        if (puzzleData.film_poster_override_url) {
+          setSelectedPosterPath(puzzleData.film_poster_override_url)
+        } else {
+          setSelectedPosterPath(puzzleData.film_poster_url || movie.poster_path) // Use default, fallback to movie poster
+        }
       }
       
     } catch (error) {
@@ -188,8 +218,57 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
     
     setSelectedMovie(movie)
     setShowMovieSelector(false)
+    
+    // Reset poster selection to default when selecting a new movie
+    setSelectedPosterPath(movie.poster_path)
+    setAlternativePosters([])
+    
     // Notify parent of movie change
     onMovieChange?.(movie.id.toString())
+  }
+
+  // Fetch alternative posters from TMDB
+  const fetchAlternativePosters = async () => {
+    if (!selectedMovie) return
+
+    setLoadingAlternatives(true)
+    try {
+      const response = await fetch(`/api/movies/${selectedMovie.id}/images`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch alternative posters')
+      }
+
+      const data = await response.json()
+      const posters: PosterOption[] = data.posters || []
+
+      // Add the default poster as the first option
+      const defaultPoster: PosterOption = {
+        file_path: selectedMovie.poster_path!,
+        aspect_ratio: 0.67, // Standard movie poster ratio
+        height: 1500,
+        width: 1000,
+        vote_average: 0,
+        vote_count: 0,
+        iso_639_1: 'en',
+        isDefault: true
+      }
+
+      const allPosters = [defaultPoster, ...posters]
+      setAlternativePosters(allPosters)
+      setShowAlternativesModal(true)
+    } catch (error) {
+      console.error('Error fetching alternative posters:', error)
+      alert('Failed to load alternative posters. Please try again.')
+    } finally {
+      setLoadingAlternatives(false)
+    }
+  }
+
+  // Handle poster selection from alternatives modal
+  const handleSelectPoster = (posterPath: string) => {
+    setSelectedPosterPath(posterPath)
+    setShowAlternativesModal(false)
   }
 
   const savePuzzle = async () => {
@@ -243,6 +322,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         film_id: selectedMovie.id,
         film_title: selectedMovie.title,
         film_poster_url: selectedMovie.poster_path,
+        film_poster_override_url: selectedPosterPath !== selectedMovie.poster_path ? selectedPosterPath : null,
         film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
         clarity_levels: Array.from(POSTER_PIXELS_LEVELS), // Default clarity progression
         fun_fact: funFact.trim() || null,
@@ -371,10 +451,37 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         <div className="space-y-2">
           <Label>Movie (must have poster)</Label>
           {selectedMovie ? (
-            <MovieDetailsCard 
-              movie={selectedMovie}
-              onRemove={() => setSelectedMovie(null)}
-            />
+            <div className="space-y-3">
+              <MovieDetailsCard 
+                movie={selectedMovie}
+                onRemove={() => setSelectedMovie(null)}
+              />
+              
+              {/* Alternative Posters Button */}
+              <Button
+                variant="outline"
+                className="w-full justify-center bg-white text-gray-600 border-0 shadow-none hover:text-cinema-red hover:border hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] hover:-translate-y-0.5 transition-all duration-200"
+                onClick={fetchAlternativePosters}
+                disabled={loadingAlternatives}
+              >
+                {loadingAlternatives ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Image className="w-4 h-4 mr-2" />
+                )}
+                Alternative Posters
+              </Button>
+              
+              {/* Show selected poster indicator */}
+              {selectedPosterPath && selectedPosterPath !== selectedMovie.poster_path && (
+                <div className="text-xs text-cinema-gold bg-cinema-gold/10 p-2 rounded border border-cinema-gold/30">
+                  <div className="flex items-center gap-2">
+                    <Check className="w-3 h-3" />
+                    <span>Using alternative poster</span>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <Button
               variant="outline"
@@ -433,9 +540,9 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
 
       {/* Preview */}
       <div className="lg:sticky lg:top-6 h-fit">
-        {selectedMovie && selectedMovie.poster_path ? (
+        {selectedMovie && (selectedPosterPath || selectedMovie.poster_path) ? (
           <PosterClarityPreview
-            posterPath={selectedMovie.poster_path}
+            posterPath={selectedPosterPath || selectedMovie.poster_path}
             movieTitle={selectedMovie.title}
             clarityLevels={Array.from(POSTER_PIXELS_LEVELS)}
             currentLevel={POSTER_PIXELS_LEVELS[2]}
@@ -480,6 +587,116 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
                 excludeIds={[]}
                 requirePoster={true}
               />
+            </div>
+          </Card>
+        </div>,
+        document.body
+      )}
+
+      {/* Alternative Posters Modal */}
+      {showAlternativesModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAlternativesModal(false)
+            }
+          }}
+        >
+          <Card className="admin-modal-silver w-full max-w-4xl max-h-[90vh] flex flex-col relative" style={{ borderRadius: 0 }}>
+            <button
+              onClick={() => setShowAlternativesModal(false)}
+              className="admin-modal-ghost-close absolute right-4 top-4 z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div className="p-6 pr-12 flex flex-col min-h-0">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold font-funnel-display-bold text-neutral-900">
+                  Choose Alternative Poster
+                </h3>
+                <div className="text-sm text-gray-600">
+                  {alternativePosters.length} options available
+                </div>
+              </div>
+              
+              {/* Poster Grid */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-4">
+                  {alternativePosters.map((poster, index) => (
+                    <div
+                      key={`${poster.file_path}-${index}`}
+                      className={cn(
+                        "relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all duration-200",
+                        selectedPosterPath === poster.file_path
+                          ? "border-cinema-red shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
+                          : "border-gray-200 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]"
+                      )}
+                      onClick={() => handleSelectPoster(poster.file_path)}
+                    >
+                      <div className="aspect-[2/3] relative">
+                        <img
+                          src={`https://image.tmdb.org/t/p/w342${poster.file_path}`}
+                          alt={`Alternative poster ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        
+                        {/* Default badge */}
+                        {poster.isDefault && (
+                          <div className="absolute top-2 left-2 bg-cinema-gold text-black px-2 py-1 text-xs font-semibold rounded shadow-sm">
+                            Default
+                          </div>
+                        )}
+                        
+                        {/* Selection indicator */}
+                        {selectedPosterPath === poster.file_path && (
+                          <div className="absolute inset-0 bg-cinema-red/20 flex items-center justify-center">
+                            <div className="bg-cinema-red text-white rounded-full p-2">
+                              <Check className="w-4 h-4" />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200" />
+                      </div>
+                      
+                      {/* Poster info */}
+                      <div className="p-2 bg-white">
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div>{poster.width} × {poster.height}</div>
+                          {poster.vote_count > 0 && (
+                            <div className="flex items-center gap-1">
+                              <span>★</span>
+                              <span>{poster.vote_average.toFixed(1)} ({poster.vote_count})</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t mt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAlternativesModal(false)}
+                  className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => setShowAlternativesModal(false)}
+                  className="bg-cinema-red text-white border border-cinema-red hover:bg-white hover:text-cinema-red transition-all duration-200 shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29)] hover:shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29),6px_6px_0px_rgb(153,37,29)] hover:-translate-y-0.5"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  Confirm Selection
+                </Button>
+              </div>
             </div>
           </Card>
         </div>,

@@ -54,21 +54,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
+        console.log(`Puzzle not found: ${gameType} puzzle with ID ${puzzleId}`)
         return NextResponse.json(
           { error: "Puzzle not found" },
           { status: 404 }
         )
       }
-      console.error(`Error fetching ${gameType} puzzle:`, error)
+      console.error(`Error fetching ${gameType} puzzle with ID ${puzzleId}:`, error)
       return NextResponse.json(
         { 
           error: error.message,
           code: error.code,
-          details: error.details
+          details: error.details,
+          puzzleId: puzzleId,
+          gameType: gameType
         },
         { status: 400 }
       )
     }
+
+    console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
+      id: data.id,
+      puzzle_date: data.puzzle_date,
+      film_title: data.film_title,
+      has_poster_override: !!data.film_poster_override_url
+    })
 
     return NextResponse.json({ 
       puzzle: { ...data, game_type: gameType }
