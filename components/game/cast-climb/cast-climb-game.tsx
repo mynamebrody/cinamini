@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
@@ -177,9 +178,9 @@ export default function CastClimbGame() {
           }
         } else {
           // Check if this is the user's first time playing
-          const hasPlayedBefore = localStorage.getItem('cast-climb-played')
+          const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
           setGameState('ready')
-          if (!hasPlayedBefore) {
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -232,8 +233,9 @@ export default function CastClimbGame() {
           // User hasn't started the game today
           setGameState("ready")
           
-          // Show how-to-play modal only if they've never played Cast Climb before
-          if (!data.hasPlayedBefore) {
+          // Show how-to-play modal only if they've never seen the tutorial
+          const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
+          if (!hasSeenTutorial) {
             setModalState("howtoplay")
           }
         }
@@ -242,8 +244,8 @@ export default function CastClimbGame() {
         setGameState("ready")
         
         // Check if this is the user's first time playing
-        const hasPlayedBefore = localStorage.getItem('cast-climb-played')
-        if (!hasPlayedBefore) {
+        const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
+        if (!hasSeenTutorial) {
           setModalState("howtoplay")
         }
       }
@@ -259,9 +261,9 @@ export default function CastClimbGame() {
   // ============================================================================
 
   const startGame = () => {
-    // Mark that the user has played before if coming from how to play
+    // Mark that the user has seen the tutorial if coming from how to play
     if (modalState === 'howtoplay') {
-      localStorage.setItem('cast-climb-played', 'true')
+      setTutorialViewed('cast-climb')
     }
     setGameState("playing")
     setStartTime(Date.now())
@@ -823,7 +825,13 @@ export default function CastClimbGame() {
       {/* How to Play Modal */}
       <GameModal
         open={modalState === 'howtoplay'}
-        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Mark tutorial as viewed when modal is dismissed
+            setTutorialViewed('cast-climb')
+          }
+          setModalState(open ? 'howtoplay' : 'none')
+        }}
         className="max-w-2xl"
         backdropColor="rgba(153, 37, 29, 0.3)"
       >
@@ -890,7 +898,10 @@ export default function CastClimbGame() {
             />
           </InstructionGrid>
           <div className="mt-6 text-center">
-            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+            <Button onClick={() => {
+              setTutorialViewed('cast-climb')
+              setModalState('none')
+            }} className="btn btn-primary">
               Back to Game
             </Button>
           </div>

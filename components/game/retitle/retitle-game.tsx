@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/client"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 import RetitlePuzzle from "./retitle-puzzle"
@@ -115,9 +116,9 @@ export default function RetitleGame() {
         } else {
           setPuzzle(data.puzzle)
           // Check if this is the user's first time playing
-          const hasPlayedBefore = localStorage.getItem('retitled-played')
+          const hasSeenTutorial = hasTutorialBeenViewed('retitled')
           setGameState('ready')
-          if (!hasPlayedBefore) {
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -194,8 +195,9 @@ export default function RetitleGame() {
           setPuzzle(data.puzzle)
           setGameState('ready')
           
-          // Show how-to-play modal only if they've never played Retitled before
-          if (!data.hasPlayedBefore) {
+          // Show how-to-play modal only if they've never seen the tutorial
+          const hasSeenTutorial = hasTutorialBeenViewed('retitled')
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -205,8 +207,8 @@ export default function RetitleGame() {
         setGameState('ready')
         
         // Check if this is the user's first time playing
-        const hasPlayedBefore = localStorage.getItem('retitled-played')
-        if (!hasPlayedBefore) {
+        const hasSeenTutorial = hasTutorialBeenViewed('retitled')
+        if (!hasSeenTutorial) {
           setModalState('howtoplay')
         }
       }
@@ -218,9 +220,9 @@ export default function RetitleGame() {
   }
 
   const startGame = () => {
-    // Mark that the user has played before if coming from how to play
+    // Mark that the user has seen the tutorial if coming from how to play
     if (modalState === 'howtoplay') {
-      localStorage.setItem('retitled-played', 'true')
+      setTutorialViewed('retitled')
     }
     setGameState('playing')
     setStartTime(Date.now())
@@ -354,7 +356,13 @@ export default function RetitleGame() {
       {/* How to Play Modal */}
       <GameModal
         open={modalState === 'howtoplay'}
-        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Mark tutorial as viewed when modal is dismissed
+            setTutorialViewed('retitled')
+          }
+          setModalState(open ? 'howtoplay' : 'none')
+        }}
         className="max-w-2xl"
         backdropColor="rgba(235, 187, 74, 0.3)"
       >
@@ -427,7 +435,10 @@ export default function RetitleGame() {
             />
           </InstructionGrid>
           <div className="mt-6 text-center">
-            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+            <Button onClick={() => {
+              setTutorialViewed('retitled')
+              setModalState('none')
+            }} className="btn btn-primary">
               Back to Game
             </Button>
           </div>
