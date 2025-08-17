@@ -1349,4 +1349,14 @@
   .admin-page .ui-button {
     border-radius: 0 !important;
   }
+
+  /* Cinema-themed scrollbar for horizontal lists */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

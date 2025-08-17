@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle, GripVertical } from "lucide-react"
-import { format } from "date-fns"
+import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,6 @@ import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
-import { ConfirmationDialog } from "../shared/confirmation-dialog"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -51,22 +49,6 @@ interface Movie {
   vote_average?: number
 }
 
-interface RetitledPuzzle {
-  id?: string
-  puzzle_date: string
-  film_id: number
-  film_title: string
-  localized_title: string
-  country_code: string
-  distractor_ids: number[]
-  is_published: boolean
-}
-
-interface Country {
-  code: string
-  name: string
-  flag: string
-}
 
 interface AlternativeTitle {
   iso_3166_1: string
@@ -160,9 +142,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-  const [pendingUpdateData, setPendingUpdateData] = useState<any>(null)
-  const [warningInfo, setWarningInfo] = useState<any>(null)
 
   const supabase = getSupabaseClient()
 
@@ -262,6 +241,19 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }, [puzzleId])
 
+  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
+  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
+  useEffect(() => {
+    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
+      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
+      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
+      
+      // In edit mode for older puzzles without option_order, start with correct answer first
+      // User can reorder as needed
+      setAllOptions([correctOption, ...distractorOptions])
+    }
+  }, [isEditMode, selectedMovie, distractors, allOptions.length])
+
   // Handle prefilled values from URL parameters (only when not in edit mode)
   useEffect(() => {
     if (!isEditMode) {
@@ -328,8 +320,40 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
           await fetchAndSelectMovie(puzzle.film_id.toString())
         }
         
-        // Load distractors
-        if (puzzle.distractor_ids && Array.isArray(puzzle.distractor_ids)) {
+        // Load all movies in the correct order using option_order if available
+        if (puzzle.option_order && Array.isArray(puzzle.option_order)) {
+          // Use the saved option_order to reconstruct allOptions in the exact saved order
+          const allMoviesInOrder = await Promise.all(
+            puzzle.option_order.map(async (movieId: number) => {
+              try {
+                const movieResponse = await fetch(`/api/movies/${movieId}/details`)
+                if (movieResponse.ok) {
+                  const movieData = await movieResponse.json()
+                  return {
+                    id: movieData.id,
+                    title: movieData.title,
+                    poster_path: movieData.poster_path,
+                    release_date: movieData.release_date || '',
+                    isCorrect: movieId === puzzle.film_id // Mark correct answer
+                  }
+                }
+              } catch (error) {
+                console.error(`Error fetching movie ${movieId}:`, error)
+              }
+              return null
+            })
+          )
+          const validMovies = allMoviesInOrder.filter(Boolean)
+          
+          // Set allOptions directly with the correct order
+          setAllOptions(validMovies)
+          
+          // Also set distractors for backward compatibility
+          const distractorMovies = validMovies.filter(movie => !movie.isCorrect)
+          setDistractors(distractorMovies)
+          
+        } else if (puzzle.distractor_ids && Array.isArray(puzzle.distractor_ids)) {
+          // Fallback for older puzzles without option_order
           const distractorMovies = await Promise.all(
             puzzle.distractor_ids.map(async (id: number) => {
               try {
@@ -349,7 +373,10 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
               return null
             })
           )
-          setDistractors(distractorMovies.filter(Boolean))
+          const validDistractors = distractorMovies.filter(Boolean)
+          setDistractors(validDistractors)
+          
+          // This will trigger the useEffect to reconstruct allOptions with correct answer first
         }
         
       } else {
@@ -558,17 +585,20 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
       const seedValue = `retitled_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
 
-      // Get the highest puzzle number and increment
-      const { data: latestPuzzle } = await supabase
-        .from('retitled_puzzles')
-        .select('puzzle_number')
-        .order('puzzle_number', { ascending: false })
-        .limit(1)
-        .single()
+      // Only get new puzzle number for new puzzles, not when editing
+      let puzzleNumber = null
+      if (!isEditMode && supabase) {
+        const { data: latestPuzzle } = await supabase
+          .from('retitled_puzzles')
+          .select('puzzle_number')
+          .order('puzzle_number', { ascending: false })
+          .limit(1)
+          .single()
 
-      const puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+      }
 
-      const puzzleData = {
+      const puzzleData: any = {
         puzzle_date: puzzleDate || null,
         film_id: selectedMovie.id,
         film_title: selectedMovie.title,
@@ -576,27 +606,49 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         country_code: selectedTitle.iso_3166_1,
         country_name: countryNames[selectedTitle.iso_3166_1] || selectedTitle.iso_3166_1,
         distractor_ids: allOptions.filter(option => !option.isCorrect).map(option => option.id),
+        option_order: allOptions.map(option => option.id), // Store complete order including correct answer
         is_published: isPublished,
-        seed_value: seedValue,
-        puzzle_number: puzzleNumber,
         english_translation: englishTranslation.trim()
+      }
+
+      // Only include these fields when creating new puzzles
+      if (!isEditMode) {
+        puzzleData.seed_value = seedValue
+        puzzleData.puzzle_number = puzzleNumber
       }
 
       console.log('Saving puzzle with data:', puzzleData)
 
-      // Use API endpoint to save with service role permissions
-      const response = await fetch('/api/admin/puzzles/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          gameType: 'retitled',
-          puzzleData
+      let response, result
+      
+      if (isEditMode && existingPuzzleId) {
+        // Update existing puzzle
+        response = await fetch('/api/admin/puzzles/update', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            puzzleId: existingPuzzleId,
+            gameType: 'retitled',
+            puzzleData
+          })
         })
-      })
+      } else {
+        // Create new puzzle
+        response = await fetch('/api/admin/puzzles/save', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            gameType: 'retitled',
+            puzzleData
+          })
+        })
+      }
 
-      const result = await response.json()
+      result = await response.json()
       
       if (!response.ok) {
         console.error("API error:", result)
@@ -604,16 +656,23 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       }
       
       console.log("Puzzle saved successfully:", result)
-      alert("Puzzle created successfully!")
-      // Reset form
-      setPuzzleDate("")
-      setSelectedMovie(null)
-      setSelectedTitle(null)
-      setDistractors([])
-      setIsPublished(false)
-      setAlternativeTitles([])
-      setCustomTitle("")
-      setEnglishTranslation("")
+      
+      if (isEditMode) {
+        alert("Puzzle updated successfully!")
+        // Keep form data for further editing
+      } else {
+        alert("Puzzle created successfully!")
+        // Reset form
+        setPuzzleDate("")
+        setSelectedMovie(null)
+        setSelectedTitle(null)
+        setDistractors([])
+        setAllOptions([])
+        setIsPublished(false)
+        setAlternativeTitles([])
+        setCustomTitle("")
+        setEnglishTranslation("")
+      }
       
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
@@ -659,7 +718,9 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       {/* Editor Form */}
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Create Retitled Puzzle</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {isEditMode ? "Edit Retitled Puzzle" : "Create Retitled Puzzle"}
+          </h2>
           <p className="text-sm text-gray-600">
             Players guess the original movie from its foreign title
           </p>
@@ -888,12 +949,12 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Saving...
+              {isEditMode ? "Updating..." : "Saving..."}
             </>
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              Save Puzzle
+              {isEditMode ? "Update Puzzle" : "Save Puzzle"}
             </>
           )}
         </Button>
