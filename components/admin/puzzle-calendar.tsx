@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
-import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -203,6 +203,7 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
   const [puzzles, setPuzzles] = useState<{ scheduled: Puzzle[]; drafts: Puzzle[] }>({ scheduled: [], drafts: [] })
   const [draggedPuzzle, setDraggedPuzzle] = useState<Puzzle | null>(null)
   const [loading, setLoading] = useState(true)
+  const [autoScheduling, setAutoScheduling] = useState(false)
 
   // Configure drag sensor with activation delay for click-and-hold
   const sensors = useSensors(
@@ -236,6 +237,143 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
       console.error('Error fetching puzzles:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const autoScheduleDrafts = async () => {
+    if (puzzles.drafts.length === 0) {
+      alert('No draft puzzles available to schedule.')
+      return
+    }
+
+    // Show confirmation dialog with preview
+    const confirmMessage = `Auto Schedule will assign ${puzzles.drafts.length} draft puzzles to empty slots starting from tomorrow. This action can be undone by dragging puzzles back to drafts. Continue?`
+    
+    if (!confirm(confirmMessage)) {
+      return
+    }
+
+    setAutoScheduling(true)
+    
+    try {
+      // Generate date range starting from tomorrow
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+      
+      const endDate = new Date(tomorrow)
+      endDate.setDate(endDate.getDate() + 60) // Look ahead 60 days
+      
+      // Get existing scheduled puzzles for the date range
+      const response = await fetch(
+        `/api/admin/puzzles/schedule?start=${format(tomorrow, 'yyyy-MM-dd')}&end=${format(endDate, 'yyyy-MM-dd')}`
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch scheduled puzzles')
+      }
+      
+      const scheduledData = await response.json()
+      const scheduledPuzzles = scheduledData.scheduled || []
+      
+      // Create a map of dates to game types that are already scheduled
+      const scheduledGamesByDate = new Map<string, Set<string>>()
+      scheduledPuzzles.forEach((puzzle: Puzzle) => {
+        if (puzzle.puzzle_date) {
+          const dateStr = puzzle.puzzle_date
+          if (!scheduledGamesByDate.has(dateStr)) {
+            scheduledGamesByDate.set(dateStr, new Set())
+          }
+          scheduledGamesByDate.get(dateStr)!.add(puzzle.game_type)
+        }
+      })
+      
+      // Group drafts by game type
+      const draftsByGameType = puzzles.drafts.reduce((groups, draft) => {
+        if (!groups[draft.game_type]) {
+          groups[draft.game_type] = []
+        }
+        groups[draft.game_type].push(draft)
+        return groups
+      }, {} as Record<string, Puzzle[]>)
+      
+      // Generate assignments
+      const assignments: Array<{ puzzleId: string; gameType: string; targetDate: string }> = []
+      const gameTypePriority = ['retitled', 'budget_bracket', 'cast_climb', 'poster_pixels']
+      
+      // Track which drafts have been assigned
+      const assignedDrafts = new Set<string>()
+      
+      // Iterate through dates starting from tomorrow
+      for (let i = 0; i < 60 && assignments.length < puzzles.drafts.length; i++) {
+        const currentDate = new Date(tomorrow)
+        currentDate.setDate(currentDate.getDate() + i)
+        const dateStr = format(currentDate, 'yyyy-MM-dd')
+        
+        const scheduledForDate = scheduledGamesByDate.get(dateStr) || new Set()
+        
+        // For each game type, check if there's an empty slot
+        for (const gameType of gameTypePriority) {
+          if (!scheduledForDate.has(gameType) && draftsByGameType[gameType]) {
+            // Find the next unassigned draft of this type
+            const availableDraft = draftsByGameType[gameType].find(draft => !assignedDrafts.has(draft.id))
+            
+            if (availableDraft) {
+              assignments.push({
+                puzzleId: availableDraft.id,
+                gameType: availableDraft.game_type,
+                targetDate: dateStr
+              })
+              assignedDrafts.add(availableDraft.id)
+              scheduledForDate.add(gameType)
+              
+              // Stop if we've assigned all drafts
+              if (assignments.length >= puzzles.drafts.length) {
+                break
+              }
+            }
+          }
+        }
+      }
+      
+      if (assignments.length === 0) {
+        alert('No available slots found for scheduling. All dates may already have puzzles for each game type.')
+        return
+      }
+      
+      // Send assignments to API
+      const autoScheduleResponse = await fetch('/api/admin/puzzles/auto-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assignments })
+      })
+      
+      const result = await autoScheduleResponse.json()
+      
+      if (result.success) {
+        alert(`Successfully scheduled ${result.stats.successful} puzzles!`)
+        // Refresh the puzzles
+        await fetchPuzzles()
+      } else {
+        const errorMessage = result.errors && result.errors.length > 0
+          ? `Scheduled ${result.stats.successful} puzzles, but ${result.stats.failed} failed:\n${result.errors.map((e: any) => e.error).join('\n')}`
+          : result.message || 'Some puzzles could not be scheduled'
+        
+        alert(errorMessage)
+        
+        // Still refresh if some succeeded
+        if (result.stats.successful > 0) {
+          await fetchPuzzles()
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error auto-scheduling puzzles:', error)
+      alert('Failed to auto-schedule puzzles. Please try again.')
+    } finally {
+      setAutoScheduling(false)
     }
   }
 
@@ -541,6 +679,20 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
                 {puzzles.drafts.length} unpublished • Hold to drag and schedule
               </span>
             </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={autoScheduleDrafts}
+              disabled={puzzles.drafts.length === 0 || autoScheduling}
+              className="flex items-center gap-1.5 text-xs border-cinema-red/30 text-cinema-red hover:bg-cinema-red hover:text-white hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29)] hover:-translate-y-0.5 transition-all duration-200"
+            >
+              {autoScheduling ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Sparkles className="w-3 h-3" />
+              )}
+              Auto Schedule
+            </Button>
           </div>
           
           <ScrollArea className="h-[250px] pr-3">
