@@ -17,9 +17,13 @@ import {
   Filter,
   Star,
   DollarSign,
-  Users
+  Users,
+  PlayCircle,
+  Trophy,
+  CalendarDays
 } from "lucide-react"
 import { format, addMonths, isAfter, formatDistanceToNow } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface Movie {
   id: number
@@ -49,8 +53,17 @@ interface MovieUsageData {
 }
 
 type FilterStatus = "all" | "available" | "recently-used" | "coming-soon" | "not-released"
+type TabType = 'search' | 'now_playing' | 'popular' | 'top_rated' | 'upcoming'
+
+interface CachedList {
+  movies: Movie[]
+  loaded: boolean
+  loading: boolean
+  error?: string
+}
 
 export default function AdminMovieSearch() {
+  const [activeTab, setActiveTab] = useState<TabType>('search')
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Movie[]>([])
   const [loading, setLoading] = useState(false)
@@ -60,6 +73,14 @@ export default function AdminMovieSearch() {
   const [loadingUsage, setLoadingUsage] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all")
   const [hoveredMovieId, setHoveredMovieId] = useState<number | null>(null)
+  
+  // State for cached movie lists
+  const [cachedLists, setCachedLists] = useState<Record<Exclude<TabType, 'search'>, CachedList>>({
+    now_playing: { movies: [], loaded: false, loading: false },
+    popular: { movies: [], loaded: false, loading: false },
+    top_rated: { movies: [], loaded: false, loading: false },
+    upcoming: { movies: [], loaded: false, loading: false }
+  })
   
   const supabase = getSupabaseClient()
   const router = useRouter()
@@ -137,6 +158,77 @@ export default function AdminMovieSearch() {
     }
   }
 
+  // Function to fetch cached movie lists
+  const fetchMovieList = async (listType: Exclude<TabType, 'search'>) => {
+    if (cachedLists[listType].loaded || cachedLists[listType].loading) {
+      return
+    }
+
+    setCachedLists(prev => ({
+      ...prev,
+      [listType]: { ...prev[listType], loading: true }
+    }))
+
+    try {
+      const endpoint = `/api/movies/${listType.replace('_', '-')}`
+      const response = await fetch(endpoint)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${listType} movies`)
+      }
+      
+      const data = await response.json()
+      const movies = data.results || []
+
+      setCachedLists(prev => ({
+        ...prev,
+        [listType]: {
+          movies: movies,
+          loaded: true,
+          loading: false
+        }
+      }))
+
+    } catch (error) {
+      console.error(`Error fetching ${listType} movies:`, error)
+      setCachedLists(prev => ({
+        ...prev,
+        [listType]: {
+          movies: [],
+          loaded: false,
+          loading: false,
+          error: `Failed to load ${listType.replace('_', ' ')} movies`
+        }
+      }))
+    }
+  }
+
+  // Handle tab changes
+  const handleTabChange = (tabType: TabType) => {
+    setActiveTab(tabType)
+    if (tabType !== 'search') {
+      fetchMovieList(tabType)
+    }
+  }
+
+  // Get current movie list to display
+  const getCurrentMovies = (): Movie[] => {
+    if (activeTab === 'search') {
+      return searchResults
+    } else {
+      return cachedLists[activeTab].movies
+    }
+  }
+
+  // Get current loading state
+  const getCurrentLoading = (): boolean => {
+    if (activeTab === 'search') {
+      return loading
+    } else {
+      return cachedLists[activeTab].loading
+    }
+  }
+
   const searchMovies = useCallback(async () => {
     if (!searchQuery.trim()) return
 
@@ -202,7 +294,7 @@ export default function AdminMovieSearch() {
     }
   }
 
-  const filteredResults = searchResults.filter(movie => {
+  const filteredResults = getCurrentMovies().filter(movie => {
     if (filterStatus === "all") return true
     const status = getMovieStatus(movie).status
     return status === filterStatus
@@ -220,33 +312,66 @@ export default function AdminMovieSearch() {
     setSelectedMovie(movie)
   }
 
+  // Tab configuration
+  const tabs = [
+    { key: 'search' as TabType, label: 'Search', icon: Search },
+    { key: 'now_playing' as TabType, label: 'Now Playing', icon: PlayCircle },
+    { key: 'popular' as TabType, label: 'Popular', icon: TrendingUp },
+    { key: 'top_rated' as TabType, label: 'Top Rated', icon: Trophy },
+    { key: 'upcoming' as TabType, label: 'Upcoming', icon: CalendarDays },
+  ]
+
   return (
     <div>
       <h1 className="text-3xl font-funnel-display-bold text-neutral-900 mb-8">Movie Search</h1>
       
-      {/* Search Bar with Animation */}
-      <div className="mb-8">
-        <div className="relative max-w-2xl group">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && searchMovies()}
-            placeholder="Search for movies..."
-            className="admin-input w-full pr-12"
-          />
-          <button
-            onClick={searchMovies}
-            disabled={loading}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-500 hover:text-cinema-red disabled:opacity-50 transition-all duration-200 hover:scale-110"
-          >
-            <Search className={`w-5 h-5 ${loading ? 'animate-pulse' : ''}`} />
-          </button>
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 border-2",
+                activeTab === tab.key
+                  ? "bg-white text-cinema-red border-cinema-red shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
+                  : "bg-white text-gray-600 border-neutral-200 hover:text-cinema-red hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]"
+              )}
+              style={{ borderRadius: 0 }}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
+      
+      {/* Search Bar with Animation - Only show on search tab */}
+      {activeTab === 'search' && (
+        <div className="mb-8">
+          <div className="relative max-w-2xl group">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchMovies()}
+              placeholder="Search for movies..."
+              className="admin-input w-full pr-12"
+            />
+            <button
+              onClick={searchMovies}
+              disabled={loading}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-neutral-500 hover:text-cinema-red disabled:opacity-50 transition-all duration-200 hover:scale-110"
+            >
+              <Search className={`w-5 h-5 ${loading ? 'animate-pulse' : ''}`} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter Buttons */}
-      {searchResults.length > 0 && (
+      {getCurrentMovies().length > 0 && (
         <div className="mb-6 flex flex-wrap gap-2">
           {filterButtons.map((filter) => {
             const Icon = filter.icon
@@ -268,7 +393,7 @@ export default function AdminMovieSearch() {
                 <span>{filter.label}</span>
                 {filter.value !== "all" && (
                   <span className="ml-1 text-xs opacity-75">
-                    ({searchResults.filter(m => {
+                    ({getCurrentMovies().filter(m => {
                       const status = getMovieStatus(m).status
                       return status === filter.value
                     }).length})
@@ -282,7 +407,7 @@ export default function AdminMovieSearch() {
 
 
       {/* Search Results */}
-      {loading ? (
+      {getCurrentLoading() ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {[...Array(12)].map((_, i) => (
             <div key={i} className="animate-pulse">
@@ -292,7 +417,7 @@ export default function AdminMovieSearch() {
             </div>
           ))}
         </div>
-      ) : searchResults.length > 0 ? (
+      ) : getCurrentMovies().length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {filteredResults.map((movie) => {
             const { status, label, color, icon: StatusIcon, bgColor } = getMovieStatus(movie)
@@ -391,13 +516,13 @@ export default function AdminMovieSearch() {
             )
           })}
         </div>
-      ) : searchQuery && !loading ? (
+      ) : activeTab === 'search' && searchQuery && !getCurrentLoading() ? (
         <div className="text-center py-12">
           <Film className="w-16 h-16 text-gray-300 mx-auto mb-4 animate-pulse" />
           <p className="text-gray-500">No movies found for "{searchQuery}"</p>
           <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
         </div>
-      ) : (
+      ) : activeTab === 'search' ? (
         <div className="text-center py-12">
           <div className="relative inline-block">
             <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -406,7 +531,13 @@ export default function AdminMovieSearch() {
           <p className="text-gray-500">Search for movies to see results</p>
           <p className="text-sm text-gray-400 mt-2">Discover the perfect film for your next puzzle</p>
         </div>
-      )}
+      ) : !getCurrentLoading() && cachedLists[activeTab as Exclude<TabType, 'search'>].error ? (
+        <div className="text-center py-12">
+          <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">{cachedLists[activeTab as Exclude<TabType, 'search'>].error}</p>
+          <p className="text-sm text-gray-400 mt-2">Please try again later</p>
+        </div>
+      ) : null}
 
       {/* Movie Detail Modal */}
       {selectedMovie && (

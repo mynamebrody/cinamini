@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight, GripVertical } from "lucide-react"
+import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight, GripVertical, Sparkles } from "lucide-react"
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -296,6 +296,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragOverMovie, setDragOverMovie] = useState<string | null>(null)
 
+  // Auto-fill state
+  const [cachedMovies, setCachedMovies] = useState<Movie[]>([])
+  const [recentlyUsedMovies, setRecentlyUsedMovies] = useState<Set<number>>(new Set())
+  const [autoFilling, setAutoFilling] = useState(false)
+  const [cachedMoviesLoaded, setCachedMoviesLoaded] = useState(false)
+
   const supabase = getSupabaseClient()
 
   // Configure drag sensors
@@ -336,6 +342,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       loadPuzzleData(puzzleId)
     }
   }, [puzzleId])
+
+  // Load recently used movies and cached movies on component mount
+  useEffect(() => {
+    fetchRecentlyUsedMovies()
+    fetchCachedMovies() // Also preload cached movies
+  }, [])
 
   const loadPuzzleData = async (puzzleId: string) => {
     setLoadingPuzzle(true)
@@ -399,6 +411,109 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
   }
 
+  const fetchRecentlyUsedMovies = async () => {
+    try {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const dateStr = thirtyDaysAgo.toISOString().split('T')[0]
+
+      const usedMovieIds = new Set<number>()
+
+      // Check retitled puzzles
+      const { data: retitledData } = await supabase
+        .from('retitled_puzzles')
+        .select('film_id')
+        .gte('puzzle_date', dateStr)
+
+      if (retitledData) {
+        retitledData.forEach(puzzle => usedMovieIds.add(puzzle.film_id))
+      }
+
+      // Check cast climb puzzles
+      const { data: castClimbData } = await supabase
+        .from('cast_climb_puzzles')
+        .select('film_id')
+        .gte('puzzle_date', dateStr)
+
+      if (castClimbData) {
+        castClimbData.forEach(puzzle => usedMovieIds.add(puzzle.film_id))
+      }
+
+      // Check budget bracket puzzles
+      const { data: budgetBracketData } = await supabase
+        .from('budget_bracket_puzzles')
+        .select('pairs')
+        .gte('puzzle_date', dateStr)
+
+      if (budgetBracketData) {
+        budgetBracketData.forEach(puzzle => {
+          if (puzzle.pairs) {
+            puzzle.pairs.forEach((pair: any) => {
+              if (pair.movieA?.id) usedMovieIds.add(pair.movieA.id)
+              if (pair.movieB?.id) usedMovieIds.add(pair.movieB.id)
+            })
+          }
+        })
+      }
+
+      // Check poster pixels puzzles
+      const { data: posterPixelsData } = await supabase
+        .from('poster_pixels_puzzles')
+        .select('film_id')
+        .gte('puzzle_date', dateStr)
+
+      if (posterPixelsData) {
+        posterPixelsData.forEach(puzzle => {
+          if (puzzle.film_id) usedMovieIds.add(puzzle.film_id)
+        })
+      }
+
+      setRecentlyUsedMovies(usedMovieIds)
+      console.log('Recently used movies in last 30 days:', usedMovieIds.size)
+
+    } catch (error) {
+      console.error('Error fetching recently used movies:', error)
+    }
+  }
+
+  const fetchCachedMovies = async () => {
+    if (cachedMoviesLoaded) return
+
+    try {
+      const endpoints = [
+        '/api/movies/popular',
+        '/api/movies/top-rated',
+        '/api/movies/now-playing'
+      ]
+
+      const moviePool: Movie[] = []
+      
+      for (const endpoint of endpoints) {
+        const response = await fetch(endpoint)
+        if (response.ok) {
+          const data = await response.json()
+          const movies = data.results || []
+          moviePool.push(...movies)
+        }
+      }
+
+      // Remove duplicates and filter by budget requirements
+      const uniqueMovies = Array.from(
+        new Map(moviePool.map(movie => [movie.id, movie])).values()
+      ).filter(movie => {
+        // Must have valid budget >= $100
+        return movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
+      })
+
+      setCachedMovies(uniqueMovies)
+      setCachedMoviesLoaded(true)
+      console.log('Cached movies loaded:', uniqueMovies.length)
+
+    } catch (error) {
+      console.error('Error fetching cached movies:', error)
+    }
+  }
+
   // Auto-publish when date is manually set
   const handleDateChange = (date: string) => {
     setPuzzleDate(date)
@@ -455,6 +570,237 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (pair.movieB) ids.push(pair.movieB.id)
     })
     return ids
+  }
+
+  // Helper function to fetch movies with cascading fallback: similar → recommendations → trending
+  const fetchMoviesWithFallback = async (movieId: number): Promise<Movie[]> => {
+    const endpoints = [
+      { name: 'similar', url: `/api/movies/${movieId}/similar` },
+      { name: 'recommendations', url: `/api/movies/${movieId}/recommendations` },
+      { name: 'trending', url: `/api/movies/trending` }
+    ]
+    
+    let allMovies: Movie[] = []
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`Trying ${endpoint.name} movies...`)
+        const response = await fetch(endpoint.url)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const movies = data.results || []
+          console.log(`${endpoint.name} returned ${movies.length} movies`)
+          
+          if (movies.length > 0) {
+            allMovies.push(...movies)
+            
+            // Stop if we have enough movies (let's aim for at least 20 total)
+            if (allMovies.length >= 20) {
+              console.log(`Collected ${allMovies.length} movies, stopping cascade`)
+              break
+            }
+          }
+        } else {
+          console.log(`${endpoint.name} API failed with status:`, response.status)
+        }
+      } catch (error) {
+        console.log(`Error fetching ${endpoint.name} movies:`, error)
+      }
+    }
+    
+    // Remove duplicates based on movie ID
+    const uniqueMovies = allMovies.filter((movie, index, arr) => 
+      arr.findIndex(m => m.id === movie.id) === index
+    )
+    
+    console.log(`Final cascaded movie count: ${uniqueMovies.length}`)
+    return uniqueMovies
+  }
+
+  const autoFillPairs = async () => {
+    setAutoFilling(true)
+    
+    try {
+      // Ensure cached movies are loaded
+      await fetchCachedMovies()
+      
+      // Get currently used movie IDs
+      const usedIds = getUsedMovieIds()
+      
+      // Count empty slots
+      let emptySlots = 0
+      moviePairs.forEach(pair => {
+        if (!pair.movieA) emptySlots++
+        if (!pair.movieB) emptySlots++
+      })
+      
+      if (emptySlots === 0) {
+        console.log('All slots are filled')
+        return
+      }
+
+      let availableMovies: Movie[] = []
+
+      // Check if we have any movies selected already
+      const hasSelectedMovies = usedIds.length > 0
+      
+      if (hasSelectedMovies) {
+        // Use cascading movie discovery: similar → recommendations → trending
+        const firstMovieId = usedIds[0]
+        console.log('Fetching movies for:', firstMovieId)
+        
+        availableMovies = await fetchMoviesWithFallback(firstMovieId)
+      } else {
+        // Start with 0 selected movies: pick random from popular, then get similar movies
+        console.log('No movies selected, picking random movie from cached popular list')
+        
+        // Ensure cached movies are loaded
+        await fetchCachedMovies()
+        
+        if (cachedMovies.length === 0) {
+          console.log('No cached movies available, cannot auto-fill')
+          alert('No movies available for auto-fill. Please try again later or manually select movies.')
+          return
+        }
+        
+        // Filter out recently used movies first
+        const availableCachedMovies = cachedMovies.filter(movie => {
+          return !recentlyUsedMovies.has(movie.id)
+        })
+        
+        const moviesToChooseFrom = availableCachedMovies.length > 0 ? availableCachedMovies : cachedMovies
+        
+        // Pick a random movie from the available cached movies
+        const randomIndex = Math.floor(Math.random() * moviesToChooseFrom.length)
+        const baseMovie = moviesToChooseFrom[randomIndex]
+        
+        console.log('Using random base movie for cascading discovery:', baseMovie.title, '(', baseMovie.id, ')')
+        
+        try {
+          availableMovies = await fetchMoviesWithFallback(baseMovie.id)
+          // Include the base movie as first option
+          availableMovies.unshift(baseMovie)
+          console.log('Total movies after cascade:', availableMovies.length)
+        } catch (error) {
+          console.log('Error in cascading movie fetch, using cached movies')
+          availableMovies = [baseMovie, ...cachedMovies]
+        }
+      }
+
+      // Add debugging to see what we have
+      console.log('Available movies count:', availableMovies.length)
+      console.log('Recently used movie IDs:', Array.from(recentlyUsedMovies))
+      console.log('Currently used movie IDs:', usedIds)
+      
+      // Filter out recently used and already selected movies
+      let filteredMovies = availableMovies.filter(movie => {
+        const notRecentlyUsed = !recentlyUsedMovies.has(movie.id)
+        const notCurrentlyUsed = !usedIds.includes(movie.id)
+        const hasBudget = movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
+        
+        if (!notRecentlyUsed) {
+          console.log(`Filtered out ${movie.title} (${movie.id}) - recently used`)
+        }
+        if (!notCurrentlyUsed) {
+          console.log(`Filtered out ${movie.title} (${movie.id}) - currently used`)
+        }
+        if (!hasBudget) {
+          console.log(`Filtered out ${movie.title} (${movie.id}) - budget issue:`, movie.budget)
+        }
+        
+        return notRecentlyUsed && notCurrentlyUsed && hasBudget
+      })
+      
+      console.log('Movies after filtering:', filteredMovies.length)
+      
+      // If no movies pass the strict filter, try a more lenient approach
+      if (filteredMovies.length === 0) {
+        console.log('Strict filtering failed, trying lenient approach...')
+        
+        // Try without budget requirement first (we can fetch details later)
+        filteredMovies = availableMovies.filter(movie => {
+          return !recentlyUsedMovies.has(movie.id) && 
+                 !usedIds.includes(movie.id)
+        })
+        
+        console.log('Movies after lenient filtering (no budget check):', filteredMovies.length)
+        
+        if (filteredMovies.length === 0) {
+          console.log('No suitable movies found even with lenient filtering')
+          alert('No suitable movies found. The similar movies API may have returned movies that are recently used or already selected.')
+          return
+        }
+        
+        // Take first few movies and fetch their details to check budgets
+        const moviesToCheck = filteredMovies.slice(0, 15) // Check more movies to increase chances
+        console.log('Fetching budget details for candidate movies...')
+        
+        const moviesWithBudgets = []
+        for (const movie of moviesToCheck) {
+          try {
+            const response = await fetch(`/api/movies/${movie.id}/details`)
+            if (response.ok) {
+              const details = await response.json()
+              if (details.budget && details.budget >= 100) {
+                moviesWithBudgets.push({
+                  ...movie,
+                  budget: details.budget,
+                  revenue: details.revenue,
+                  runtime: details.runtime
+                })
+                
+                // Stop when we have enough movies for all slots
+                if (moviesWithBudgets.length >= 10) break
+              }
+            }
+          } catch (error) {
+            console.log(`Failed to fetch details for ${movie.title}:`, error)
+          }
+        }
+        
+        filteredMovies = moviesWithBudgets
+        console.log('Final movies with valid budgets:', filteredMovies.length)
+      }
+
+      if (filteredMovies.length === 0) {
+        console.log('No suitable movies found for auto-fill after all attempts')
+        alert('No suitable movies found with budgets ≥ $100. Try manually selecting movies or wait for the cached movie list to update.')
+        return
+      }
+
+      // Shuffle the filtered movies for randomness
+      const shuffledMovies = filteredMovies.sort(() => Math.random() - 0.5)
+
+      // Fill empty slots
+      const newPairs = [...moviePairs]
+      let movieIndex = 0
+
+      for (let pairIdx = 0; pairIdx < newPairs.length && movieIndex < shuffledMovies.length; pairIdx++) {
+        const pair = newPairs[pairIdx]
+        
+        if (!pair.movieA && movieIndex < shuffledMovies.length) {
+          pair.movieA = shuffledMovies[movieIndex]
+          movieIndex++
+        }
+        
+        if (!pair.movieB && movieIndex < shuffledMovies.length) {
+          pair.movieB = shuffledMovies[movieIndex]
+          movieIndex++
+        }
+      }
+
+      setMoviePairs(newPairs)
+      
+      const filledSlots = Math.min(emptySlots, shuffledMovies.length)
+      console.log(`Auto-filled ${filledSlots} movie slots`)
+
+    } catch (error) {
+      console.error('Error auto-filling movies:', error)
+      alert('Failed to auto-fill movies. Please try again.')
+    } finally {
+      setAutoFilling(false)
+    }
   }
 
   // Drag and drop handlers
@@ -840,6 +1186,21 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Movie Pairs</h3>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={autoFillPairs}
+                disabled={autoFilling || moviePairs.every(p => p.movieA && p.movieB)}
+                className="flex items-center gap-1.5 text-xs"
+                title="Auto-fill empty slots with similar movies"
+              >
+                {autoFilling ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                Auto-Fill
+              </Button>
               <Badge variant="outline">
                 {moviePairs.filter(p => p.movieA && p.movieB).length}/{TOTAL_PAIRS} Complete
               </Badge>
