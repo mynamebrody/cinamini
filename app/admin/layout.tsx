@@ -45,7 +45,7 @@ export default async function AdminLayout({
       name: "Supabase DB", 
       href: process.env.NODE_ENV !== "production" 
         ? "http://127.0.0.1:54323/" 
-        : process.env.NEXT_PUBLIC_SUPABASE_URL || "https://supabase.com", 
+        : "https://supabase.com/dashboard/project/kihoxjuvbxzetmsefdeb", 
       icon: Database, 
       external: true 
     },

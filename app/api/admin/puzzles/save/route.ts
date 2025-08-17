@@ -129,6 +129,11 @@ function validateRetitledPuzzle(data: any): string | null {
     return 'distractor_ids must be an array'
   }
   
+  // puzzle_date can be null for drafts
+  if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
+    return 'puzzle_date must be a string or null'
+  }
+  
   return null
 }
 
@@ -142,6 +147,11 @@ function validateBudgetBracketPuzzle(data: any): string | null {
   
   if (!Array.isArray(data.pairs)) {
     return 'pairs must be an array'
+  }
+  
+  // puzzle_date can be null for drafts
+  if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
+    return 'puzzle_date must be a string or null'
   }
   
   return null
@@ -186,6 +196,11 @@ function validatePosterPixelsPuzzle(data: any): string | null {
     if (typeof data.difficulty_level !== 'number' || data.difficulty_level < 1 || data.difficulty_level > 5) {
       return 'difficulty_level must be a number between 1 and 5'
     }
+  }
+  
+  // puzzle_date can be null for drafts
+  if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
+    return 'puzzle_date must be a string or null'
   }
   
   // Validate is_published if provided
@@ -240,6 +255,11 @@ function validateCastClimbPuzzle(data: any): string | null {
     if (typeof data.difficulty_level !== 'number' || data.difficulty_level < 1 || data.difficulty_level > 5) {
       return 'difficulty_level must be a number between 1 and 5'
     }
+  }
+  
+  // puzzle_date can be null for drafts
+  if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
+    return 'puzzle_date must be a string or null'
   }
   
   // Validate is_published if provided

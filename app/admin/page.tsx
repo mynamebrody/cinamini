@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Cookies from "js-cookie"
+import GameSelectorMenu from "@/components/admin/shared/game-selector-menu"
 import { 
   Calendar,
   Film,
@@ -44,8 +46,17 @@ interface TrendingMovie {
 export default function AdminDashboard() {
   const [trendingMovies, setTrendingMovies] = useState<TrendingMovie[]>([])
   const [selectedMovie, setSelectedMovie] = useState<TrendingMovie | null>(null)
+  const [showGameSelector, setShowGameSelector] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [showQuickGuide, setShowQuickGuide] = useState(true)
+  const [showQuickGuide, setShowQuickGuide] = useState(false) // Default to false, will be set by useEffect
+
+  useEffect(() => {
+    // Check if user has dismissed the guide before
+    const hasSeenGuide = Cookies.get('admin-guide-dismissed')
+    if (!hasSeenGuide) {
+      setShowQuickGuide(true)
+    }
+  }, [])
 
   useEffect(() => {
     fetchTrendingMovies()
@@ -122,7 +133,10 @@ export default function AdminDashboard() {
                 <CardTitle className="text-lg text-blue-900 font-funnel-display-bold">Admin Quick Start Guide</CardTitle>
               </div>
               <button
-                onClick={() => setShowQuickGuide(false)}
+                onClick={() => {
+                  setShowQuickGuide(false)
+                  Cookies.set('admin-guide-dismissed', 'true', { expires: 365 }) // Expires in 1 year
+                }}
                 className="text-neutral-400 hover:text-neutral-600 transition-colors p-1"
               >
                 <X className="w-5 h-5" />
@@ -223,9 +237,7 @@ export default function AdminDashboard() {
                 className="cursor-pointer group"
                 onClick={() => fetchMovieDetails(movie.id)}
               >
-                <div className="relative overflow-hidden border-2 border-neutral-200 transition-all group-hover:border-cinema-red group-hover:scale-[1.02]" style={{
-                  boxShadow: '2px 2px 0px 0px rgba(0,0,0,0.1)'
-                }}>
+                <div className="admin-movie-poster relative overflow-hidden group-hover:scale-[1.02]">
                   <img
                     src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
                     alt={movie.title}
@@ -251,10 +263,18 @@ export default function AdminDashboard() {
           onClick={() => setSelectedMovie(null)}
         >
           <div
-            className="bg-white max-w-3xl w-full max-h-[90vh] overflow-y-auto admin-card animate-scale-in"
+            className="bg-white max-w-3xl w-full max-h-[90vh] overflow-y-auto admin-modal-silver animate-scale-in relative"
             onClick={(e) => e.stopPropagation()}
+            style={{ borderRadius: 0 }}
           >
-            <div className="p-6">
+            {/* Close button in corner */}
+            <button
+              onClick={() => setSelectedMovie(null)}
+              className="admin-modal-ghost-close absolute top-4 right-4 z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-6 pr-12"> {/* Add right padding for close button */}
               <div className="flex gap-6 mb-6">
                 <img
                   src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
@@ -350,17 +370,36 @@ export default function AdminDashboard() {
                 )}
               </div>
 
+              {/* Add to Puzzle button */}
               <div className="mt-6 flex justify-end">
                 <button
-                  onClick={() => setSelectedMovie(null)}
-                  className="admin-btn-secondary"
+                  onClick={() => {
+                    setShowGameSelector(true)
+                  }}
+                  className="admin-btn-puzzle"
                 >
-                  Close
+                  Add to Puzzle
                 </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Game Selector Modal */}
+      {showGameSelector && selectedMovie && (
+        <GameSelectorMenu
+          movie={{
+            id: selectedMovie.id,
+            title: selectedMovie.title,
+            poster_path: selectedMovie.poster_path,
+            release_date: selectedMovie.release_date
+          }}
+          onClose={() => {
+            setShowGameSelector(false)
+            setSelectedMovie(null)
+          }}
+        />
       )}
     </div>
   )

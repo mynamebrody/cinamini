@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight } from "lucide-react"
 import { format } from "date-fns"
@@ -68,7 +69,14 @@ function MovieCard({ movie }: { movie: Movie }) {
   )
 }
 
-export default function BudgetBracketEditor() {
+interface BudgetBracketEditorProps {
+  prefilledDate?: string | null
+  onDateChange?: (date: string | null) => void
+  puzzleId?: string | null
+  // Note: Budget Bracket doesn't use movieId since it generates random pairs
+}
+
+export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzleId }: BudgetBracketEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [moviePairs, setMoviePairs] = useState<MoviePair[]>(
     Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null }))
@@ -80,6 +88,8 @@ export default function BudgetBracketEditor() {
     pairIndex: number
     slot: "A" | "B"
   } | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [loadingPuzzle, setLoadingPuzzle] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -94,6 +104,105 @@ export default function BudgetBracketEditor() {
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
+
+  // Handle prefilled date from URL parameters
+  useEffect(() => {
+    if (prefilledDate && !isEditMode) {
+      setPuzzleDate(prefilledDate)
+      setIsPublished(true) // Auto-publish when date is set
+    }
+  }, [prefilledDate, isEditMode])
+
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId) {
+      loadPuzzleData(puzzleId)
+    }
+  }, [puzzleId])
+
+  const loadPuzzleData = async (puzzleId: string) => {
+    setLoadingPuzzle(true)
+    try {
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load puzzle data')
+      }
+      
+      const response_data = await response.json()
+      
+      // Extract puzzle data from the response
+      const puzzleData = response_data.puzzle
+      
+      // Set edit mode
+      setIsEditMode(true)
+      
+      // Load puzzle fields
+      setPuzzleDate(puzzleData.puzzle_date || "")
+      setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
+      
+      // Parse and load movie pairs
+      if (puzzleData.pairs) {
+        const loadedPairs = puzzleData.pairs.map((pair: any) => ({
+          movieA: pair.movieA ? {
+            id: pair.movieA.id,
+            title: pair.movieA.title,
+            poster_path: pair.movieA.poster_path,
+            release_date: pair.movieA.release_date,
+            budget: pair.movieA.budget,
+            revenue: pair.movieA.revenue,
+            runtime: pair.movieA.runtime,
+            vote_average: pair.movieA.vote_average
+          } : null,
+          movieB: pair.movieB ? {
+            id: pair.movieB.id,
+            title: pair.movieB.title,
+            poster_path: pair.movieB.poster_path,
+            release_date: pair.movieB.release_date,
+            budget: pair.movieB.budget,
+            revenue: pair.movieB.revenue,
+            runtime: pair.movieB.runtime,
+            vote_average: pair.movieB.vote_average
+          } : null
+        }))
+        
+        // Ensure we have exactly 5 pairs
+        while (loadedPairs.length < TOTAL_PAIRS) {
+          loadedPairs.push({ movieA: null, movieB: null })
+        }
+        
+        setMoviePairs(loadedPairs)
+      }
+      
+    } catch (error) {
+      console.error('Error loading puzzle:', error)
+      alert('Failed to load puzzle data. Please try again.')
+    } finally {
+      setLoadingPuzzle(false)
+    }
+  }
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
+  }
+
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
+    }
+  }
 
   const handleSelectMovie = (movie: Movie) => {
     if (selectedPosition) {
@@ -205,19 +314,31 @@ export default function BudgetBracketEditor() {
       console.log('Movies hydrated successfully:', hydrationResult.stats)
 
       // Step 3: Generate puzzle metadata
-      const timestamp = Date.now().toString(36)
-      const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
-      const seedValue = `bb_${dateStr}_${timestamp}`.substring(0, 32)
+      let puzzleNumber: number
+      let seedValue: string
+      
+      if (isEditMode && puzzleId) {
+        // For updates, preserve existing puzzle number and seed value
+        const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
+        const existingPuzzle = await response.json()
+        puzzleNumber = existingPuzzle.puzzle_number
+        seedValue = existingPuzzle.seed_value
+      } else {
+        // For new puzzles, generate new values
+        const timestamp = Date.now().toString(36)
+        const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
+        seedValue = `bb_${dateStr}_${timestamp}`.substring(0, 32)
 
-      // Get the highest puzzle number and increment
-      const { data: latestPuzzle } = await supabase
-        .from('budget_bracket_puzzles')
-        .select('puzzle_number')
-        .order('puzzle_number', { ascending: false })
-        .limit(1)
-        .single()
+        // Get the highest puzzle number and increment
+        const { data: latestPuzzle } = await supabase
+          .from('budget_bracket_puzzles')
+          .select('puzzle_number')
+          .order('puzzle_number', { ascending: false })
+          .limit(1)
+          .single()
 
-      const puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+      }
       
       // Step 4: Create puzzle data with hydrated pairs
       const puzzleData = {
@@ -238,32 +359,39 @@ export default function BudgetBracketEditor() {
         }))
       })
 
-      // Step 5: Save the puzzle with unified structure
-      const response = await fetch('/api/admin/puzzles/save', {
-        method: 'POST',
+      // Step 5: Save or update the puzzle with unified structure
+      const apiUrl = isEditMode && puzzleId 
+        ? `/api/admin/puzzles/update`
+        : '/api/admin/puzzles/save'
+      
+      const requestBody = isEditMode && puzzleId
+        ? { gameType: 'budget_bracket', puzzleData, puzzleId }
+        : { gameType: 'budget_bracket', puzzleData }
+      
+      const response = await fetch(apiUrl, {
+        method: isEditMode && puzzleId ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          gameType: 'budget_bracket',
-          puzzleData
-        })
+        body: JSON.stringify(requestBody)
       })
 
       const result = await response.json()
       
       if (!response.ok) {
         console.error("API error:", result)
-        throw new Error(result.error || 'Failed to save puzzle')
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} puzzle`)
       }
       
-      console.log("Puzzle saved successfully with unified structure:", result)
-      alert("Puzzle created successfully with complete movie data!")
+      console.log(`Puzzle ${isEditMode ? 'updated' : 'saved'} successfully with unified structure:`, result)
+      alert(`Puzzle ${isEditMode ? 'updated' : 'created'} successfully with complete movie data!`)
       
-      // Reset form
-      setPuzzleDate("")
-      setMoviePairs(Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null })))
-      setIsPublished(false)
+      // Only reset form for new puzzles, not updates
+      if (!isEditMode) {
+        setPuzzleDate("")
+        setMoviePairs(Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null })))
+        setIsPublished(false)
+      }
       
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
@@ -311,10 +439,24 @@ export default function BudgetBracketEditor() {
     }
   }
 
+  // Show loading state while puzzle data is being loaded
+  if (loadingPuzzle) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading puzzle data...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-4">Create Budget Bracket Puzzle</h2>
+        <h2 className="text-xl font-semibold mb-4">
+          {isEditMode ? "Edit Budget Bracket Puzzle" : "Create Budget Bracket Puzzle"}
+        </h2>
         <p className="text-sm text-gray-600">
           Players guess which movie has the higher budget across 5 rounds
         </p>
@@ -328,7 +470,7 @@ export default function BudgetBracketEditor() {
             id="puzzle-date"
             type="date"
             value={puzzleDate}
-            onChange={(e) => setPuzzleDate(e.target.value)}
+            onChange={(e) => handleDateChange(e.target.value)}
           />
         </div>
         
@@ -338,7 +480,7 @@ export default function BudgetBracketEditor() {
             <Switch
               id="is-published"
               checked={isPublished}
-              onCheckedChange={setIsPublished}
+              onCheckedChange={handlePublishedChange}
               className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
             />
             <Label htmlFor="is-published" className="font-normal cursor-pointer select-none">
@@ -439,13 +581,13 @@ export default function BudgetBracketEditor() {
         ) : (
           <>
             <Save className="w-4 h-4 mr-2" />
-            Save Puzzle
+            {isEditMode ? "Update Puzzle" : "Save Puzzle"}
           </>
         )}
       </Button>
 
       {/* Movie Selector Modal */}
-      {showMovieSelector && (
+      {showMovieSelector && typeof document !== 'undefined' && createPortal(
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
@@ -455,18 +597,18 @@ export default function BudgetBracketEditor() {
             }
           }}
         >
-          <Card className="w-full max-w-2xl h-[80vh] flex flex-col relative">
+          <Card className="admin-modal-silver w-full max-w-2xl h-[80vh] flex flex-col relative" style={{ borderRadius: 0 }}>
             <button
               onClick={() => {
                 setShowMovieSelector(false)
                 setSelectedPosition(null)
               }}
-              className="absolute right-4 top-4 p-2 rounded-lg hover:bg-gray-100 z-10"
+              className="admin-modal-ghost-close absolute right-4 top-4 z-10"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="p-6 flex flex-col h-full">
-              <h3 className="text-lg font-semibold mb-4">Select Movie</h3>
+            <div className="p-6 pr-12 flex flex-col h-full">
+              <h3 className="text-lg font-semibold mb-4 font-funnel-display-bold text-neutral-900">Select Movie</h3>
               <MovieSelector
                 onSelect={handleSelectMovie}
                 onClose={() => {
@@ -478,7 +620,8 @@ export default function BudgetBracketEditor() {
               />
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

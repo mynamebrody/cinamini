@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { 
   Calendar, 
@@ -144,7 +145,15 @@ function SortableActor({ actor, index }: { actor: Actor; index: number }) {
   )
 }
 
-export default function CastClimbEditor() {
+interface CastClimbEditorProps {
+  prefilledDate?: string | null
+  prefilledMovieId?: string | null
+  onDateChange?: (date: string | null) => void
+  onMovieChange?: (movieId: string | null) => void
+  puzzleId?: string | null
+}
+
+export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDateChange, onMovieChange, puzzleId }: CastClimbEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [actors, setActors] = useState<Actor[]>([])
@@ -156,6 +165,8 @@ export default function CastClimbEditor() {
   const [showMovieSelector, setShowMovieSelector] = useState(false)
   const [fullCast, setFullCast] = useState<Actor[]>([])
   const [showCastSelector, setShowCastSelector] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [loadingPuzzle, setLoadingPuzzle] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -178,8 +189,147 @@ export default function CastClimbEditor() {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector, showCastSelector])
 
+  // Handle prefilled values from URL parameters
+  useEffect(() => {
+    if (prefilledDate && !isEditMode) {
+      setPuzzleDate(prefilledDate)
+      setIsPublished(true) // Auto-publish when date is set
+    }
+    if (prefilledMovieId && !isEditMode) {
+      fetchAndSelectMovie(prefilledMovieId)
+    }
+  }, [prefilledDate, prefilledMovieId, isEditMode])
 
-  const fetchMovieCast = async (movieId: number) => {
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    console.log('CastClimbEditor puzzleId changed:', puzzleId)
+    if (puzzleId) {
+      console.log('Loading Cast Climb puzzle data for ID:', puzzleId)
+      loadPuzzleData(puzzleId)
+    }
+  }, [puzzleId])
+
+  const loadPuzzleData = async (puzzleId: string) => {
+    setLoadingPuzzle(true)
+    try {
+      console.log('Fetching Cast Climb puzzle data from:', `/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
+      
+      if (!response.ok) {
+        console.error('API response not ok:', response.status, response.statusText)
+        throw new Error('Failed to load puzzle data')
+      }
+      
+      const response_data = await response.json()
+      console.log('Loaded Cast Climb puzzle data:', response_data)
+      
+      // Extract puzzle data from the response
+      const puzzleData = response_data.puzzle
+      
+      // Set edit mode
+      setIsEditMode(true)
+      
+      // Load puzzle fields
+      setPuzzleDate(puzzleData.puzzle_date || "")
+      setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
+      setDifficultyLevel(puzzleData.difficulty_level || 1)
+      setFunFact(puzzleData.fun_fact || "")
+      
+      // Load movie data
+      if (puzzleData.film_id) {
+        const movie: Movie = {
+          id: puzzleData.film_id,
+          title: puzzleData.film_title,
+          poster_path: puzzleData.film_poster_url,
+          release_date: `${puzzleData.film_release_year}-01-01`,
+          budget: 0,
+          revenue: 0,
+          runtime: 0,
+          vote_average: 0
+        }
+        setSelectedMovie(movie)
+        // Fetch full cast for the "Change Actor Selection" modal but don't auto-select actors since we're loading from existing puzzle
+        fetchMovieCast(puzzleData.film_id, false)
+      }
+      
+      // Load actors data
+      console.log('Loading actors from puzzle data:', puzzleData.actors)
+      if (puzzleData.actors && Array.isArray(puzzleData.actors)) {
+        const loadedActors = puzzleData.actors.map((actor: any, index: number) => ({
+          id: actor.id,
+          name: actor.name,
+          character: actor.character,
+          profile_path: actor.profile_path,
+          order: index
+        }))
+        console.log('Processed actors for UI:', loadedActors)
+        setActors(loadedActors)
+      } else {
+        console.log('No actors data found in puzzle or not an array')
+      }
+      
+    } catch (error) {
+      console.error('Error loading puzzle:', error)
+      alert('Failed to load puzzle data. Please try again.')
+    } finally {
+      setLoadingPuzzle(false)
+    }
+  }
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
+  }
+
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
+    }
+  }
+
+  const fetchAndSelectMovie = async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
+        // Automatically fetch cast when movie is selected
+        if (movie.id) {
+          fetchMovieCast(movie.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }
+
+
+  const fetchMovieCast = async (movieId: number, autoSelectActors = true) => {
     setLoadingCast(true)
     try {
       const response = await fetch(`/api/movies/${movieId}/credits`)
@@ -197,12 +347,15 @@ export default function CastClimbEditor() {
           }))
         
         setFullCast(allCast)
-        // Auto-select top 4 actors and REVERSE them (so leads are last)
-        const topFour = allCast.slice(0, 4).reverse()
-        setActors(topFour.map((actor, index) => ({
-          ...actor,
-          order: index
-        })))
+        // Only auto-select actors when not in edit mode (for new puzzles)
+        if (autoSelectActors) {
+          // Auto-select top 4 actors and REVERSE them (so leads are last)
+          const topFour = allCast.slice(0, 4).reverse()
+          setActors(topFour.map((actor, index) => ({
+            ...actor,
+            order: index
+          })))
+        }
       }
     } catch (error) {
       console.error("Error fetching cast:", error)
@@ -215,6 +368,8 @@ export default function CastClimbEditor() {
     setSelectedMovie(movie)
     fetchMovieCast(movie.id)
     setShowMovieSelector(false)
+    // Notify parent of movie change
+    onMovieChange?.(movie.id.toString())
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -263,15 +418,25 @@ export default function CastClimbEditor() {
 
     setLoading(true)
     try {
-      // Get the next puzzle number
-      const { data: latestPuzzle } = await supabase
-        .from('cast_climb_puzzles')
-        .select('puzzle_number')
-        .order('puzzle_number', { ascending: false })
-        .limit(1)
-        .single()
+      // Get puzzle number (existing for edits, new for creates)
+      let nextPuzzleNumber: number
+      
+      if (isEditMode && puzzleId) {
+        // For updates, preserve existing puzzle number
+        const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
+        const existingPuzzle = await response.json()
+        nextPuzzleNumber = existingPuzzle.puzzle_number
+      } else {
+        // For new puzzles, get the next number
+        const { data: latestPuzzle } = await supabase
+          .from('cast_climb_puzzles')
+          .select('puzzle_number')
+          .order('puzzle_number', { ascending: false })
+          .limit(1)
+          .single()
 
-      const nextPuzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+        nextPuzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+      }
 
       const puzzleData = {
         puzzle_date: puzzleDate || null,
@@ -290,32 +455,40 @@ export default function CastClimbEditor() {
         is_published: isPublished
       }
 
-      // Use admin API to save the puzzle
-      const response = await fetch('/api/admin/puzzles/save', {
-        method: 'POST',
+      // Use admin API to save or update the puzzle
+      const apiUrl = isEditMode && puzzleId 
+        ? `/api/admin/puzzles/update`
+        : '/api/admin/puzzles/save'
+      
+      const requestBody = isEditMode && puzzleId
+        ? { gameType: 'cast_climb', puzzleData, puzzleId }
+        : { gameType: 'cast_climb', puzzleData }
+
+      const response = await fetch(apiUrl, {
+        method: isEditMode && puzzleId ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          gameType: 'cast_climb',
-          puzzleData
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to save puzzle')
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} puzzle`)
       }
 
-      alert("Puzzle created successfully!")
-      // Reset form
-      setPuzzleDate("")
-      setSelectedMovie(null)
-      setActors([])
-      setFunFact("")
-      setDifficultyLevel(1)
-      setIsPublished(false)
+      alert(`Puzzle ${isEditMode ? 'updated' : 'created'} successfully!`)
+      
+      // Only reset form for new puzzles, not updates
+      if (!isEditMode) {
+        setPuzzleDate("")
+        setSelectedMovie(null)
+        setActors([])
+        setFunFact("")
+        setDifficultyLevel(1)
+        setIsPublished(false)
+      }
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
       
@@ -345,12 +518,26 @@ export default function CastClimbEditor() {
     }
   }
 
+  // Show loading state while puzzle data is being loaded
+  if (loadingPuzzle) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading puzzle data...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Editor Form */}
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Create Cast Climb Puzzle</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {isEditMode ? "Edit Cast Climb Puzzle" : "Create Cast Climb Puzzle"}
+          </h2>
           <p className="text-sm text-gray-600">
             Players guess the movie from its cast members revealed one by one
           </p>
@@ -364,7 +551,7 @@ export default function CastClimbEditor() {
               id="puzzle-date"
               type="date"
               value={puzzleDate}
-              onChange={(e) => setPuzzleDate(e.target.value)}
+              onChange={(e) => handleDateChange(e.target.value)}
             />
           </div>
           
@@ -374,7 +561,7 @@ export default function CastClimbEditor() {
               <Switch
                 id="is-published"
                 checked={isPublished}
-                onCheckedChange={setIsPublished}
+                onCheckedChange={handlePublishedChange}
                 className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
               />
               <Label htmlFor="is-published" className="font-normal cursor-pointer select-none">
@@ -517,7 +704,7 @@ export default function CastClimbEditor() {
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              Save Puzzle
+              {isEditMode ? "Update Puzzle" : "Save Puzzle"}
             </>
           )}
         </Button>
@@ -536,7 +723,7 @@ export default function CastClimbEditor() {
       </div>
 
       {/* Movie Selector Modal */}
-      {showMovieSelector && (
+      {showMovieSelector && typeof document !== 'undefined' && createPortal(
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
@@ -545,28 +732,29 @@ export default function CastClimbEditor() {
             }
           }}
         >
-          <Card className="w-full max-w-2xl h-[80vh] flex flex-col relative">
+          <Card className="admin-modal-silver w-full max-w-2xl h-[80vh] flex flex-col relative" style={{ borderRadius: 0 }}>
             <button
               onClick={() => setShowMovieSelector(false)}
-              className="absolute right-4 top-4 p-2 rounded-lg hover:bg-gray-100 z-10"
+              className="admin-modal-ghost-close absolute right-4 top-4 z-10"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="p-6 flex flex-col h-full">
-              <h3 className="text-lg font-semibold mb-4">Select Movie</h3>
+            <div className="p-6 pr-12 flex flex-col h-full">
+              <h3 className="text-lg font-semibold mb-4 font-funnel-display-bold text-neutral-900">Select Movie</h3>
               <MovieSelector
                 onSelect={handleSelectMovie}
                 onClose={() => setShowMovieSelector(false)}
               />
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
       
       {/* Cast Selector Modal */}
-      {showCastSelector && fullCast.length > 0 && (
+      {showCastSelector && fullCast.length > 0 && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden">
+          <Card className="admin-modal-silver w-full max-w-2xl max-h-[80vh] overflow-hidden" style={{ borderRadius: 0 }}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Select 4 Actors</h3>
@@ -650,7 +838,8 @@ export default function CastClimbEditor() {
               </div>
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

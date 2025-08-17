@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Calendar, Save, Loader2, Plus, X, Film, Image } from "lucide-react"
 import { format } from "date-fns"
@@ -29,13 +30,23 @@ interface Movie {
   vote_average?: number
 }
 
-export default function PosterPixelsEditor() {
+interface PosterPixelsEditorProps {
+  prefilledDate?: string | null
+  prefilledMovieId?: string | null
+  onDateChange?: (date: string | null) => void
+  onMovieChange?: (movieId: string | null) => void
+  puzzleId?: string | null
+}
+
+export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, onDateChange, onMovieChange, puzzleId }: PosterPixelsEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [funFact, setFunFact] = useState("")
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showMovieSelector, setShowMovieSelector] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [loadingPuzzle, setLoadingPuzzle] = useState(false)
 
   const supabase = getSupabaseClient()
 
@@ -50,6 +61,124 @@ export default function PosterPixelsEditor() {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
 
+  // Handle prefilled values from URL parameters
+  useEffect(() => {
+    if (prefilledDate && !isEditMode) {
+      setPuzzleDate(prefilledDate)
+      setIsPublished(true) // Auto-publish when date is set
+    }
+    if (prefilledMovieId && !isEditMode) {
+      fetchAndSelectMovie(prefilledMovieId)
+    }
+  }, [prefilledDate, prefilledMovieId, isEditMode])
+
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    console.log('PosterPixelsEditor puzzleId changed:', puzzleId)
+    if (puzzleId) {
+      console.log('Loading puzzle data for ID:', puzzleId)
+      loadPuzzleData(puzzleId)
+    }
+  }, [puzzleId])
+
+  const loadPuzzleData = async (puzzleId: string) => {
+    setLoadingPuzzle(true)
+    try {
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=poster_pixels`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to load puzzle data')
+      }
+      
+      const response_data = await response.json()
+      
+      // Extract puzzle data from the response
+      const puzzleData = response_data.puzzle
+      
+      // Set edit mode
+      setIsEditMode(true)
+      
+      // Load puzzle fields
+      setPuzzleDate(puzzleData.puzzle_date || "")
+      setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
+      setFunFact(puzzleData.fun_fact || "")
+      
+      // Load movie data
+      if (puzzleData.film_id) {
+        const movie: Movie = {
+          id: puzzleData.film_id,
+          title: puzzleData.film_title,
+          poster_path: puzzleData.film_poster_url,
+          release_date: `${puzzleData.film_release_year}-01-01`,
+          budget: 0,
+          revenue: 0,
+          runtime: 0,
+          vote_average: 0
+        }
+        setSelectedMovie(movie)
+      }
+      
+    } catch (error) {
+      console.error('Error loading puzzle:', error)
+      alert('Failed to load puzzle data. Please try again.')
+    } finally {
+      setLoadingPuzzle(false)
+    }
+  }
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
+  }
+
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
+    }
+  }
+
+  const fetchAndSelectMovie = async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        // Validate that movie has a poster
+        if (!movieData.poster_path) {
+          console.warn("Selected movie doesn't have a poster, skipping auto-selection")
+          return
+        }
+
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          overview: movieData.overview,
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          vote_average: movieData.vote_average,
+          runtime: movieData.runtime
+        }
+        
+        setSelectedMovie(movie)
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }
+
   const handleSelectMovie = (movie: Movie) => {
     // Validate that movie has a poster
     if (!movie.poster_path) {
@@ -59,6 +188,8 @@ export default function PosterPixelsEditor() {
     
     setSelectedMovie(movie)
     setShowMovieSelector(false)
+    // Notify parent of movie change
+    onMovieChange?.(movie.id.toString())
   }
 
   const savePuzzle = async () => {
@@ -80,20 +211,32 @@ export default function PosterPixelsEditor() {
 
     setLoading(true)
     try {
-      // Generate a seed value - must match the regex constraint: ^[a-zA-Z0-9_-]+$
-      const timestamp = Date.now().toString(36)
-      const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
-      const seedValue = `pp_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
+      // Generate puzzle metadata (existing for edits, new for creates)
+      let puzzleNumber: number
+      let seedValue: string
+      
+      if (isEditMode && puzzleId) {
+        // For updates, preserve existing puzzle number and seed value
+        const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=poster_pixels`)
+        const existingPuzzle = await response.json()
+        puzzleNumber = existingPuzzle.puzzle_number
+        seedValue = existingPuzzle.seed_value
+      } else {
+        // For new puzzles, generate new values
+        const timestamp = Date.now().toString(36)
+        const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
+        seedValue = `pp_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
 
-      // Get the highest puzzle number and increment
-      const { data: latestPuzzle } = await supabase
-        .from('poster_pixels_puzzles')
-        .select('puzzle_number')
-        .order('puzzle_number', { ascending: false })
-        .limit(1)
-        .single()
+        // Get the highest puzzle number and increment
+        const { data: latestPuzzle } = await supabase
+          .from('poster_pixels_puzzles')
+          .select('puzzle_number')
+          .order('puzzle_number', { ascending: false })
+          .limit(1)
+          .single()
 
-      const puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
+      }
 
       const puzzleData = {
         puzzle_date: puzzleDate || null,
@@ -110,32 +253,40 @@ export default function PosterPixelsEditor() {
 
       console.log('Saving puzzle with data:', puzzleData)
 
-      // Use API endpoint to save with service role permissions
-      const response = await fetch('/api/admin/puzzles/save', {
-        method: 'POST',
+      // Use API endpoint to save or update with service role permissions
+      const apiUrl = isEditMode && puzzleId 
+        ? `/api/admin/puzzles/update`
+        : '/api/admin/puzzles/save'
+      
+      const requestBody = isEditMode && puzzleId
+        ? { gameType: 'poster_pixels', puzzleData, puzzleId }
+        : { gameType: 'poster_pixels', puzzleData }
+
+      const response = await fetch(apiUrl, {
+        method: isEditMode && puzzleId ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          gameType: 'poster_pixels',
-          puzzleData
-        })
+        body: JSON.stringify(requestBody)
       })
 
       const result = await response.json()
       
       if (!response.ok) {
         console.error("API error:", result)
-        throw new Error(result.error || 'Failed to save puzzle')
+        throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} puzzle`)
       }
       
-      console.log("Puzzle saved successfully:", result)
-      alert("Puzzle created successfully!")
-      // Reset form
-      setPuzzleDate("")
-      setSelectedMovie(null)
-      setFunFact("")
-      setIsPublished(false)
+      console.log(`Puzzle ${isEditMode ? 'updated' : 'saved'} successfully:`, result)
+      alert(`Puzzle ${isEditMode ? 'updated' : 'created'} successfully!`)
+      
+      // Only reset form for new puzzles, not updates
+      if (!isEditMode) {
+        setPuzzleDate("")
+        setSelectedMovie(null)
+        setFunFact("")
+        setIsPublished(false)
+      }
       
     } catch (error: any) {
       console.error("Error saving puzzle:", error)
@@ -158,12 +309,26 @@ export default function PosterPixelsEditor() {
     }
   }
 
+  // Show loading state while puzzle data is being loaded
+  if (loadingPuzzle) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-3">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading puzzle data...</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Editor Form */}
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Create Poster Pixels Puzzle</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            {isEditMode ? "Edit Poster Pixels Puzzle" : "Create Poster Pixels Puzzle"}
+          </h2>
           <p className="text-sm text-gray-600">
             Players guess the movie from progressively clearer poster reveals
           </p>
@@ -177,7 +342,7 @@ export default function PosterPixelsEditor() {
               id="puzzle-date"
               type="date"
               value={puzzleDate}
-              onChange={(e) => setPuzzleDate(e.target.value)}
+              onChange={(e) => handleDateChange(e.target.value)}
             />
           </div>
           
@@ -187,7 +352,7 @@ export default function PosterPixelsEditor() {
               <Switch
                 id="is-published"
                 checked={isPublished}
-                onCheckedChange={setIsPublished}
+                onCheckedChange={handlePublishedChange}
                 className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
               />
               <Label htmlFor="is-published" className="font-normal cursor-pointer select-none">
@@ -260,7 +425,7 @@ export default function PosterPixelsEditor() {
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              Save Puzzle
+              {isEditMode ? "Update Puzzle" : "Save Puzzle"}
             </>
           )}
         </Button>
@@ -286,7 +451,7 @@ export default function PosterPixelsEditor() {
       </div>
 
       {/* Movie Selector Modal */}
-      {showMovieSelector && (
+      {showMovieSelector && typeof document !== 'undefined' && createPortal(
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
@@ -300,15 +465,15 @@ export default function PosterPixelsEditor() {
             }
           }}
         >
-          <Card className="w-full max-w-2xl h-[80vh] flex flex-col relative">
+          <Card className="admin-modal-silver w-full max-w-2xl h-[80vh] flex flex-col relative" style={{ borderRadius: 0 }}>
             <button
               onClick={() => setShowMovieSelector(false)}
-              className="absolute right-4 top-4 p-2 rounded-lg hover:bg-gray-100 z-10"
+              className="admin-modal-ghost-close absolute right-4 top-4 z-10"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="p-6 flex flex-col h-full">
-              <h3 className="text-lg font-semibold mb-4">Select Movie</h3>
+            <div className="p-6 pr-12 flex flex-col h-full">
+              <h3 className="text-lg font-semibold mb-4 font-funnel-display-bold text-neutral-900">Select Movie</h3>
               <MovieSelector
                 onSelect={handleSelectMovie}
                 onClose={() => setShowMovieSelector(false)}
@@ -317,7 +482,8 @@ export default function PosterPixelsEditor() {
               />
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

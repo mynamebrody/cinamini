@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle } from "lucide-react"
 import { format } from "date-fns"
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
+import { ConfirmationDialog } from "../shared/confirmation-dialog"
 import { cn } from "@/lib/utils"
 
 interface Movie {
@@ -61,7 +63,15 @@ const COUNTRY_FLAGS: { [key: string]: string } = {
   "TH": "🇹🇭", "ID": "🇮🇩", "VN": "🇻🇳", "PH": "🇵🇭", "MY": "🇲🇾",
 }
 
-export default function RetitledEditor() {
+interface RetitledEditorProps {
+  prefilledDate?: string | null
+  prefilledMovieId?: string | null
+  puzzleId?: string | null
+  onDateChange?: (date: string | null) => void
+  onMovieChange?: (movieId: string | null) => void
+}
+
+export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzleId, onDateChange, onMovieChange }: RetitledEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [selectedTitle, setSelectedTitle] = useState<AlternativeTitle | null>(null)
@@ -75,6 +85,12 @@ export default function RetitledEditor() {
   const [customTitle, setCustomTitle] = useState("")
   const [loadingRandom, setLoadingRandom] = useState(false)
   const [englishTranslation, setEnglishTranslation] = useState("")
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [loadingPuzzle, setLoadingPuzzle] = useState(false)
+  const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [pendingUpdateData, setPendingUpdateData] = useState<any>(null)
+  const [warningInfo, setWarningInfo] = useState<any>(null)
 
   const supabase = getSupabaseClient()
 
@@ -146,6 +162,141 @@ export default function RetitledEditor() {
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
 
+  // Load existing puzzle if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId && !loadingPuzzle) {
+      loadExistingPuzzle(puzzleId)
+    }
+  }, [puzzleId])
+
+  // Handle prefilled values from URL parameters (only when not in edit mode)
+  useEffect(() => {
+    if (!isEditMode) {
+      if (prefilledDate) {
+        setPuzzleDate(prefilledDate)
+        setIsPublished(true) // Auto-publish when date is set
+      }
+      if (prefilledMovieId) {
+        fetchAndSelectMovie(prefilledMovieId)
+      }
+    }
+  }, [prefilledDate, prefilledMovieId, isEditMode])
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
+  }
+
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
+    }
+  }
+
+  const loadExistingPuzzle = async (puzzleId: string) => {
+    setLoadingPuzzle(true)
+    try {
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=retitled`)
+      if (response.ok) {
+        const data = await response.json()
+        const puzzle = data.puzzle
+        
+        setExistingPuzzleId(puzzleId)
+        setIsEditMode(true)
+        
+        // Load puzzle data
+        setPuzzleDate(puzzle.puzzle_date || "")
+        setCustomTitle(puzzle.localized_title || "")
+        setEnglishTranslation(puzzle.english_translation || "")
+        setIsPublished(puzzle.is_published || false)
+        
+        // Create selected title object from puzzle data
+        if (puzzle.country_code && puzzle.localized_title) {
+          setSelectedTitle({
+            iso_3166_1: puzzle.country_code,
+            title: puzzle.localized_title,
+            type: 'translation'
+          })
+        }
+        
+        // Load the movie
+        if (puzzle.film_id) {
+          await fetchAndSelectMovie(puzzle.film_id.toString())
+        }
+        
+        // Load distractors
+        if (puzzle.distractor_ids && Array.isArray(puzzle.distractor_ids)) {
+          const distractorMovies = await Promise.all(
+            puzzle.distractor_ids.map(async (id: number) => {
+              try {
+                const movieResponse = await fetch(`/api/movies/${id}/details`)
+                if (movieResponse.ok) {
+                  const movieData = await movieResponse.json()
+                  return {
+                    id: movieData.id,
+                    title: movieData.title,
+                    poster_path: movieData.poster_path,
+                    release_date: movieData.release_date || ''
+                  }
+                }
+              } catch (error) {
+                console.error(`Error fetching distractor movie ${id}:`, error)
+              }
+              return null
+            })
+          )
+          setDistractors(distractorMovies.filter(Boolean))
+        }
+        
+      } else {
+        console.error('Failed to load puzzle:', response.status)
+        alert('Failed to load puzzle for editing')
+      }
+    } catch (error) {
+      console.error('Error loading puzzle:', error)
+      alert('Error loading puzzle for editing')
+    } finally {
+      setLoadingPuzzle(false)
+    }
+  }
+
+  const fetchAndSelectMovie = async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }
+
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {
       const newDistractors = [...distractors]
@@ -155,6 +306,8 @@ export default function RetitledEditor() {
     } else {
       setSelectedMovie(movie)
       setSelectedTitle(null)
+      // Notify parent of movie change
+      onMovieChange?.(movie.id.toString())
     }
     setShowMovieSelector(false)
   }
@@ -178,30 +331,57 @@ export default function RetitledEditor() {
   const loadRandomMovies = async () => {
     setLoadingRandom(true)
     try {
-      const response = await fetch('/api/movies/trending?time_window=week')
-      if (response.ok) {
-        const data = await response.json()
-        const trendingMovies = data.results || []
+      let movies = []
+      let endpoint = ''
+      
+      // If a movie is selected, try to get similar movies first
+      if (selectedMovie?.id) {
+        endpoint = `/api/movies/${selectedMovie.id}/similar`
+        const similarResponse = await fetch(endpoint)
         
-        const eligibleMovies = trendingMovies
-          .filter((m: any) => !distractors.some(d => d.id === m.id))
-          .filter((m: any) => m.id !== selectedMovie?.id)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5 - distractors.length)
-        
-        // Convert to our Movie interface
-        const randomMovies: Movie[] = eligibleMovies.map((m: any) => ({
-          id: m.id,
-          title: m.title,
-          poster_path: m.poster_path,
-          release_date: m.release_date
-        }))
-        
-        setDistractors([...distractors, ...randomMovies].slice(0, 5))
+        if (similarResponse.ok) {
+          const similarData = await similarResponse.json()
+          movies = similarData.results || []
+        } else {
+          console.warn('Similar movies API failed, falling back to trending')
+          // Fall back to trending if similar movies fails
+          endpoint = '/api/movies/trending?time_window=week'
+          const trendingResponse = await fetch(endpoint)
+          if (trendingResponse.ok) {
+            const trendingData = await trendingResponse.json()
+            movies = trendingData.results || []
+          }
+        }
+      } else {
+        // If no movie selected, use trending movies
+        endpoint = '/api/movies/trending?time_window=week'
+        const response = await fetch(endpoint)
+        if (response.ok) {
+          const data = await response.json()
+          movies = data.results || []
+        }
       }
+      
+      // Filter and process movies
+      const eligibleMovies = movies
+        .filter((m: any) => !distractors.some(d => d.id === m.id))
+        .filter((m: any) => m.id !== selectedMovie?.id)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5 - distractors.length)
+      
+      // Convert to our Movie interface
+      const randomMovies: Movie[] = eligibleMovies.map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        poster_path: m.poster_path,
+        release_date: m.release_date
+      }))
+      
+      setDistractors([...distractors, ...randomMovies].slice(0, 5))
+      
     } catch (error) {
-      console.error("Error loading random movies:", error)
-      alert("Failed to load random movies")
+      console.error("Error loading movies:", error)
+      alert("Failed to load movies")
     } finally {
       setLoadingRandom(false)
     }
@@ -349,7 +529,7 @@ export default function RetitledEditor() {
               id="puzzle-date"
               type="date"
               value={puzzleDate}
-              onChange={(e) => setPuzzleDate(e.target.value)}
+              onChange={(e) => handleDateChange(e.target.value)}
             />
           </div>
           
@@ -359,7 +539,7 @@ export default function RetitledEditor() {
               <Switch
                 id="is-published"
                 checked={isPublished}
-                onCheckedChange={setIsPublished}
+                onCheckedChange={handlePublishedChange}
                 className="data-[state=checked]:bg-green-600 data-[state=unchecked]:bg-gray-300"
               />
               <Label htmlFor="is-published" className="font-normal cursor-pointer select-none">
@@ -579,7 +759,7 @@ export default function RetitledEditor() {
       </div>
 
       {/* Movie Selector Modal */}
-      {showMovieSelector && (
+      {showMovieSelector && typeof document !== 'undefined' && createPortal(
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
           onClick={(e) => {
@@ -595,18 +775,18 @@ export default function RetitledEditor() {
             }
           }}
         >
-          <Card className="w-full max-w-2xl h-[80vh] flex flex-col relative">
+          <Card className="admin-modal-silver w-full max-w-2xl h-[80vh] flex flex-col relative" style={{ borderRadius: 0 }}>
             <button
               onClick={() => {
                 setShowMovieSelector(false)
                 setSelectingDistractorIndex(null)
               }}
-              className="absolute right-4 top-4 p-2 rounded-lg hover:bg-gray-100 z-10"
+              className="admin-modal-ghost-close absolute right-4 top-4 z-10"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="p-6 flex flex-col h-full">
-              <h3 className="text-lg font-semibold mb-4">Select Movie</h3>
+            <div className="p-6 pr-12 flex flex-col h-full">
+              <h3 className="text-lg font-semibold mb-4 font-funnel-display-bold text-neutral-900">Select Movie</h3>
               <MovieSelector
                 onSelect={handleSelectMovie}
                 onClose={() => {
@@ -620,7 +800,8 @@ export default function RetitledEditor() {
               />
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )

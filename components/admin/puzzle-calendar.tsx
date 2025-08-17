@@ -341,7 +341,7 @@ export function PuzzleCalendar({ onDateClick, onPuzzleClick, onAddPuzzle }: Puzz
               ))}
             </>
           ) : (
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               {days.map((day, index) => (
                 <motion.div
                   key={day.toISOString()}

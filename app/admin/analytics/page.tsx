@@ -181,10 +181,10 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-funnel-display-bold text-neutral-900">Analytics Dashboard</h1>
         <Select value={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-32 admin-input">
+          <SelectTrigger className="w-32 admin-input admin-select">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="admin-select">
             <SelectItem value="7d">Last 7 days</SelectItem>
             <SelectItem value="30d">Last 30 days</SelectItem>
             <SelectItem value="90d">Last 90 days</SelectItem>
@@ -249,10 +249,10 @@ export default function AnalyticsPage() {
           boxShadow: '2px 2px 0px 0px rgba(0,0,0,0.05)',
           borderRadius: 0
         }}>
-          <TabsTrigger value="engagement" className="font-funnel font-medium">Engagement</TabsTrigger>
-          <TabsTrigger value="games" className="font-funnel font-medium">Games</TabsTrigger>
-          <TabsTrigger value="movies" className="font-funnel font-medium">Movies</TabsTrigger>
-          <TabsTrigger value="retention" className="font-funnel font-medium">Retention</TabsTrigger>
+          <TabsTrigger value="engagement" className="admin-tab">Engagement</TabsTrigger>
+          <TabsTrigger value="games" className="admin-tab">Games</TabsTrigger>
+          <TabsTrigger value="movies" className="admin-tab">Movies</TabsTrigger>
+          <TabsTrigger value="retention" className="admin-tab">Retention</TabsTrigger>
         </TabsList>
 
         {/* Engagement Tab */}
