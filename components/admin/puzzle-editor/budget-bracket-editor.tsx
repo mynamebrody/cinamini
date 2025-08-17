@@ -25,7 +25,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay
+  DragOverlay,
+  useDroppable
 } from "@dnd-kit/core"
 import {
   arrayMove,
@@ -88,6 +89,38 @@ function MovieCard({ movie }: { movie: Movie }) {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// Droppable Empty Slot component
+function DroppableEmptySlot({ 
+  pairIndex, 
+  slot, 
+  onOpenMovieSelector,
+  dragOverMovie 
+}: {
+  pairIndex: number
+  slot: "A" | "B"
+  onOpenMovieSelector: (pairIndex: number, slot: "A" | "B") => void
+  dragOverMovie?: string | null
+}) {
+  const dropId = `empty-${pairIndex}-${slot}`
+  const { setNodeRef, isOver } = useDroppable({ id: dropId })
+  
+  return (
+    <div ref={setNodeRef}>
+      <button
+        onClick={() => onOpenMovieSelector(pairIndex, slot)}
+        className={cn(
+          "w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700",
+          isOver && "border-cinema-red bg-cinema-red/10",
+          dragOverMovie === dropId && "border-cinema-red bg-cinema-red/10"
+        )}
+      >
+        <Plus className="w-5 h-5 mb-0.5" />
+        <span className="text-xs">{isOver ? "Drop Movie" : "Add Movie"}</span>
+      </button>
     </div>
   )
 }
@@ -193,7 +226,8 @@ function DraggableRound({
   onOpenMovieSelector,
   onRemoveMovie,
   isDragDisabled = false,
-  recentlyUsedMoviesMap
+  recentlyUsedMoviesMap,
+  dragOverMovie
 }: {
   pairIndex: number
   pair: MoviePair
@@ -201,6 +235,7 @@ function DraggableRound({
   onRemoveMovie: (pairIndex: number, slot: "A" | "B") => void
   isDragDisabled?: boolean
   recentlyUsedMoviesMap?: Map<number, {date: string, isFuture: boolean}>
+  dragOverMovie?: string | null
 }) {
   const {
     attributes,
@@ -251,13 +286,12 @@ function DraggableRound({
                 recentlyUsedMoviesMap={recentlyUsedMoviesMap}
               />
             ) : (
-              <button
-                onClick={() => onOpenMovieSelector(pairIndex, "A")}
-                className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
-              >
-                <Plus className="w-5 h-5 mb-0.5" />
-                <span className="text-xs">Add Movie</span>
-              </button>
+              <DroppableEmptySlot 
+                pairIndex={pairIndex}
+                slot="A"
+                onOpenMovieSelector={onOpenMovieSelector}
+                dragOverMovie={dragOverMovie}
+              />
             )}
           </div>
 
@@ -275,13 +309,12 @@ function DraggableRound({
                 recentlyUsedMoviesMap={recentlyUsedMoviesMap}
               />
             ) : (
-              <button
-                onClick={() => onOpenMovieSelector(pairIndex, "B")}
-                className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
-              >
-                <Plus className="w-5 h-5 mb-0.5" />
-                <span className="text-xs">Add Movie</span>
-              </button>
+              <DroppableEmptySlot 
+                pairIndex={pairIndex}
+                slot="B"
+                onOpenMovieSelector={onOpenMovieSelector}
+                dragOverMovie={dragOverMovie}
+              />
             )}
           </div>
         </div>
@@ -1175,6 +1208,35 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       })
       return
     }
+
+    // Handle dropping movie onto empty slot (movie-0-A to empty-1-B)
+    if (activeId.startsWith('movie-') && overId.startsWith('empty-')) {
+      const [, activePairIdx, activeSlot] = activeId.split('-')
+      const [, overPairIdx, overSlot] = overId.split('-')
+
+      const activePairIndex = parseInt(activePairIdx)
+      const overPairIndex = parseInt(overPairIdx)
+      const activeMovieSlot = activeSlot as 'A' | 'B'
+      const overMovieSlot = overSlot as 'A' | 'B'
+
+      setMoviePairs(prev => {
+        const newPairs = [...prev]
+        const activeMovie = newPairs[activePairIndex][`movie${activeMovieSlot}`]
+
+        // Move the movie from active slot to empty slot
+        newPairs[activePairIndex] = {
+          ...newPairs[activePairIndex],
+          [`movie${activeMovieSlot}`]: null
+        }
+        newPairs[overPairIndex] = {
+          ...newPairs[overPairIndex],
+          [`movie${overMovieSlot}`]: activeMovie
+        }
+
+        return newPairs
+      })
+      return
+    }
   }
 
   // Get drag overlay content
@@ -1510,9 +1572,9 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           <SortableContext
             items={moviePairs.map((_, idx) => `round-${idx}`).concat(
               moviePairs.flatMap((pair, idx) => [
-                pair.movieA ? `movie-${idx}-A` : null,
-                pair.movieB ? `movie-${idx}-B` : null
-              ]).filter(Boolean) as string[]
+                pair.movieA ? `movie-${idx}-A` : `empty-${idx}-A`,
+                pair.movieB ? `movie-${idx}-B` : `empty-${idx}-B`
+              ])
             )}
             strategy={verticalListSortingStrategy}
           >
@@ -1525,6 +1587,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
                   onOpenMovieSelector={openMovieSelector}
                   onRemoveMovie={removeMovie}
                   recentlyUsedMoviesMap={recentlyUsedMoviesMap}
+                  dragOverMovie={dragOverMovie}
                 />
               ))}
             </div>
