@@ -617,7 +617,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         puzzleData.puzzle_number = puzzleNumber
       }
 
-      console.log('Saving puzzle with data:', puzzleData)
 
       let response, result
       
@@ -655,7 +654,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         throw new Error(result.error || 'Failed to save puzzle')
       }
       
-      console.log("Puzzle saved successfully:", result)
       
       if (isEditMode) {
         alert("Puzzle updated successfully!")

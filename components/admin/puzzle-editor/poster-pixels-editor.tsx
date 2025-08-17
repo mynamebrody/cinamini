@@ -94,9 +94,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
 
   // Load existing puzzle data if puzzleId is provided
   useEffect(() => {
-    console.log('PosterPixelsEditor puzzleId changed:', puzzleId)
     if (puzzleId) {
-      console.log('Loading puzzle data for ID:', puzzleId)
       loadPuzzleData(puzzleId)
     }
   }, [puzzleId])
@@ -113,7 +111,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
       }
       
       const response_data = await response.json()
-      console.log('Loaded puzzle data:', response_data)
       
       // Extract puzzle data from the response
       const puzzleData = response_data.puzzle
@@ -331,7 +328,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         puzzle_number: puzzleNumber
       }
 
-      console.log('Saving puzzle with data:', puzzleData)
 
       // Use API endpoint to save or update with service role permissions
       const apiUrl = isEditMode && puzzleId 
@@ -357,7 +353,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} puzzle`)
       }
       
-      console.log(`Puzzle ${isEditMode ? 'updated' : 'saved'} successfully:`, result)
       alert(`Puzzle ${isEditMode ? 'updated' : 'created'} successfully!`)
       
       // Only reset form for new puzzles, not updates

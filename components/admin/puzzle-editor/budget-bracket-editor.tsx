@@ -311,6 +311,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   } | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
+  const [loadedPuzzleData, setLoadedPuzzleData] = useState<any>(null)
 
   // Drag and drop state
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -361,7 +362,25 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   // Load existing puzzle data if puzzleId is provided
   useEffect(() => {
     if (puzzleId) {
-      loadPuzzleData(puzzleId)
+      const abortController = new AbortController()
+      
+      const loadData = async () => {
+        try {
+          await loadPuzzleData(puzzleId, abortController.signal)
+        } catch (error: any) {
+          // Ignore abort errors
+          if (error?.name !== 'AbortError') {
+            console.error('Error loading puzzle:', error)
+          }
+        }
+      }
+      
+      loadData()
+      
+      // Cleanup function to abort request if component unmounts or puzzleId changes
+      return () => {
+        abortController.abort()
+      }
     }
   }, [puzzleId])
 
@@ -370,10 +389,17 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     fetchRecentlyUsedMovies(puzzleId || undefined)
   }, [puzzleId])
 
-  const loadPuzzleData = async (puzzleId: string) => {
+  const loadPuzzleData = async (puzzleId: string, abortSignal?: AbortSignal) => {
+    // Prevent concurrent loads
+    if (loadingPuzzle) {
+      return
+    }
+    
     setLoadingPuzzle(true)
     try {
-      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`, {
+        signal: abortSignal
+      })
       
       if (!response.ok) {
         throw new Error('Failed to load puzzle data')
@@ -383,6 +409,9 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       
       // Extract puzzle data from the response
       const puzzleData = response_data.puzzle
+      
+      // Store the loaded puzzle data for reuse
+      setLoadedPuzzleData(puzzleData)
       
       // Set edit mode
       setIsEditMode(true)
@@ -424,9 +453,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         setMoviePairs(loadedPairs)
       }
       
-    } catch (error) {
-      console.error('Error loading puzzle:', error)
-      alert('Failed to load puzzle data. Please try again.')
+    } catch (error: any) {
+      // Don't show error for aborted requests
+      if (error?.name !== 'AbortError') {
+        console.error('Error loading puzzle:', error)
+        alert('Failed to load puzzle data. Please try again.')
+      }
     } finally {
       setLoadingPuzzle(false)
     }
@@ -452,10 +484,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .lte('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for retitled game type)
-      if (excludePuzzleId) {
-        retitledPastQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: retitledPastData } = await retitledPastQuery
 
@@ -473,10 +502,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .gt('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for retitled game type)
-      if (excludePuzzleId) {
-        retitledFutureQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: retitledFutureData } = await retitledFutureQuery
 
@@ -495,10 +521,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .lte('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for cast climb game type)
-      if (excludePuzzleId) {
-        castClimbPastQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: castClimbPastData } = await castClimbPastQuery
 
@@ -516,10 +539,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .gt('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for cast climb game type)
-      if (excludePuzzleId) {
-        castClimbFutureQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: castClimbFutureData } = await castClimbFutureQuery
 
@@ -601,10 +621,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .lte('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for poster pixels game type)
-      if (excludePuzzleId) {
-        posterPixelsPastQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: posterPixelsPastData } = await posterPixelsPastQuery
 
@@ -624,10 +641,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         .gt('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
-      // Exclude current puzzle if editing (only relevant for poster pixels game type)
-      if (excludePuzzleId) {
-        posterPixelsFutureQuery.neq('id', excludePuzzleId)
-      }
+      // Note: excludePuzzleId only applies to budget bracket puzzles in this editor
 
       const { data: posterPixelsFutureData } = await posterPixelsFutureQuery
 
@@ -642,8 +656,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       setRecentlyUsedMovies(usedMovieIds)
       setRecentlyUsedMoviesMap(movieDateMap)
-      console.log('Recently used movies in last 30 days + future scheduled:', usedMovieIds.size, excludePuzzleId ? `(excluding puzzle ${excludePuzzleId})` : '')
-      console.log('Movie date mapping:', movieDateMap.size)
 
     } catch (error) {
       console.error('Error fetching recently used movies:', error)
@@ -682,7 +694,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       setCachedMovies(uniqueMovies)
       setCachedMoviesLoaded(true)
-      console.log('Cached movies loaded:', uniqueMovies.length)
 
     } catch (error) {
       console.error('Error fetching cached movies:', error)
@@ -761,28 +772,23 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     
     for (const endpoint of endpoints) {
       try {
-        console.log(`Trying ${endpoint.name} movies...`)
         const response = await fetch(endpoint.url)
         
         if (response.ok) {
           const data = await response.json()
           const movies = data.results || []
-          console.log(`${endpoint.name} returned ${movies.length} movies`)
           
           if (movies.length > 0) {
             allMovies.push(...movies)
             
             // Stop if we have enough movies (let's aim for at least 20 total)
             if (allMovies.length >= 20) {
-              console.log(`Collected ${allMovies.length} movies, stopping cascade`)
               break
             }
           }
         } else {
-          console.log(`${endpoint.name} API failed with status:`, response.status)
         }
       } catch (error) {
-        console.log(`Error fetching ${endpoint.name} movies:`, error)
       }
     }
     
@@ -791,7 +797,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       arr.findIndex(m => m.id === movie.id) === index
     )
     
-    console.log(`Final cascaded movie count: ${uniqueMovies.length}`)
     return uniqueMovies
   }
 
@@ -800,7 +805,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     const pairs = []
     const used = new Set<number>()
     
-    console.log('Creating optimal budget pairs from', sortedMovies.length, 'sorted movies')
     
     // Strategy: Pair movies with similar budgets, allowing some variance for interest
     for (let i = 0; i < sortedMovies.length - 1; i++) {
@@ -856,11 +860,9 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         used.add(i)
         used.add(bestPartnerIdx)
         
-        console.log(`Pair ${pairs.length}: ${movieA.title} ($${budgetA.toLocaleString()}) vs ${movieB.title} ($${budgetB.toLocaleString()}) - Difference: $${difference.toLocaleString()} (${percentDiff.toFixed(1)}%)`)
       }
     }
     
-    console.log(`Created ${pairs.length} optimal budget pairs`)
     return pairs
   }
 
@@ -886,7 +888,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     if (bestMatch) {
       const difference = Math.abs((bestMatch.budget || 0) - targetBudget)
       const percentDiff = targetBudget > 0 ? ((difference / Math.min(targetBudget, bestMatch.budget || 0)) * 100) : 0
-      console.log(`Best match for ${targetMovie.title} ($${targetBudget.toLocaleString()}): ${bestMatch.title} ($${(bestMatch.budget || 0).toLocaleString()}) - Difference: ${percentDiff.toFixed(1)}%`)
     }
     
     return bestMatch
@@ -907,7 +908,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       })
       
       if (emptySlots === 0) {
-        console.log('All slots are filled')
         return
       }
 
@@ -919,18 +919,15 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (hasSelectedMovies) {
         // Use cascading movie discovery: similar → recommendations → trending
         const firstMovieId = usedIds[0]
-        console.log('Fetching movies for:', firstMovieId)
         
         availableMovies = await fetchMoviesWithFallback(firstMovieId)
       } else {
         // Start with 0 selected movies: pick random from popular, then get similar movies
-        console.log('No movies selected, picking random movie from cached popular list')
         
         // Ensure cached movies are loaded
         await fetchCachedMovies()
         
         if (cachedMovies.length === 0) {
-          console.log('No cached movies available, cannot auto-fill')
           alert('No movies available for auto-fill. Please try again later or manually select movies.')
           return
         }
@@ -946,7 +943,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         const randomIndex = Math.floor(Math.random() * moviesToChooseFrom.length)
         const baseMovie = moviesToChooseFrom[randomIndex]
         
-        console.log('Using random base movie for cascading discovery:', baseMovie.title, '(', baseMovie.id, ')')
         
         // IMMEDIATELY place the base movie in the first empty slot for visual feedback
         const newPairs = [...moviePairs]
@@ -954,10 +950,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         if (firstEmptyPairIndex !== -1) {
           if (!newPairs[firstEmptyPairIndex].movieA) {
             newPairs[firstEmptyPairIndex].movieA = baseMovie
-            console.log(`Pre-filled Round ${firstEmptyPairIndex + 1} Movie A with base movie:`, baseMovie.title)
           } else if (!newPairs[firstEmptyPairIndex].movieB) {
             newPairs[firstEmptyPairIndex].movieB = baseMovie
-            console.log(`Pre-filled Round ${firstEmptyPairIndex + 1} Movie B with base movie:`, baseMovie.title)
           }
           setMoviePairs(newPairs)
         }
@@ -966,9 +960,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           availableMovies = await fetchMoviesWithFallback(baseMovie.id)
           // Include the base movie as first option (for consistency with existing logic)
           availableMovies.unshift(baseMovie)
-          console.log('Total movies after cascade:', availableMovies.length)
         } catch (error) {
-          console.log('Error in cascading movie fetch, using cached movies')
           availableMovies = [baseMovie, ...cachedMovies]
         }
       }
@@ -977,9 +969,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       const currentlyUsedIds = getUsedMovieIds()
       
       // Add debugging to see what we have
-      console.log('Available movies count:', availableMovies.length)
-      console.log('Recently used movie IDs:', Array.from(recentlyUsedMovies))
-      console.log('Currently used movie IDs after pre-fill:', currentlyUsedIds)
       
       // Filter out recently used and already selected movies
       let filteredMovies = availableMovies.filter(movie => {
@@ -988,23 +977,18 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         const hasBudget = movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
         
         if (!notRecentlyUsed) {
-          console.log(`Filtered out ${movie.title} (${movie.id}) - recently used`)
         }
         if (!notCurrentlyUsed) {
-          console.log(`Filtered out ${movie.title} (${movie.id}) - currently used`)
         }
         if (!hasBudget) {
-          console.log(`Filtered out ${movie.title} (${movie.id}) - budget issue:`, movie.budget)
         }
         
         return notRecentlyUsed && notCurrentlyUsed && hasBudget
       })
       
-      console.log('Movies after filtering:', filteredMovies.length)
       
       // If no movies pass the strict filter, try a more lenient approach
       if (filteredMovies.length === 0) {
-        console.log('Strict filtering failed, trying lenient approach...')
         
         // Try without budget requirement first (we can fetch details later)
         filteredMovies = availableMovies.filter(movie => {
@@ -1012,17 +996,14 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
                  !currentlyUsedIds.includes(movie.id)
         })
         
-        console.log('Movies after lenient filtering (no budget check):', filteredMovies.length)
         
         if (filteredMovies.length === 0) {
-          console.log('No suitable movies found even with lenient filtering')
           alert('No suitable movies found. The similar movies API may have returned movies that are recently used or already selected.')
           return
         }
         
         // Take first few movies and fetch their details to check budgets
         const moviesToCheck = filteredMovies.slice(0, 15) // Check more movies to increase chances
-        console.log('Fetching budget details for candidate movies...')
         
         const moviesWithBudgets = []
         for (const movie of moviesToCheck) {
@@ -1043,27 +1024,22 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
               }
             }
           } catch (error) {
-            console.log(`Failed to fetch details for ${movie.title}:`, error)
           }
         }
         
         filteredMovies = moviesWithBudgets
-        console.log('Final movies with valid budgets:', filteredMovies.length)
       }
 
       if (filteredMovies.length === 0) {
-        console.log('No suitable movies found for auto-fill after all attempts')
         alert('No suitable movies found with budgets ≥ $100. Try manually selecting movies or wait for the cached movie list to update.')
         return
       }
 
       // Sort movies by budget for optimal pairing
       const sortedMovies = filteredMovies.sort((a, b) => (a.budget || 0) - (b.budget || 0))
-      console.log('Sorted movies by budget:', sortedMovies.map(m => `${m.title}: $${(m.budget || 0).toLocaleString()}`))
 
       // Create optimal budget pairs from available movies
       const optimalPairs = createOptimalBudgetPairs(sortedMovies)
-      console.log(`Created ${optimalPairs.length} optimal pairs from ${sortedMovies.length} movies`)
 
       // Get current state of pairs (which may include pre-filled movie from empty state)
       const currentPairs = [...moviePairs]
@@ -1121,7 +1097,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       const filledSlots = actuallyFilled
       const newlyFilled = filledSlots - (totalSlots - emptySlots)
       
-      console.log(`Auto-filled ${newlyFilled} movie slots using budget-based pairing (${filledSlots}/${totalSlots} total)`)
 
     } catch (error) {
       console.error('Error auto-filling movies:', error)
@@ -1274,7 +1249,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         }
       }))
 
-      console.log('Hydrating pairs with unified structure...')
       
       // Step 2: Hydrate pairs using unified hydration API
       const hydrationResponse = await fetch('/api/admin/puzzles/hydrate-budget-bracket', {
@@ -1318,7 +1292,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         throw new Error('Cannot save puzzle with validation errors')
       }
 
-      console.log('Movies hydrated successfully:', hydrationResult.stats)
 
       // Step 3: Generate puzzle metadata
       let puzzleNumber: number
@@ -1326,8 +1299,13 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       
       if (isEditMode && puzzleId) {
         // For updates, preserve existing puzzle number and seed value
-        const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
-        const existingPuzzle = await response.json()
+        // Use cached puzzle data if available, otherwise fetch
+        let existingPuzzle = loadedPuzzleData
+        if (!existingPuzzle) {
+          const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
+          const responseData = await response.json()
+          existingPuzzle = responseData.puzzle
+        }
         puzzleNumber = existingPuzzle.puzzle_number
         seedValue = existingPuzzle.seed_value
       } else {
@@ -1357,14 +1335,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         is_published: isPublished
       }
 
-      console.log('Saving puzzle with hydrated data:', {
-        ...puzzleData,
-        pairs: puzzleData.pairs.map(p => ({
-          ...p,
-          movieA: { ...p.movieA, keys: Object.keys(p.movieA) },
-          movieB: { ...p.movieB, keys: Object.keys(p.movieB) }
-        }))
-      })
 
       // Step 5: Save or update the puzzle with unified structure
       const apiUrl = isEditMode && puzzleId 
@@ -1390,7 +1360,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         throw new Error(result.error || `Failed to ${isEditMode ? 'update' : 'save'} puzzle`)
       }
       
-      console.log(`Puzzle ${isEditMode ? 'updated' : 'saved'} successfully with unified structure:`, result)
       alert(`Puzzle ${isEditMode ? 'updated' : 'created'} successfully with complete movie data!`)
       
       // Only reset form for new puzzles, not updates

@@ -202,9 +202,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
 
   // Load existing puzzle data if puzzleId is provided
   useEffect(() => {
-    console.log('CastClimbEditor puzzleId changed:', puzzleId)
     if (puzzleId) {
-      console.log('Loading Cast Climb puzzle data for ID:', puzzleId)
       loadPuzzleData(puzzleId)
     }
   }, [puzzleId])
@@ -212,7 +210,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   const loadPuzzleData = async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
-      console.log('Fetching Cast Climb puzzle data from:', `/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
       
       if (!response.ok) {
@@ -221,7 +218,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       }
       
       const response_data = await response.json()
-      console.log('Loaded Cast Climb puzzle data:', response_data)
       
       // Extract puzzle data from the response
       const puzzleData = response_data.puzzle
@@ -253,7 +249,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       }
       
       // Load actors data
-      console.log('Loading actors from puzzle data:', puzzleData.actors)
       if (puzzleData.actors && Array.isArray(puzzleData.actors)) {
         const loadedActors = puzzleData.actors.map((actor: any, index: number) => ({
           // Ensure unique ID by using actor.id or generating one based on index
@@ -263,10 +258,8 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
           profile_path: actor.profile_path,
           order: index
         }))
-        console.log('Processed actors for UI:', loadedActors)
         setActors(loadedActors)
       } else {
-        console.log('No actors data found in puzzle or not an array')
       }
       
     } catch (error) {

@@ -103,8 +103,6 @@ export default function PuzzleEditor() {
             ...prev,
             [gameType]: { ...prev[gameType as keyof typeof prev], puzzleId }
           }
-          console.log(`Setting puzzleId ${puzzleId} for gameType ${gameType}`)
-          console.log('New gameStates:', newStates)
           return newStates
         })
       }
@@ -113,10 +111,6 @@ export default function PuzzleEditor() {
     }
   }, [searchParams, hasInitialized])
 
-  // Debug: Monitor gameStates changes
-  useEffect(() => {
-    console.log('GameStates updated:', gameStates)
-  }, [gameStates])
 
   // Callbacks to update game-specific state
   const updateGameDate = (gameType: string, date: string | null) => {
