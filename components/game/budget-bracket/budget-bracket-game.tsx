@@ -14,6 +14,7 @@ import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../ga
 import { type GameChoice } from "@/lib/budget-bracket-client"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 
@@ -136,9 +137,9 @@ export default function BudgetBracketGame() {
           }
         } else {
           // Check if this is the user's first time playing
-          const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
+          const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
           setGameState('ready')
-          if (!hasPlayedBefore) {
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -151,8 +152,9 @@ export default function BudgetBracketGame() {
           // User hasn't played today
           setGameState('ready')
           
-          // Show how-to-play modal only if they've never played Budget Bracket before
-          if (!puzzleData.hasPlayedBefore) {
+          // Show how-to-play modal only if they've never seen the tutorial
+          const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -161,8 +163,8 @@ export default function BudgetBracketGame() {
         setGameState('ready')
         
         // Check if this is the user's first time playing
-        const hasPlayedBefore = localStorage.getItem('budget-bracket-played')
-        if (!hasPlayedBefore) {
+        const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
+        if (!hasSeenTutorial) {
           setModalState('howtoplay')
         }
       }
@@ -174,9 +176,9 @@ export default function BudgetBracketGame() {
   }
 
   const startGame = () => {
-    // Mark that the user has played before if coming from how to play
+    // Mark that the user has seen the tutorial if coming from how to play
     if (modalState === 'howtoplay') {
-      localStorage.setItem('budget-bracket-played', 'true')
+      setTutorialViewed('budget-bracket')
     }
     setGameState('playing')
     setCurrentRound(1)
@@ -441,7 +443,13 @@ export default function BudgetBracketGame() {
       {/* How to Play Modal */}
       <GameModal
         open={modalState === 'howtoplay'}
-        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Mark tutorial as viewed when modal is dismissed
+            setTutorialViewed('budget-bracket')
+          }
+          setModalState(open ? 'howtoplay' : 'none')
+        }}
         className="max-w-2xl"
         backdropColor="rgba(39, 134, 70, 0.3)"
       >
@@ -511,7 +519,10 @@ export default function BudgetBracketGame() {
             />
           </InstructionGrid>
           <div className="mt-6 text-center">
-            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+            <Button onClick={() => {
+              setTutorialViewed('budget-bracket')
+              setModalState('none')
+            }} className="btn btn-primary">
               Back to Game
             </Button>
           </div>

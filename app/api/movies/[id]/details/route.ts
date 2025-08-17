@@ -29,6 +29,10 @@ export async function GET(
       )
     }
 
+    // Add timeout for better reliability
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
     const response = await fetch(
       `${TMDB_BASE_URL}/movie/${movieId}?append_to_response=credits`,
       { 
@@ -36,9 +40,12 @@ export async function GET(
           'Accept': 'application/json',
           'Authorization': `Bearer ${TMDB_API_KEY}`,
         },
+        signal: controller.signal,
         next: { revalidate: 3600 } // Cache for 1 hour
       }
     )
+    
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       return NextResponse.json(
@@ -95,6 +102,17 @@ export async function GET(
     })
   } catch (error) {
     console.error("Error fetching movie details:", error)
+    
+    // Handle specific error types
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        return NextResponse.json(
+          { error: "Request timeout. Please try again." },
+          { status: 408 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

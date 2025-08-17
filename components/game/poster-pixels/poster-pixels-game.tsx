@@ -11,6 +11,7 @@ import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../ga
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { localGameStorage } from "@/lib/local-game-storage"
+import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
@@ -160,9 +161,9 @@ export default function PosterPixelsGame() {
           setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
         } else {
-          const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
+          const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
           setGameState('ready')
-          if (!hasPlayedBefore) {
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
           }
         }
@@ -198,18 +199,12 @@ export default function PosterPixelsGame() {
           setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
         } else {
-          const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
           setGameState('ready')
           
-          // Show how-to-play modal only if they've never played Poster Pixels before
-          if (user && !data.hasPlayedBefore) {
+          // Show how-to-play modal only if they've never seen the tutorial
+          const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
+          if (!hasSeenTutorial) {
             setModalState('howtoplay')
-          } else if (!user) {
-            // Anonymous user - check localStorage
-            const hasPlayedBefore = localStorage.getItem('poster-pixels-played')
-            if (!hasPlayedBefore) {
-              setModalState('howtoplay')
-            }
           }
         }
       }
@@ -457,7 +452,7 @@ export default function PosterPixelsGame() {
 
   const startGame = async () => {
     if (modalState === 'howtoplay') {
-      localStorage.setItem('poster-pixels-played', 'true')
+      setTutorialViewed('poster-pixels')
     }
 
     // Start the game timer
@@ -538,7 +533,13 @@ export default function PosterPixelsGame() {
       {/* How to Play Modal */}
       <GameModal
         open={modalState === 'howtoplay'}
-        onOpenChange={(open) => setModalState(open ? 'howtoplay' : 'none')}
+        onOpenChange={(open) => {
+          if (!open) {
+            // Mark tutorial as viewed when modal is dismissed
+            setTutorialViewed('poster-pixels')
+          }
+          setModalState(open ? 'howtoplay' : 'none')
+        }}
         className="max-w-2xl"
         backdropColor="rgba(58, 58, 60, 0.3)"
       >
@@ -573,7 +574,10 @@ export default function PosterPixelsGame() {
             />
           </InstructionGrid>
           <div className="mt-6 text-center">
-            <Button onClick={() => setModalState('none')} className="btn btn-primary">
+            <Button onClick={() => {
+              setTutorialViewed('poster-pixels')
+              setModalState('none')
+            }} className="btn btn-primary">
               Back to Game
             </Button>
           </div>

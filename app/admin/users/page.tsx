@@ -176,41 +176,41 @@ export default function UserControlsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Controls</h1>
-        <p className="text-gray-600">Manage user accounts and email communications</p>
+        <h1 className="text-3xl font-funnel-display-bold text-neutral-900 mb-2">User Controls</h1>
+        <p className="text-neutral-600 font-funnel">Manage user accounts and email communications</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
         {/* Resend Email Confirmation */}
-        <Card>
+        <Card className="admin-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 font-funnel-display-bold">
+              <Mail className="w-5 h-5 text-cinema-red" />
               Resend Email Confirmation
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="font-funnel text-neutral-600">
               Resend a confirmation email to users who haven't verified their email address
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleResendConfirmation} className="space-y-4">
               <div>
-                <Label htmlFor="resend-email">Email Address</Label>
+                <Label htmlFor="resend-email" className="font-funnel font-medium">Email Address</Label>
                 <Input
                   id="resend-email"
                   type="email"
                   value={resendEmail}
                   onChange={(e) => setResendEmail(e.target.value)}
                   placeholder="user@example.com"
+                  className="admin-input mt-1"
                   disabled={resendLoading}
-                  className="mt-1"
                 />
               </div>
 
               <Button 
                 type="submit" 
                 disabled={resendLoading || !resendEmail.trim()}
-                className="w-full"
+                className="admin-btn-primary w-full"
               >
                 {resendLoading ? (
                   <>
@@ -245,13 +245,13 @@ export default function UserControlsPage() {
         </Card>
 
         {/* Invite User */}
-        <Card>
+        <Card className="admin-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-purple-600" />
+            <CardTitle className="flex items-center gap-2 font-funnel-display-bold">
+              <UserPlus className="w-5 h-5 text-cinema-red" />
               Invite User
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="font-funnel text-neutral-600">
               Send an invitation email to create a new user account
             </CardDescription>
           </CardHeader>
@@ -313,13 +313,13 @@ export default function UserControlsPage() {
         </Card>
 
         {/* Generate Links */}
-        <Card>
+        <Card className="admin-card">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Link className="w-5 h-5 text-green-600" />
+            <CardTitle className="flex items-center gap-2 font-funnel-display-bold">
+              <Link className="w-5 h-5 text-cinema-red" />
               Generate Admin Link
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="font-funnel text-neutral-600">
               Generate authentication links for testing and development
             </CardDescription>
           </CardHeader>
@@ -417,11 +417,11 @@ export default function UserControlsPage() {
       </div>
 
       {/* Usage Instructions */}
-      <Card className="bg-blue-50/50 border-blue-200">
+      <Card className="admin-card bg-blue-50/50 border-blue-200">
         <CardHeader>
-          <CardTitle className="text-blue-900">Usage Instructions</CardTitle>
+          <CardTitle className="text-blue-900 font-funnel-display-bold">Usage Instructions</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-blue-800">
+        <CardContent className="space-y-3 text-sm text-blue-800 font-funnel">
           <div>
             <strong>Resend Email Confirmation:</strong>
             <ul className="list-disc list-inside mt-1 space-y-1 ml-4">

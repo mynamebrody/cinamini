@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { Calendar, Film, DollarSign, Users, Trash2, Save, X, Image } from "lucide-react"
+import { Calendar, Film, DollarSign, Users, Trash2, Save, X, Image, Edit } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -69,6 +70,7 @@ export function PuzzleDetailDialog({
 }: PuzzleDetailDialogProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleRemoveFromSchedule = async (puzzle: any) => {
     setIsDeleting(puzzle.id)
@@ -98,6 +100,18 @@ export function PuzzleDetailDialog({
     } finally {
       setIsDeleting(null)
     }
+  }
+
+  const handleEditPuzzle = (puzzle: any, event?: React.MouseEvent) => {
+    event?.preventDefault() // Prevent default link behavior
+    event?.stopPropagation() // Prevent parent click handlers
+    // Navigate to puzzle editor with puzzle ID
+    const gameType = puzzle.game_type.replace(/_/g, '-') // Replace all underscores with hyphens
+    const url = `/admin/puzzle-editor?puzzleId=${puzzle.id}&gameType=${gameType}`
+    console.log('Navigating to:', url) // Debug log
+    
+    // Force navigation with window.location instead of router.push
+    window.location.href = url
   }
 
   const renderPuzzleDetails = (puzzle: any) => {
@@ -133,7 +147,7 @@ export function PuzzleDetailDialog({
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Movie Pairs:</span>
               <span className="text-sm font-medium">
-                {puzzle.pairs ? JSON.parse(puzzle.pairs).length : 0} pairs
+                {puzzle.pairs ? (typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs).length : puzzle.pairs.length) : 0} pairs
               </span>
             </div>
           </div>
@@ -199,19 +213,31 @@ export function PuzzleDetailDialog({
                       </p>
                     </div>
                     
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-destructive/10"
-                      onClick={() => handleRemoveFromSchedule(puzzle)}
-                      disabled={isDeleting === puzzle.id}
-                    >
-                      {isDeleting === puzzle.id ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      )}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-blue-50"
+                        onClick={(e) => handleEditPuzzle(puzzle, e)}
+                        title="Edit puzzle"
+                      >
+                        <Edit className="w-4 h-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-destructive/10"
+                        onClick={() => handleRemoveFromSchedule(puzzle)}
+                        disabled={isDeleting === puzzle.id}
+                        title="Remove from schedule"
+                      >
+                        {isDeleting === puzzle.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   {renderPuzzleDetails(puzzle)}

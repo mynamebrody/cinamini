@@ -18,7 +18,9 @@ export async function GET(request: NextRequest) {
       // Budget Bracket metrics
       getBudgetBracketMetrics(supabase, startDate),
       // Cast Climb metrics
-      getCastClimbMetrics(supabase, startDate)
+      getCastClimbMetrics(supabase, startDate),
+      // Poster Pixels metrics
+      getPosterPixelsMetrics(supabase, startDate)
     ]);
 
     return NextResponse.json(gameMetrics);
@@ -191,6 +193,66 @@ async function getCastClimbMetrics(supabase: any, startDate: Date) {
     avgSolveTime,
     avgDifficulty,
     totalPlays,
+    perfectGames,
+    popularPuzzles: []
+  };
+}
+
+async function getPosterPixelsMetrics(supabase: any, startDate: Date) {
+  // Get all games in date range
+  const { data: games, count: totalPlays } = await supabase
+    .from('poster_pixels_games')
+    .select('*, poster_pixels_guesses(*)')
+    .gte('created_at', startDate.toISOString());
+
+  if (!games || games.length === 0) {
+    return {
+      gameId: 'poster-pixels',
+      displayName: 'Poster Pixels',
+      completionRate: 0,
+      avgSolveTime: 0,
+      avgDifficulty: 2.5,
+      totalPlays: 0,
+      perfectGames: 0,
+      popularPuzzles: []
+    };
+  }
+
+  // Calculate completion rate
+  const completedGames = games.filter((g: any) => g.completed).length;
+  const completionRate = totalPlays ? completedGames / totalPlays : 0;
+
+  // Calculate average solve time for won games
+  const wonGames = games.filter((g: any) => g.won && g.total_time_ms);
+  const avgSolveTime = wonGames.length > 0
+    ? wonGames.reduce((sum: number, g: any) => sum + g.total_time_ms, 0) / wonGames.length / 1000
+    : 0;
+
+  // Calculate average difficulty based on clarity level when won
+  const clarityLevels = wonGames
+    .filter((g: any) => g.final_clarity_level)
+    .map((g: any) => {
+      // Convert clarity % to difficulty (20% = hardest = 5, 90% = easiest = 1)
+      const clarity = g.final_clarity_level;
+      return Math.max(1, Math.min(5, 6 - Math.floor(clarity / 20)));
+    });
+
+  const avgDifficulty = clarityLevels.length > 0
+    ? clarityLevels.reduce((a: number, b: number) => a + b, 0) / clarityLevels.length
+    : 2.5;
+
+  // Count perfect games (won at 20% clarity - first attempt)
+  const perfectGames = wonGames.filter((g: any) => 
+    g.final_clarity_level === 20 && g.num_guesses === 1
+  ).length;
+
+  return {
+    gameId: 'poster-pixels',
+    displayName: 'Poster Pixels',
+    completionRate,
+    avgSolveTime,
+    avgDifficulty,
+    totalPlays: totalPlays || 0,
     perfectGames,
     popularPuzzles: []
   };

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Cookies from "js-cookie"
+import GameSelectorMenu from "@/components/admin/shared/game-selector-menu"
 import { 
   Calendar,
   Film,
@@ -44,8 +46,17 @@ interface TrendingMovie {
 export default function AdminDashboard() {
   const [trendingMovies, setTrendingMovies] = useState<TrendingMovie[]>([])
   const [selectedMovie, setSelectedMovie] = useState<TrendingMovie | null>(null)
+  const [showGameSelector, setShowGameSelector] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [showQuickGuide, setShowQuickGuide] = useState(true)
+  const [showQuickGuide, setShowQuickGuide] = useState(false) // Default to false, will be set by useEffect
+
+  useEffect(() => {
+    // Check if user has dismissed the guide before
+    const hasSeenGuide = Cookies.get('admin-guide-dismissed')
+    if (!hasSeenGuide) {
+      setShowQuickGuide(true)
+    }
+  }, [])
 
   useEffect(() => {
     fetchTrendingMovies()
@@ -110,20 +121,23 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
+      <h1 className="text-3xl font-funnel-display-bold text-neutral-900 mb-8">Admin Dashboard</h1>
       
       {/* Quick Start Guide */}
       {showQuickGuide && (
-        <Card className="mb-8 border-blue-200 bg-blue-50/50">
+        <Card className="mb-8 admin-card border-blue-200 bg-blue-50/50">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
                 <Info className="w-5 h-5 text-blue-600" />
-                <CardTitle className="text-lg text-blue-900">Admin Quick Start Guide</CardTitle>
+                <CardTitle className="text-lg text-blue-900 font-funnel-display-bold">Admin Quick Start Guide</CardTitle>
               </div>
               <button
-                onClick={() => setShowQuickGuide(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                onClick={() => {
+                  setShowQuickGuide(false)
+                  Cookies.set('admin-guide-dismissed', 'true', { expires: 365 }) // Expires in 1 year
+                }}
+                className="text-neutral-400 hover:text-neutral-600 transition-colors p-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -132,24 +146,24 @@ export default function AdminDashboard() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                <h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2 font-funnel">
                   <CheckCircle className="w-4 h-4 text-green-600" />
                   Getting Started
                 </h3>
-                <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
-                  <li>Visit <span className="font-mono bg-white px-1 rounded">Puzzle Editor</span> to create your first puzzle</li>
-                  <li>Use <span className="font-mono bg-white px-1 rounded">Movie Search</span> to check movie availability</li>
-                  <li>Schedule puzzles via <span className="font-mono bg-white px-1 rounded">Puzzle Schedule</span></li>
-                  <li>Monitor performance in <span className="font-mono bg-white px-1 rounded">Analytics</span></li>
+                <ol className="space-y-2 text-sm text-neutral-700 list-decimal list-inside font-funnel">
+                  <li>Visit <span className="font-mono bg-white px-2 py-0.5 border border-neutral-200">Puzzle Editor</span> to create your first puzzle</li>
+                  <li>Use <span className="font-mono bg-white px-2 py-0.5 border border-neutral-200">Movie Search</span> to check movie availability</li>
+                  <li>Schedule puzzles via <span className="font-mono bg-white px-2 py-0.5 border border-neutral-200">Puzzle Schedule</span></li>
+                  <li>Monitor performance in <span className="font-mono bg-white px-2 py-0.5 border border-neutral-200">Analytics</span></li>
                 </ol>
               </div>
               
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-gray-900 flex items-center gap-2">
+                <h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2 font-funnel">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   Important Notes
                 </h3>
-                <ul className="space-y-2 text-sm text-gray-700">
+                <ul className="space-y-2 text-sm text-neutral-700 font-funnel">
                   <li className="flex items-start gap-2">
                     <span className="text-red-500 mt-0.5">•</span>
                     <span>Puzzles must be marked as <strong>Published</strong> to appear to players</span>
@@ -166,15 +180,15 @@ export default function AdminDashboard() {
               </div>
             </div>
             
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center justify-between pt-2 border-t border-neutral-200">
+              <div className="flex items-center gap-2 text-sm text-neutral-600 font-funnel">
                 <BookOpen className="w-4 h-4" />
                 <span>For detailed documentation, see</span>
-                <code className="px-2 py-0.5 bg-white rounded text-xs">ADMIN_SETUP_COMPLETE.md</code>
+                <code className="px-2 py-0.5 bg-white border border-neutral-200 text-xs">ADMIN_SETUP_COMPLETE.md</code>
               </div>
               <Link 
                 href="/admin/puzzle-editor"
-                className="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                className="admin-btn-primary text-sm"
               >
                 Create First Puzzle →
               </Link>
@@ -189,14 +203,14 @@ export default function AdminDashboard() {
           <Link
             key={tool.title}
             href={tool.href}
-            className={`block p-6 rounded-lg border border-gray-200 transition-all hover:shadow-lg ${tool.color}`}
+            className="admin-card block p-6 transition-all"
           >
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-2">{tool.title}</h3>
-                <p className="text-sm opacity-80">{tool.description}</p>
+                <h3 className="text-lg font-funnel-display-bold mb-2 text-neutral-900">{tool.title}</h3>
+                <p className="text-sm text-neutral-600 font-funnel">{tool.description}</p>
               </div>
-              <tool.icon className="w-8 h-8 opacity-80" />
+              <tool.icon className="w-8 h-8 text-cinema-red opacity-80" />
             </div>
           </Link>
         ))}
@@ -204,14 +218,14 @@ export default function AdminDashboard() {
 
       {/* Trending Movies Section */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Trending Movies This Week</h2>
+        <h2 className="text-2xl font-funnel-display-bold text-neutral-900 mb-6">Trending Movies This Week</h2>
         
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-gray-200 rounded-lg aspect-[2/3] mb-2"></div>
-                <div className="bg-gray-200 h-4 rounded w-3/4"></div>
+                <div className="bg-neutral-200 aspect-[2/3] mb-2"></div>
+                <div className="bg-neutral-200 h-4 w-3/4"></div>
               </div>
             ))}
           </div>
@@ -223,7 +237,7 @@ export default function AdminDashboard() {
                 className="cursor-pointer group"
                 onClick={() => fetchMovieDetails(movie.id)}
               >
-                <div className="relative overflow-hidden rounded-lg shadow-md transition-transform group-hover:scale-105">
+                <div className="admin-movie-poster relative overflow-hidden group-hover:scale-[1.02]">
                   <img
                     src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
                     alt={movie.title}
@@ -231,8 +245,8 @@ export default function AdminDashboard() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <p className="text-white text-sm font-medium">{movie.title}</p>
-                      <p className="text-white/80 text-xs">{new Date(movie.release_date).getFullYear()}</p>
+                      <p className="text-white text-sm font-medium font-funnel">{movie.title}</p>
+                      <p className="text-white/80 text-xs font-funnel">{new Date(movie.release_date).getFullYear()}</p>
                     </div>
                   </div>
                 </div>
@@ -249,42 +263,51 @@ export default function AdminDashboard() {
           onClick={() => setSelectedMovie(null)}
         >
           <div
-            className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto animate-scale-in"
+            className="bg-white max-w-3xl w-full max-h-[90vh] overflow-y-auto admin-modal-silver animate-scale-in relative"
             onClick={(e) => e.stopPropagation()}
+            style={{ borderRadius: 0 }}
           >
-            <div className="p-6">
+            {/* Close button in corner */}
+            <button
+              onClick={() => setSelectedMovie(null)}
+              className="admin-modal-ghost-close absolute top-4 right-4 z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="p-6 pr-12"> {/* Add right padding for close button */}
               <div className="flex gap-6 mb-6">
                 <img
                   src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
                   alt={selectedMovie.title}
-                  className="w-48 rounded-lg shadow-md"
+                  className="w-48 border-2 border-neutral-200"
+                  style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                 />
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold mb-2">{selectedMovie.title}</h3>
-                  <div className="space-y-2 text-sm">
+                  <h3 className="text-2xl font-funnel-display-bold mb-2 text-neutral-900">{selectedMovie.title}</h3>
+                  <div className="space-y-2 text-sm font-funnel">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <Calendar className="w-4 h-4 text-neutral-500" />
                       <span>Release: {format(new Date(selectedMovie.release_date), "MMMM d, yyyy")}</span>
                     </div>
                     {selectedMovie.runtime && (
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-500" />
+                        <Clock className="w-4 h-4 text-neutral-500" />
                         <span>{selectedMovie.runtime} minutes</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-yellow-500" />
+                      <Star className="w-4 h-4 text-amber-500" />
                       <span>{selectedMovie.vote_average.toFixed(1)}/10</span>
                     </div>
                     {selectedMovie.budget && selectedMovie.budget > 0 && (
                       <div className="flex items-center gap-2">
-                        <DollarSign className="w-4 h-4 text-gray-500" />
+                        <DollarSign className="w-4 h-4 text-neutral-500" />
                         <span>Budget: ${(selectedMovie.budget / 1000000).toFixed(1)}M</span>
                       </div>
                     )}
                     {selectedMovie.revenue && selectedMovie.revenue > 0 && (
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-gray-500" />
+                        <TrendingUp className="w-4 h-4 text-neutral-500" />
                         <span>Revenue: ${(selectedMovie.revenue / 1000000).toFixed(1)}M</span>
                       </div>
                     )}
@@ -295,7 +318,7 @@ export default function AdminDashboard() {
                       {selectedMovie.genres.map((genre) => (
                         <span
                           key={genre.id}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+                          className="admin-badge admin-badge-default text-xs"
                         >
                           {genre.name}
                         </span>
@@ -307,15 +330,15 @@ export default function AdminDashboard() {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Overview</h4>
-                  <p className="text-sm text-gray-600">{selectedMovie.overview}</p>
+                  <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Overview</h4>
+                  <p className="text-sm text-neutral-600 font-funnel">{selectedMovie.overview}</p>
                 </div>
 
                 {selectedMovie.credits && (
                   <>
                     <div>
-                      <h4 className="font-semibold mb-2">Director</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Director</h4>
+                      <p className="text-sm text-neutral-600 font-funnel">
                         {selectedMovie.credits.crew
                           .filter(c => c.job === "Director")
                           .map(d => d.name)
@@ -324,8 +347,8 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div>
-                      <h4 className="font-semibold mb-2">Writers</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Writers</h4>
+                      <p className="text-sm text-neutral-600 font-funnel">
                         {selectedMovie.credits.crew
                           .filter(c => c.job === "Screenplay" || c.job === "Writer")
                           .map(w => w.name)
@@ -335,8 +358,8 @@ export default function AdminDashboard() {
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2">Top Cast</h4>
-                      <p className="text-sm text-gray-600">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Top Cast</h4>
+                      <p className="text-sm text-neutral-600 font-funnel">
                         {selectedMovie.credits.cast
                           .slice(0, 5)
                           .map(a => a.name)
@@ -347,17 +370,36 @@ export default function AdminDashboard() {
                 )}
               </div>
 
+              {/* Add to Puzzle button */}
               <div className="mt-6 flex justify-end">
                 <button
-                  onClick={() => setSelectedMovie(null)}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  onClick={() => {
+                    setShowGameSelector(true)
+                  }}
+                  className="admin-btn-puzzle"
                 >
-                  Close
+                  Add to Puzzle
                 </button>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Game Selector Modal */}
+      {showGameSelector && selectedMovie && (
+        <GameSelectorMenu
+          movie={{
+            id: selectedMovie.id,
+            title: selectedMovie.title,
+            poster_path: selectedMovie.poster_path,
+            release_date: selectedMovie.release_date
+          }}
+          onClose={() => {
+            setShowGameSelector(false)
+            setSelectedMovie(null)
+          }}
+        />
       )}
     </div>
   )

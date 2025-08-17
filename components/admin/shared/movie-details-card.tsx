@@ -258,7 +258,7 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
               </p>
               <div className="space-y-1">
                 {movie.main_cast.map((actor, idx) => (
-                  <div key={idx} className="text-sm">
+                  <div key={`cast-${actor.name || actor.id}-${idx}`} className="text-sm">
                     <span className="font-medium">{actor.name}</span>
                     <span className="text-gray-500"> as {actor.character}</span>
                   </div>
