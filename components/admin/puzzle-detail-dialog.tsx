@@ -147,7 +147,7 @@ export function PuzzleDetailDialog({
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Movie Pairs:</span>
               <span className="text-sm font-medium">
-                {puzzle.pairs ? JSON.parse(puzzle.pairs).length : 0} pairs
+                {puzzle.pairs ? (typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs).length : puzzle.pairs.length) : 0} pairs
               </span>
             </div>
           </div>

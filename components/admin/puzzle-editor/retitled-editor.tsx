@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle } from "lucide-react"
+import { Calendar, Save, Loader2, Plus, X, Globe, Film, Shuffle, GripVertical } from "lucide-react"
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -17,6 +17,26 @@ import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
 import { ConfirmationDialog } from "../shared/confirmation-dialog"
 import { cn } from "@/lib/utils"
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import {
+  useSortable,
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import { getCountryFlag } from "@/lib/flag-emojis"
 
 interface Movie {
   id: number
@@ -54,13 +74,64 @@ interface AlternativeTitle {
   type: string
 }
 
-const COUNTRY_FLAGS: { [key: string]: string } = {
-  "ES": "🇪🇸", "FR": "🇫🇷", "DE": "🇩🇪", "IT": "🇮🇹", "JP": "🇯🇵",
-  "KR": "🇰🇷", "BR": "🇧🇷", "MX": "🇲🇽", "RU": "🇷🇺", "CN": "🇨🇳",
-  "US": "🇺🇸", "GB": "🇬🇧", "CA": "🇨🇦", "AU": "🇦🇺", "IN": "🇮🇳",
-  "AR": "🇦🇷", "PL": "🇵🇱", "NL": "🇳🇱", "SE": "🇸🇪", "NO": "🇳🇴",
-  "DK": "🇩🇰", "FI": "🇫🇮", "PT": "🇵🇹", "GR": "🇬🇷", "TR": "🇹🇷",
-  "TH": "🇹🇭", "ID": "🇮🇩", "VN": "🇻🇳", "PH": "🇵🇭", "MY": "🇲🇾",
+interface PuzzleOption extends Movie {
+  isCorrect: boolean
+}
+
+
+function SortableOption({ option, index, onRemove }: { option: PuzzleOption; index: number; onRemove: () => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: `option-${option.id}` })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "flex items-center gap-2 p-2 rounded-lg border transition-all",
+        isDragging ? "opacity-50 border-blue-300 shadow-lg" : 
+        option.isCorrect ? "bg-green-50 border-green-300" : "bg-white border-gray-200"
+      )}
+    >
+      <button
+        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="w-4 h-4" />
+      </button>
+      
+      <span className="text-sm text-gray-500 w-6">{index + 1}.</span>
+      <div className="flex-1 flex items-center gap-2">
+        <p className="text-sm font-medium">{option.title}</p>
+        {option.isCorrect && (
+          <Badge variant="default" className="text-xs bg-green-600 text-white">
+            Correct Answer
+          </Badge>
+        )}
+      </div>
+      {!option.isCorrect && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRemove}
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  )
 }
 
 interface RetitledEditorProps {
@@ -76,6 +147,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [selectedTitle, setSelectedTitle] = useState<AlternativeTitle | null>(null)
   const [distractors, setDistractors] = useState<Movie[]>([])
+  const [allOptions, setAllOptions] = useState<PuzzleOption[]>([])
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showMovieSelector, setShowMovieSelector] = useState(false)
@@ -93,6 +165,27 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [warningInfo, setWarningInfo] = useState<any>(null)
 
   const supabase = getSupabaseClient()
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      setAllOptions((items) => {
+        const oldIndex = items.findIndex((item) => `option-${item.id}` === active.id)
+        const newIndex = items.findIndex((item) => `option-${item.id}` === over?.id)
+        
+        return arrayMove(items, oldIndex, newIndex)
+      })
+    }
+  }
 
   const fetchAlternativeTitles = async (movieId: number) => {
     setLoadingTitles(true)
@@ -303,13 +396,55 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       newDistractors[selectingDistractorIndex] = movie
       setDistractors(newDistractors)
       setSelectingDistractorIndex(null)
+      // Update allOptions with new distractor
+      updateAllOptions(selectedMovie, newDistractors)
     } else {
       setSelectedMovie(movie)
       setSelectedTitle(null)
+      // Create initial allOptions with the correct answer first
+      const correctOption: PuzzleOption = { ...movie, isCorrect: true }
+      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
+      setAllOptions([correctOption, ...distractorOptions])
       // Notify parent of movie change
       onMovieChange?.(movie.id.toString())
     }
     setShowMovieSelector(false)
+  }
+  
+  // Helper function to update allOptions when distractors change
+  const updateAllOptions = (correctMovie: Movie | null, newDistractors: Movie[]) => {
+    if (!correctMovie) {
+      setAllOptions([])
+      return
+    }
+    
+    const correctOption: PuzzleOption = { ...correctMovie, isCorrect: true }
+    const distractorOptions: PuzzleOption[] = newDistractors.map(d => ({ ...d, isCorrect: false }))
+    
+    // If allOptions already exists, preserve the order but update the items
+    if (allOptions.length > 0) {
+      const newOptions: PuzzleOption[] = []
+      const allItems = [correctOption, ...distractorOptions]
+      
+      // Preserve existing order where possible
+      allOptions.forEach(option => {
+        const found = allItems.find(item => item.id === option.id)
+        if (found) {
+          newOptions.push(found)
+        }
+      })
+      
+      // Add any new items that weren't in the previous list
+      allItems.forEach(item => {
+        if (!newOptions.find(option => option.id === item.id)) {
+          newOptions.push(item)
+        }
+      })
+      
+      setAllOptions(newOptions)
+    } else {
+      setAllOptions([correctOption, ...distractorOptions])
+    }
   }
 
   const addDistractor = () => {
@@ -320,12 +455,15 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   }
 
   const removeDistractor = (index: number) => {
-    setDistractors(distractors.filter((_, i) => i !== index))
+    const newDistractors = distractors.filter((_, i) => i !== index)
+    setDistractors(newDistractors)
+    // Update allOptions
+    updateAllOptions(selectedMovie, newDistractors)
   }
 
-  const shuffleDistractors = () => {
-    const shuffled = [...distractors].sort(() => Math.random() - 0.5)
-    setDistractors(shuffled)
+  const shuffleAllOptions = () => {
+    const shuffled = [...allOptions].sort(() => Math.random() - 0.5)
+    setAllOptions(shuffled)
   }
 
   const loadRandomMovies = async () => {
@@ -377,7 +515,10 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         release_date: m.release_date
       }))
       
-      setDistractors([...distractors, ...randomMovies].slice(0, 5))
+      const newDistractors = [...distractors, ...randomMovies].slice(0, 5)
+      setDistractors(newDistractors)
+      // Update allOptions
+      updateAllOptions(selectedMovie, newDistractors)
       
     } catch (error) {
       console.error("Error loading movies:", error)
@@ -388,8 +529,9 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   }
 
   const savePuzzle = async () => {
-    if (!selectedMovie || !customTitle.trim() || !selectedTitle || distractors.length < 3) {
-      alert("Please complete all required fields and add at least 3 distractor options")
+    const wrongAnswers = allOptions.filter(option => !option.isCorrect)
+    if (!selectedMovie || !customTitle.trim() || !selectedTitle || wrongAnswers.length < 3) {
+      alert("Please complete all required fields and add at least 3 wrong answer options")
       return
     }
 
@@ -433,7 +575,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         localized_title: customTitle.trim(),
         country_code: selectedTitle.iso_3166_1,
         country_name: countryNames[selectedTitle.iso_3166_1] || selectedTitle.iso_3166_1,
-        distractor_ids: distractors.map(d => d.id),
+        distractor_ids: allOptions.filter(option => !option.isCorrect).map(option => option.id),
         is_published: isPublished,
         seed_value: seedValue,
         puzzle_number: puzzleNumber,
@@ -495,11 +637,13 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   }
 
   const getPreviewData = () => {
-    const flag = selectedTitle ? (COUNTRY_FLAGS[selectedTitle.iso_3166_1] || "🏳️") : "🏳️"
-    const options = [
-      ...(selectedMovie ? [{ id: selectedMovie.id, title: selectedMovie.title, isCorrect: true }] : []),
-      ...distractors.map(d => ({ id: d.id, title: d.title, isCorrect: false }))
-    ].sort(() => Math.random() - 0.5)
+    const flag = selectedTitle ? getCountryFlag(selectedTitle.iso_3166_1) : "🏳️"
+    // Use allOptions directly to maintain user-specified order
+    const options = allOptions.map(option => ({
+      id: option.id,
+      title: option.title,
+      isCorrect: option.isCorrect
+    }))
 
     return {
       flagEmoji: flag,
@@ -616,7 +760,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                       className="hover:bg-gray-100 cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <span>{COUNTRY_FLAGS[title.iso_3166_1] || "🏳️"}</span>
+                        <span>{getCountryFlag(title.iso_3166_1)}</span>
                         <span className="flex-1">{title.title}</span>
                         {title.type && (
                           <Badge variant="secondary" className="text-xs">
@@ -664,11 +808,11 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
           </div>
         )}
 
-        {/* Distractor Options */}
-        {selectedMovie && (
+        {/* Answer Options */}
+        {selectedMovie && allOptions.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Wrong Answer Options ({distractors.length}/5)</Label>
+              <Label>Answer Options ({allOptions.length}/6 total, {distractors.length}/5 wrong)</Label>
               <div className="flex gap-2">
                 <Button
                   variant="ghost"
@@ -685,44 +829,53 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={shuffleDistractors}
-                  disabled={distractors.length < 2}
+                  onClick={shuffleAllOptions}
+                  disabled={allOptions.length < 2}
                 >
                   <Shuffle className="w-4 h-4" />
                 </Button>
               </div>
             </div>
             
-            <div className="space-y-2">
-              {distractors.map((movie, index) => (
-                <Card key={`distractor-${movie.id}-${index}`} className="p-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 w-6">{index + 1}.</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{movie.title}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeDistractor(index)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-              
-              {distractors.length < 5 && (
-                <Button
-                  variant="outline"
-                  className="w-full border-2 border-cinema-silver hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]"
-                  onClick={addDistractor}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Wrong Answer
-                </Button>
-              )}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={allOptions.map(option => `option-${option.id}`)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-2">
+                  {allOptions.map((option, index) => (
+                    <SortableOption
+                      key={`option-${option.id}`}
+                      option={option}
+                      index={index}
+                      onRemove={() => {
+                        if (!option.isCorrect) {
+                          const distractorIndex = distractors.findIndex(d => d.id === option.id)
+                          if (distractorIndex !== -1) {
+                            removeDistractor(distractorIndex)
+                          }
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+            
+            {distractors.length < 5 && (
+              <Button
+                variant="outline"
+                className="w-full border-2 border-cinema-silver hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]"
+                onClick={addDistractor}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Wrong Answer
+              </Button>
+            )}
           </div>
         )}
 
@@ -730,7 +883,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         <Button
           className="w-full"
           onClick={savePuzzle}
-          disabled={loading || !selectedMovie || !selectedTitle || !customTitle.trim() || distractors.length < 3}
+          disabled={loading || !selectedMovie || !selectedTitle || !customTitle.trim() || allOptions.filter(option => !option.isCorrect).length < 3}
         >
           {loading ? (
             <>
@@ -793,10 +946,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                   setShowMovieSelector(false)
                   setSelectingDistractorIndex(null)
                 }}
-                excludeIds={[
-                  ...(selectedMovie ? [selectedMovie.id] : []),
-                  ...distractors.map(d => d.id)
-                ]}
+                excludeIds={allOptions.map(option => option.id)}
               />
             </div>
           </Card>

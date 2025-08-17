@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { puzzleId, gameType, newDate } = body
+    const { puzzleId, gameType, newDate, isDraftSwap, existingPuzzleId } = body
     
     if (!puzzleId || !gameType) {
       return NextResponse.json(
@@ -34,40 +34,208 @@ export async function POST(request: Request) {
     const serviceSupabase = await createServiceClient()
 
     // Check if there's already a puzzle on the new date
+    let existingPuzzle = null
+    let swapPuzzle = false
+    
     if (newDate) {
       const tableName = `${gameType}_puzzles`
-      const { data: existingPuzzle } = await serviceSupabase
+      const { data: existing } = await serviceSupabase
         .from(tableName)
-        .select('id')
+        .select('id, puzzle_date, film_title')
         .eq('puzzle_date', newDate)
         .single()
 
-      if (existingPuzzle) {
-        return NextResponse.json(
-          { error: "A puzzle already exists on that date for this game" },
-          { status: 409 }
-        )
+      if (existing) {
+        existingPuzzle = existing
+        swapPuzzle = true
       }
     }
 
-    // Update the puzzle date
+    // Get the current puzzle details first
     const tableName = `${gameType}_puzzles`
-    const { data, error } = await serviceSupabase
+    const { data: currentPuzzle, error: fetchError } = await serviceSupabase
       .from(tableName)
-      .update({ puzzle_date: newDate })
+      .select('id, puzzle_date, film_title')
       .eq('id', puzzleId)
-      .select()
       .single()
 
-    if (error) {
-      console.error('Error updating puzzle date:', error)
+    if (fetchError) {
+      console.error('Error fetching current puzzle:', fetchError)
       return NextResponse.json(
-        { error: "Failed to update puzzle date" },
+        { error: "Failed to fetch current puzzle" },
         { status: 500 }
       )
     }
 
-    return NextResponse.json({ puzzle: data })
+    if (swapPuzzle && existingPuzzle) {
+      // Check if this is a draft swap (dragging unpublished puzzle to published one)
+      if (isDraftSwap && existingPuzzleId) {
+        // For draft swaps: set existing puzzle to draft (null date), set dragged puzzle to target date
+        const tempDate = `9999-12-31` // Temporary date that won't conflict
+        
+        // Step 1: Move existing puzzle to temporary date
+        const { error: tempError } = await serviceSupabase
+          .from(tableName)
+          .update({ puzzle_date: tempDate })
+          .eq('id', existingPuzzleId)
+
+        if (tempError) {
+          console.error('Error moving existing puzzle to temp date:', tempError)
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - temp move failed" },
+            { status: 500 }
+          )
+        }
+
+        // Step 2: Move draft puzzle to the target date and publish it
+        const { error: updateError1 } = await serviceSupabase
+          .from(tableName)
+          .update({ 
+            puzzle_date: newDate,
+            is_published: true 
+          })
+          .eq('id', puzzleId)
+
+        if (updateError1) {
+          console.error('Error updating draft puzzle:', updateError1)
+          // Rollback: move existing puzzle back to original date
+          await serviceSupabase
+            .from(tableName)
+            .update({ puzzle_date: newDate })
+            .eq('id', existingPuzzleId)
+          
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - draft publication failed" },
+            { status: 500 }
+          )
+        }
+
+        // Step 3: Move existing puzzle to draft (null date) and unpublish it
+        const { error: updateError2 } = await serviceSupabase
+          .from(tableName)
+          .update({ 
+            puzzle_date: null,
+            is_published: false 
+          })
+          .eq('id', existingPuzzleId)
+
+        if (updateError2) {
+          console.error('Error updating existing puzzle to draft:', updateError2)
+          // Rollback both moves
+          await serviceSupabase
+            .from(tableName)
+            .update({ 
+              puzzle_date: null,
+              is_published: false 
+            })
+            .eq('id', puzzleId)
+          
+          await serviceSupabase
+            .from(tableName)
+            .update({ puzzle_date: newDate })
+            .eq('id', existingPuzzleId)
+          
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - existing puzzle draft conversion failed" },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({ 
+          swapped: true,
+          draftSwap: true,
+          puzzle1: { ...currentPuzzle, puzzle_date: newDate, is_published: true },
+          puzzle2: { ...existingPuzzle, puzzle_date: null, is_published: false }
+        })
+      } else {
+        // Normal swap between two published puzzles
+        const currentDate = currentPuzzle.puzzle_date
+        const tempDate = `9999-12-31` // Temporary date that won't conflict
+        
+        // Step 1: Move existing puzzle to temporary date
+        const { error: tempError } = await serviceSupabase
+          .from(tableName)
+          .update({ puzzle_date: tempDate })
+          .eq('id', existingPuzzle.id)
+
+        if (tempError) {
+          console.error('Error moving puzzle to temp date:', tempError)
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - temp move failed" },
+            { status: 500 }
+          )
+        }
+
+        // Step 2: Move dragged puzzle to the target date
+        const { error: updateError1 } = await serviceSupabase
+          .from(tableName)
+          .update({ puzzle_date: newDate })
+          .eq('id', puzzleId)
+
+        if (updateError1) {
+          console.error('Error updating first puzzle:', updateError1)
+          // Rollback: move existing puzzle back to original date
+          await serviceSupabase
+            .from(tableName)
+            .update({ puzzle_date: newDate })
+            .eq('id', existingPuzzle.id)
+          
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - first move failed" },
+            { status: 500 }
+          )
+        }
+
+        // Step 3: Move existing puzzle to the dragged puzzle's original date
+        const { error: updateError2 } = await serviceSupabase
+          .from(tableName)
+          .update({ puzzle_date: currentDate })
+          .eq('id', existingPuzzle.id)
+
+        if (updateError2) {
+          console.error('Error updating second puzzle:', updateError2)
+          // Rollback both moves
+          await serviceSupabase
+            .from(tableName)
+            .update({ puzzle_date: currentDate })
+            .eq('id', puzzleId)
+          
+          await serviceSupabase
+            .from(tableName)
+            .update({ puzzle_date: newDate })
+            .eq('id', existingPuzzle.id)
+          
+          return NextResponse.json(
+            { error: "Failed to swap puzzles - second move failed" },
+            { status: 500 }
+          )
+        }
+
+        return NextResponse.json({ 
+          swapped: true,
+          puzzle1: { ...currentPuzzle, puzzle_date: newDate },
+          puzzle2: { ...existingPuzzle, puzzle_date: currentDate }
+        })
+      }
+    } else {
+      // Normal reschedule - just update the date
+      const { data, error } = await serviceSupabase
+        .from(tableName)
+        .update({ puzzle_date: newDate })
+        .eq('id', puzzleId)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating puzzle date:', error)
+        return NextResponse.json(
+          { error: "Failed to update puzzle date" },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({ puzzle: data })
+    }
   } catch (error) {
     console.error('Error rescheduling puzzle:', error)
     return NextResponse.json(

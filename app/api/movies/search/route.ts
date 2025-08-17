@@ -57,14 +57,19 @@ export async function GET(request: NextRequest) {
 
     console.log('Making TMDB request to:', tmdbUrl.toString())
 
+    // Create manual timeout using AbortController for better compatibility
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
     const tmdbResponse = await fetch(tmdbUrl.toString(), {
       headers: {
         'Accept': 'application/json',
         'Authorization': `Bearer ${process.env.TMDB_API_KEY}`,
       },
-      // Add timeout to prevent hanging requests
-      signal: AbortSignal.timeout(10000), // 10 second timeout
+      signal: controller.signal,
     })
+    
+    clearTimeout(timeoutId)
 
     console.log('TMDB Response Status:', tmdbResponse.status, tmdbResponse.statusText)
 

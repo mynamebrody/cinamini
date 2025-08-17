@@ -256,7 +256,8 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       console.log('Loading actors from puzzle data:', puzzleData.actors)
       if (puzzleData.actors && Array.isArray(puzzleData.actors)) {
         const loadedActors = puzzleData.actors.map((actor: any, index: number) => ({
-          id: actor.id,
+          // Ensure unique ID by using actor.id or generating one based on index
+          id: actor.id || `loaded-actor-${index}-${Date.now()}`,
           name: actor.name,
           character: actor.character,
           profile_path: actor.profile_path,
@@ -640,12 +641,12 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
                   onDragEnd={handleDragEnd}
                 >
                   <SortableContext
-                    items={actors.map(a => a.id)}
+                    items={actors.map(a => a.id || `actor-${a.order}`)}
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-2">
                       {actors.map((actor, index) => (
-                        <SortableActor key={actor.id} actor={actor} index={index} />
+                        <SortableActor key={`${actor.id}-${index}`} actor={actor} index={index} />
                       ))}
                     </div>
                   </SortableContext>
