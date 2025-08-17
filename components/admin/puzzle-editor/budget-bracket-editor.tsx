@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight } from "lucide-react"
+import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight, GripVertical } from "lucide-react"
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,28 @@ import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
 import { cn } from "@/lib/utils"
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay
+} from "@dnd-kit/core"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy
+} from "@dnd-kit/sortable"
+import {
+  useSortable
+} from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
 
 interface Movie {
   id: number
@@ -36,6 +58,7 @@ interface MoviePair {
 
 const TOTAL_PAIRS = 5 // 5 pairs for a single game
 
+// Regular MovieCard for non-draggable instances
 function MovieCard({ movie }: { movie: Movie }) {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-2 h-full">
@@ -69,6 +92,184 @@ function MovieCard({ movie }: { movie: Movie }) {
   )
 }
 
+// Draggable MovieCard component
+function DraggableMovieCard({ movie, dragId, onRemove }: { 
+  movie: Movie, 
+  dragId: string, 
+  onRemove: () => void 
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: dragId })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "relative group cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50 z-10"
+      )}
+      {...attributes}
+      {...listeners}
+    >
+      <div className={cn(
+        "bg-white rounded-lg border border-gray-200 p-2 h-full transition-all duration-200",
+        isDragging ? "shadow-lg border-cinema-red" : "hover:shadow-md"
+      )}>
+        <div className="flex gap-2">
+          {movie.poster_path ? (
+            <img
+              src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+              alt={movie.title}
+              className="w-12 h-18 object-cover rounded flex-shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-18 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
+              <Film className="w-4 h-4 text-gray-400" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium line-clamp-2 leading-tight">{movie.title}</p>
+            {movie.release_date && (
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {new Date(movie.release_date).getFullYear()}
+              </p>
+            )}
+            {movie.budget && movie.budget > 0 && (
+              <p className="text-xs text-green-600 font-semibold mt-1">
+                ${(movie.budget / 1000000).toFixed(0)}M
+              </p>
+            )}
+          </div>
+          <div className="flex-shrink-0 flex items-start">
+            <GripVertical className="w-3 h-3 text-gray-400" />
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20"
+      >
+        <X className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
+// Draggable Round component
+function DraggableRound({ 
+  pairIndex, 
+  pair, 
+  onOpenMovieSelector,
+  onRemoveMovie,
+  isDragDisabled = false 
+}: {
+  pairIndex: number
+  pair: MoviePair
+  onOpenMovieSelector: (pairIndex: number, slot: "A" | "B") => void
+  onRemoveMovie: (pairIndex: number, slot: "A" | "B") => void
+  isDragDisabled?: boolean
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ 
+    id: `round-${pairIndex}`,
+    disabled: isDragDisabled
+  })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        "transition-all duration-200",
+        isDragging && "opacity-50 z-10",
+        !isDragDisabled && "cursor-grab active:cursor-grabbing"
+      )}
+      {...(!isDragDisabled ? attributes : {})}
+      {...(!isDragDisabled ? listeners : {})}
+    >
+      <Card className={cn(
+        "p-4 transition-all duration-200",
+        isDragging ? "shadow-lg border-cinema-red" : "hover:shadow-md"
+      )}>
+        <div className="flex items-center gap-4">
+          <div className="flex-shrink-0 text-sm font-medium text-gray-600 w-20 flex items-center gap-2">
+            {!isDragDisabled && <GripVertical className="w-4 h-4 text-gray-400" />}
+            Round {pairIndex + 1}
+          </div>
+          
+          {/* Movie A */}
+          <div className="flex-1 max-w-[200px]">
+            {pair.movieA ? (
+              <DraggableMovieCard 
+                movie={pair.movieA}
+                dragId={`movie-${pairIndex}-A`}
+                onRemove={() => onRemoveMovie(pairIndex, "A")}
+              />
+            ) : (
+              <button
+                onClick={() => onOpenMovieSelector(pairIndex, "A")}
+                className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
+              >
+                <Plus className="w-5 h-5 mb-0.5" />
+                <span className="text-xs">Add Movie</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex-shrink-0">
+            <div className="text-sm font-medium text-gray-500">VS</div>
+          </div>
+
+          {/* Movie B */}
+          <div className="flex-1 max-w-[200px]">
+            {pair.movieB ? (
+              <DraggableMovieCard 
+                movie={pair.movieB}
+                dragId={`movie-${pairIndex}-B`}
+                onRemove={() => onRemoveMovie(pairIndex, "B")}
+              />
+            ) : (
+              <button
+                onClick={() => onOpenMovieSelector(pairIndex, "B")}
+                className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
+              >
+                <Plus className="w-5 h-5 mb-0.5" />
+                <span className="text-xs">Add Movie</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 interface BudgetBracketEditorProps {
   prefilledDate?: string | null
   onDateChange?: (date: string | null) => void
@@ -91,7 +292,23 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
 
+  // Drag and drop state
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [dragOverMovie, setDragOverMovie] = useState<string | null>(null)
+
   const supabase = getSupabaseClient()
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px of movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -149,7 +366,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
             title: pair.movieA.title,
             poster_path: pair.movieA.poster_path,
             release_date: pair.movieA.release_date,
-            budget: pair.movieA.budget,
+            budget: pair.movieA.budget || pair.movieA.production_budget, // Map production_budget to budget
             revenue: pair.movieA.revenue,
             runtime: pair.movieA.runtime,
             vote_average: pair.movieA.vote_average
@@ -159,7 +376,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
             title: pair.movieB.title,
             poster_path: pair.movieB.poster_path,
             release_date: pair.movieB.release_date,
-            budget: pair.movieB.budget,
+            budget: pair.movieB.budget || pair.movieB.production_budget, // Map production_budget to budget
             revenue: pair.movieB.revenue,
             runtime: pair.movieB.runtime,
             vote_average: pair.movieB.vote_average
@@ -238,6 +455,122 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (pair.movieB) ids.push(pair.movieB.id)
     })
     return ids
+  }
+
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string)
+  }
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { over } = event
+    
+    if (over) {
+      setDragOverMovie(over.id as string)
+    } else {
+      setDragOverMovie(null)
+    }
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    setActiveId(null)
+    setDragOverMovie(null)
+
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const activeId = active.id as string
+    const overId = over.id as string
+
+    // Handle round reordering (round-0, round-1, etc.)
+    if (activeId.startsWith('round-') && overId.startsWith('round-')) {
+      const oldIndex = parseInt(activeId.split('-')[1])
+      const newIndex = parseInt(overId.split('-')[1])
+
+      setMoviePairs(prev => {
+        const newPairs = arrayMove(prev, oldIndex, newIndex)
+        return newPairs
+      })
+      return
+    }
+
+    // Handle movie swapping (movie-0-A, movie-1-B, etc.)
+    if (activeId.startsWith('movie-') && overId.startsWith('movie-')) {
+      const [, activePairIdx, activeSlot] = activeId.split('-')
+      const [, overPairIdx, overSlot] = overId.split('-')
+
+      const activePairIndex = parseInt(activePairIdx)
+      const overPairIndex = parseInt(overPairIdx)
+      const activeMovieSlot = activeSlot as 'A' | 'B'
+      const overMovieSlot = overSlot as 'A' | 'B'
+
+      setMoviePairs(prev => {
+        const newPairs = [...prev]
+        const activeMovie = newPairs[activePairIndex][`movie${activeMovieSlot}`]
+        const overMovie = newPairs[overPairIndex][`movie${overMovieSlot}`]
+
+        // Swap the movies
+        newPairs[activePairIndex] = {
+          ...newPairs[activePairIndex],
+          [`movie${activeMovieSlot}`]: overMovie
+        }
+        newPairs[overPairIndex] = {
+          ...newPairs[overPairIndex],
+          [`movie${overMovieSlot}`]: activeMovie
+        }
+
+        return newPairs
+      })
+      return
+    }
+  }
+
+  // Get drag overlay content
+  const getDragOverlay = () => {
+    if (!activeId) return null
+
+    if (activeId.startsWith('round-')) {
+      const pairIndex = parseInt(activeId.split('-')[1])
+      const pair = moviePairs[pairIndex]
+      return (
+        <Card className="p-4 shadow-lg border-cinema-red opacity-90">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 text-sm font-medium text-gray-600 w-20">
+              Round {pairIndex + 1}
+            </div>
+            <div className="flex-1 max-w-[200px]">
+              {pair.movieA && <MovieCard movie={pair.movieA} />}
+            </div>
+            <div className="flex-shrink-0">
+              <div className="text-sm font-medium text-gray-500">VS</div>
+            </div>
+            <div className="flex-1 max-w-[200px]">
+              {pair.movieB && <MovieCard movie={pair.movieB} />}
+            </div>
+          </div>
+        </Card>
+      )
+    }
+
+    if (activeId.startsWith('movie-')) {
+      const [, pairIdx, slot] = activeId.split('-')
+      const pairIndex = parseInt(pairIdx)
+      const movieSlot = slot as 'A' | 'B'
+      const movie = moviePairs[pairIndex][`movie${movieSlot}`]
+      
+      if (movie) {
+        return (
+          <div className="opacity-90">
+            <MovieCard movie={movie} />
+          </div>
+        )
+      }
+    }
+
+    return null
   }
 
   const savePuzzle = async () => {
@@ -495,77 +828,54 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         </div>
       </div>
 
-      {/* Movie Pairs */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Movie Pairs</h3>
-          <Badge variant="outline">
-            {moviePairs.filter(p => p.movieA && p.movieB).length}/{TOTAL_PAIRS} Complete
-          </Badge>
+      {/* Movie Pairs with Drag and Drop */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Movie Pairs</h3>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline">
+                {moviePairs.filter(p => p.movieA && p.movieB).length}/{TOTAL_PAIRS} Complete
+              </Badge>
+              <p className="text-xs text-gray-500">
+                Drag rounds or individual movies to reorder
+              </p>
+            </div>
+          </div>
+
+          <SortableContext
+            items={moviePairs.map((_, idx) => `round-${idx}`).concat(
+              moviePairs.flatMap((pair, idx) => [
+                pair.movieA ? `movie-${idx}-A` : null,
+                pair.movieB ? `movie-${idx}-B` : null
+              ]).filter(Boolean) as string[]
+            )}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {moviePairs.map((pair, pairIdx) => (
+                <DraggableRound
+                  key={`round-${pairIdx}`}
+                  pairIndex={pairIdx}
+                  pair={pair}
+                  onOpenMovieSelector={openMovieSelector}
+                  onRemoveMovie={removeMovie}
+                />
+              ))}
+            </div>
+          </SortableContext>
         </div>
 
-        <div className="space-y-4">
-          {moviePairs.map((pair, pairIdx) => (
-            <Card key={`pair-${pairIdx}`} className="p-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 text-sm font-medium text-gray-600 w-20">
-                  Round {pairIdx + 1}
-                </div>
-                
-                {/* Movie A */}
-                <div className="flex-1 max-w-[200px]">
-                  {pair.movieA ? (
-                    <div className="relative group">
-                      <MovieCard movie={pair.movieA} />
-                      <button
-                        onClick={() => removeMovie(pairIdx, "A")}
-                        className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => openMovieSelector(pairIdx, "A")}
-                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
-                    >
-                      <Plus className="w-5 h-5 mb-0.5" />
-                      <span className="text-xs">Add Movie</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex-shrink-0">
-                  <div className="text-sm font-medium text-gray-500">VS</div>
-                </div>
-
-                {/* Movie B */}
-                <div className="flex-1 max-w-[200px]">
-                  {pair.movieB ? (
-                    <div className="relative group">
-                      <MovieCard movie={pair.movieB} />
-                      <button
-                        onClick={() => removeMovie(pairIdx, "B")}
-                        className="absolute top-1 right-1 p-1 bg-white/90 text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => openMovieSelector(pairIdx, "B")}
-                      className="w-full h-[82px] bg-gray-100 rounded-lg border-2 border-dashed border border-[rgb(var(--silver))] hover:border-gray-400 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-700"
-                    >
-                      <Plus className="w-5 h-5 mb-0.5" />
-                      <span className="text-xs">Add Movie</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
+        <DragOverlay>
+          {getDragOverlay()}
+        </DragOverlay>
+      </DndContext>
 
       {/* Save Button */}
       <Button
