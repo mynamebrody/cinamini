@@ -16,6 +16,12 @@ const nextConfig = {
       },
     ],
   },
+  // Allow dev origins for ngrok during local development
+  ...(process.env.NODE_ENV === 'development' && {
+    allowedDevOrigins: [
+      'cinamini.ngrok.app'
+    ]
+  })
 }
 
 export default nextConfig

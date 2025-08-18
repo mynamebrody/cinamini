@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { signUp } from "@/lib/actions"
+import AuthFormContainer from "@/components/auth/auth-form-container"
+import useOAuthSignIn from "@/hooks/use-oauth-signin"
 
 function SubmitButton() {
   const { pending } = useFormStatus()
@@ -34,14 +36,13 @@ function SubmitButton() {
 export default function SignUpForm() {
   // Initialize with null as the initial state
   const [state, formAction] = useActionState(signUp, null)
+  const { signIn: handleOAuthSignIn } = useOAuthSignIn()
 
   return (
-    <div className="w-full max-w-md space-y-8">
-      <div className="space-y-2 text-center">
-        <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">Create an account</h1>
-        <p className="text-lg text-neutral-600">Sign up to get started</p>
-      </div>
-
+    <AuthFormContainer 
+      mode="signup"
+      onSocialAuth={handleOAuthSignIn}
+    >
       <form action={formAction} className="space-y-6">
         {state?.error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{state.error}</div>
@@ -90,6 +91,6 @@ export default function SignUpForm() {
           </Link>
         </div>
       </form>
-    </div>
+    </AuthFormContainer>
   )
 }

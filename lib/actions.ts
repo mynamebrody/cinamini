@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { isSupabaseConfigured } from "@/lib/supabase/server"
+import type { Provider } from '@supabase/supabase-js'
 
 // Helper function to create Supabase client for server actions
 async function createServerActionClient() {
@@ -221,5 +222,87 @@ export async function updatePassword(prevState: any, formData: FormData) {
   } catch (error) {
     console.error("Password update error:", error)
     return { error: "An unexpected error occurred. Please try again." }
+  }
+}
+
+// Types for provider authentication
+type SocialProvider = 'google' | 'apple'
+type AuthProvider = SocialProvider | 'email'
+
+type SignInWithProviderResponse = {
+  success?: boolean
+  redirectUrl?: string
+  error?: string
+}
+
+// Helper function to get the correct base URL
+function getBaseUrl(): string {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://cinamini.app'
+  }
+  return process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+}
+
+// Social authentication server action
+export async function signInWithProvider(provider: AuthProvider): Promise<SignInWithProviderResponse> {
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured) {
+    return { error: "Supabase is not configured. Please set up your environment variables." }
+  }
+
+  // Handle email provider case (redirect to login form)
+  if (provider === 'email') {
+    return { redirectUrl: '/auth/login' }
+  }
+
+  // Validate social provider
+  const socialProviders: SocialProvider[] = ['google', 'apple']
+  if (!socialProviders.includes(provider as SocialProvider)) {
+    return { error: "Invalid authentication provider specified." }
+  }
+
+  try {
+    const supabase = await createServerActionClient()
+    
+    // Build the redirect URL for OAuth callback
+    const baseUrl = getBaseUrl()
+    const redirectTo = `${baseUrl}/auth/callback`
+    
+    // Map our provider names to Supabase provider names
+    const providerMap: Record<SocialProvider, Provider> = {
+      google: 'google',
+      apple: 'apple'
+    }
+    
+    const supabaseProvider = providerMap[provider as SocialProvider]
+    
+    // Initiate OAuth flow
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: supabaseProvider,
+      options: {
+        redirectTo,
+        scopes: provider === 'google' ? 'openid email profile' : undefined,
+        queryParams: {
+          // Add provider context for callback handling
+          provider: provider
+        }
+      }
+    })
+    
+    if (error) {
+      console.error(`${provider} auth error:`, error)
+      return { error: `Failed to initiate ${provider} authentication: ${error.message}` }
+    }
+    
+    // Return the OAuth URL for client-side redirect
+    if (data?.url) {
+      return { success: true, redirectUrl: data.url }
+    }
+    
+    return { error: "Failed to generate authentication URL. Please try again." }
+    
+  } catch (error) {
+    console.error(`${provider} authentication error:`, error)
+    return { error: "An unexpected error occurred during authentication. Please try again." }
   }
 }
