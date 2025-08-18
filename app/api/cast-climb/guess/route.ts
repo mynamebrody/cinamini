@@ -15,6 +15,12 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const isAnonymous = user.is_anonymous === true
+    
+    if (isAnonymous) {
       console.log("🎬 CAST CLIMB GUESS API: Processing anonymous user")
       // For anonymous users, provide proper webhook with validation (matching Poster Pixels format)
       const body = await request.json().catch(() => ({}))
@@ -65,7 +71,7 @@ export async function POST(request: NextRequest) {
       await sendGuessWebhook(request, {
         event: "guess",
         game: "cast-climb",
-        user: { isAuthenticated: false },
+        user: { isAuthenticated: false, id: user.id },
         guess: {
           gameId: `anonymous-${puzzle.puzzle_number}`,
           puzzleId: puzzle.puzzle_number,
@@ -228,7 +234,11 @@ export async function POST(request: NextRequest) {
     const webhookPromise = sendGuessWebhook(request, {
       event: "guess",
       game: "cast-climb",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null) 
+      },
       guess: {
         gameId: `${user.id}-${puzzle.puzzle_number}`, // Use puzzle number for consistency
         puzzleId: puzzle.puzzle_number,

@@ -92,36 +92,7 @@ export default function RetitleGame() {
       const data = await response.json()
       
       // Check if already played today
-      if (isAnonymous) {
-        // Check local storage for anonymous users
-        const hasPlayedToday = localGameStorage.hasPlayedToday('retitled')
-        if (hasPlayedToday) {
-          const localResult = localGameStorage.getTodayResult('retitled')
-          if (localResult?.result) {
-            // Extract solve time from the cached result
-            const cachedSolveTime = localResult.result.solveTimeMs || 0
-            setSolveTimeMs(cachedSolveTime)
-            
-            // Set puzzle data from API first (for puzzle number and other metadata)
-            setPuzzle(data.puzzle)
-            
-            // Then set the result
-            setResult(localResult.result)
-            setGameState('completed')
-          } else {
-            setPuzzle(data.puzzle)
-            setGameState('ready')
-          }
-        } else {
-          setPuzzle(data.puzzle)
-          // Check if this is the user's first time playing
-          const hasSeenTutorial = hasTutorialBeenViewed('retitled')
-          setGameState('ready')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
-        }
-      } else if (user) {
+      if (user) {
         // Handle authenticated user states
         if (data.hasPlayed) {
         // User has already played today, show the result
@@ -235,63 +206,27 @@ export default function RetitleGame() {
     setSolveTimeMs(currentSolveTime)
 
     try {
-      if (isAnonymous) {
-        // For anonymous users, use the guess API to get the correct answer details
-        const response = await fetch("/api/retitled/guess", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            puzzleId: puzzle.id,
-            guessFilmId,
-            solveTimeMs: currentSolveTime
-          })
+      // Submit to server for all users (anonymous and authenticated)
+      const response = await fetch("/api/retitled/guess", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          puzzleId: puzzle.id,
+          guessFilmId,
+          solveTimeMs: currentSolveTime
         })
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to submit guess")
-        }
-
-        const data = await response.json()
-        
-        // Save to local storage for anonymous users with additional metadata
-        const resultWithMetadata = {
-          ...data,
-          solveTimeMs: currentSolveTime,
-          puzzleMetadata: {
-            puzzleId: puzzle.id,
-            puzzleNumber: puzzle.puzzleNumber
-          }
-        }
-        localGameStorage.saveDailyResult('retitled', resultWithMetadata)
-        
-        setResult(data)
-        setGameState('completed')
-      } else {
-        // For authenticated users, submit to server
-        const response = await fetch("/api/retitled/guess", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            puzzleId: puzzle.id,
-            guessFilmId,
-            solveTimeMs: currentSolveTime
-          })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to submit guess")
-        }
-
-        const data = await response.json()
-        setResult(data)
-        setGameState('completed')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit guess")
       }
+
+      const data = await response.json()
+      setResult(data)
+      setGameState('completed')
     } catch (err) {
       console.error("Error submitting guess:", err)
       setError("Failed to submit your guess. Please try again.")
@@ -508,6 +443,8 @@ export default function RetitleGame() {
               <AnonymousResultNudge 
                 gameResult={result}
                 gameName="Retitled"
+                gamesPlayed={result.stats.gamesPlayed}
+                currentStreak={result.stats.currentStreak}
               />
             )}
           </div>

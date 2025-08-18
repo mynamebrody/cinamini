@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
     // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
 
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const isAnonymous = user.is_anonymous === true
+
     const body: SubmitGameRequest = await request.json()
     const { puzzle_id, choices, total_duration_ms } = body
 
@@ -29,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
     }
 
-    if (!user) {
+    if (isAnonymous) {
       // For anonymous users - only send webhook if not all 5 rounds (to avoid duplicate with round-guess)
       const roundsCompleted = choices.length
       const correctRounds = choices.filter(c => c.correct).length
@@ -41,7 +47,7 @@ export async function POST(request: NextRequest) {
         sendGuessWebhook(request, {
         event: 'guess',
         game: 'budget-bracket',
-        user: { isAuthenticated: false },
+        user: { isAuthenticated: false, id: user.id },
         guess: {
           puzzleId: puzzle_id,
           gameType: 'final_summary',
@@ -181,7 +187,11 @@ export async function POST(request: NextRequest) {
       sendGuessWebhook(request, {
       event: 'guess',
       game: 'budget-bracket',
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null) 
+      },
       guess: {
         puzzleId: puzzle_id,
         gameType: 'final_summary',

@@ -14,9 +14,16 @@ export async function POST(request: NextRequest) {
     // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
     
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const isAnonymous = user.is_anonymous === true
+    
     if (process.env.NODE_ENV !== 'production') {
       console.log("🚀 POSTER PIXELS GUESS API: User authentication check", { 
-        isAuthenticated: !!user, 
+        isAuthenticated: !isAnonymous, 
+        isAnonymous,
         userId: user?.id 
       })
     }
@@ -44,44 +51,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing guessed movie details" }, { status: 400 })
     }
 
-    if (!user) {
-      console.log("🚀 POSTER PIXELS GUESS API: Processing anonymous user")
-      // For anonymous users, we need to get the puzzle to validate the guess properly
-      
-      // Get the puzzle to check correct answer (anonymous users need validation too)
-      const { data: puzzle, error: puzzleError } = await supabase
-        .from("poster_pixels_puzzles")
-        .select("*")
-        .eq("id", puzzle_id)
-        .single()
+    // Get the puzzle to check correct answer
+    const { data: puzzle, error: puzzleError } = await supabase
+      .from("poster_pixels_puzzles")
+      .select("*")
+      .eq("id", puzzle_id)
+      .single()
 
-      if (puzzleError || !puzzle) {
-        return NextResponse.json({ error: "Puzzle not found" }, { status: 404 })
-      }
+    if (puzzleError || !puzzle) {
+      return NextResponse.json({ error: "Puzzle not found" }, { status: 404 })
+    }
 
-      // Properly validate if guess is correct
-      const correctMovieId = puzzle.film_id || puzzle.movie_data?.id
-      const isCorrect = skipped ? false : guessed_movie_id === correctMovieId
-      
-      // Calculate game completion based on actual game state
-      const gameCompleted = isCorrect || guess_number >= maxAttempts
-      
-      // Calculate score for correct guesses (same as authenticated users)
-      const scoreForGuess = isCorrect ? getScoreForClarityPercent(clarity_level) : 0
-      
-      console.log("🚀 POSTER PIXELS GUESS API: Anonymous user validation", {
-        correctMovieId,
-        guessedMovieId: guessed_movie_id,
-        isCorrect,
-        gameCompleted,
-        score: scoreForGuess
-      })
-      
-      // Send webhook for every guess/skip
+    // Properly validate if guess is correct
+    const correctMovieId = puzzle.film_id || puzzle.movie_data?.id
+    const isCorrect = skipped ? false : guessed_movie_id === correctMovieId
+    
+    // Calculate game completion based on actual game state
+    const gameCompleted = isCorrect || guess_number >= maxAttempts
+    
+    // Calculate score for correct guesses
+    const scoreForGuess = isCorrect ? getScoreForClarityPercent(clarity_level) : 0
+    
+    console.log("🚀 POSTER PIXELS GUESS API: User validation", {
+      correctMovieId,
+      guessedMovieId: guessed_movie_id,
+      isCorrect,
+      gameCompleted,
+      score: scoreForGuess,
+      isAnonymous
+    })
+    
+    // For all users (anonymous and authenticated)
+    if (isAnonymous || !user) {
+      // Send webhook for anonymous users
       await sendGuessWebhook(request, {
         event: "guess",
         game: "poster-pixels",
-        user: { isAuthenticated: false },
+        user: { isAuthenticated: false, id: user.id },
         guess: {
           gameId: game_id,
           puzzleId: puzzle_id,
@@ -181,7 +187,11 @@ export async function POST(request: NextRequest) {
     const webhookPromise = sendGuessWebhook(request, {
       event: "guess",
       game: "poster-pixels",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null) 
+      },
       guess: {
         gameId: game_id,
         puzzleId: puzzle_id,
