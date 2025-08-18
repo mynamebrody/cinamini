@@ -12,87 +12,11 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (!user) {
-      // For anonymous users, we can't save guesses but we can validate and return results
-      const { puzzleId, guessFilmId, solveTimeMs } = await request.json()
-      
-      if (!puzzleId || !guessFilmId) {
-        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-      }
-
-      // Get the puzzle to check the correct answer
-      const { data: puzzle, error: puzzleError } = await supabase
-        .from("retitled_puzzles")
-        .select("*, puzzle_number")
-        .eq("id", puzzleId)
-        .single()
-
-      if (puzzleError || !puzzle) {
-        return NextResponse.json({ error: "Invalid puzzle" }, { status: 404 })
-      }
-
-      // Determine if guess is correct
-      const isCorrect = guessFilmId === puzzle.film_id
-
-      // Get the correct movie data from TMDB
-      const correctMovie = await getMovieById(puzzle.film_id)
-      
-      if (!correctMovie) {
-        return NextResponse.json({ error: "Failed to get movie data" }, { status: 500 })
-      }
-
-      // Get the guessed movie data from TMDB for webhook
-      const guessedMovie = await getMovieById(guessFilmId)
-      const guessedMovieTitle = guessedMovie?.title || 'Unknown Movie'
-
-      // Fire webhook for anonymous guess (fire-and-forget)
-      sendGuessWebhook(request, {
-        event: "guess",
-        game: "retitled",
-        user: { isAuthenticated: false },
-        guess: {
-          puzzleId,
-          puzzleNumber: puzzle.puzzle_number,
-          guessFilmId,
-          guessedMovieTitle,
-          solveTimeMs,
-        },
-        progress: { attemptNumber: 1 },
-        correctAnswer: {
-          id: puzzle.film_id,
-          title: correctMovie.title,
-          originalTitle: correctMovie.original_title,
-          releaseYear: getReleaseYear(correctMovie.release_date),
-          isCorrect,
-        },
-      }).catch(error => console.error('Webhook error (anonymous):', error))
-
-      return NextResponse.json({
-        correct: isCorrect,
-        correctAnswer: {
-          id: puzzle.film_id,
-          title: correctMovie.title,
-          originalTitle: correctMovie.original_title,
-          releaseYear: getReleaseYear(correctMovie.release_date),
-          translationNote: puzzle.translation_note,
-          posterPath: correctMovie.poster_path
-        },
-        puzzle: {
-          localizedTitle: puzzle.localized_title,
-          englishTranslation: puzzle.english_translation || '',
-          countryCode: puzzle.country_code,
-          flagEmoji: getCountryFlag(puzzle.country_code)
-        },
-        stats: {
-          gamesPlayed: 1,
-          accuracy: isCorrect ? 100 : 0,
-          currentStreak: isCorrect ? 1 : 0
-        },
-        anonymous: true
-      })
+      // No user at all, return error
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Parse request body
-    const { puzzleId, guessFilmId, solveTimeMs } = await request.json()
+    const isAnonymous = user.is_anonymous === true
     
     if (!puzzleId || !guessFilmId || solveTimeMs === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -248,11 +172,15 @@ export async function POST(request: NextRequest) {
     const guessedMovie = await getMovieById(guessFilmId)
     const guessedMovieTitle = guessedMovie?.title || 'Unknown Movie'
 
-    // Fire webhook for authenticated guess (fire-and-forget)
+    // Fire webhook (fire-and-forget)
     sendGuessWebhook(request, {
       event: "guess",
       game: "retitled",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null)
+      },
       guess: {
         puzzleId,
         puzzleNumber: puzzle.puzzle_number,
@@ -268,7 +196,7 @@ export async function POST(request: NextRequest) {
         releaseYear: getReleaseYear(correctMovie.release_date),
         isCorrect,
       },
-    }).catch(error => console.error('Webhook error (authenticated):', error))
+    }).catch(error => console.error('Webhook error:', error))
 
     return NextResponse.json({
       correct: isCorrect,
