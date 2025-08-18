@@ -5,6 +5,7 @@ import GameCard from "./game-card"
 import { Loader2 } from "lucide-react"
 import { localGameStorage } from "@/lib/local-game-storage"
 import { GameLogo } from "./game-logo"
+import { PuzzleCountdown } from "./puzzle-countdown"
 
 interface Game {
   game_id: string
@@ -138,10 +139,15 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                   weekday: 'long',
                   month: 'long',
                   day: 'numeric',
-                  year: 'numeric'
+                  year: 'numeric',
+                  timeZone: 'UTC'
                 })}
               </p>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0">
+              <p className="text-xs text-neutral-400 mb-4 font-funnel">
+                Puzzles rotate at midnight UTC
+              </p>
+              <PuzzleCountdown />
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0 mt-4">
                 Today's Cinema Games
               </h1>
               <p className="text-base md:text-lg text-neutral-600 mt-3 md:mt-4 font-funnel max-w-2xl mx-auto px-4 md:px-0">
