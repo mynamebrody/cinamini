@@ -34,7 +34,8 @@ export default function PosterPixelsSearch({
   const [isLoading, setIsLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Scroll dropdown into view
@@ -67,8 +68,9 @@ export default function PosterPixelsSearch({
       setSearchResults([])
       setShowDropdown(false)
       setSelectedIndex(-1)
+      setLastSearchedQuery('')
     }
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, searchMovies])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,6 +85,11 @@ export default function PosterPixelsSearch({
   }, [])
 
   const searchMovies = async (query: string) => {
+    // Don't search if query hasn't changed from last search
+    if (query === lastSearchedQuery) {
+      return
+    }
+
     setIsLoading(true)
     try {
       const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`)
@@ -93,6 +100,7 @@ export default function PosterPixelsSearch({
         setSearchResults(filtered.slice(0, 8)) // Limit to 8 results
         setShowDropdown(true)
         setSelectedIndex(-1)
+        setLastSearchedQuery(query) // Track the last searched query
         // Scroll dropdown into view after a short delay to ensure it's rendered
         setTimeout(scrollDropdownIntoView, 100)
       } else {
@@ -196,7 +204,7 @@ export default function PosterPixelsSearch({
 
       {/* Search Results Dropdown */}
       {showDropdown && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-sm">
+        <div className="absolute z-10 w-full mt-1 bg-white/95 border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-md">
           <div className="py-1">
             {searchResults.map((movie, index) => (
               <button

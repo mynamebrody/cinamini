@@ -219,12 +219,26 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
       {/* Action Buttons */}
       <div className="space-y-2">
         {/* Share Preview */}
-        <div className="bg-muted rounded-lg p-4 text-center">
-          {share_text.split('\n').map((line, index) => (
-            <p key={index} className={index === 0 ? "font-mono text-lg mb-1" : "text-sm text-muted-foreground"}>
-              {line}
-            </p>
-          ))}
+        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] rounded-lg p-4 text-center">
+          {share_text.split('\n').map((line, index) => {
+            if (index === 0) {
+              // Split the first line at the # for mobile line break
+              const parts = line.split(' #')
+              if (parts.length === 2) {
+                return (
+                  <p key={index} className="font-mono text-lg mb-1">
+                    <span className="sm:inline block">{parts[0]}</span>
+                    <span className="sm:inline block"> #{parts[1]}</span>
+                  </p>
+                )
+              }
+            }
+            return (
+              <p key={index} className={index === 0 ? "font-mono text-lg mb-1" : "text-sm text-muted-foreground"}>
+                {line}
+              </p>
+            )
+          })}
           {correct && (
             <p className="text-sm text-muted-foreground mt-2">
               {formatTime(solveTime || 0)}

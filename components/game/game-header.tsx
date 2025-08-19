@@ -29,35 +29,39 @@ export function GameHeader({
 
   return (
     <header className={cn(
-      "game-header",
+      "border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50",
       className
     )}>
-      {/* Left side - Back button */}
-      <div className="flex items-center">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => router.push("/")}
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Home
-        </Button>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Left side - Back button */}
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => router.push("/")}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+          </div>
 
-      {/* Center - Title */}
-      <h1 className="game-title absolute left-1/2 transform -translate-x-1/2">
-        {title}
-      </h1>
+          {/* Center - Title */}
+          <h1 className="game-title absolute left-1/2 transform -translate-x-1/2">
+            {title}
+          </h1>
 
-      {/* Right side - Help and Settings */}
-      <div className="flex items-center gap-1">
-        {showHelp && onHelpClick && (
-          <HelpIconButton onClick={onHelpClick} />
-        )}
-        {showSettings && (
-          <GameSettingsButton />
-        )}
-        {children}
+          {/* Right side - Help and Settings */}
+          <div className="flex items-center gap-1">
+            {showHelp && onHelpClick && (
+              <HelpIconButton onClick={onHelpClick} />
+            )}
+            {showSettings && (
+              <GameSettingsButton />
+            )}
+            {children}
+          </div>
+        </div>
       </div>
     </header>
   )

@@ -7,6 +7,7 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { SiteFooter } from "../../site-footer"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
@@ -514,7 +515,7 @@ export default function RetitleGame() {
           </div>
         )}
       </main>
-      
+      <SiteFooter />
     </div>
   )
 }

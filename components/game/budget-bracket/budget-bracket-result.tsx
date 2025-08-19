@@ -462,14 +462,24 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               className="border-t pt-4"
             > 
               {/* Share Preview */}
-              <div className="bg-muted rounded-lg p-4 text-center mb-3">
+              <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] rounded-lg p-4 text-center mb-3">
                 <p className="font-mono text-lg">
-                  {
-                    // Prefer local data if centralized sharing returns wrong data (0/5 when we have correct answers)
-                    (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
+                  {(() => {
+                    const text = (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
                       ? centralizedShareText.split('\n')[0] // First line with pattern
                       : generateFallbackShareText().split('\n')[0]
-                  }
+                    
+                    const parts = text.split(' #')
+                    if (parts.length === 2) {
+                      return (
+                        <>
+                          <span className="sm:inline block">{parts[0]}</span>
+                          <span className="sm:inline block"> #{parts[1]}</span>
+                        </>
+                      )
+                    }
+                    return text
+                  })()}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {

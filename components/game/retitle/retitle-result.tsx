@@ -257,9 +257,21 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         {/* Actions */}
       <div className="space-y-3">
         {/* Share Preview */}
-        <div className="bg-muted rounded-lg p-4 text-center">
+        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] rounded-lg p-4 text-center">
           <p className="font-mono text-lg">
-            {centralizedShareText || shareText || generateFallbackShareText()}
+            {(() => {
+              const text = centralizedShareText || shareText || generateFallbackShareText()
+              const parts = text.split(' #')
+              if (parts.length === 2) {
+                return (
+                  <>
+                    <span className="sm:inline block">{parts[0]}</span>
+                    <span className="sm:inline block"> #{parts[1]}</span>
+                  </>
+                )
+              }
+              return text
+            })()}
           </p>
         </div>
         

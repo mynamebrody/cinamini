@@ -19,6 +19,7 @@ import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
 import { CelebrationConfetti } from "./celebration-confetti"
+import { SiteFooter } from "../../site-footer"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
 import { useCastClimbShare } from "@/hooks/useGameShare"
@@ -932,15 +933,26 @@ export default function CastClimbGame() {
         )}
 
         {gameState === "error" && (
-          <div className="flex-1 flex items-center justify-center">
-            <Card className="w-full max-w-md">
-              <CardContent className="pt-6 text-center">
-                <p className="text-red-500 mb-4">{error || "An error occurred"}</p>
-                <Button onClick={loadTodaysPuzzle} className="w-full">
-                  Try Again
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: "#99251d" }}>
+            <div className="text-center space-y-8 px-4">
+              {/* Large emoji icon */}
+              <div className="text-8xl">🎬</div>
+              
+              {/* Error message */}
+              <div className="space-y-2">
+                <h2 className="text-white text-2xl font-bold font-funnel">The cast took a break!</h2>
+                <p className="text-white/80 text-lg max-w-md">{error || "Something went wrong with today's puzzle."}</p>
+              </div>
+              
+              {/* Restart button */}
+              <Button 
+                onClick={loadTodaysPuzzle} 
+                className="bg-[#99251d] text-white border-2 border-white font-bold px-8 py-4 text-lg transition-all duration-200 hover:bg-white hover:text-[#99251d] hover:border-[#99251d] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
+                style={{ borderRadius: 0 }}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1190,6 +1202,7 @@ export default function CastClimbGame() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }
