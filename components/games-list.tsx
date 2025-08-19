@@ -143,10 +143,6 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                   timeZone: 'UTC'
                 })}
               </p>
-              <p className="text-xs text-neutral-400 mb-4 font-funnel">
-                Puzzles rotate at midnight UTC
-              </p>
-              <PuzzleCountdown />
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0 mt-4">
                 Today's Cinema Games
               </h1>
@@ -163,12 +159,13 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 return (
                   <div
                     key={game.game_id}
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.03]"
+                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.03] border border-[#d1d2d4]"
                     style={{
                       boxShadow: 'none',
                       borderRadius: 0
                     }}
                     onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#999'
                       e.currentTarget.style.boxShadow = `1px 1px 0px #999,
                                                         2px 2px 0px #999,
                                                         3px 3px 0px #999,
@@ -177,6 +174,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                                                         6px 6px 0px #999`
                     }}
                     onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#d1d2d4'
                       e.currentTarget.style.boxShadow = 'none'
                     }}
                     onClick={() => window.location.href = `/game/${game.game_id}`}
@@ -223,14 +221,19 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                           </div>
                         </div>
                       )}
-                      
-                      {/* Subtle bottom gradient for text readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
                     </div>
                   </div>
                 )
               })}
             </div>
+            
+          </div>
+          {/* Puzzle Rotation Info - Moved below games with proper spacing */}
+          <div className="flex flex-col items-center justify-center mt-16 space-y-2">
+            <p className="text-xs text-neutral-400 font-funnel text-center">
+              Puzzles rotate at midnight UTC
+            </p>
+            <PuzzleCountdown />
           </div>
         </section>
       )}

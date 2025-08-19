@@ -13,17 +13,13 @@ export function PuzzleCountdown() {
       const utcMinutes = now.getUTCMinutes()
       const utcSeconds = now.getUTCSeconds()
       
-      // Calculate minutes until midnight UTC
-      const minutesUntilMidnight = (24 - utcHours - 1) * 60 + (60 - utcMinutes)
+      // Calculate seconds until midnight UTC
+      const hoursRemaining = 24 - utcHours - 1
+      const minutesRemaining = 60 - utcMinutes - 1
+      const secondsUntilMidnight = hoursRemaining * 3600 + minutesRemaining * 60 + (60 - utcSeconds)
       
-      // Show countdown only in the last 60 minutes
-      if (minutesUntilMidnight <= 60) {
-        const secondsRemaining = minutesUntilMidnight * 60 - utcSeconds
-        setTimeRemaining(secondsRemaining)
-        setShowCountdown(true)
-      } else {
-        setShowCountdown(false)
-      }
+      setTimeRemaining(secondsUntilMidnight)
+      setShowCountdown(true)
     }
 
     // Calculate initially
@@ -37,27 +33,27 @@ export function PuzzleCountdown() {
 
   if (!showCountdown || timeRemaining === null) return null
 
-  const minutes = Math.floor(timeRemaining / 60)
+  const hours = Math.floor(timeRemaining / 3600)
+  const minutes = Math.floor((timeRemaining % 3600) / 60)
   const seconds = timeRemaining % 60
 
+  // Format time display based on remaining time
+  const formatTime = () => {
+    if (hours > 0) {
+      // Show HH:MM:SS when more than 1 hour
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    } else if (minutes > 0) {
+      // Show MM:SS when less than 1 hour but more than 1 minute
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    } else {
+      // Show SS when less than 1 minute
+      return seconds.toString()
+    }
+  }
+
   return (
-    <div className="inline-flex items-center gap-2 text-xs md:text-sm text-cinema-red font-funnel font-medium">
-      <svg 
-        className="w-4 h-4 animate-pulse" 
-        fill="none" 
-        stroke="currentColor" 
-        viewBox="0 0 24 24"
-      >
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2} 
-          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
-        />
-      </svg>
-      <span>
-        New puzzles in {minutes}:{seconds.toString().padStart(2, '0')}
-      </span>
+    <div className="text-xs text-neutral-400 font-funnel text-center">
+      New puzzles in {formatTime()}
     </div>
   )
 }
