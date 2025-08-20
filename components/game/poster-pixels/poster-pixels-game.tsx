@@ -18,6 +18,8 @@ import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 import { POSTER_PIXELS_LEVELS, getClarityPercentForIndex, getScoreForClarityPercent } from "@/lib/poster-pixels-config"
+import { useAnimatedClarity, easingFunctions } from "@/hooks/use-animated-clarity"
+import { useFinalRevealAnimation } from "@/hooks/use-final-reveal-animation"
 
 interface MovieData {
   id?: number
@@ -83,6 +85,22 @@ export default function PosterPixelsGame() {
   })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isRevealing, setIsRevealing] = useState(false)
+  const { animatedClarity, isAnimating } = useAnimatedClarity(state.clarityLevel, {
+    duration: 1500, // 1.5 seconds for smooth transition
+    easing: easingFunctions.easeInOutCubic
+  })
+  const { revealClarity, isAnimating: isRevealAnimating } = useFinalRevealAnimation(
+    90, // Start from 90% clarity
+    isRevealing,
+    {
+      duration: 2000, // 2 seconds for the final reveal
+      onComplete: () => {
+        // Ensure the game state is properly updated after reveal
+        setIsRevealing(false)
+      }
+    }
+  )
 
   // Load today's puzzle
   useEffect(() => {
@@ -106,7 +124,9 @@ export default function PosterPixelsGame() {
   useEffect(() => {
     if (canvasRef.current && state.puzzle && state.gameStarted) {
       try {
-        drawPixelatedPoster()
+        // Use reveal clarity if revealing, otherwise use animated clarity
+        const clarityToUse = isRevealing ? revealClarity : animatedClarity
+        drawPixelatedPoster(clarityToUse)
       } catch (error) {
         console.error("Error calling drawPixelatedPoster:", error)
         setState(prev => ({
@@ -115,7 +135,7 @@ export default function PosterPixelsGame() {
         }))
       }
     }
-  }, [state.clarityLevel, state.puzzle, state.gameStarted])
+  }, [animatedClarity, revealClarity, isRevealing, state.puzzle, state.gameStarted])
 
   const getLevels = () => Array.from(POSTER_PIXELS_LEVELS) // Always use config levels
 
@@ -218,7 +238,7 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const drawPixelatedPoster = () => {
+  const drawPixelatedPoster = (clarityValue: number) => {
     const canvas = canvasRef.current
     if (!canvas || !state.puzzle) return
     
@@ -240,7 +260,7 @@ export default function PosterPixelsGame() {
     
     img.onload = () => {
       try {
-        const pixelSize = Math.max(1, Math.floor((1 - state.clarityLevel / 100) * 50) + 1)
+        const pixelSize = Math.max(1, Math.floor((1 - clarityValue / 100) * 50) + 1)
         canvas.width = 300
         canvas.height = 450
         ctx.imageSmoothingEnabled = false
@@ -371,6 +391,13 @@ export default function PosterPixelsGame() {
     // Set final clarity level - if gave up, show the final level (90%)
     const finalClarityLevel = won ? state.clarityLevel : getClarityPercentForIndex(getLevels().length - 1)
     const finalGuesses = guessesOverride ?? state.guesses
+    
+    // Trigger reveal animation if the player gave up or reached the final level
+    if (!won || state.clarityLevel === 90) {
+      setIsRevealing(true)
+      // Wait a bit for the animation to start before continuing
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
     
     try {
       if (isAnonymous) {
@@ -669,11 +696,15 @@ export default function PosterPixelsGame() {
                         </div>
                         
                         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                          <Button onClick={onEnhanceOrGiveUp} className="w-full sm:w-auto">
-                            {enhanceOrGiveUpLabel()}
+                          <Button 
+                            onClick={onEnhanceOrGiveUp} 
+                            className="w-full sm:w-auto"
+                            disabled={isAnimating || isRevealAnimating}
+                          >
+                            {isAnimating ? 'Enhancing...' : enhanceOrGiveUpLabel()}
                           </Button>
                           <div className="text-sm text-muted-foreground text-center sm:text-right whitespace-nowrap">
-                            Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(state.clarityLevel)}
+                            Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(isRevealing ? revealClarity : animatedClarity)}
                           </div>
                         </div>
                       </div>
@@ -686,7 +717,7 @@ export default function PosterPixelsGame() {
                           }
                         }}
                         selectedMovie={null}
-                        disabled={false}
+                        disabled={isAnimating || isRevealAnimating}
                         excludeMovieIds={state.guesses
                           .filter(g => g.movieId !== null)
                           .map(g => g.movieId as number)}
