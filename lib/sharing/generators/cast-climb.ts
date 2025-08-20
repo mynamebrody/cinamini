@@ -5,6 +5,7 @@
  */
 
 import type { CastClimbShareData, ShareResult, ShareGenerator, ShareGeneratorConfig } from '../types';
+import { formatGameTime } from '@/lib/utils';
 
 export class CastClimbShareGenerator implements ShareGenerator {
   constructor(private config: ShareGeneratorConfig) {}
@@ -27,15 +28,20 @@ export class CastClimbShareGenerator implements ShareGenerator {
       pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + '✅' + '🎭'.repeat(remainingActors);
 
       if (guesses.length === 1) {
-        resultText = '\nGot the 🎬 on the first try! 🥇';
+        resultText = 'Got the 🎬 on the first try! 🥇';
       } else {
-        resultText = `\nGot the 🎬 in ${guesses.length} guesses`;
+        resultText = `Got the 🎬 in ${guesses.length} guesses`;
+      }
+      
+      // Add timing data if available
+      if (result.solveTimeMs && result.solveTimeMs > 0) {
+        resultText += ` • ${formatGameTime(result.solveTimeMs)}`;
       }
     } else {
       // Loss pattern: four faces then a red X
       // Example: 🧑🧑🧑🧑❌
       pattern = '🧑'.repeat(ACTORS_TO_SHOW) + '❌';
-      resultText = "\nWasn't able to get the movie."
+      resultText = "Wasn't able to get the movie."
     }
     
     const shareText = `Cast Climb #${puzzle.puzzleNumber} ${pattern}\n${resultText}`;

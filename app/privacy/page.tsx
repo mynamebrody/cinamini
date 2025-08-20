@@ -1,3 +1,5 @@
+import { SiteFooter } from "@/components/site-footer"
+
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -151,23 +153,7 @@ export default function Privacy() {
         </div>
       </main>
 
-      <footer className="bg-neutral-50/80 border-t border-neutral-200/50 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <div className="text-sm text-neutral-500 mb-4 sm:mb-0">
-              © 2025 cinamini. Made with 🍿 in Grand Rapids, MI
-            </div>
-            <div className="flex items-center space-x-8 text-sm">
-              <a href="/privacy" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
-                Privacy
-              </a>
-              <a href="/terms" className="text-neutral-500 hover:text-neutral-900 transition-colors font-funnel font-medium">
-                Terms
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

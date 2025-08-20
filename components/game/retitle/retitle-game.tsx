@@ -6,10 +6,12 @@ import { useGameMode } from "@/hooks/use-game-mode"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { SiteFooter } from "../../site-footer"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
 import RetitledGlobeProgress from "./retitled-globe-progress"
+import { RetitleCelebrationConfetti } from "./retitle-celebration-confetti"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3 } from "lucide-react"
@@ -60,6 +62,7 @@ export default function RetitleGame() {
   const [error, setError] = useState<string | null>(null)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
   const [travelState, setTravelState] = useState<'preparing' | 'traveling' | 'arrived' | 'celebrating'>('preparing')
+  const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
     if (!authLoading) {
@@ -104,6 +107,10 @@ export default function RetitleGame() {
         if (resultResponse.ok) {
           const resultData = await resultResponse.json()
           setResult(resultData)
+          // Extract and set solve time if available
+          if (resultData.solveTimeMs) {
+            setSolveTimeMs(resultData.solveTimeMs)
+          }
         } else {
           // Fallback: use the guess data and stats API
           const statsResponse = await fetch("/api/retitled/stats")
@@ -114,6 +121,10 @@ export default function RetitleGame() {
           
           // Create result from userGuess data if available
           if (data.userGuess) {
+            // Extract and set solve time if available in userGuess
+            if (data.userGuess.solveTimeMs) {
+              setSolveTimeMs(data.userGuess.solveTimeMs)
+            }
             setResult({
               correct: data.userGuess.isCorrect,
               correctAnswer: {
@@ -125,7 +136,9 @@ export default function RetitleGame() {
               },
               puzzle: {
                 localizedTitle: data.puzzle.localizedTitle,
+                englishTranslation: data.puzzle.englishTranslation || '',
                 countryCode: data.puzzle.countryCode,
+                countryName: data.puzzle.countryName,
                 flagEmoji: data.puzzle.flagEmoji
               },
               stats: {
@@ -148,7 +161,9 @@ export default function RetitleGame() {
               },
               puzzle: {
                 localizedTitle: data.puzzle.localizedTitle,
+                englishTranslation: data.puzzle.englishTranslation || '',
                 countryCode: data.puzzle.countryCode,
+                countryName: data.puzzle.countryName,
                 flagEmoji: data.puzzle.flagEmoji
               },
               stats: {
@@ -160,6 +175,7 @@ export default function RetitleGame() {
           }
           }
           setGameState('completed')
+          setShowConfetti(true)
         } else {
           // User hasn't played today
           setPuzzle(data.puzzle)
@@ -276,6 +292,12 @@ export default function RetitleGame() {
   // Render the game
   return (
     <div className="game-container">
+      {/* Celebration Confetti */}
+      <RetitleCelebrationConfetti 
+        show={showConfetti} 
+        onComplete={() => setShowConfetti(false)}
+      />
+      
       <GameHeader 
         title="Retitled" 
         onHelpClick={showHowToPlay}
@@ -450,7 +472,7 @@ export default function RetitleGame() {
           </div>
         )}
       </main>
-      
+      <SiteFooter />
     </div>
   )
 }

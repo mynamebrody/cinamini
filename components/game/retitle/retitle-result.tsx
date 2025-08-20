@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Flame } from "lucide-react"
 import Image from "next/image"
-import { cn } from "@/lib/utils"
+import { cn, formatGameTime } from "@/lib/utils"
 import { toast } from "sonner"
 import { useRetitledShare } from "@/hooks/useGameShare"
 import type { RetitledShareData } from "@/lib/sharing"
@@ -30,6 +30,7 @@ interface GuessResult {
     localizedTitle: string
     englishTranslation: string
     countryCode: string
+    countryName: string
     flagEmoji: string
   }
 }
@@ -60,17 +61,18 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
   
   const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
   
+  
   const generateFallbackShareText = () => {
     const resultEmoji = result.correct ? "✅" : "❌"
     const flagEmoji = result.puzzle?.flagEmoji || "🏳️"
-    const timeText = solveTimeMs > 0 ? ` • ${Math.round(solveTimeMs / 1000)}s` : ""
+    const timeText = solveTimeMs > 0 ? ` • ${formatGameTime(solveTimeMs)}` : ""
     return `Retitled #${puzzleNumber} ${flagEmoji} • ${resultEmoji}${timeText}`
   }
 
   useEffect(() => {
     // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
     const shouldUseFallback = !centralizedShareText || 
-      (solveTimeMs > 0 && centralizedShareText && centralizedShareText.includes('0s'))
+      (solveTimeMs > 0 && centralizedShareText && (centralizedShareText.includes('0s') || centralizedShareText.includes('00:00:00')))
     
     if (shouldUseFallback) {
       console.log('Using fallback share text generation')
@@ -99,7 +101,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
       const { shareText } = await response.json()
       
       // Check if legacy API also returns incorrect time data
-      if (solveTimeMs > 0 && shareText && shareText.includes('0s')) {
+      if (solveTimeMs > 0 && shareText && (shareText.includes('0s') || shareText.includes('00:00:00'))) {
         console.log('Legacy API also returned incorrect time, using fallback')
         setShareText(generateFallbackShareText())
       } else {
@@ -193,11 +195,22 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               </div>
               
               {/* Destination info */}
-              <div className="flex items-center justify-center gap-3">
-                <div className="text-3xl">{result.puzzle.flagEmoji}</div>
+              <div className="space-y-3">
+                {/* Country/Destination */}
+                <div className="text-center">
+                  <div className="text-base font-semibold">{result.puzzle.countryName || "Unknown Country"}</div>
+                  <div className="text-xs text-muted-foreground">DESTINATION</div>
+                </div>
+                
+                {/* Flag centered */}
+                <div className="text-center">
+                  <div className="text-3xl">{result.puzzle.flagEmoji}</div>
+                </div>
+                
+                {/* Title in destination */}
                 <div className="text-center">
                   <div className="text-lg font-bold">{result.puzzle.localizedTitle}</div>
-                  <div className="text-xs text-muted-foreground">DESTINATION TITLE</div>
+                  <div className="text-xs text-muted-foreground">TITLE IN DESTINATION</div>
                 </div>
               </div>
               
@@ -222,7 +235,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               <div className="text-center pt-2 border-t border-dashed border-[#d1d2d4]">
                 {solveTimeMs > 0 && (
                   <div className="text-xs text-muted-foreground font-mono mb-1">
-                    ⏱️ TRAVEL TIME: {Math.round(solveTimeMs / 1000)}s
+                    ⏱️ TRAVEL TIME: {formatGameTime(solveTimeMs)}
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground font-mono">
@@ -257,10 +270,49 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         {/* Actions */}
       <div className="space-y-3">
         {/* Share Preview */}
-        <div className="bg-muted rounded-lg p-4 text-center">
-          <p className="font-mono text-lg">
-            {centralizedShareText || shareText || generateFallbackShareText()}
-          </p>
+        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center" style={{ borderRadius: 0 }}>
+          {(() => {
+            const text = centralizedShareText || shareText || generateFallbackShareText()
+            const lines = text.split('\n')
+            const firstLine = lines[0] || ''
+            
+            // Parse first line to extract title and emoji pattern
+            const titleMatch = firstLine.match(/^(.*?#\d+)\s+.*?•\s*(.*)$/)
+            if (titleMatch) {
+              const gameTitle = titleMatch[1] // "Retitled #12"
+              const result = titleMatch[2] // "✅" or "❌"
+              
+              return (
+                <>
+                  <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                  <p className="font-mono text-2xl mb-2">{result}</p>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {lines.slice(1).join(' ')}
+                  </p>
+                </>
+              )
+            }
+            
+            // Fallback parsing for different format
+            const parts = firstLine.split(' #')
+            if (parts.length === 2) {
+              const titlePart = parts[0] + ' #' + parts[1].split(' ')[0] // "Retitled #12"
+              const restOfLine = parts[1].substring(parts[1].indexOf(' ') + 1) // Everything after the number
+              
+              return (
+                <>
+                  <p className="font-mono text-lg mb-2">{titlePart}</p>
+                  <p className="font-mono text-2xl mb-2">{restOfLine}</p>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {lines.slice(1).join(' ')}
+                  </p>
+                </>
+              )
+            }
+            
+            // Final fallback
+            return <p className="font-mono text-lg">{text}</p>
+          })()}
         </div>
         
         <ShareSection 

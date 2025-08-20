@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import ProfileForm from "@/components/profile-form"
 import EmailConfirmationBanner from "@/components/email-confirmation-banner"
+import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
 
 export default async function ProfilePage({
@@ -34,24 +35,23 @@ export default async function ProfilePage({
   const emailConfirmed = params.emailConfirmed === 'true'
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="border-b border-[rgb(var(--silver))] bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
               <a href="/">
                 ← Back to Home
               </a>
             </Button>
             <h1 className="text-xl font-bold text-neutral-900">Profile Settings</h1>
-            <div className="w-[104px]"></div> {/* Spacer to center the title */}
           </div>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="max-w-2xl mx-auto px-4 py-8">
+      <main className="max-w-2xl mx-auto px-4 py-8 flex-1">
         <div className="space-y-6">
           {/* Email Confirmation Banner */}
           {emailConfirmed && <EmailConfirmationBanner />}
@@ -59,6 +59,7 @@ export default async function ProfilePage({
           <ProfileForm />
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

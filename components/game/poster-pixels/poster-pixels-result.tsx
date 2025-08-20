@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Trophy } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, formatGameTime } from "@/lib/utils"
 import Image from "next/image"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
@@ -43,15 +43,6 @@ export default function PosterPixelsResult({
     return `${Math.round(clarity)}%`
   }
 
-  const formatTime = (ms: number) => {
-    const seconds = Math.round(ms / 1000)
-    if (seconds < 60) {
-      return `${seconds}s`
-    }
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
 
   // Calculate actual number of attempts before winning (wrong guesses + skips)
   const calculateAttemptsBeforeWin = () => {
@@ -104,7 +95,7 @@ export default function PosterPixelsResult({
     const puzzleInfo = `Poster Pixels #${puzzleNumber}`
     const resultEmojis = generateResultEmojis()
     const bonusText = generateBonusText()
-    const timeText = formatTime(timeElapsed)
+    const timeText = formatGameTime(timeElapsed)
     
     let shareText = `${puzzleInfo} ${resultEmojis}\n${bonusText}`
     
@@ -121,7 +112,7 @@ export default function PosterPixelsResult({
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6 max-w-md mx-auto">
       {/* Result Header */}
       <Card>
         <CardHeader className="text-center">
@@ -223,7 +214,7 @@ export default function PosterPixelsResult({
               <div className="text-sm text-muted-foreground">Clarity</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">{formatTime(timeElapsed)}</div>
+              <div className="text-2xl font-bold">{formatGameTime(timeElapsed)}</div>
               <div className="text-sm text-muted-foreground">Time</div>
             </div>
             <div>
@@ -234,23 +225,43 @@ export default function PosterPixelsResult({
 
           {/* Share Section */}
           <div className="border-t pt-4">
-            <div className="text-center mb-3">
-              <div className="text-lg font-mono tracking-wider mb-2">
-                Poster Pixels #{puzzleNumber} {generateResultEmojis()}
-              </div>
-              {generateBonusText() && (
-                <div className="text-sm text-muted-foreground mb-1">
-                  {generateBonusText()}
-                </div>
-              )}
-              <div className="text-sm text-muted-foreground">
-                {formatTime(timeElapsed)} • {won ? finalScore : 0} pts
-              </div>
-              {!won && (
-                <div className="text-sm text-muted-foreground mt-1">
-                  I gave up!
-                </div>
-              )}
+            {/* Share Preview */}
+            <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+              {(() => {
+                const text = generateFallbackShareText()
+                const lines = text.split('\n')
+                const firstLine = lines[0] || ''
+                const remainingLines = lines.slice(1)
+                
+                // Parse first line to extract title and emoji pattern
+                const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
+                if (titleMatch) {
+                  const gameTitle = titleMatch[1] // "Poster Pixels #12"
+                  const emojiPattern = titleMatch[2] // "🔍🔍🔍✅👾"
+                  
+                  return (
+                    <>
+                      <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                      <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
+                      <p className="text-sm text-muted-foreground font-medium">
+                        {remainingLines.join(' ')}
+                      </p>
+                    </>
+                  )
+                }
+                
+                // Fallback if parsing fails
+                return (
+                  <>
+                    <p className="font-mono text-lg mb-1">{firstLine}</p>
+                    {remainingLines.map((line, index) => (
+                      <p key={index} className="text-sm text-muted-foreground">
+                        {line}
+                      </p>
+                    ))}
+                  </>
+                )
+              })()}
             </div>
             
             <ShareSection 

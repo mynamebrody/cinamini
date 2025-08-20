@@ -158,13 +158,15 @@ export async function POST(request: NextRequest) {
     const hasWon = existingGuesses?.some(g => g.is_correct) || false
     const maxAttempts = puzzle.total_actors || 4
     
-    // Count only non-skip attempts toward the max attempts limit
-    const realAttempts = existingGuesses?.filter(g => 
-      g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
-    ) || []
+    // Count ALL attempts (including skips) toward the max attempts limit
+    const totalAttempts = existingGuesses?.length || 0
 
-    // Prevent duplicate movie guesses within the same puzzle
-    if (!isSkip && realAttempts.some(g => g.guess_film_id === guessFilmId)) {
+    // Prevent duplicate movie guesses within the same puzzle (only for non-skip attempts)
+    if (!isSkip && existingGuesses?.some(g => 
+      g.guess_film_id === guessFilmId && 
+      g.guess_film_title !== "_NEXT_HINT_SKIP_" && 
+      g.guess_film_title !== "_GIVE_UP_"
+    )) {
       return NextResponse.json(
         { error: "You have already guessed that movie for this puzzle" },
         { status: 400 }
@@ -177,8 +179,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-
-    if (!isSkip && realAttempts.length >= maxAttempts && !isCorrect) {
+    
+    // Prevent any additional attempts if they've already reached max attempts
+    if (totalAttempts >= maxAttempts) {
       return NextResponse.json(
         { error: "You have reached the maximum number of attempts" },
         { status: 400 }
@@ -213,11 +216,8 @@ export async function POST(request: NextRequest) {
     // Get all user guesses for this puzzle (including the new one)
     const allGuesses = [...(existingGuesses || []), newGuess]
 
-    // Check if game is completed (either correct guess or max real attempts reached)
-    const allRealAttempts = allGuesses.filter(g => 
-      g.guess_film_title !== "_NEXT_HINT_SKIP_" && g.guess_film_title !== "_GIVE_UP_"
-    )
-    const isGameCompleted = isCorrect || allRealAttempts.length >= maxAttempts || guessFilmTitle === "_GIVE_UP_"
+    // Check if game is completed (either correct guess or max total attempts reached)
+    const isGameCompleted = isCorrect || allGuesses.length >= maxAttempts || guessFilmTitle === "_GIVE_UP_"
     
     // Calculate score for correct guesses (based on actors revealed - fewer actors = higher score)
     const calculateScoreForActorsRevealed = (actors: number): number => {
