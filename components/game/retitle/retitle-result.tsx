@@ -196,18 +196,21 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               
               {/* Destination info */}
               <div className="space-y-3">
-                <div className="flex items-center justify-center gap-3">
-                  <div className="text-3xl">{result.puzzle.flagEmoji}</div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold">{result.puzzle.localizedTitle}</div>
-                    <div className="text-xs text-muted-foreground">TITLE IN DESTINATION</div>
-                  </div>
-                </div>
-                
                 {/* Country/Destination */}
                 <div className="text-center">
-                  <div className="text-base font-semibold">{result.puzzle.countryName}</div>
+                  <div className="text-base font-semibold">{result.puzzle.countryName || "Unknown Country"}</div>
                   <div className="text-xs text-muted-foreground">DESTINATION</div>
+                </div>
+                
+                {/* Flag centered */}
+                <div className="text-center">
+                  <div className="text-3xl">{result.puzzle.flagEmoji}</div>
+                </div>
+                
+                {/* Title in destination */}
+                <div className="text-center">
+                  <div className="text-lg font-bold">{result.puzzle.localizedTitle}</div>
+                  <div className="text-xs text-muted-foreground">TITLE IN DESTINATION</div>
                 </div>
               </div>
               

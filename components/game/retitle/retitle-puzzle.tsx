@@ -54,15 +54,8 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
 
   return (
     <div className="space-y-8">
-      {/* Flag and Title with Travel Theme */}
+      {/* Boarding Pass Style Display */}
       <div className="text-center space-y-4">
-        <div className="relative inline-block">
-          <div className="text-6xl">{puzzle.flagEmoji}</div>
-          <div className="absolute -top-2 -right-2 text-2xl">🗺️</div>
-        </div>
-        <div className="text-sm text-muted-foreground font-medium">
-          📍 Now exploring: {puzzle.countryName}
-        </div>
         <div className="max-w-2xl mx-auto">
           {/* Boarding Pass Style Display */}
           <div className="bg-white p-6 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0, borderColor: 'rgb(209,210,212)' }}>
@@ -80,18 +73,21 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             
             {/* Destination info */}
             <div className="space-y-3">
-              <div className="flex items-center justify-center gap-3">
-                <div className="text-3xl">{puzzle.flagEmoji}</div>
-                <div className="text-center">
-                  <div className="text-lg font-bold">{puzzle.localizedTitle}</div>
-                  <div className="text-xs text-muted-foreground">TITLE IN DESTINATION</div>
-                </div>
-              </div>
-              
               {/* Country/Destination */}
               <div className="text-center">
                 <div className="text-base font-semibold">{puzzle.countryName}</div>
                 <div className="text-xs text-muted-foreground">DESTINATION</div>
+              </div>
+              
+              {/* Flag centered */}
+              <div className="text-center">
+                <div className="text-3xl">{puzzle.flagEmoji}</div>
+              </div>
+              
+              {/* Title in destination */}
+              <div className="text-center">
+                <div className="text-lg font-bold">{puzzle.localizedTitle}</div>
+                <div className="text-xs text-muted-foreground">TITLE IN DESTINATION</div>
               </div>
             </div>
             
@@ -114,7 +110,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
         </div>
         <p className="text-muted-foreground flex items-center justify-center gap-2">
           <span>🎫</span>
-          <span>Which movie earned this title?</span>
+          <span>Which movie was lost in translation?</span>
           <span>🎬</span>
         </p>
       </div>

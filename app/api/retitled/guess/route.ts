@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
 import { getCountryFlag } from "@/lib/flag-emojis"
+import { getCountryName } from "@/lib/retitled"
 import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
           localizedTitle: puzzle.localized_title,
           englishTranslation: puzzle.english_translation || '',
           countryCode: puzzle.country_code,
+          countryName: puzzle.country_name || getCountryName(puzzle.country_code),
           flagEmoji: getCountryFlag(puzzle.country_code)
         },
         stats: {
@@ -284,6 +286,7 @@ export async function POST(request: NextRequest) {
         localizedTitle: puzzle.localized_title,
         englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
+        countryName: puzzle.country_name || getCountryName(puzzle.country_code),
         flagEmoji: getCountryFlag(puzzle.country_code)
       },
       stats: {
