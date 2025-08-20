@@ -184,6 +184,35 @@ export default function PosterPixelsGame() {
           setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
           setShowResults(true) // Show results immediately for completed games
+          
+          // Trigger celebration confetti if they won
+          if (localResult.result?.won) {
+            setTimeout(() => {
+              confetti({ 
+                particleCount: 150, 
+                spread: 70, 
+                origin: { y: 0.6 },
+                colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+              })
+              
+              // Add more confetti bursts
+              setTimeout(() => {
+                confetti({ 
+                  particleCount: 100, 
+                  spread: 60, 
+                  origin: { y: 0.7, x: 0.3 }
+                })
+              }, 200)
+              
+              setTimeout(() => {
+                confetti({ 
+                  particleCount: 100, 
+                  spread: 60, 
+                  origin: { y: 0.7, x: 0.7 }
+                })
+              }, 400)
+            }, 500)
+          }
         } else {
           const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
           setGameState('ready')
@@ -223,6 +252,35 @@ export default function PosterPixelsGame() {
           setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
           setShowResults(true) // Show results immediately for completed games
+          
+          // Trigger celebration confetti if they won
+          if (data.previousGame?.won) {
+            setTimeout(() => {
+              confetti({ 
+                particleCount: 150, 
+                spread: 70, 
+                origin: { y: 0.6 },
+                colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+              })
+              
+              // Add more confetti bursts
+              setTimeout(() => {
+                confetti({ 
+                  particleCount: 100, 
+                  spread: 60, 
+                  origin: { y: 0.7, x: 0.3 }
+                })
+              }, 200)
+              
+              setTimeout(() => {
+                confetti({ 
+                  particleCount: 100, 
+                  spread: 60, 
+                  origin: { y: 0.7, x: 0.7 }
+                })
+              }, 400)
+            }, 500)
+          }
         } else {
           setGameState('ready')
           
