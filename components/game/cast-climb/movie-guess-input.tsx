@@ -29,6 +29,7 @@ export function MovieGuessInput({
   const [error, setError] = useState<string | null>(null)
   const [showResults, setShowResults] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const [lastSearchedQuery, setLastSearchedQuery] = useState('')
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -43,11 +44,17 @@ export function MovieGuessInput({
     }
   }, [])
 
-  // Debounced search function
+  // Debounced search function with optimization to prevent duplicate requests
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([])
       setShowResults(false)
+      setLastSearchedQuery('')
+      return
+    }
+
+    // Don't search if query hasn't changed from last search
+    if (query === lastSearchedQuery) {
       return
     }
 
@@ -72,6 +79,7 @@ export function MovieGuessInput({
       setShowResults(true)
       setSelectedIndex(-1)
       setError(null)
+      setLastSearchedQuery(query) // Track the last searched query
       
       // Scroll dropdown into view after a short delay to ensure it's rendered
       setTimeout(scrollDropdownIntoView, 100)
@@ -90,7 +98,7 @@ export function MovieGuessInput({
     } finally {
       setIsSearching(false)
     }
-  }, [scrollDropdownIntoView, excludeMovieIds])
+  }, [scrollDropdownIntoView, excludeMovieIds, lastSearchedQuery])
 
   // Handle search with debouncing
   useEffect(() => {
@@ -100,7 +108,7 @@ export function MovieGuessInput({
 
     searchTimeoutRef.current = setTimeout(() => {
       performSearch(searchQuery)
-    }, 300) // 300ms debounce
+    }, 500) // 500ms debounce
 
     return () => {
       if (searchTimeoutRef.current) {
@@ -231,7 +239,7 @@ export function MovieGuessInput({
       {showResults && (
         <div
           ref={resultsRef}
-          className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-sm"
+          className="absolute top-full left-0 right-0 z-50 mt-1 bg-white/95 border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-md"
         >
           {error ? (
             <div className="p-3 text-sm text-red-500">

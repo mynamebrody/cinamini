@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
-import { getCountryFlag } from "@/lib/retitled"
+import { getCountryFlag } from "@/lib/flag-emojis"
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +57,7 @@ export async function GET(
 
     return NextResponse.json({
       correct: guess.is_correct,
+      solveTimeMs: guess.solve_time_ms,
       correctAnswer: {
         id: puzzle.film_id,
         title: correctMovie.title,

@@ -18,6 +18,7 @@ import {
   Clock,
   Star
 } from "lucide-react"
+import { formatGameTime } from "@/lib/utils"
 
 interface CastClimbStats {
   games_played: number
@@ -152,14 +153,6 @@ export default function CastClimbStats() {
   const performance = getPerformanceLevel(stats.average_actors_revealed)
   const PerformanceIcon = performance.icon
 
-  const formatTime = (ms: number | null) => {
-    if (!ms) return "N/A"
-    const seconds = Math.round(ms / 1000)
-    if (seconds < 60) return `${seconds}s`
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -272,7 +265,7 @@ export default function CastClimbStats() {
           <CardContent className="px-4 pb-4 pt-6 text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Clock className="w-5 h-5 text-blue-500" />
-              <div className="text-2xl font-bold">{formatTime(stats.best_solve_time_ms)}</div>
+              <div className="text-2xl font-bold">{formatGameTime(stats.best_solve_time_ms)}</div>
             </div>
             <div className="text-sm text-muted-foreground">Best Time</div>
           </CardContent>
@@ -308,7 +301,7 @@ export default function CastClimbStats() {
             
             <div className="flex justify-between">
               <span className="text-muted-foreground">Avg Time:</span>
-              <span className="font-medium">{formatTime(stats.average_solve_time_ms)}</span>
+              <span className="font-medium">{formatGameTime(stats.average_solve_time_ms)}</span>
             </div>
           </div>
 

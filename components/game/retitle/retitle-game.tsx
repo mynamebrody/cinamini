@@ -7,6 +7,7 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { SiteFooter } from "../../site-footer"
 import RetitlePuzzle from "./retitle-puzzle"
 import RetitleResult from "./retitle-result"
 import RetitleStats from "./retitle-stats"
@@ -134,6 +135,10 @@ export default function RetitleGame() {
         if (resultResponse.ok) {
           const resultData = await resultResponse.json()
           setResult(resultData)
+          // Extract and set solve time if available
+          if (resultData.solveTimeMs) {
+            setSolveTimeMs(resultData.solveTimeMs)
+          }
         } else {
           // Fallback: use the guess data and stats API
           const statsResponse = await fetch("/api/retitled/stats")
@@ -144,6 +149,10 @@ export default function RetitleGame() {
           
           // Create result from userGuess data if available
           if (data.userGuess) {
+            // Extract and set solve time if available in userGuess
+            if (data.userGuess.solveTimeMs) {
+              setSolveTimeMs(data.userGuess.solveTimeMs)
+            }
             setResult({
               correct: data.userGuess.isCorrect,
               correctAnswer: {
@@ -514,7 +523,7 @@ export default function RetitleGame() {
           </div>
         )}
       </main>
-      
+      <SiteFooter />
     </div>
   )
 }

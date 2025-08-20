@@ -17,6 +17,7 @@ import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { SiteFooter } from "../../site-footer"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -673,6 +674,7 @@ export default function BudgetBracketGame() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

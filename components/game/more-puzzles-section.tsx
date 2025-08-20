@@ -114,7 +114,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
                       variant={hasPlayed ? "outline" : "default"}
                       className={
                         hasPlayed
-                          ? "border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)]"
+                          ? "border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)] active:border-[rgb(153,37,29)] active:text-[rgb(153,37,29)] transition-all duration-150"
                           : "bg-[rgb(153,37,29)] hover:bg-white hover:text-[rgb(153,37,29)] text-white border border-[rgb(153,37,29)]"
                       }
                     >

@@ -747,12 +747,6 @@ export function formatSolveTime(solveTimeMs: number): string {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
-/**
- * Get country flag emoji
- */
-export function getCountryFlag(countryCode: string): string {
-  return SUPPORTED_COUNTRIES[countryCode as CountryCode]?.flag || '🏳️';
-}
 
 /**
  * Get country name

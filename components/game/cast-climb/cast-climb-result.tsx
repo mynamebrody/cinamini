@@ -16,6 +16,7 @@ import {
   Flame
 } from "lucide-react"
 import Image from "next/image"
+import { formatGameTime } from "@/lib/utils"
 
 interface CastClimbActor {
   name: string
@@ -75,14 +76,6 @@ interface CastClimbResultProps {
 export default function CastClimbResult({ result, onPlayAgain, onViewStats }: CastClimbResultProps) {
   const { correct, puzzle, user_guesses, stats, share_text } = result
 
-  const formatTime = (ms: number | null) => {
-    if (!ms) return "N/A"
-    const seconds = Math.round(ms / 1000)
-    if (seconds < 60) return `${seconds}s`
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
 
   const lastGuess = user_guesses[user_guesses.length - 1]
   const isPerfectGame = correct && lastGuess.actorsRevealed === 1
@@ -219,17 +212,41 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
       {/* Action Buttons */}
       <div className="space-y-2">
         {/* Share Preview */}
-        <div className="bg-muted rounded-lg p-4 text-center">
-          {share_text.split('\n').map((line, index) => (
-            <p key={index} className={index === 0 ? "font-mono text-lg mb-1" : "text-sm text-muted-foreground"}>
-              {line}
-            </p>
-          ))}
-          {correct && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {formatTime(solveTime || 0)}
-            </p>
-          )}
+        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+          {(() => {
+            const lines = share_text.split('\n')
+            const firstLine = lines[0] || ''
+            const remainingLines = lines.slice(1)
+            
+            // Parse first line to extract title and emoji pattern
+            const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
+            if (titleMatch) {
+              const gameTitle = titleMatch[1] // "Cast Climb #12"
+              const emojiPattern = titleMatch[2] // "❌❌❌✅"
+              
+              return (
+                <>
+                  <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                  <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    {remainingLines.join(' ')}
+                  </p>
+                </>
+              )
+            }
+            
+            // Fallback if parsing fails
+            return (
+              <>
+                <p className="font-mono text-lg mb-1">{firstLine}</p>
+                {remainingLines.map((line, index) => (
+                  <p key={index} className="text-sm text-muted-foreground">
+                    {line}
+                  </p>
+                ))}
+              </>
+            )
+          })()}
         </div>
         
         <ShareDrawer 

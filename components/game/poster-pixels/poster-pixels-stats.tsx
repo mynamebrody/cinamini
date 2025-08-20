@@ -19,6 +19,7 @@ import {
   Star,
   Eye
 } from "lucide-react"
+import { formatGameTime } from "@/lib/utils"
 
 interface PosterPixelsStats {
   games_played: number
@@ -75,11 +76,6 @@ export default function PosterPixelsStats() {
     }
   }
 
-  const formatTime = (ms: number | null) => {
-    if (!ms) return 'N/A'
-    const seconds = Math.round(ms / 1000)
-    return `${seconds}s`
-  }
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Never'
@@ -226,12 +222,12 @@ export default function PosterPixelsStats() {
             
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Best Time</span>
-              <span className="font-medium">{formatTime(stats.best_time_ms)}</span>
+              <span className="font-medium">{formatGameTime(stats.best_time_ms)}</span>
             </div>
             
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Average Time</span>
-              <span className="font-medium">{formatTime(stats.average_time_ms)}</span>
+              <span className="font-medium">{formatGameTime(stats.average_time_ms)}</span>
             </div>
           </CardContent>
         </Card>
@@ -265,7 +261,7 @@ export default function PosterPixelsStats() {
             
             <div className="flex justify-between">
               <span className="text-muted-foreground">Avg Time:</span>
-              <span className="font-medium">{formatTime(stats.average_time_ms)}</span>
+              <span className="font-medium">{formatGameTime(stats.average_time_ms)}</span>
             </div>
           </div>
 

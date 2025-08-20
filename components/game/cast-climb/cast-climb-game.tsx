@@ -18,7 +18,9 @@ import { MorePuzzlesSection } from "../more-puzzles-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
+import { formatGameTime } from "@/lib/utils"
 import { CelebrationConfetti } from "./celebration-confetti"
+import { SiteFooter } from "../../site-footer"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
 import { useCastClimbShare } from "@/hooks/useGameShare"
@@ -86,6 +88,7 @@ type ModalState = "none" | "howtoplay" | "stats"
 // HELPER FUNCTIONS
 // ============================================================================
 
+// Live timer formatting for gameplay (MM:SS format)
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -756,20 +759,12 @@ export default function CastClimbGame() {
       resultText = "\nWasn't able to get the movie."
     }
     
-    // Add studio time if provided
-    let timeText = ''
+    // Add studio time to the end of the result text if provided
     if (studioTimeMs !== undefined) {
-      const totalSeconds = Math.floor(studioTimeMs / 1000)
-      if (totalSeconds < 60) {
-        timeText = ` • ${totalSeconds}s`
-      } else {
-        const minutes = Math.floor(totalSeconds / 60)
-        const seconds = totalSeconds % 60
-        timeText = ` • ${minutes}m ${seconds}s`
-      }
+      resultText += ` • ${formatGameTime(studioTimeMs)}`
     }
 
-    return `Cast Climb #${puzzleNumber} ${pattern}${timeText}${resultText}`
+    return `Cast Climb #${puzzleNumber} ${pattern}${resultText}`
   }
 
   const showStats = () => {
@@ -932,15 +927,26 @@ export default function CastClimbGame() {
         )}
 
         {gameState === "error" && (
-          <div className="flex-1 flex items-center justify-center">
-            <Card className="w-full max-w-md">
-              <CardContent className="pt-6 text-center">
-                <p className="text-red-500 mb-4">{error || "An error occurred"}</p>
-                <Button onClick={loadTodaysPuzzle} className="w-full">
-                  Try Again
-                </Button>
-              </CardContent>
-            </Card>
+          <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: "#99251d" }}>
+            <div className="text-center space-y-8 px-4">
+              {/* Large emoji icon */}
+              <div className="text-8xl">🎬</div>
+              
+              {/* Error message */}
+              <div className="space-y-2">
+                <h2 className="text-white text-2xl font-bold font-funnel">The cast took a break!</h2>
+                <p className="text-white/80 text-lg max-w-md">{error || "Something went wrong with today's puzzle."}</p>
+              </div>
+              
+              {/* Restart button */}
+              <Button 
+                onClick={loadTodaysPuzzle} 
+                className="bg-[#99251d] text-white border-2 border-white font-bold px-8 py-4 text-lg transition-all duration-200 hover:bg-white hover:text-[#99251d] hover:border-[#99251d] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
+                style={{ borderRadius: 0 }}
+              >
+                Try Again
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1149,8 +1155,45 @@ export default function CastClimbGame() {
                     {puzzle.funFact}
                   </p>
                 )}
-                <div className="bg-muted rounded-lg p-4">
-                  <p className="font-mono text-lg">{result.share_text}</p>
+                {/* Share Preview */}
+                <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+                  {(() => {
+                    const shareText = (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
+                      ? result.share_text 
+                      : (centralizedShareText || result.share_text)
+                    const lines = shareText.split('\n')
+                    const firstLine = lines[0] || ''
+                    const remainingLines = lines.slice(1)
+                    
+                    // Parse first line to extract title and emoji pattern
+                    const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
+                    if (titleMatch) {
+                      const gameTitle = titleMatch[1] // "Cast Climb #12"
+                      const emojiPattern = titleMatch[2] // "❌❌❌✅"
+                      
+                      return (
+                        <>
+                          <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                          <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
+                          <p className="text-sm text-muted-foreground font-medium">
+                            {remainingLines.join(' ')}
+                          </p>
+                        </>
+                      )
+                    }
+                    
+                    // Fallback if parsing fails
+                    return (
+                      <>
+                        <p className="font-mono text-lg mb-1">{firstLine}</p>
+                        {remainingLines.map((line, index) => (
+                          <p key={index} className="text-sm text-muted-foreground">
+                            {line}
+                          </p>
+                        ))}
+                      </>
+                    )
+                  })()}
                 </div>
                 <ShareSection 
                   shareText={
@@ -1190,6 +1233,7 @@ export default function CastClimbGame() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }
