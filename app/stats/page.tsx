@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SiteFooter } from "@/components/site-footer"
 import CastClimbStats from "@/components/game/cast-climb/cast-climb-stats"
 import RetitleStats from "@/components/game/retitle/retitle-stats"
 import BudgetBracketStats from "@/components/game/budget-bracket/budget-bracket-stats"
@@ -30,7 +31,7 @@ export default async function StatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="border-b border-neutral-200 bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -48,7 +49,7 @@ export default async function StatsPage() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-4xl mx-auto px-4 py-8 flex-1">
         <div className="space-y-6">
           {/* Page Header */}
           <div className="text-center space-y-2">
@@ -82,6 +83,7 @@ export default async function StatsPage() {
           </Tabs>
         </div>
       </main>
+      <SiteFooter />
     </div>
   )
 }

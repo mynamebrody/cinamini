@@ -17,6 +17,7 @@ import PosterPixelsSearch from "./poster-pixels-search"
 import PosterPixelsStats from "./poster-pixels-stats"
 import PosterPixelsResult from "./poster-pixels-result"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { SiteFooter } from "../../site-footer"
 import { POSTER_PIXELS_LEVELS, getClarityPercentForIndex, getScoreForClarityPercent } from "@/lib/poster-pixels-config"
 import { useAnimatedClarity, easingFunctions } from "@/hooks/use-animated-clarity"
 import { useFinalRevealAnimation } from "@/hooks/use-final-reveal-animation"
@@ -800,6 +801,7 @@ export default function PosterPixelsGame() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }

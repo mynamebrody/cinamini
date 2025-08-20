@@ -3,12 +3,12 @@ import { createClient } from "@/lib/supabase/server"
 import { getMultipleMovies } from "@/lib/tmdb"
 import { 
   generateDailyPuzzle,
-  getCountryFlag,
   getCountryName,
   validatePuzzleData,
   SeededRandom,
   type RetitledPuzzle
 } from "@/lib/retitled"
+import { getCountryFlag } from "@/lib/flag-emojis"
 
 export async function GET(request: NextRequest) {
   try {

@@ -34,7 +34,8 @@ export default function PosterPixelsSearch({
   const [isLoading, setIsLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
-  const debouncedSearchQuery = useDebounce(searchQuery, 300)
+  const lastSearchedQueryRef = useRef('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Scroll dropdown into view
@@ -60,6 +61,36 @@ export default function PosterPixelsSearch({
     }
   }, [])
 
+  const searchMovies = useCallback(async (query: string) => {
+    // Don't search if query hasn't changed from last search
+    if (query === lastSearchedQueryRef.current) {
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`)
+      const data = await response.json()
+
+      if (response.ok && data.results) {
+        const filtered = data.results.filter((m: Movie) => !excludeMovieIds.includes(m.id))
+        setSearchResults(filtered.slice(0, 8)) // Limit to 8 results
+        setShowDropdown(true)
+        setSelectedIndex(-1)
+        lastSearchedQueryRef.current = query // Track the last searched query
+        // Scroll dropdown into view after a short delay to ensure it's rendered
+        setTimeout(scrollDropdownIntoView, 100)
+      } else {
+        setSearchResults([])
+      }
+    } catch (error) {
+      console.error("Error searching movies:", error)
+      setSearchResults([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [excludeMovieIds, scrollDropdownIntoView])
+
   useEffect(() => {
     if (debouncedSearchQuery.length >= 2) {
       searchMovies(debouncedSearchQuery)
@@ -67,8 +98,9 @@ export default function PosterPixelsSearch({
       setSearchResults([])
       setShowDropdown(false)
       setSelectedIndex(-1)
+      lastSearchedQueryRef.current = ''
     }
-  }, [debouncedSearchQuery])
+  }, [debouncedSearchQuery, searchMovies])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -81,30 +113,6 @@ export default function PosterPixelsSearch({
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
-
-  const searchMovies = async (query: string) => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`)
-      const data = await response.json()
-
-      if (response.ok && data.results) {
-        const filtered = data.results.filter((m: Movie) => !excludeMovieIds.includes(m.id))
-        setSearchResults(filtered.slice(0, 8)) // Limit to 8 results
-        setShowDropdown(true)
-        setSelectedIndex(-1)
-        // Scroll dropdown into view after a short delay to ensure it's rendered
-        setTimeout(scrollDropdownIntoView, 100)
-      } else {
-        setSearchResults([])
-      }
-    } catch (error) {
-      console.error("Error searching movies:", error)
-      setSearchResults([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const handleMovieSelect = (movie: Movie) => {
     const selectedMovieData = { id: movie.id, title: movie.title }
@@ -196,7 +204,7 @@ export default function PosterPixelsSearch({
 
       {/* Search Results Dropdown */}
       {showDropdown && searchResults.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-sm">
+        <div className="absolute z-10 w-full mt-1 bg-white/95 border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-md">
           <div className="py-1">
             {searchResults.map((movie, index) => (
               <button

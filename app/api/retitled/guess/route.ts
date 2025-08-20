@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMovieById, getReleaseYear } from "@/lib/tmdb"
-import { getCountryFlag } from "@/lib/retitled"
+import { getCountryFlag } from "@/lib/flag-emojis"
 import { sendGuessWebhook } from "@/lib/webhooks"
 
 export async function POST(request: NextRequest) {

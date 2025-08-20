@@ -184,13 +184,16 @@ async function generateCastClimbServerShare(
   if (userId) {
     const { data: guesses } = await supabase
       .from('cast_climb_guesses')
-      .select('is_correct, actors_revealed, attempt_number')
+      .select('is_correct, actors_revealed, attempt_number, solve_time_ms')
       .eq('user_id', userId)
       .eq('puzzle_id', puzzleId)
       .order('attempt_number')
     
     if (guesses && guesses.length > 0) {
       const isWin = guesses.some(g => g.is_correct)
+      const winningGuess = guesses.find(g => g.is_correct)
+      const solveTimeMs = winningGuess?.solve_time_ms || 0
+      
       gameData = {
         guesses: guesses.map(guess => ({
           isCorrect: guess.is_correct,
@@ -198,7 +201,7 @@ async function generateCastClimbServerShare(
           attemptNumber: guess.attempt_number
         })),
         puzzle: { puzzleNumber: puzzle.puzzle_number },
-        result: { isWin, totalGuesses: guesses.length }
+        result: { isWin, totalGuesses: guesses.length, solveTimeMs }
       }
     }
   }

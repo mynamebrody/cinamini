@@ -63,6 +63,7 @@ export interface CastClimbShareData {
   result: {
     isWin: boolean;
     totalGuesses: number;
+    solveTimeMs?: number;
   };
 }
 
