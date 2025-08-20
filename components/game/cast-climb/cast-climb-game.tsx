@@ -176,6 +176,11 @@ export default function CastClimbGame() {
             setResult(savedResult)
             setUserGuesses(savedResult.user_guesses || [])
             setGameState('completed')
+            
+            // Trigger celebration if they won
+            if (savedResult.correct) {
+              setTimeout(() => setShowConfetti(true), 500)
+            }
           } else {
             setGameState('ready')
           }
@@ -222,6 +227,11 @@ export default function CastClimbGame() {
             share_text: shareText
           })
           setGameState("completed")
+          
+          // Trigger celebration if they won
+          if (isWin) {
+            setTimeout(() => setShowConfetti(true), 500)
+          }
         } else if (data.hasStarted) {
           // User has started but not completed the game, resume from where they left off
           const userGuesses = data.userGuesses || []
