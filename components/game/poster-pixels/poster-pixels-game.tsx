@@ -19,6 +19,8 @@ import PosterPixelsResult from "./poster-pixels-result"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 import { SiteFooter } from "../../site-footer"
 import { POSTER_PIXELS_LEVELS, getClarityPercentForIndex, getScoreForClarityPercent } from "@/lib/poster-pixels-config"
+import { useAnimatedClarity, easingFunctions } from "@/hooks/use-animated-clarity"
+import { useFinalRevealAnimation } from "@/hooks/use-final-reveal-animation"
 
 interface MovieData {
   id?: number
@@ -84,6 +86,24 @@ export default function PosterPixelsGame() {
   })
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isRevealing, setIsRevealing] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const { animatedClarity, isAnimating } = useAnimatedClarity(state.clarityLevel, {
+    duration: state.won && state.clarityLevel === 100 ? 1500 : 800, // Longer animation for winning reveal
+    easing: easingFunctions.easeInOutCubic
+  })
+  const { revealClarity, isAnimating: isRevealAnimating } = useFinalRevealAnimation(
+    90, // Start from 90% clarity
+    isRevealing,
+    {
+      duration: 2000, // 2 seconds for the final reveal
+      onComplete: () => {
+        // Ensure the game state is properly updated after reveal
+        setIsRevealing(false)
+      }
+    }
+  )
 
   // Load today's puzzle
   useEffect(() => {
@@ -107,7 +127,9 @@ export default function PosterPixelsGame() {
   useEffect(() => {
     if (canvasRef.current && state.puzzle && state.gameStarted) {
       try {
-        drawPixelatedPoster()
+        // Use reveal clarity if revealing, otherwise use animated clarity
+        const clarityToUse = isRevealing ? revealClarity : animatedClarity
+        drawPixelatedPoster(clarityToUse)
       } catch (error) {
         console.error("Error calling drawPixelatedPoster:", error)
         setState(prev => ({
@@ -116,7 +138,7 @@ export default function PosterPixelsGame() {
         }))
       }
     }
-  }, [state.clarityLevel, state.puzzle, state.gameStarted])
+  }, [animatedClarity, revealClarity, isRevealing, state.puzzle, state.gameStarted])
 
   const getLevels = () => Array.from(POSTER_PIXELS_LEVELS) // Always use config levels
 
@@ -161,6 +183,7 @@ export default function PosterPixelsGame() {
           }))
           setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
           setGameState('completed')
+          setShowResults(true) // Show results immediately for completed games
         } else {
           const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
           setGameState('ready')
@@ -199,6 +222,7 @@ export default function PosterPixelsGame() {
           // Set the total game time for display
           setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
           setGameState('completed')
+          setShowResults(true) // Show results immediately for completed games
         } else {
           setGameState('ready')
           
@@ -219,7 +243,7 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const drawPixelatedPoster = () => {
+  const drawPixelatedPoster = (clarityValue: number) => {
     const canvas = canvasRef.current
     if (!canvas || !state.puzzle) return
     
@@ -241,7 +265,7 @@ export default function PosterPixelsGame() {
     
     img.onload = () => {
       try {
-        const pixelSize = Math.max(1, Math.floor((1 - state.clarityLevel / 100) * 50) + 1)
+        const pixelSize = Math.max(1, Math.floor((1 - clarityValue / 100) * 50) + 1)
         canvas.width = 300
         canvas.height = 450
         ctx.imageSmoothingEnabled = false
@@ -303,10 +327,12 @@ export default function PosterPixelsGame() {
     if (isLast) {
       endGame(false, updatedGuesses)
     } else {
+      const nextIndex = state.currentLevelIndex + 1
+      const nextClarity = getClarityPercentForIndex(nextIndex)
       setState(prev => ({
         ...prev,
-        currentLevelIndex: prev.currentLevelIndex + 1,
-        clarityLevel: getClarityPercentForIndex(prev.currentLevelIndex + 1),
+        currentLevelIndex: nextIndex,
+        clarityLevel: nextClarity,
       }))
     }
   }
@@ -346,7 +372,7 @@ export default function PosterPixelsGame() {
       movieId: movie.id,
       movieTitle: movie.title,
       isCorrect,
-      clarityLevel: state.clarityLevel,
+      clarityLevel: Math.round(animatedClarity), // Use the current animated clarity
     }
     const updated = await recordGuess(entry)
     advanceLevelOrEnd(isCorrect, updated)
@@ -359,7 +385,7 @@ export default function PosterPixelsGame() {
       movieId: null,
       movieTitle: 'Skipped',
       isCorrect: false,
-      clarityLevel: state.clarityLevel,
+      clarityLevel: Math.round(animatedClarity), // Use the current animated clarity
     }
     const updated = await recordGuess(entry)
     advanceLevelOrEnd(false, updated)
@@ -370,8 +396,54 @@ export default function PosterPixelsGame() {
     const totalTimeMs = gameStartTime > 0 ? Date.now() - gameStartTime : 0
     
     // Set final clarity level - if gave up, show the final level (90%)
-    const finalClarityLevel = won ? state.clarityLevel : getClarityPercentForIndex(getLevels().length - 1)
+    const finalClarityLevel = won ? 100 : getClarityPercentForIndex(getLevels().length - 1) // Winners get 100%
     const finalGuesses = guessesOverride ?? state.guesses
+    
+    if (won) {
+      // For correct guesses, animate to 100% clarity first
+      setState(prev => ({
+        ...prev,
+        clarityLevel: 100, // This will trigger the animation to 100%
+      }))
+      
+      // Wait for the reveal animation to complete
+      await new Promise(resolve => setTimeout(resolve, 1200)) // Wait for animation
+      
+      // Trigger confetti during the reveal
+      setTimeout(() => {
+        confetti({ 
+          particleCount: 150, 
+          spread: 70, 
+          origin: { y: 0.6 },
+          colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+        })
+      }, 200)
+      
+      // Add more confetti bursts
+      setTimeout(() => {
+        confetti({ 
+          particleCount: 100, 
+          spread: 60, 
+          origin: { y: 0.7, x: 0.3 }
+        })
+      }, 400)
+      
+      setTimeout(() => {
+        confetti({ 
+          particleCount: 100, 
+          spread: 60, 
+          origin: { y: 0.7, x: 0.7 }
+        })
+      }, 600)
+      
+    } else {
+      // For losses, trigger reveal animation if at final level
+      if (state.clarityLevel === getClarityPercentForIndex(getLevels().length - 1)) {
+        setIsRevealing(true)
+        // Wait a bit for the animation to start before continuing
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    }
     
     try {
       if (isAnonymous) {
@@ -412,9 +484,26 @@ export default function PosterPixelsGame() {
     }))
     // Store final time in totalGameTime for display consistency
     setTotalGameTime(Math.floor(totalTimeMs / 1000))
-    setGameState('completed')
+    
+    // Transition to completed state with a fade effect
     if (won) {
-      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+      // Start the transition effect (fade out UI and poster)
+      setIsTransitioning(true)
+      
+      // After a shorter fade out, show results with fade in
+      setTimeout(() => {
+        setGameState('completed')
+        setShowResults(true)
+      }, 600) // Wait for fade out to complete
+      
+      // Reset transition state after animation completes
+      setTimeout(() => {
+        setIsTransitioning(false)
+      }, 1000)
+    } else {
+      // For non-winning games, show results immediately
+      setGameState('completed')
+      setShowResults(true)
     }
   }
 
@@ -433,7 +522,7 @@ export default function PosterPixelsGame() {
         movieId: null,
         movieTitle: 'Gave Up',
         isCorrect: false,
-        clarityLevel: getClarityPercentForIndex(levels.length - 1), // Final level (90%)
+        clarityLevel: Math.round(animatedClarity), // Use the current animated clarity
       }
       recordGuess(gaveUpEntry).then((updated) => {
         endGame(false, updated)
@@ -634,9 +723,9 @@ export default function PosterPixelsGame() {
         )}
 
         {gameState === 'playing' && (
-          <div className="max-w-6xl mx-auto space-y-6 pb-40">
+          <div className="max-w-6xl mx-auto space-y-6 pb-40 relative">
             {/* Studio Timer */}
-            <div className="text-center text-muted-foreground">
+            <div className={`text-center text-muted-foreground transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
               <div className="inline-flex items-center gap-2 bg-muted/50 rounded-full px-4 py-2">
                 <span className="text-xs">🎬</span>
                 <p className="text-sm font-mono">Studio Time: {formatTime(totalGameTime)}</p>
@@ -649,7 +738,15 @@ export default function PosterPixelsGame() {
               <div className="flex justify-center lg:justify-end">
                 <canvas
                   ref={canvasRef}
-                  className="border border-[rgb(var(--silver))] shadow-3d-grey"
+                  className={`border border-[rgb(var(--silver))] shadow-3d-grey transition-all duration-500 ${
+                    state.won && state.clarityLevel === 100 
+                      ? 'shadow-2xl shadow-yellow-300/50 ring-4 ring-yellow-300/30' 
+                      : ''
+                  } ${
+                    isTransitioning 
+                      ? 'opacity-0 scale-95' 
+                      : 'opacity-100 scale-100'
+                  }`}
                   width={300}
                   height={450}
                   style={{ borderRadius: 0 }}
@@ -657,7 +754,7 @@ export default function PosterPixelsGame() {
               </div>
 
               {/* Right Column: Controls */}
-              <div className="space-y-6 lg:pl-4">
+              <div className={`space-y-6 lg:pl-4 transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
                 {/* Search Card */}
                 <Card className="border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
                   <CardContent className="px-6 pb-6 pt-8">
@@ -670,11 +767,15 @@ export default function PosterPixelsGame() {
                         </div>
                         
                         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                          <Button onClick={onEnhanceOrGiveUp} className="w-full sm:w-auto">
-                            {enhanceOrGiveUpLabel()}
+                          <Button 
+                            onClick={onEnhanceOrGiveUp} 
+                            className="w-full sm:w-auto"
+                            disabled={isAnimating || isRevealAnimating || isTransitioning}
+                          >
+                            {isAnimating ? 'Enhancing...' : state.won && state.clarityLevel === 100 ? 'Revealing...' : enhanceOrGiveUpLabel()}
                           </Button>
                           <div className="text-sm text-muted-foreground text-center sm:text-right whitespace-nowrap">
-                            Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(state.clarityLevel)}
+                            Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(isRevealing ? revealClarity : animatedClarity)}
                           </div>
                         </div>
                       </div>
@@ -687,7 +788,7 @@ export default function PosterPixelsGame() {
                           }
                         }}
                         selectedMovie={null}
-                        disabled={false}
+                        disabled={isAnimating || isRevealAnimating || isTransitioning}
                         excludeMovieIds={state.guesses
                           .filter(g => g.movieId !== null)
                           .map(g => g.movieId as number)}
@@ -723,36 +824,38 @@ export default function PosterPixelsGame() {
         )}
 
         {gameState === 'completed' && state.puzzle && (
-          <PosterPixelsResult
-            puzzleId={String(state.puzzle.id)}
-            puzzleNumber={state.puzzle.puzzle_number || 1}
-            won={state.won}
-            timeElapsed={state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0)}
-            clarityLevel={state.clarityLevel}
-            movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
-            movieYear={
-              state.puzzle.movie_data?.release_date ? 
-                new Date(state.puzzle.movie_data.release_date).getFullYear().toString() :
-              state.puzzle.film_release_year ?
-                state.puzzle.film_release_year.toString() :
-                "Unknown"
-            }
-            moviePosterUrl={
-              state.puzzle.movie_data?.poster_path ? 
-                `https://image.tmdb.org/t/p/w342${state.puzzle.movie_data.poster_path}` :
-              state.puzzle.film_poster_url ?
-                (state.puzzle.film_poster_url.startsWith('http') ? 
-                  state.puzzle.film_poster_url : 
-                  `https://image.tmdb.org/t/p/w342${state.puzzle.film_poster_url}`) :
-                undefined
-            }
-            guesses={state.guesses}
-            finalScore={state.finalScore || 0}
-          />
+          <div className={`transition-all duration-500 ${showResults ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <PosterPixelsResult
+              puzzleId={String(state.puzzle.id)}
+              puzzleNumber={state.puzzle.puzzle_number || 1}
+              won={state.won}
+              timeElapsed={state.timeElapsed || (gameStartTime > 0 ? Date.now() - gameStartTime : 0)}
+              clarityLevel={state.clarityLevel}
+              movieTitle={state.puzzle.movie_data?.title || state.puzzle.film_title || "Unknown Movie"}
+              movieYear={
+                state.puzzle.movie_data?.release_date ? 
+                  new Date(state.puzzle.movie_data.release_date).getFullYear().toString() :
+                state.puzzle.film_release_year ?
+                  state.puzzle.film_release_year.toString() :
+                  "Unknown"
+              }
+              moviePosterUrl={
+                state.puzzle.movie_data?.poster_path ? 
+                  `https://image.tmdb.org/t/p/w342${state.puzzle.movie_data.poster_path}` :
+                state.puzzle.film_poster_url ?
+                  (state.puzzle.film_poster_url.startsWith('http') ? 
+                    state.puzzle.film_poster_url : 
+                    `https://image.tmdb.org/t/p/w342${state.puzzle.film_poster_url}`) :
+                  undefined
+              }
+              guesses={state.guesses}
+              finalScore={state.finalScore || 0}
+            />
+          </div>
         )}
         
         {gameState === 'completed' && (
-          <div className="max-w-md mx-auto mt-6">
+          <div className={`max-w-md mx-auto mt-6 transition-all duration-700 delay-300 ${showResults ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <MorePuzzlesSection currentGameId="poster-pixels" />
             
             {isAnonymous && (
@@ -770,7 +873,6 @@ export default function PosterPixelsGame() {
           </div>
         )}
       </main>
-      <SiteFooter />
     </div>
   )
 }
