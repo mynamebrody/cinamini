@@ -873,6 +873,7 @@ export default function PosterPixelsGame() {
           </div>
         )}
       </main>
+      <SiteFooter />
     </div>
   )
 }
