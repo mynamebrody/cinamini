@@ -63,6 +63,7 @@ export default function RetitleGame() {
   const [error, setError] = useState<string | null>(null)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
   const [travelState, setTravelState] = useState<'preparing' | 'traveling' | 'arrived' | 'celebrating'>('preparing')
+  const [showConfetti, setShowConfetti] = useState(false)
 
   useEffect(() => {
     if (!authLoading) {
@@ -111,6 +112,7 @@ export default function RetitleGame() {
             // Then set the result
             setResult(localResult.result)
             setGameState('completed')
+          setShowConfetti(true)
           } else {
             setPuzzle(data.puzzle)
             setGameState('ready')
@@ -200,6 +202,7 @@ export default function RetitleGame() {
           }
           }
           setGameState('completed')
+          setShowConfetti(true)
         } else {
           // User hasn't played today
           setPuzzle(data.puzzle)
@@ -280,6 +283,7 @@ export default function RetitleGame() {
         
         setResult(data)
         setGameState('completed')
+        setShowConfetti(true)
       } else {
         // For authenticated users, submit to server
         const response = await fetch("/api/retitled/guess", {
@@ -302,6 +306,7 @@ export default function RetitleGame() {
         const data = await response.json()
         setResult(data)
         setGameState('completed')
+        setShowConfetti(true)
       }
     } catch (err) {
       console.error("Error submitting guess:", err)
@@ -352,6 +357,12 @@ export default function RetitleGame() {
   // Render the game
   return (
     <div className="game-container">
+      {/* Celebration Confetti */}
+      <RetitleCelebrationConfetti 
+        show={showConfetti} 
+        onComplete={() => setShowConfetti(false)}
+      />
+      
       <GameHeader 
         title="Retitled" 
         onHelpClick={showHowToPlay}
