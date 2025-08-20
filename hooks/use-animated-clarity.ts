@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 
 interface UseAnimatedClarityOptions {
   duration?: number // Duration in milliseconds
@@ -19,61 +19,71 @@ export function useAnimatedClarity(
   const { duration = 1000, easing = defaultEasing } = options
   const [animatedClarity, setAnimatedClarity] = useState(targetClarity)
   const [isAnimating, setIsAnimating] = useState(false)
+  
+  // Use refs to track animation state
   const animationRef = useRef<number | undefined>(undefined)
-  const startTimeRef = useRef<number | undefined>(undefined)
-  const startClarityRef = useRef<number | undefined>(undefined)
-  const targetClarityRef = useRef<number>(targetClarity)
+  const currentAnimatedRef = useRef<number>(targetClarity)
+  const targetRef = useRef<number>(targetClarity)
+  
+  // Update current animated ref whenever animatedClarity changes
+  useEffect(() => {
+    currentAnimatedRef.current = animatedClarity
+  }, [animatedClarity])
 
   useEffect(() => {
-    // Only animate if the target has changed
-    if (targetClarityRef.current === targetClarity) {
+    // Skip if target hasn't changed
+    if (targetRef.current === targetClarity) {
       return
     }
+    
+    // Update target ref
+    targetRef.current = targetClarity
 
     // Cancel any ongoing animation
-    if (animationRef.current) {
+    if (animationRef.current !== undefined) {
       cancelAnimationFrame(animationRef.current)
     }
 
-    // Set up animation parameters
-    startClarityRef.current = animatedClarity
-    targetClarityRef.current = targetClarity
-    startTimeRef.current = performance.now()
+    // Get starting value from ref (current animated position)
+    const startValue = currentAnimatedRef.current
+    const startTime = performance.now()
+    
+    // Set animating state
     setIsAnimating(true)
 
-    // Animation loop
+    // Animation function
     const animate = (currentTime: number) => {
-      if (!startTimeRef.current || startClarityRef.current === undefined) {
-        return
-      }
-
-      const elapsed = currentTime - startTimeRef.current
+      const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
       const easedProgress = easing(progress)
-
-      // Calculate the new clarity value
-      const startClarity = startClarityRef.current
-      const targetClarity = targetClarityRef.current
-      const newClarity = startClarity + (targetClarity - startClarity) * easedProgress
-
-      setAnimatedClarity(newClarity)
-
+      
+      // Calculate new value
+      const newValue = startValue + (targetClarity - startValue) * easedProgress
+      
+      // Update state
+      setAnimatedClarity(newValue)
+      
       if (progress < 1) {
+        // Continue animation
         animationRef.current = requestAnimationFrame(animate)
       } else {
         // Animation complete
-        setIsAnimating(false)
         setAnimatedClarity(targetClarity)
+        setIsAnimating(false)
+        animationRef.current = undefined
       }
     }
 
+    // Start animation
     animationRef.current = requestAnimationFrame(animate)
 
-    // Cleanup
+    // Cleanup function
     return () => {
-      if (animationRef.current) {
+      if (animationRef.current !== undefined) {
         cancelAnimationFrame(animationRef.current)
+        animationRef.current = undefined
       }
+      setIsAnimating(false)
     }
   }, [targetClarity, duration, easing])
 
