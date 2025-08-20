@@ -39,14 +39,13 @@ export default async function ProfilePage({
       {/* Header */}
       <header className="border-b border-[rgb(var(--silver))] bg-white/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
               <a href="/">
                 ← Back to Home
               </a>
             </Button>
             <h1 className="text-xl font-bold text-neutral-900">Profile Settings</h1>
-            <div className="w-[104px]"></div> {/* Spacer to center the title */}
           </div>
         </div>
       </header>

@@ -57,6 +57,7 @@ export async function GET(
 
     return NextResponse.json({
       correct: guess.is_correct,
+      solveTimeMs: guess.solve_time_ms,
       correctAnswer: {
         id: puzzle.film_id,
         title: correctMovie.title,

@@ -135,6 +135,10 @@ export default function RetitleGame() {
         if (resultResponse.ok) {
           const resultData = await resultResponse.json()
           setResult(resultData)
+          // Extract and set solve time if available
+          if (resultData.solveTimeMs) {
+            setSolveTimeMs(resultData.solveTimeMs)
+          }
         } else {
           // Fallback: use the guess data and stats API
           const statsResponse = await fetch("/api/retitled/stats")
@@ -145,6 +149,10 @@ export default function RetitleGame() {
           
           // Create result from userGuess data if available
           if (data.userGuess) {
+            // Extract and set solve time if available in userGuess
+            if (data.userGuess.solveTimeMs) {
+              setSolveTimeMs(data.userGuess.solveTimeMs)
+            }
             setResult({
               correct: data.userGuess.isCorrect,
               correctAnswer: {

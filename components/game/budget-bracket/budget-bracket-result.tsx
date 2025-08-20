@@ -15,6 +15,7 @@ import {
   Star
 } from "lucide-react"
 import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
+import { formatGameTime } from "@/lib/utils"
 import { useBudgetBracketShare } from "@/hooks/useGameShare"
 
 interface PuzzleMovie {
@@ -135,7 +136,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     }))
 
     const pattern = generateSharePattern(choices)
-    const timeText = `${Math.round(result.total_duration_ms / 1000)}s`
+    const timeText = formatGameTime(result.total_duration_ms)
     
     if (result.is_perfect_game) {
       return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
@@ -146,15 +147,6 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     }
   }
 
-  const formatTime = (ms: number) => {
-    const seconds = Math.round(ms / 1000)
-    if (seconds < 60) {
-      return `${seconds}s`
-    }
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}m ${remainingSeconds}s`
-  }
 
   const getMovieYear = (releaseDate: string) => {
     return new Date(releaseDate).getFullYear()
@@ -437,7 +429,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 className="bg-gradient-to-b from-purple-50 to-purple-100 p-3 border border-purple-300 shadow-3d-purple"
                 style={{ borderRadius: 0 }}
               >
-                <div className="text-3xl font-bold text-purple-700">{formatTime(result.total_duration_ms)}</div>
+                <div className="text-3xl font-bold text-purple-700">{formatGameTime(result.total_duration_ms)}</div>
                 <div className="text-sm text-purple-600 font-medium">Total Time</div>
               </motion.div>
               <motion.div
@@ -462,33 +454,39 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               className="border-t pt-4"
             > 
               {/* Share Preview */}
-              <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] rounded-lg p-4 text-center mb-3">
-                <p className="font-mono text-lg">
-                  {(() => {
-                    const text = (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
-                      ? centralizedShareText.split('\n')[0] // First line with pattern
-                      : generateFallbackShareText().split('\n')[0]
+              <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+                {(() => {
+                  const text = (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
+                    ? centralizedShareText
+                    : generateFallbackShareText()
+                  
+                  const lines = text.split('\n')
+                  const firstLine = lines[0] || ''
+                  const secondLine = lines[1] || ''
+                  
+                  // Parse first line to extract title and emoji pattern
+                  const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
+                  if (titleMatch) {
+                    const gameTitle = titleMatch[1] // "Budget Bracket #12"
+                    const emojiPattern = titleMatch[2] // "🟩🟥🟩🟥"
                     
-                    const parts = text.split(' #')
-                    if (parts.length === 2) {
-                      return (
-                        <>
-                          <span className="sm:inline block">{parts[0]}</span>
-                          <span className="sm:inline block"> #{parts[1]}</span>
-                        </>
-                      )
-                    }
-                    return text
-                  })()}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {
-                    // Get the second line (score details)
-                    (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
-                      ? centralizedShareText.split('\n')[1] 
-                      : generateFallbackShareText().split('\n')[1]
+                    return (
+                      <>
+                        <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                        <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
+                        <p className="text-sm text-muted-foreground font-medium">{secondLine}</p>
+                      </>
+                    )
                   }
-                </p>
+                  
+                  // Fallback if parsing fails
+                  return (
+                    <>
+                      <p className="font-mono text-lg mb-1">{firstLine}</p>
+                      <p className="text-sm text-muted-foreground">{secondLine}</p>
+                    </>
+                  )
+                })()}
               </div>
               
               <ShareSection 
@@ -556,7 +554,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           <XCircle className="w-4 h-4 text-red-500" />
                         )}
                         <span className="text-sm text-muted-foreground">
-                          {formatTime(playedRound.time_taken_ms)}
+                          {formatGameTime(playedRound.time_taken_ms)}
                         </span>
                       </div>
                     )}
@@ -692,7 +690,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                         <XCircle className="w-4 h-4 text-red-500" />
                       )}
                       <span className="text-sm text-muted-foreground">
-                        {formatTime(roundData.time_taken_ms)}
+                        {formatGameTime(roundData.time_taken_ms)}
                       </span>
                     </div>
                   </div>

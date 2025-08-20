@@ -18,6 +18,7 @@ import { MorePuzzlesSection } from "../more-puzzles-section"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
+import { formatGameTime } from "@/lib/utils"
 import { CelebrationConfetti } from "./celebration-confetti"
 import { SiteFooter } from "../../site-footer"
 import Image from "next/image"
@@ -87,6 +88,7 @@ type ModalState = "none" | "howtoplay" | "stats"
 // HELPER FUNCTIONS
 // ============================================================================
 
+// Live timer formatting for gameplay (MM:SS format)
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -757,20 +759,12 @@ export default function CastClimbGame() {
       resultText = "\nWasn't able to get the movie."
     }
     
-    // Add studio time if provided
-    let timeText = ''
+    // Add studio time to the end of the result text if provided
     if (studioTimeMs !== undefined) {
-      const totalSeconds = Math.floor(studioTimeMs / 1000)
-      if (totalSeconds < 60) {
-        timeText = ` • ${totalSeconds}s`
-      } else {
-        const minutes = Math.floor(totalSeconds / 60)
-        const seconds = totalSeconds % 60
-        timeText = ` • ${minutes}m ${seconds}s`
-      }
+      resultText += ` • ${formatGameTime(studioTimeMs)}`
     }
 
-    return `Cast Climb #${puzzleNumber} ${pattern}${timeText}${resultText}`
+    return `Cast Climb #${puzzleNumber} ${pattern}${resultText}`
   }
 
   const showStats = () => {
@@ -1161,8 +1155,45 @@ export default function CastClimbGame() {
                     {puzzle.funFact}
                   </p>
                 )}
-                <div className="bg-muted rounded-lg p-4">
-                  <p className="font-mono text-lg">{result.share_text}</p>
+                {/* Share Preview */}
+                <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+                  {(() => {
+                    const shareText = (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
+                      ? result.share_text 
+                      : (centralizedShareText || result.share_text)
+                    const lines = shareText.split('\n')
+                    const firstLine = lines[0] || ''
+                    const remainingLines = lines.slice(1)
+                    
+                    // Parse first line to extract title and emoji pattern
+                    const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
+                    if (titleMatch) {
+                      const gameTitle = titleMatch[1] // "Cast Climb #12"
+                      const emojiPattern = titleMatch[2] // "❌❌❌✅"
+                      
+                      return (
+                        <>
+                          <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                          <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
+                          <p className="text-sm text-muted-foreground font-medium">
+                            {remainingLines.join(' ')}
+                          </p>
+                        </>
+                      )
+                    }
+                    
+                    // Fallback if parsing fails
+                    return (
+                      <>
+                        <p className="font-mono text-lg mb-1">{firstLine}</p>
+                        {remainingLines.map((line, index) => (
+                          <p key={index} className="text-sm text-muted-foreground">
+                            {line}
+                          </p>
+                        ))}
+                      </>
+                    )
+                  })()}
                 </div>
                 <ShareSection 
                   shareText={
