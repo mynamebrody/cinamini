@@ -332,6 +332,7 @@ interface BudgetBracketEditorProps {
 
 export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzleId }: BudgetBracketEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
+  const [name, setName] = useState("")
   const [moviePairs, setMoviePairs] = useState<MoviePair[]>(
     Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null }))
   )
@@ -451,6 +452,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       
       // Load puzzle fields
       setPuzzleDate(puzzleData.puzzle_date || "")
+      setName(puzzleData.name || "")
       setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
       
       // Parse and load movie pairs
@@ -1394,7 +1396,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
         puzzle_number: puzzleNumber,
-        is_published: isPublished
+        is_published: isPublished,
+        name: name ? name : null
       }
 
 
@@ -1502,6 +1505,15 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       {/* Date and Status */}
       <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="puzzle-name">Puzzle Name (optional)</Label>
+          <Input
+            id="puzzle-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Summer Blockbusters"
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="puzzle-date">Puzzle Date</Label>
           <Input
