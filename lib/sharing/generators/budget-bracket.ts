@@ -23,15 +23,16 @@ export class BudgetBracketShareGenerator implements ShareGenerator {
     
     let shareText: string;
     
+    const nameSuffix = puzzle.name ? ` ${puzzle.name}` : '';
     if (result.isPerfectGame) {
       // Perfect: "Budget Bracket #X 🟩🟩🟩🟩🟩\nPerfect Producer! 🏆 • 5/5 correct • 17s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`;
+      shareText = `Budget Bracket #${puzzle.puzzleNumber}${nameSuffix} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`;
     } else if (correctAnswers === 0) {
       // Lost: "Budget Bracket #X 🟥🟥🟥🟥🟥\nWhomp, whomp 🎺 • 0/5 correct • 13s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`;
+      shareText = `Budget Bracket #${puzzle.puzzleNumber}${nameSuffix} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`;
     } else {
       // Partial: "Budget Bracket #X 🟩🟩🟥🟩🟩\n4/5 correct • 13s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`;
+      shareText = `Budget Bracket #${puzzle.puzzleNumber}${nameSuffix} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`;
     }
     
     const shareUrl = `${this.config.baseUrl}/game/${this.config.gameSlug}`;

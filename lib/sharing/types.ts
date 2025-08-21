@@ -43,6 +43,7 @@ export interface BudgetBracketShareData {
   }>;
   puzzle: {
     puzzleNumber: number;
+    name?: string | null;
   };
   result: {
     isPerfectGame: boolean;

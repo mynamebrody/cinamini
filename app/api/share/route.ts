@@ -101,7 +101,7 @@ async function generateBudgetBracketServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('budget_bracket_puzzles')
-    .select('puzzle_date, puzzle_number')
+    .select('puzzle_date, puzzle_number, name')
     .eq('id', puzzleId)
     .single()
   
@@ -111,11 +111,12 @@ async function generateBudgetBracketServerShare(
 
   // Use the puzzle_number field from the database
   const puzzleNumber = puzzle.puzzle_number
+  const puzzleName: string | null = (puzzle as any).name ?? null
 
   // Fetch user game if authenticated  
   let gameData = {
     rounds: [],
-    puzzle: { puzzleNumber },
+    puzzle: { puzzleNumber, name: puzzleName },
     result: { isPerfectGame: false, totalDurationMs: 0, roundsCompleted: 0 }
   }
   
@@ -134,7 +135,7 @@ async function generateBudgetBracketServerShare(
           correct: choice.correct || false,
           timeMs: choice.time_taken_ms || 0
         })),
-        puzzle: { puzzleNumber },
+        puzzle: { puzzleNumber, name: puzzleName },
         result: {
           isPerfectGame: game.is_perfect_game,
           totalDurationMs: game.total_duration_ms || 0,

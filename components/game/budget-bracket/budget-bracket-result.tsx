@@ -36,6 +36,7 @@ interface PuzzleData {
   puzzle_date: string
   puzzle_number: number
   seed_value: string
+  name?: string | null
   pairs: PuzzlePair[]
   has_played: boolean
 }
@@ -71,6 +72,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   const [allRoundsData, setAllRoundsData] = useState<any[]>([])
   const [loadingAnswers, setLoadingAnswers] = useState(true)
   const [showCelebration, setShowCelebration] = useState(false)
+  
+  const puzzleName = puzzle.name || null
   
   const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
   
@@ -138,12 +141,13 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     const pattern = generateSharePattern(choices)
     const timeText = formatGameTime(result.total_duration_ms)
     
+    const nameSuffix = puzzle.name ? ` ${puzzle.name}` : ''
     if (result.is_perfect_game) {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
+      return `Budget Bracket #${puzzle.puzzle_number}${nameSuffix} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
     } else if (correctAnswers === 0) {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
+      return `Budget Bracket #${puzzle.puzzle_number}${nameSuffix} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
     } else {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`
+      return `Budget Bracket #${puzzle.puzzle_number}${nameSuffix} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`
     }
   }
 
@@ -365,6 +369,9 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   </>
                 )}
               </CardTitle>
+              {puzzleName && (
+                <div className="mt-1 text-sm text-muted-foreground">{puzzleName}</div>
+              )}
             </motion.div>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -149,6 +149,11 @@ function validateBudgetBracketPuzzle(data: any): string | null {
     return 'pairs must be an array'
   }
   
+  // name is optional but must be a string if provided
+  if (data.name !== undefined && data.name !== null && typeof data.name !== 'string') {
+    return 'name must be a string if provided'
+  }
+  
   // puzzle_date can be null for drafts
   if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
     return 'puzzle_date must be a string or null'

@@ -33,6 +33,7 @@ export interface BudgetBracketPuzzle {
   id: number;
   puzzle_date: string;
   seed_value: string;
+  name?: string | null;
   pairs: MoviePair[];
   difficulty_progression: number[]; // Target difficulty ratios for each round
 }
