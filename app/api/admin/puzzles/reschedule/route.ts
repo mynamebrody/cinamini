@@ -39,9 +39,14 @@ export async function POST(request: Request) {
     
     if (newDate) {
       const tableName = `${gameType}_puzzles`
+      // Select appropriate columns based on game type
+      const columns = gameType === 'budget_bracket' 
+        ? 'id, puzzle_date, name, pairs'
+        : 'id, puzzle_date, film_title'
+      
       const { data: existing } = await serviceSupabase
         .from(tableName)
-        .select('id, puzzle_date, film_title')
+        .select(columns)
         .eq('puzzle_date', newDate)
         .single()
 
@@ -53,9 +58,14 @@ export async function POST(request: Request) {
 
     // Get the current puzzle details first
     const tableName = `${gameType}_puzzles`
+    // Select appropriate columns based on game type
+    const columns = gameType === 'budget_bracket' 
+      ? 'id, puzzle_date, name, pairs'
+      : 'id, puzzle_date, film_title'
+    
     const { data: currentPuzzle, error: fetchError } = await serviceSupabase
       .from(tableName)
-      .select('id, puzzle_date, film_title')
+      .select(columns)
       .eq('id', puzzleId)
       .single()
 
