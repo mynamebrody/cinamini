@@ -332,6 +332,7 @@ interface BudgetBracketEditorProps {
 
 export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzleId }: BudgetBracketEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
+  const [puzzleName, setPuzzleName] = useState("")
   const [moviePairs, setMoviePairs] = useState<MoviePair[]>(
     Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null }))
   )
@@ -451,6 +452,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       
       // Load puzzle fields
       setPuzzleDate(puzzleData.puzzle_date || "")
+      setPuzzleName(puzzleData.name || "")
       setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
       
       // Parse and load movie pairs
@@ -1390,6 +1392,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Step 4: Create puzzle data with hydrated pairs
       const puzzleData = {
         puzzle_date: puzzleDate || null,
+        name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
         pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
@@ -1427,6 +1430,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Only reset form for new puzzles, not updates
       if (!isEditMode) {
         setPuzzleDate("")
+        setPuzzleName("")
         setMoviePairs(Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null })))
         setIsPublished(false)
       }
@@ -1500,8 +1504,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         </p>
       </div>
 
-      {/* Date and Status */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Date, Name, and Status */}
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="puzzle-date">Puzzle Date</Label>
           <Input
@@ -1509,6 +1513,17 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
             type="date"
             value={puzzleDate}
             onChange={(e) => handleDateChange(e.target.value)}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="puzzle-name">Puzzle Name (Optional)</Label>
+          <Input
+            id="puzzle-name"
+            type="text"
+            placeholder="e.g., 'Blockbuster Battle'"
+            value={puzzleName}
+            onChange={(e) => setPuzzleName(e.target.value)}
           />
         </div>
         
