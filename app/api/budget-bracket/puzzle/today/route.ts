@@ -342,6 +342,7 @@ function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBefore: b
     id: puzzle.id,
     puzzle_date: puzzle.puzzle_date,
     puzzle_number: puzzle.puzzle_number,
+    name: puzzle.name, // Include optional name
     seed_value: puzzle.seed_value,
     pairs,
     has_played: !!existingGame,

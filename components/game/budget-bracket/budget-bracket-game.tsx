@@ -36,6 +36,7 @@ interface PuzzleData {
   id: number
   puzzle_date: string
   puzzle_number: number
+  name?: string
   seed_value: string
   pairs: PuzzlePair[]
   has_played: boolean
@@ -414,6 +415,7 @@ export default function BudgetBracketGame() {
         gameId="budget-bracket"
         gameName="Budget Bracket"
         puzzleNumber={puzzle?.puzzle_number}
+        puzzleName={puzzle?.name}
         puzzleDate={puzzle?.puzzle_date}
         backgroundColor="#278646"
         logo="/cinamini/games/BudgetBracketPoster.svg"

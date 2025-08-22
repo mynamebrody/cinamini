@@ -126,11 +126,12 @@ function DroppableEmptySlot({
 }
 
 // Draggable MovieCard component
-function DraggableMovieCard({ movie, dragId, onRemove, recentlyUsedMoviesMap }: { 
+function DraggableMovieCard({ movie, dragId, onRemove, recentlyUsedMoviesMap, budgetStatus }: { 
   movie: Movie, 
   dragId: string, 
   onRemove: () => void,
-  recentlyUsedMoviesMap?: Map<number, {date: string, isFuture: boolean}>
+  recentlyUsedMoviesMap?: Map<number, {date: string, isFuture: boolean}>,
+  budgetStatus?: 'winner' | 'loser' | null
 }) {
   const {
     attributes,
@@ -158,8 +159,11 @@ function DraggableMovieCard({ movie, dragId, onRemove, recentlyUsedMoviesMap }: 
       {...listeners}
     >
       <div className={cn(
-        "bg-white rounded-lg border border-gray-200 p-2 h-full transition-all duration-200",
-        isDragging ? "shadow-lg border-cinema-red" : "hover:shadow-md"
+        "bg-white rounded-lg p-2 h-full transition-all duration-200",
+        isDragging ? "shadow-lg border-cinema-red border-2" : "hover:shadow-md",
+        budgetStatus === 'winner' ? "border-2 border-green-500" : 
+        budgetStatus === 'loser' ? "border-2 border-red-500" :
+        "border border-gray-200"
       )}>
         <div className="flex gap-2">
           {movie.poster_path ? (
@@ -254,6 +258,34 @@ function DraggableRound({
     transition,
   }
 
+  // Calculate budget comparison for visual indicators
+  const getBudgetComparison = () => {
+    if (!pair.movieA || !pair.movieB || !pair.movieA.budget || !pair.movieB.budget) {
+      return { movieAStatus: null, movieBStatus: null, budgetDifference: null }
+    }
+
+    const budgetA = pair.movieA.budget
+    const budgetB = pair.movieB.budget
+    
+    if (budgetA > budgetB) {
+      return {
+        movieAStatus: 'winner' as const,
+        movieBStatus: 'loser' as const,
+        budgetDifference: budgetA - budgetB
+      }
+    } else if (budgetB > budgetA) {
+      return {
+        movieAStatus: 'loser' as const,
+        movieBStatus: 'winner' as const,
+        budgetDifference: budgetB - budgetA
+      }
+    } else {
+      return { movieAStatus: null, movieBStatus: null, budgetDifference: 0 }
+    }
+  }
+
+  const { movieAStatus, movieBStatus, budgetDifference } = getBudgetComparison()
+
   return (
     <div
       ref={setNodeRef}
@@ -284,6 +316,7 @@ function DraggableRound({
                 dragId={`movie-${pairIndex}-A`}
                 onRemove={() => onRemoveMovie(pairIndex, "A")}
                 recentlyUsedMoviesMap={recentlyUsedMoviesMap}
+                budgetStatus={movieAStatus}
               />
             ) : (
               <DroppableEmptySlot 
@@ -307,6 +340,7 @@ function DraggableRound({
                 dragId={`movie-${pairIndex}-B`}
                 onRemove={() => onRemoveMovie(pairIndex, "B")}
                 recentlyUsedMoviesMap={recentlyUsedMoviesMap}
+                budgetStatus={movieBStatus}
               />
             ) : (
               <DroppableEmptySlot 
@@ -317,6 +351,26 @@ function DraggableRound({
               />
             )}
           </div>
+          
+          {/* Budget Difference Display */}
+          {budgetDifference !== null && budgetDifference > 0 && (
+            <div className="flex-shrink-0 ml-4 text-xs">
+              <div className="bg-gray-50 border border-gray-200 rounded p-2 min-w-[140px]">
+                <div className="text-gray-600 font-medium mb-1">Budget Difference:</div>
+                <div className="font-mono text-sm">
+                  ${Math.max(pair.movieA?.budget || 0, pair.movieB?.budget || 0).toLocaleString()}
+                </div>
+                <div className="text-gray-500">minus</div>
+                <div className="font-mono text-sm">
+                  ${Math.min(pair.movieA?.budget || 0, pair.movieB?.budget || 0).toLocaleString()}
+                </div>
+                <hr className="my-1 border-gray-300" />
+                <div className="font-bold text-green-600">
+                  = ${budgetDifference.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>
@@ -332,6 +386,7 @@ interface BudgetBracketEditorProps {
 
 export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzleId }: BudgetBracketEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
+  const [puzzleName, setPuzzleName] = useState("")
   const [moviePairs, setMoviePairs] = useState<MoviePair[]>(
     Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null }))
   )
@@ -451,6 +506,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       
       // Load puzzle fields
       setPuzzleDate(puzzleData.puzzle_date || "")
+      setPuzzleName(puzzleData.name || "")
       setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
       
       // Parse and load movie pairs
@@ -1390,6 +1446,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Step 4: Create puzzle data with hydrated pairs
       const puzzleData = {
         puzzle_date: puzzleDate || null,
+        name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
         pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
@@ -1427,6 +1484,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Only reset form for new puzzles, not updates
       if (!isEditMode) {
         setPuzzleDate("")
+        setPuzzleName("")
         setMoviePairs(Array(TOTAL_PAIRS).fill(null).map(() => ({ movieA: null, movieB: null })))
         setIsPublished(false)
       }
@@ -1500,8 +1558,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         </p>
       </div>
 
-      {/* Date and Status */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Date, Name, and Status */}
+      <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <Label htmlFor="puzzle-date">Puzzle Date</Label>
           <Input
@@ -1509,6 +1567,17 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
             type="date"
             value={puzzleDate}
             onChange={(e) => handleDateChange(e.target.value)}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="puzzle-name">Puzzle Name (Optional)</Label>
+          <Input
+            id="puzzle-name"
+            type="text"
+            placeholder="e.g., 'Blockbuster Battle'"
+            value={puzzleName}
+            onChange={(e) => setPuzzleName(e.target.value)}
           />
         </div>
         
