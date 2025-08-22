@@ -82,7 +82,7 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
         return puzzle.name
       }
       
-      // Otherwise, fall back to showing first movie
+      // Otherwise, use fallback logic to show first movie
       if (puzzle.pairs) {
         try {
           const pairs = typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs) : puzzle.pairs
