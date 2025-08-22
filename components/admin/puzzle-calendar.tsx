@@ -20,6 +20,7 @@ interface Puzzle {
   difficulty_level?: number
   created_at: string
   pairs?: any // For Budget Bracket puzzles
+  name?: string // Optional name for Budget Bracket puzzles
 }
 
 interface PuzzleCalendarProps {
@@ -75,15 +76,23 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
 
   // Get display text for Budget Bracket puzzles
   const getDisplayText = () => {
-    if (puzzle.game_type === 'budget_bracket' && puzzle.pairs) {
-      try {
-        const pairs = typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs) : puzzle.pairs
-        if (pairs && pairs.length > 0 && pairs[0].movies && pairs[0].movies.length > 0) {
-          const firstMovie = pairs[0].movies[0].title
-          return `R1A: ${firstMovie}`
+    if (puzzle.game_type === 'budget_bracket') {
+      // If puzzle has a custom name, show it
+      if (puzzle.name) {
+        return puzzle.name
+      }
+      
+      // Otherwise, use fallback logic to show first movie
+      if (puzzle.pairs) {
+        try {
+          const pairs = typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs) : puzzle.pairs
+          if (pairs && pairs.length > 0 && pairs[0].movies && pairs[0].movies.length > 0) {
+            const firstMovie = pairs[0].movies[0].title
+            return `R1A: ${firstMovie}`
+          }
+        } catch (error) {
+          console.error('Error parsing Budget Bracket pairs:', error)
         }
-      } catch (error) {
-        console.error('Error parsing Budget Bracket pairs:', error)
       }
     }
     return puzzle.film_title

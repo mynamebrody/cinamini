@@ -24,6 +24,7 @@ interface PuzzlePair {
 interface PuzzleData {
   id: number
   puzzle_date: string
+  name?: string
   seed_value: string
   pairs: PuzzlePair[]
   has_played: boolean
@@ -245,10 +246,16 @@ export default function BudgetBracketRound({
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring" }}
+          className="space-y-1"
         >
           <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border border-[rgb(var(--silver))]">
             🎬 Round {round} of 5 🏢
           </Badge>
+          {puzzle.name && (
+            <p className="text-sm text-muted-foreground font-medium">
+              {puzzle.name}
+            </p>
+          )}
         </motion.div>
         
         {/* Progress indicator */}

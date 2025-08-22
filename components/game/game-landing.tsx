@@ -10,6 +10,7 @@ interface GameLandingProps {
   gameId: string
   gameName: string
   puzzleNumber?: number
+  puzzleName?: string
   puzzleDate?: string
   backgroundColor: string
   emoji?: string
@@ -24,6 +25,7 @@ export function GameLanding({
   gameId,
   gameName,
   puzzleNumber,
+  puzzleName,
   puzzleDate,
   backgroundColor,
   emoji,
@@ -107,11 +109,16 @@ export function GameLanding({
             {gameName}
           </h1>
 
-          {/* Puzzle number */}
+          {/* Puzzle number and name */}
           {puzzleNumber && (
-            <p className={`${textColorSecondary} text-lg md:text-xl font-funnel mb-8 md:mb-12`}>
-              Puzzle #{puzzleNumber}
-            </p>
+            <div className={`${textColorSecondary} text-lg md:text-xl font-funnel mb-8 md:mb-12`}>
+              <p>Puzzle #{puzzleNumber}</p>
+              {puzzleName && (
+                <p className="text-base md:text-lg mt-1 font-medium">
+                  {puzzleName}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Game-specific instructions */}

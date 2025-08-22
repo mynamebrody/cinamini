@@ -23,15 +23,21 @@ export class BudgetBracketShareGenerator implements ShareGenerator {
     
     let shareText: string;
     
+    // Create the title with optional name on separate lines
+    const baseTitle = `Budget Bracket #${puzzle.puzzleNumber}`;
+    const titleWithName = puzzle.name 
+      ? `${baseTitle}\n${puzzle.name}\n${pattern}`
+      : `${baseTitle} ${pattern}`;
+    
     if (result.isPerfectGame) {
-      // Perfect: "Budget Bracket #X 🟩🟩🟩🟩🟩\nPerfect Producer! 🏆 • 5/5 correct • 17s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`;
+      // Perfect: "Budget Bracket #X\nNAME\n🟩🟩🟩🟩🟩\nPerfect Producer! 🏆 • 5/5 correct • 17s"
+      shareText = `${titleWithName}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`;
     } else if (correctAnswers === 0) {
-      // Lost: "Budget Bracket #X 🟥🟥🟥🟥🟥\nWhomp, whomp 🎺 • 0/5 correct • 13s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`;
+      // Lost: "Budget Bracket #X\nNAME\n🟥🟥🟥🟥🟥\nWhomp, whomp 🎺 • 0/5 correct • 13s"
+      shareText = `${titleWithName}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`;
     } else {
-      // Partial: "Budget Bracket #X 🟩🟩🟥🟩🟩\n4/5 correct • 13s"
-      shareText = `Budget Bracket #${puzzle.puzzleNumber} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`;
+      // Partial: "Budget Bracket #X\nNAME\n🟩🟩🟥🟩🟩\n4/5 correct • 13s"
+      shareText = `${titleWithName}\n${correctAnswers}/5 correct • ${timeText}`;
     }
     
     const shareUrl = `${this.config.baseUrl}/game/${this.config.gameSlug}`;

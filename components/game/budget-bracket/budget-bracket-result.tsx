@@ -35,6 +35,7 @@ interface PuzzleData {
   id: number
   puzzle_date: string
   puzzle_number: number
+  name?: string
   seed_value: string
   pairs: PuzzlePair[]
   has_played: boolean
@@ -138,12 +139,18 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
     const pattern = generateSharePattern(choices)
     const timeText = formatGameTime(result.total_duration_ms)
     
+    // Create the title with optional name on separate lines
+    const baseTitle = `Budget Bracket #${puzzle.puzzle_number}`;
+    const titleWithName = puzzle.name 
+      ? `${baseTitle}\n${puzzle.name}\n${pattern}`
+      : `${baseTitle} ${pattern}`;
+    
     if (result.is_perfect_game) {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
+      return `${titleWithName}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
     } else if (correctAnswers === 0) {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
+      return `${titleWithName}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
     } else {
-      return `Budget Bracket #${puzzle.puzzle_number} ${pattern}\n${correctAnswers}/5 correct • ${timeText}`
+      return `${titleWithName}\n${correctAnswers}/5 correct • ${timeText}`
     }
   }
 
@@ -321,6 +328,23 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
       </AnimatePresence>
 
       {/* Result Header */}
+      {/* Puzzle Info Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="text-center mb-4"
+      >
+        <div className="text-lg font-bold text-gray-800">
+          Budget Bracket #{puzzle.puzzle_number}
+          {puzzle.name && (
+            <span className="block text-base font-medium text-gray-600 mt-1">
+              {puzzle.name}
+            </span>
+          )}
+        </div>
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -460,30 +484,49 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                     ? centralizedShareText
                     : generateFallbackShareText()
                   
-                  const lines = text.split('\n')
-                  const firstLine = lines[0] || ''
-                  const secondLine = lines[1] || ''
+                  const lines = text.split('\n').filter(line => line.trim() !== '')
                   
-                  // Parse first line to extract title and emoji pattern
-                  const titleMatch = firstLine.match(/^(.*?#\d+)\s+(.*)$/)
-                  if (titleMatch) {
-                    const gameTitle = titleMatch[1] // "Budget Bracket #12"
-                    const emojiPattern = titleMatch[2] // "🟩🟥🟩🟥"
+                  if (lines.length >= 3) {
+                    // Multi-line format: Budget Bracket #X, [Name], Pattern, Results
+                    const gameTitle = lines[0] // "Budget Bracket #15"
                     
-                    return (
-                      <>
-                        <p className="font-mono text-lg mb-2">{gameTitle}</p>
-                        <p className="font-mono text-2xl mb-2">{emojiPattern}</p>
-                        <p className="text-sm text-muted-foreground font-medium">{secondLine}</p>
-                      </>
-                    )
+                    // Check if second line is a puzzle name (not emoji pattern)
+                    const isSecondLineName = lines[1] && !lines[1].includes('🟩') && !lines[1].includes('🟥')
+                    
+                    if (isSecondLineName && lines.length >= 4) {
+                      // Has puzzle name: Title, Name, Pattern, Results
+                      const puzzleName = lines[1]
+                      const pattern = lines[2]
+                      const results = lines[3]
+                      
+                      return (
+                        <>
+                          <p className="font-mono text-lg mb-1">{gameTitle}</p>
+                          <p className="font-mono text-base mb-2 text-muted-foreground">{puzzleName}</p>
+                          <p className="font-mono text-2xl mb-2">{pattern}</p>
+                          <p className="text-sm text-muted-foreground font-medium">{results}</p>
+                        </>
+                      )
+                    } else {
+                      // No puzzle name: Title, Pattern, Results
+                      const pattern = lines[1]
+                      const results = lines[2]
+                      
+                      return (
+                        <>
+                          <p className="font-mono text-lg mb-2">{gameTitle}</p>
+                          <p className="font-mono text-2xl mb-2">{pattern}</p>
+                          <p className="text-sm text-muted-foreground font-medium">{results}</p>
+                        </>
+                      )
+                    }
                   }
                   
-                  // Fallback if parsing fails
+                  // Fallback for unexpected format
                   return (
                     <>
-                      <p className="font-mono text-lg mb-1">{firstLine}</p>
-                      <p className="text-sm text-muted-foreground">{secondLine}</p>
+                      <p className="font-mono text-lg mb-1">{lines[0] || ''}</p>
+                      {lines[1] && <p className="text-sm text-muted-foreground">{lines[1]}</p>}
                     </>
                   )
                 })()}
