@@ -789,3 +789,5 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
     </DndContext>
   )
 }
+
+export default PuzzleCalendar
