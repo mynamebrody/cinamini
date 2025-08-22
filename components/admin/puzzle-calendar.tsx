@@ -20,6 +20,7 @@ interface Puzzle {
   difficulty_level?: number
   created_at: string
   pairs?: any // For Budget Bracket puzzles
+  name?: string | null
 }
 
 interface PuzzleCalendarProps {
@@ -75,7 +76,11 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
 
   // Get display text for Budget Bracket puzzles
   const getDisplayText = () => {
-    if (puzzle.game_type === 'budget_bracket' && puzzle.pairs) {
+    if (puzzle.game_type === 'budget_bracket') {
+      if (puzzle.name && puzzle.name.trim().length > 0) {
+        return puzzle.name
+      }
+      if (puzzle.pairs) {
       try {
         const pairs = typeof puzzle.pairs === 'string' ? JSON.parse(puzzle.pairs) : puzzle.pairs
         if (pairs && pairs.length > 0 && pairs[0].movies && pairs[0].movies.length > 0) {
