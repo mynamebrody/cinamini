@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { CalendarDays, AlertCircle, TrendingUp, Package, Film, DollarSign, Gamepad2, ImageIcon } from "lucide-react"
-import { PuzzleCalendar } from "@/components/admin/puzzle-calendar"
+import PuzzleCalendar from "@/components/admin/puzzle-calendar"
 import { PuzzleDetailDialog } from "@/components/admin/puzzle-detail-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
