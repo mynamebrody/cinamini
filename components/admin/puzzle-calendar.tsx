@@ -202,7 +202,7 @@ function DroppableDate({ date, puzzles, onAddPuzzle, onPuzzleClick }: { date: Da
   )
 }
 
-export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAddPuzzle }: PuzzleCalendarProps) {
+function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAddPuzzle }: PuzzleCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [puzzles, setPuzzles] = useState<{ scheduled: Puzzle[]; drafts: Puzzle[] }>({ scheduled: [], drafts: [] })
