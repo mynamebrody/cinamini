@@ -25,9 +25,14 @@ export default async function StatsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // If no user, redirect to anonymous stats
+  // If no user, redirect to sign-up
   if (!user) {
-    redirect("/stats/anonymous")
+    redirect("/auth/sign-up")
+  }
+
+  // If user is anonymous, redirect to sign-up to upgrade account
+  if (user.is_anonymous) {
+    redirect("/auth/sign-up")
   }
 
   return (
