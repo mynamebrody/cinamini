@@ -22,7 +22,7 @@ export default function Terms() {
         
         <div className="prose prose-neutral max-w-none">
           <p className="text-sm text-neutral-500 mb-8">
-            Last updated: August 17, 2025
+            Last updated: August 23, 2025
           </p>
 
           <section className="mb-8">
