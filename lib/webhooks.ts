@@ -44,14 +44,18 @@ export type GuessWebhookPayload = {
 
 export async function sendGuessWebhook(request: NextRequest, payload: Omit<GuessWebhookPayload, "timestamp" | "device">) {
   const url = process.env.CINAMINI_GUESS_WEBHOOK_URL
+  
+  // Only send webhooks in production environment
   if (process.env.NODE_ENV !== "production") {
-    console.log("📡 WEBHOOK: sendGuessWebhook called", {
+    console.log("📡 WEBHOOK: Development environment - webhook not sent", {
       hasUrl: !!url,
-      url: url,
       game: payload.game,
-      isAuthenticated: payload.user.isAuthenticated
+      isAuthenticated: payload.user.isAuthenticated,
+      userId: payload.user.id
     })
+    return
   }
+  
   if (!url) {
     console.log("📡 WEBHOOK: No webhook URL found, exiting")
     return
@@ -76,8 +80,17 @@ export async function sendGuessWebhook(request: NextRequest, payload: Omit<Guess
   }
   
   const clientIP = getClientIP(request)
+  
+  // Make email optional based on environment variable
+  const includeEmail = process.env.CINAMINI_WEBHOOK_INCLUDE_EMAIL !== 'false'
+  const userPayload = {
+    ...payload.user,
+    email: includeEmail ? payload.user.email : undefined
+  }
+  
   const finalPayload: GuessWebhookPayload = {
     ...payload,
+    user: userPayload,
     timestamp: new Date().toISOString(),
     device: {
       userAgent: ua,
