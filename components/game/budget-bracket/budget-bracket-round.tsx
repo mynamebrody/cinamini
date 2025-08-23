@@ -187,7 +187,7 @@ export default function BudgetBracketRound({
     // Call the parent with the choice (after showing feedback)
     setTimeout(() => {
       onChoice(chosenTmdbId, timeTaken)
-    }, 1000)
+    }, 800)
   }
 
   const formatBudget = (budget: number, isEstimated: boolean) => {
