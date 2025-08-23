@@ -54,12 +54,34 @@ export default function Terms() {
             <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
               User Accounts
             </h2>
-            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
-              <li>You must provide accurate information when creating an account</li>
-              <li>You are responsible for maintaining the security of your account</li>
-              <li>You must be at least 13 years old to create an account</li>
-              <li>One account per person</li>
-            </ul>
+            <p className="text-neutral-700 mb-4">
+              cinamini offers two types of user accounts:
+            </p>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-2">Anonymous Accounts</h3>
+              <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+                <li>Automatically created when you start playing games</li>
+                <li>Allow you to save progress and track statistics</li>
+                <li>Do not require personal information</li>
+                <li>Can be upgraded to permanent accounts at any time</li>
+                <li>May be subject to automatic cleanup after extended inactivity</li>
+              </ul>
+            </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-neutral-800 mb-2">Permanent Accounts</h3>
+              <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+                <li>Created by providing an email address and password</li>
+                <li>You must provide accurate information when creating an account</li>
+                <li>You are responsible for maintaining the security of your account</li>
+                <li>You must be at least 13 years old to create an account</li>
+                <li>One account per person</li>
+                <li>Preserve your game progress and statistics permanently</li>
+                <li>Allow access to additional features like profile customization</li>
+              </ul>
+            </div>
+            <p className="text-neutral-700">
+              When upgrading from an anonymous account to a permanent account, your existing game progress and statistics will be preserved and transferred to your new permanent account.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -185,10 +207,15 @@ export default function Terms() {
             <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
               Termination
             </h2>
-            <p className="text-neutral-700">
-              We may suspend or terminate accounts that violate these terms. You may delete 
-              your account at any time by reaching out to support.
+            <p className="text-neutral-700 mb-4">
+              We may suspend or terminate accounts that violate these terms.
             </p>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2">
+              <li>Anonymous accounts may be automatically cleaned up after extended periods of inactivity</li>
+              <li>Permanent account holders may delete their account at any time by contacting support</li>
+              <li>Upon account termination, associated game progress and statistics will be permanently deleted</li>
+              <li>We recommend upgrading to a permanent account to ensure your progress is preserved</li>
+            </ul>
           </section>
 
           <section className="mb-8">

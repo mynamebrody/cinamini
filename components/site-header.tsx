@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { LogOut, Settings, User, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
-import { localGameStorage } from "@/lib/local-game-storage"
 import Image from "next/image"
 
 interface SiteHeaderProps {
@@ -16,10 +15,11 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
   const [streakCount, setStreakCount] = useState(0)
 
   useEffect(() => {
-    if (!user) {
+    if (user?.is_anonymous) {
       // Show streak count for anonymous users as a nudge
-      const stats = localGameStorage.getStats()
-      setStreakCount(stats.streakData.current)
+      // Anonymous users now have their stats in the database, so we could fetch them
+      // For now, we'll remove this nudge since anonymous users are treated as authenticated
+      setStreakCount(0)
     }
   }, [user])
 
@@ -48,7 +48,7 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
 
           {/* Navigation items */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {user && !user.is_anonymous ? (
               <>
                 <Button asChild variant="ghost" size="sm">
                   <a href="/profile" className="flex items-center space-x-2">

@@ -2,13 +2,15 @@
 
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
 import Link from "next/link"
 import { signUp } from "@/lib/actions"
+import { createClient } from "@/lib/supabase/client"
 
-function SubmitButton() {
+function SubmitButton({ isAnonymous }: { isAnonymous: boolean }) {
   const { pending } = useFormStatus()
 
   return (
@@ -22,10 +24,10 @@ function SubmitButton() {
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Signing up...
+          {isAnonymous ? "Upgrading..." : "Signing up..."}
         </>
       ) : (
-        "Sign Up"
+        isAnonymous ? "Upgrade Account" : "Sign Up"
       )}
     </Button>
   )
@@ -34,12 +36,36 @@ function SubmitButton() {
 export default function SignUpForm() {
   // Initialize with null as the initial state
   const [state, formAction] = useActionState(signUp, null)
+  const [isAnonymous, setIsAnonymous] = useState(false)
+
+  useEffect(() => {
+    const checkAnonymousStatus = async () => {
+      const supabase = createClient()
+      if (!supabase) return
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.is_anonymous) {
+        setIsAnonymous(true)
+      }
+    }
+
+    checkAnonymousStatus()
+  }, [])
 
   return (
     <div className="w-full max-w-md space-y-8">
       <div className="space-y-2 text-center">
-        <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">Create an account</h1>
-        <p className="text-lg text-neutral-600">Sign up to get started</p>
+        <h1 className="font-funnel-display-bold text-4xl font-bold tracking-tight text-neutral-900">
+          {isAnonymous ? "Upgrade your account" : "Create an account"}
+        </h1>
+        <p className="text-lg text-neutral-600">
+          {isAnonymous ? "Save your progress forever" : "Sign up to get started"}
+        </p>
+        {isAnonymous && (
+          <p className="text-sm text-cinema-red bg-red-50 border border-red-200 px-3 py-2 rounded-lg mt-2">
+            Your anonymous progress will be preserved when you upgrade to a full account.
+          </p>
+        )}
       </div>
 
       <form action={formAction} className="space-y-6">
@@ -81,7 +107,7 @@ export default function SignUpForm() {
           </div>
         </div>
 
-        <SubmitButton />
+        <SubmitButton isAnonymous={isAnonymous} />
 
         <div className="text-center text-neutral-600">
           Already have an account?{" "}

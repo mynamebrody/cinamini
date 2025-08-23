@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
 
     const isAnonymous = user.is_anonymous === true
     
+    // Parse request body
+    const body = await request.json()
+    const { puzzleId, guessFilmId, solveTimeMs } = body
+    
     if (!puzzleId || !guessFilmId || solveTimeMs === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }

@@ -10,7 +10,6 @@ import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import confetti from "canvas-confetti"
 import { useGameMode } from "@/hooks/use-game-mode"
-import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import PosterPixelsSearch from "./poster-pixels-search"
@@ -144,151 +143,74 @@ export default function PosterPixelsGame() {
 
   const loadTodaysPuzzle = async () => {
     try {
-      if (isAnonymous) {
-        const localResult = localGameStorage.getTodayResult('poster-pixels')
-        const response = await fetch("/api/poster-pixels/puzzle/today")
-        const data = await response.json()
+      // Load puzzle (works for both anonymous and authenticated users)
+      const response = await fetch("/api/poster-pixels/puzzle/today")
+      const data = await response.json()
 
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to load puzzle")
-        }
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to load puzzle")
+      }
 
-        const initialIndex = 0
-        const rehydrated = localResult?.result
-        const wonFromStorage = rehydrated?.won || false
-        const clarityFromStorage = rehydrated?.clarityLevel ?? getClarityPercentForIndex(initialIndex)
-        const timeFromStorage = rehydrated?.timeElapsed ?? 0
-        const guessesFromStorage = rehydrated?.guesses || []
-        const scoreFromStorage = rehydrated?.finalScore ?? (wonFromStorage ? getScoreForClarityPercent(Math.round(clarityFromStorage)) : 0)
+      const initialIndex = 0
+      const wonFromDb = !!(data.hasPlayedToday && data.previousGame?.won)
+      const clarityFromDb = data.previousGame?.final_clarity_level ?? getClarityPercentForIndex(initialIndex)
+      const timeFromDb = data.previousGame?.total_time_ms ?? 0
+      const guessesFromDb = data.previousGame?.guesses || []
+      const scoreFromDb = wonFromDb ? getScoreForClarityPercent(Math.round(clarityFromDb)) : 0
 
-        setState(prev => ({
-          ...prev,
-          puzzle: data.puzzle,
-          hasPlayedToday: localResult !== null,
-          won: wonFromStorage,
-          timeElapsed: timeFromStorage,
-          clarityLevel: clarityFromStorage,
-          currentLevelIndex: initialIndex,
-          guesses: guessesFromStorage,
-          finalScore: scoreFromStorage,
-        }))
+      setState(prev => ({
+        ...prev,
+        puzzle: data.puzzle,
+        hasPlayedToday: data.hasPlayedToday,
+        won: wonFromDb,
+        timeElapsed: timeFromDb,
+        clarityLevel: clarityFromDb,
+        currentLevelIndex: initialIndex,
+        guesses: guessesFromDb,
+        finalScore: scoreFromDb,
+      }))
 
-        if (localResult) {
-          // Restore the saved game state for display
-          setState(prev => ({
-            ...prev,
-            finalScore: localResult.result?.finalScore || 0,
-            timeElapsed: localResult.result?.timeElapsed || 0,
-            clarityLevel: localResult.result?.clarityLevel || 90,
-          }))
-          setTotalGameTime(Math.floor((localResult.result?.timeElapsed || 0) / 1000))
-          setGameState('completed')
-          setShowResults(true) // Show results immediately for completed games
-          
-          // Trigger celebration confetti if they won
-          if (localResult.result?.won) {
+      if (data.hasPlayedToday) {
+        // Set the total game time for display
+        setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
+        setGameState('completed')
+        setShowResults(true) // Show results immediately for completed games
+        
+        // Trigger celebration confetti if they won
+        if (data.previousGame?.won) {
+          setTimeout(() => {
+            confetti({ 
+              particleCount: 150, 
+              spread: 70, 
+              origin: { y: 0.6 },
+              colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+            })
+            
+            // Add more confetti bursts
             setTimeout(() => {
               confetti({ 
-                particleCount: 150, 
-                spread: 70, 
-                origin: { y: 0.6 },
-                colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+                particleCount: 100, 
+                spread: 60, 
+                origin: { y: 0.7, x: 0.3 }
               })
-              
-              // Add more confetti bursts
-              setTimeout(() => {
-                confetti({ 
-                  particleCount: 100, 
-                  spread: 60, 
-                  origin: { y: 0.7, x: 0.3 }
-                })
-              }, 200)
-              
-              setTimeout(() => {
-                confetti({ 
-                  particleCount: 100, 
-                  spread: 60, 
-                  origin: { y: 0.7, x: 0.7 }
-                })
-              }, 400)
-            }, 500)
-          }
-        } else {
-          const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
-          setGameState('ready')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
+            }, 200)
+            
+            setTimeout(() => {
+              confetti({ 
+                particleCount: 100, 
+                spread: 60, 
+                origin: { y: 0.7, x: 0.7 }
+              })
+            }, 400)
+          }, 500)
         }
       } else {
-        const response = await fetch("/api/poster-pixels/puzzle/today")
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to load puzzle")
-        }
-
-        const initialIndex = 0
-        const wonFromDb = !!(data.hasPlayedToday && data.previousGame?.won)
-        const clarityFromDb = data.previousGame?.final_clarity_level ?? getClarityPercentForIndex(initialIndex)
-        const timeFromDb = data.previousGame?.total_time_ms ?? 0
-        const guessesFromDb = data.previousGame?.guesses || []
-        const scoreFromDb = wonFromDb ? getScoreForClarityPercent(Math.round(clarityFromDb)) : 0
-
-        setState(prev => ({
-          ...prev,
-          puzzle: data.puzzle,
-          hasPlayedToday: data.hasPlayedToday,
-          won: wonFromDb,
-          timeElapsed: timeFromDb,
-          clarityLevel: clarityFromDb,
-          currentLevelIndex: initialIndex,
-          guesses: guessesFromDb,
-          finalScore: scoreFromDb,
-        }))
-
-        if (data.hasPlayedToday) {
-          // Set the total game time for display
-          setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
-          setGameState('completed')
-          setShowResults(true) // Show results immediately for completed games
-          
-          // Trigger celebration confetti if they won
-          if (data.previousGame?.won) {
-            setTimeout(() => {
-              confetti({ 
-                particleCount: 150, 
-                spread: 70, 
-                origin: { y: 0.6 },
-                colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
-              })
-              
-              // Add more confetti bursts
-              setTimeout(() => {
-                confetti({ 
-                  particleCount: 100, 
-                  spread: 60, 
-                  origin: { y: 0.7, x: 0.3 }
-                })
-              }, 200)
-              
-              setTimeout(() => {
-                confetti({ 
-                  particleCount: 100, 
-                  spread: 60, 
-                  origin: { y: 0.7, x: 0.7 }
-                })
-              }, 400)
-            }, 500)
-          }
-        } else {
-          setGameState('ready')
-          
-          // Show how-to-play modal only if they've never seen the tutorial
-          const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
+        setGameState('ready')
+        
+        // Show how-to-play modal only if they've never seen the tutorial
+        const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
+        if (!hasSeenTutorial) {
+          setModalState('howtoplay')
         }
       }
     } catch (error) {
@@ -504,18 +426,8 @@ export default function PosterPixelsGame() {
     }
     
     try {
-      if (isAnonymous) {
-        const anonymousResult = {
-          won,
-          timeElapsed: totalTimeMs,
-          clarityLevel: finalClarityLevel,
-          guesses: finalGuesses,
-          puzzleId: state.puzzle!.id,
-          movieTitle: state.puzzle!.movie_data?.title || state.puzzle!.film_title,
-          finalScore: score,
-        }
-        localGameStorage.saveDailyResult('poster-pixels', anonymousResult)
-      } else if (state.gameId) {
+      // Complete game (works for both anonymous and authenticated users)
+      if (state.gameId) {
         await fetch("/api/poster-pixels/complete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -607,38 +519,26 @@ export default function PosterPixelsGame() {
     setGameStartTime(Date.now())
 
     try {
-      if (isAnonymous) {
-        setState(prev => ({
-          ...prev,
-          gameId: `anonymous-${Date.now()}`,
-          gameStarted: true,
-          timeElapsed: 0,
-          clarityLevel: getClarityPercentForIndex(0),
-          currentLevelIndex: 0,
-          guesses: [],
-        }))
-        setGameState('playing')
-      } else {
-        const response = await fetch("/api/poster-pixels/start", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ puzzle_id: state.puzzle!.id }),
-        })
-        const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to start game")
-        }
-        setState(prev => ({
-          ...prev,
-          gameId: data.gameId,
-          gameStarted: true,
-          timeElapsed: 0,
-          clarityLevel: getClarityPercentForIndex(0),
-          currentLevelIndex: 0,
-          guesses: [],
-        }))
-        setGameState('playing')
+      // Start game (works for both anonymous and authenticated users)
+      const response = await fetch("/api/poster-pixels/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ puzzle_id: state.puzzle!.id }),
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to start game")
       }
+      setState(prev => ({
+        ...prev,
+        gameId: data.gameId,
+        gameStarted: true,
+        timeElapsed: 0,
+        clarityLevel: getClarityPercentForIndex(0),
+        currentLevelIndex: 0,
+        guesses: [],
+      }))
+      setGameState('playing')
     } catch (error) {
       console.error("Error starting game:", error)
       setState(prev => ({

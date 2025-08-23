@@ -18,8 +18,9 @@ export default async function LoginPage() {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // If user is logged in, redirect to home page
-  if (session) {
+  // If user is logged in (but not anonymous), redirect to home page
+  // Anonymous users should be able to access login to upgrade their account
+  if (session && !session.user.is_anonymous) {
     redirect("/")
   }
 

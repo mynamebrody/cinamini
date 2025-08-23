@@ -15,11 +15,11 @@ export default async function SignUpPage() {
   // Check if user is already logged in
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  // If user is logged in, redirect to home page
-  if (session) {
+  // If user is logged in but not anonymous, redirect to home page
+  if (user && !user.is_anonymous) {
     redirect("/")
   }
 

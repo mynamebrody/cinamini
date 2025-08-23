@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useGameMode } from "@/hooks/use-game-mode"
-import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { Button } from "@/components/ui/button"
@@ -129,7 +128,7 @@ export default function CastClimbGame() {
   
   // Generate centralized share text when result is available
   useEffect(() => {
-    if (result && puzzle && userGuesses.length > 0) {
+    if (result && puzzle && userGuesses?.length > 0) {
       fetchShare().catch((error) => {
         console.log('Centralized sharing failed for Cast Climb:', error)
         // Fallback handled by using result.share_text
@@ -163,100 +162,68 @@ export default function CastClimbGame() {
       }
       
       const data = await response.json()
+      
+      // Validate puzzle data on client side
+      if (!data.puzzle || !data.puzzle.actors || !Array.isArray(data.puzzle.actors) || data.puzzle.actors.length === 0) {
+        throw new Error("Invalid puzzle data received - missing or empty actors array")
+      }
+      
       setPuzzle(data.puzzle)
       
-      // Check if already played today
-      if (isAnonymous) {
-        // Check local storage for anonymous users
-        const hasPlayedToday = localGameStorage.hasPlayedToday('cast-climb')
-        if (hasPlayedToday) {
-          const localResult = localGameStorage.getTodayResult('cast-climb')
-          if (localResult?.result) {
-            const savedResult = localResult.result as CastClimbResult
-            setResult(savedResult)
-            setUserGuesses(savedResult.user_guesses || [])
-            setGameState('completed')
-            
-            // Trigger celebration if they won
-            if (savedResult.correct) {
-              setTimeout(() => setShowConfetti(true), 500)
-            }
-          } else {
-            setGameState('ready')
-          }
+      // Check if already played today (works for both anonymous and regular users)
+      if (data.hasPlayed) {
+        // User has completed the game today, show result
+        const userGuesses = data.userGuesses || []
+        setUserGuesses(Array.isArray(userGuesses) ? userGuesses : [])
+        
+        let isWin = false
+        let shareText = ""
+        
+        if (userGuesses?.length > 0) {
+          isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
+          shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
         } else {
-          // Check if this is the user's first time playing
-          const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
-          setGameState('ready')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
+          // No guesses found, but user has played - this shouldn't normally happen
+          console.warn("User has played Cast Climb but no guesses found")
+          shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
         }
-      } else if (user) {
-        // Handle authenticated user states
-        if (data.hasPlayed) {
-          // User has completed the game today, show result
-          const userGuesses = data.userGuesses || []
-          setUserGuesses(userGuesses)
-          
-          let isWin = false
-          let shareText = ""
-          
-          if (userGuesses.length > 0) {
-            isWin = userGuesses.some((g: CastClimbGuess) => g.isCorrect)
-            shareText = generateFallbackShareText(data.puzzle.puzzleNumber, userGuesses, isWin)
-          } else {
-            // No guesses found, but user has played - this shouldn't normally happen
-            console.warn("User has played Cast Climb but no guesses found")
-            shareText = `Cast Climb #${data.puzzle.puzzleNumber} ❌❌❌❌`
-          }
-          
-          // Set up result state
-          setResult({
-            correct: isWin,
-            puzzle: data.puzzle,
-            user_guesses: userGuesses,
-            stats: {
-              games_played: 0, // Will be filled by stats API
-              games_won: 0,
-              current_streak: 0,
-              longest_streak: 0,
-              perfect_games: 0,
-              average_actors_revealed: 0
-            },
-            share_text: shareText
-          })
-          setGameState("completed")
-          
-          // Trigger celebration if they won
-          if (isWin) {
-            setTimeout(() => setShowConfetti(true), 500)
-          }
-        } else if (data.hasStarted) {
-          // User has started but not completed the game, resume from where they left off
-          const userGuesses = data.userGuesses || []
-          setUserGuesses(userGuesses)
-          setRevealedIndex(data.lastActorsRevealed - 1) // Convert to 0-based index
-          setGameState("playing")
-          setStartTime(Date.now()) // Reset timer for resumed game
-          
-          // Don't show how-to-play modal when resuming
-          setModalState("none")
-        } else {
-          // User hasn't started the game today
-          setGameState("ready")
-          
-          // Show how-to-play modal only if they've never seen the tutorial
-          const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
-          if (!hasSeenTutorial) {
-            setModalState("howtoplay")
-          }
+        
+        // Set up result state
+        setResult({
+          correct: isWin,
+          puzzle: data.puzzle,
+          user_guesses: userGuesses,
+          stats: {
+            games_played: 0, // Will be filled by stats API
+            games_won: 0,
+            current_streak: 0,
+            longest_streak: 0,
+            perfect_games: 0,
+            average_actors_revealed: 0
+          },
+          share_text: shareText
+        })
+        setGameState("completed")
+        
+        // Trigger celebration if they won
+        if (isWin) {
+          setTimeout(() => setShowConfetti(true), 500)
         }
+      } else if (data.hasStarted) {
+        // User has started but not completed the game, resume from where they left off
+        const userGuesses = data.userGuesses || []
+        setUserGuesses(Array.isArray(userGuesses) ? userGuesses : [])
+        setRevealedIndex(data.lastActorsRevealed - 1) // Convert to 0-based index
+        setGameState("playing")
+        setStartTime(Date.now()) // Reset timer for resumed game
+        
+        // Don't show how-to-play modal when resuming
+        setModalState("none")
       } else {
-        // Anonymous user
+        // User hasn't started the game today
         setGameState("ready")
         
-        // Check if this is the user's first time playing
+        // Show how-to-play modal only if they've never seen the tutorial
         const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
         if (!hasSeenTutorial) {
           setModalState("howtoplay")
@@ -294,124 +261,48 @@ export default function CastClimbGame() {
     const studioTimeMs = Date.now() - startTime
 
     try {
-      if (isAnonymous) {
-        // For anonymous users, call API to trigger webhook but handle game logic locally
-        const response = await fetch("/api/cast-climb/guess", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            puzzleId: puzzle.id,
-            guessFilmId: movie.id,
-            guessFilmTitle: movie.title,
-            guessFilmYear: movie.releaseYear,
-            actorsRevealed,
-            solveTimeMs,
-            isSkip: false
-          })
-        })
-        
-        // We don't check response.ok for anonymous users since they may get a 401
-        // Just continue with local logic
-        
-        const isCorrect = movie.id === puzzle.filmId
-        
-        const newGuess: CastClimbGuess = {
-          id: Date.now().toString(),
+      // Submit to server (works for both anonymous and authenticated users)
+      const response = await fetch("/api/cast-climb/guess", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          puzzleId: puzzle.id,
           guessFilmId: movie.id,
           guessFilmTitle: movie.title,
-          guessFilmYear: movie.releaseYear || null,
-          isCorrect,
+          guessFilmYear: movie.releaseYear,
           actorsRevealed,
           solveTimeMs,
-          attemptNumber: userGuesses.length + 1,
-          createdAt: new Date().toISOString()
-        }
-        
-        const newGuesses = [...userGuesses, newGuess]
-        setUserGuesses(newGuesses)
-        
-        const isGameCompleted = isCorrect || newGuesses.length >= puzzle.totalActors
-        
-        if (isGameCompleted) {
-          // Game is completed - create result and save locally
-          const studioTimeMs = Date.now() - startTime
-          const anonymousResult: CastClimbResult = {
-            correct: isCorrect,
-            puzzle,
-            user_guesses: newGuesses,
-            stats: {
-              games_played: localGameStorage.getGameResults('cast-climb').length + 1,
-              games_won: isCorrect ? 1 : 0,
-              current_streak: localGameStorage.getStats().streakData.current,
-              longest_streak: localGameStorage.getStats().streakData.longest,
-              perfect_games: isCorrect && newGuesses.length === 1 ? 1 : 0,
-              average_actors_revealed: actorsRevealed
-            },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, isCorrect, studioTimeMs),
-            game_completed: true,
-            studio_time_ms: studioTimeMs
-          }
-          
-          // Save to local storage
-          localGameStorage.saveDailyResult('cast-climb', anonymousResult)
-          
-          setResult(anonymousResult)
-          setGameState("completed")
-          
-          // Trigger celebration if won
-          if (isCorrect) {
-            setTimeout(() => setShowConfetti(true), 500)
-          }
-        } else if (!isCorrect) {
-          // Wrong guess but can continue - reveal next actor
-          setRevealedIndex(revealedIndex + 1)
-        }
-      } else {
-        // For authenticated users, submit to server
-        const response = await fetch("/api/cast-climb/guess", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            puzzleId: puzzle.id,
-            guessFilmId: movie.id,
-            guessFilmTitle: movie.title,
-            guessFilmYear: movie.releaseYear,
-            actorsRevealed,
-            solveTimeMs,
-            studioTimeMs
-          })
+          studioTimeMs
         })
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to submit guess")
-        }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit guess")
+      }
 
-        const data: CastClimbResult = await response.json()
-        const isCorrect = data.correct
-        const newGuesses = data.user_guesses
-        const isGameCompleted = data.game_completed
+      const data: CastClimbResult = await response.json()
+      const isCorrect = data.correct
+      const newGuesses = data.user_guesses
+      const isGameCompleted = data.game_completed
+      
+      // Update user guesses - ensure it's always an array
+      setUserGuesses(Array.isArray(newGuesses) ? newGuesses : [])
+
+      if (isGameCompleted) {
+        // Game is completed (either correct or max attempts reached)
+        setResult(data)
+        setGameState("completed")
         
-        // Update user guesses
-        setUserGuesses(newGuesses)
-
-        if (isGameCompleted) {
-          // Game is completed (either correct or max attempts reached)
-          setResult(data)
-          setGameState("completed")
-          
-          // Trigger celebration if won
-          if (isCorrect) {
-            setTimeout(() => setShowConfetti(true), 500)
-          }
-        } else if (!isCorrect) {
-          // Wrong guess but can continue - reveal next actor
-          setRevealedIndex(revealedIndex + 1)
+        // Trigger celebration if won
+        if (isCorrect) {
+          setTimeout(() => setShowConfetti(true), 500)
         }
+      } else if (!isCorrect) {
+        // Wrong guess but can continue - reveal next actor
+        setRevealedIndex(revealedIndex + 1)
       }
     } catch (err) {
       console.error("Error submitting guess:", err)
@@ -431,121 +322,48 @@ export default function CastClimbGame() {
     const studioTimeMs = Date.now() - startTime
 
     try {
-      if (isAnonymous) {
-        // For anonymous users, call the API to trigger webhooks, then handle locally
-        try {
-          await fetch("/api/cast-climb/guess", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              puzzleId: puzzle.id,
-              guessFilmId: -1,
-              guessFilmTitle: "_NEXT_HINT_SKIP_",
-              guessFilmYear: "Unknown",
-              actorsRevealed,
-              solveTimeMs,
-              isSkip: true
-            })
-          })
-          // API call succeeds or fails, we continue with local logic
-        } catch (webhookError) {
-          console.warn("Webhook call failed for anonymous skip:", webhookError)
-          // Continue with local logic even if webhook fails
-        }
-        
-        // Handle hint skipping locally
-        const newGuess: CastClimbGuess = {
-          id: Date.now().toString(),
-          guessFilmId: -1,
-          guessFilmTitle: "_NEXT_HINT_SKIP_",
-          guessFilmYear: "Unknown",
-          isCorrect: false,
+      // Submit to server (works for both anonymous and authenticated users)
+      const invalidMovie = {
+        id: -1,
+        title: "_NEXT_HINT_SKIP_",
+        releaseYear: "Unknown"
+      }
+      
+      const response = await fetch("/api/cast-climb/guess", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          puzzleId: puzzle.id,
+          guessFilmId: invalidMovie.id,
+          guessFilmTitle: invalidMovie.title,
+          guessFilmYear: invalidMovie.releaseYear,
           actorsRevealed,
           solveTimeMs,
-          attemptNumber: userGuesses.length + 1,
-          createdAt: new Date().toISOString()
-        }
-        
-        const newGuesses = [...userGuesses, newGuess]
-        setUserGuesses(newGuesses)
-        
-        const isGameCompleted = newGuesses.length >= puzzle.totalActors
-        
-        if (isGameCompleted) {
-          // Game is completed - reached max attempts without correct guess
-          const studioTimeMs = Date.now() - startTime
-          const anonymousResult: CastClimbResult = {
-            correct: false,
-            puzzle,
-            user_guesses: newGuesses,
-            stats: {
-              games_played: localGameStorage.getGameResults('cast-climb').length + 1,
-              games_won: 0,
-              current_streak: 0, // Streak broken
-              longest_streak: localGameStorage.getStats().streakData.longest,
-              perfect_games: 0,
-              average_actors_revealed: actorsRevealed
-            },
-            share_text: generateFallbackShareText(puzzle.puzzleNumber, newGuesses, false, studioTimeMs),
-            game_completed: true,
-            studio_time_ms: studioTimeMs
-          }
-          
-          // Save to local storage
-          localGameStorage.saveDailyResult('cast-climb', anonymousResult)
-          
-          setResult(anonymousResult)
-          setGameState("completed")
-        } else {
-          // Reveal next actor since this was a skip
-          setRevealedIndex(revealedIndex + 1)
-        }
-      } else {
-        // For authenticated users, submit to server
-        const invalidMovie = {
-          id: -1,
-          title: "_NEXT_HINT_SKIP_",
-          releaseYear: "Unknown"
-        }
-        
-        const response = await fetch("/api/cast-climb/guess", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            puzzleId: puzzle.id,
-            guessFilmId: invalidMovie.id,
-            guessFilmTitle: invalidMovie.title,
-            guessFilmYear: invalidMovie.releaseYear,
-            actorsRevealed,
-            solveTimeMs,
-            studioTimeMs
-          })
+          studioTimeMs
         })
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || "Failed to submit hint skip")
-        }
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit hint skip")
+      }
 
-        const data = await response.json()
-        const isGameCompleted = data.game_completed
-        const newGuesses = data.user_guesses
-        
-        // Update user guesses
-        setUserGuesses(newGuesses)
+      const data = await response.json()
+      const isGameCompleted = data.game_completed
+      const newGuesses = data.user_guesses
+      
+      // Update user guesses - ensure it's always an array
+      setUserGuesses(Array.isArray(newGuesses) ? newGuesses : [])
 
-        if (isGameCompleted) {
-          // Game is completed (reached max attempts)
-          setResult(data)
-          setGameState("completed")
-        } else {
-          // Reveal next actor since this was a skip
-          setRevealedIndex(revealedIndex + 1)
-        }
+      if (isGameCompleted) {
+        // Game is completed (reached max attempts)
+        setResult(data)
+        setGameState("completed")
+      } else {
+        // Reveal next actor since this was a skip
+        setRevealedIndex(revealedIndex + 1)
       }
     } catch (err) {
       console.error("Error skipping to next hint:", err)
@@ -562,116 +380,43 @@ export default function CastClimbGame() {
     setIsGuessing(true)
     
     try {
-      if (isAnonymous) {
-        // For anonymous users, call API to trigger webhook, then handle give up locally
-        try {
-          await fetch("/api/cast-climb/guess", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              puzzleId: puzzle.id,
-              guessFilmId: -1,
-              guessFilmTitle: "_GIVE_UP_",
-              guessFilmYear: "Unknown",
-              actorsRevealed: revealedIndex + 1,
-              solveTimeMs: Date.now() - startTime,
-              isSkip: true
-            })
-          })
-          // API call succeeds or fails, we continue with local logic
-        } catch (webhookError) {
-          console.warn("Webhook call failed for anonymous give up:", webhookError)
-          // Continue with local logic even if webhook fails
-        }
+      // Submit to API (works for both anonymous and authenticated users)
+      const currentGuessCount = userGuesses?.length || 0
+      const maxAttempts = puzzle.totalActors || 4
+      const emptyGuessesNeeded = Math.max(1, maxAttempts - currentGuessCount) // Ensure at least 1 request
+      
+      // Submit empty guesses to fill up to max attempts
+      for (let i = 0; i < emptyGuessesNeeded; i++) {
+        const actorsRevealed = Math.min(revealedIndex + 1 + i, maxAttempts)
+        const solveTimeMs = Date.now() - startTime
+        const studioTimeMs = Date.now() - startTime
         
-        // Handle give up locally
-        const currentGuessCount = userGuesses.length
-        const maxAttempts = puzzle.totalActors || 4
-        
-        // Create empty guesses to fill up to max attempts
-        const giveUpGuesses: CastClimbGuess[] = []
-        for (let i = currentGuessCount; i < maxAttempts; i++) {
-          giveUpGuesses.push({
-            id: `giveup-${i}`,
+        const response = await fetch("/api/cast-climb/guess", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            puzzleId: puzzle.id,
             guessFilmId: -1,
             guessFilmTitle: "_GIVE_UP_",
             guessFilmYear: null,
-            isCorrect: false,
-            actorsRevealed: i + 1,
-            solveTimeMs: Date.now() - startTime,
-            attemptNumber: i + 1,
-            createdAt: new Date().toISOString()
+            actorsRevealed,
+            solveTimeMs,
+            studioTimeMs
           })
-        }
-        
-        const allGuesses = [...userGuesses, ...giveUpGuesses]
-        
-        // Create the result for anonymous users
-        const studioTimeMs = Date.now() - startTime
-        const anonymousResult: CastClimbResult = {
-          correct: false,
-          puzzle,
-          user_guesses: allGuesses,
-          stats: {
-            games_played: localGameStorage.getGameResults('cast-climb').length + 1,
-            games_won: 0,
-            current_streak: 0,
-            longest_streak: localGameStorage.getStats().streakData.longest,
-            perfect_games: 0,
-            average_actors_revealed: maxAttempts
-          },
-          share_text: generateFallbackShareText(puzzle.puzzleNumber, allGuesses, false, studioTimeMs),
-          game_completed: true,
-          studio_time_ms: studioTimeMs
-        }
-        
-        // Save to local storage
-        localGameStorage.saveDailyResult('cast-climb', anonymousResult)
-        
-        setResult(anonymousResult)
-        setUserGuesses(allGuesses)
-        setGameState("completed")
-      } else {
-        // For authenticated users, submit to API
-        const currentGuessCount = userGuesses.length
-        const maxAttempts = puzzle.totalActors || 4
-        const emptyGuessesNeeded = Math.max(1, maxAttempts - currentGuessCount) // Ensure at least 1 request
-        
-        // Submit empty guesses to fill up to max attempts
-        for (let i = 0; i < emptyGuessesNeeded; i++) {
-          const actorsRevealed = Math.min(revealedIndex + 1 + i, maxAttempts)
-          const solveTimeMs = Date.now() - startTime
-          const studioTimeMs = Date.now() - startTime
-          
-          const response = await fetch("/api/cast-climb/guess", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              puzzleId: puzzle.id,
-              guessFilmId: -1,
-              guessFilmTitle: "_GIVE_UP_",
-              guessFilmYear: null,
-              actorsRevealed,
-              solveTimeMs,
-              studioTimeMs
-            })
-          })
+        })
 
-          if (!response.ok) {
-            throw new Error("Failed to submit give up")
-          }
-          
-          // Only get the final result from the last API call
-          if (i === emptyGuessesNeeded - 1) {
-            const data: CastClimbResult = await response.json()
-            setResult(data)
-            setUserGuesses(data.user_guesses)
-            setGameState("completed")
-          }
+        if (!response.ok) {
+          throw new Error("Failed to submit give up")
+        }
+        
+        // Only get the final result from the last API call
+        if (i === emptyGuessesNeeded - 1) {
+          const data: CastClimbResult = await response.json()
+          setResult(data)
+          setUserGuesses(Array.isArray(data.user_guesses) ? data.user_guesses : [])
+          setGameState("completed")
         }
       }
     } catch (err) {
@@ -704,8 +449,10 @@ export default function CastClimbGame() {
 
   // Helper function to generate CastClimbShareData
   const generateShareData = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): CastClimbShareData => {
+    // Ensure guesses is always an array
+    const safeGuesses = Array.isArray(guesses) ? guesses : []
     return {
-      guesses: guesses.map((guess, index) => ({
+      guesses: safeGuesses.map((guess, index) => ({
         isCorrect: guess.isCorrect,
         actorsRevealed: guess.actorsRevealed,
         attemptNumber: guess.attemptNumber || index + 1
@@ -715,7 +462,7 @@ export default function CastClimbGame() {
       },
       result: {
         isWin,
-        totalGuesses: guesses.length
+        totalGuesses: safeGuesses.length
       }
     }
   }
@@ -743,6 +490,8 @@ export default function CastClimbGame() {
   
   // Fallback share text generation (matches centralized format)
   const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean, studioTimeMs?: number): string => {
+    // Ensure guesses is always an array
+    const safeGuesses = Array.isArray(guesses) ? guesses : []
     const ACTORS_TO_SHOW = 4
     let pattern = ''
     let resultText = ''
@@ -752,15 +501,15 @@ export default function CastClimbGame() {
       // - Wrong attempts shown as person emojis 🧑 (one per wrong guess before the win)
       // - Then a ✅ when correct
       // - Then remaining reveals as 🎭 until 4 total reveals
-      const wrongAttemptsBeforeWin = Math.max(0, guesses.length - 1)
-      const remainingActors = Math.max(0, ACTORS_TO_SHOW - guesses.length)
+      const wrongAttemptsBeforeWin = Math.max(0, safeGuesses.length - 1)
+      const remainingActors = Math.max(0, ACTORS_TO_SHOW - safeGuesses.length)
 
       pattern = '🧑'.repeat(wrongAttemptsBeforeWin) + '✅' + '🎭'.repeat(remainingActors)
 
-      if (guesses.length === 1) {
+      if (safeGuesses.length === 1) {
         resultText = '\nGot the 🎬 on the first try! 🥇'
       } else {
-        resultText = `\nGot the 🎬 in ${guesses.length} guesses`
+        resultText = `\nGot the 🎬 in ${safeGuesses.length} guesses`
       }
     } else {
       // Loss pattern: four faces then a red X
@@ -820,7 +569,7 @@ export default function CastClimbGame() {
         title="Cast Climb" 
         onHelpClick={showHowToPlay}
       >
-        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
+        {(gameState === 'ready' || gameState === 'completed') && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>
@@ -962,7 +711,7 @@ export default function CastClimbGame() {
 
         {/* Ready state is now handled by the landing page above */}
 
-        {gameState === "playing" && puzzle && (
+        {gameState === "playing" && puzzle && puzzle.actors && (
           <div className="max-w-6xl mx-auto space-y-6">
             {/* Studio Timer */}
             <div className="text-center text-muted-foreground">
@@ -977,9 +726,9 @@ export default function CastClimbGame() {
               <div className="order-2 lg:order-1">
                 <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
                   <CastClimbProgress
-                    totalActors={puzzle.actors.length}
+                    totalActors={puzzle.actors?.length || 4}
                     revealedIndex={revealedIndex}
-                    userGuesses={userGuesses}
+                    userGuesses={userGuesses || []}
                     gameCompleted={false}
                     className="lg:sticky lg:top-20"
                     actors={puzzle.actors}
@@ -993,8 +742,8 @@ export default function CastClimbGame() {
               <CardHeader className="text-center">
                 <CardTitle>Cast Climb #{puzzle.puzzleNumber}</CardTitle>
                 <p className="text-muted-foreground">
-                  Actor {revealedIndex + 1} of {puzzle.actors.length}
-                  {userGuesses.length > 0 && ` • ${userGuesses.length} guess${userGuesses.length !== 1 ? 'es' : ''}`}
+                  Actor {revealedIndex + 1} of {puzzle.actors?.length || 4}
+                  {(userGuesses?.length || 0) > 0 && ` • ${userGuesses?.length || 0} guess${(userGuesses?.length || 0) !== 1 ? 'es' : ''}`}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1029,11 +778,11 @@ export default function CastClimbGame() {
                 </div>
 
                 {/* Show previous wrong guesses */}
-                {userGuesses.length > 0 && (
+                {(userGuesses?.length || 0) > 0 && (
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-muted-foreground">Previous guesses:</p>
                     <div className="space-y-1">
-                      {userGuesses.map((guess) => (
+                      {userGuesses?.map((guess) => (
                         <div key={guess.id} className="text-sm">
                           <span className="text-red-500 font-medium">
                             ❌ {guess.guessFilmTitle === "_NEXT_HINT_SKIP_" ? (
@@ -1058,17 +807,17 @@ export default function CastClimbGame() {
                   placeholder="Start typing a movie title..."
                   disabled={isGuessing}
                   excludeMovieIds={userGuesses
-                    .filter(g => g.guessFilmId && g.guessFilmId > 0)
-                    .map(g => g.guessFilmId)}
+                    ?.filter(g => g.guessFilmId && g.guessFilmId > 0)
+                    .map(g => g.guessFilmId) || []}
                 />
                 <div className="space-y-2">
                   <Button
                     variant="ghost"
                     className="w-full bg-[#99251d] text-white border border-[#99251d] hover:bg-white hover:text-[#99251d] hover:border-[#99251d] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]"
-                    onClick={revealedIndex >= puzzle.actors.length - 1 ? handleGiveUp : handleNextHint}
+                    onClick={revealedIndex >= (puzzle.actors?.length || 4) - 1 ? handleGiveUp : handleNextHint}
                     disabled={isGuessing}
                   >
-                    {revealedIndex >= puzzle.actors.length - 1 ? "Give Up" : "Skip Guess (Next Hint)"}
+                    {revealedIndex >= (puzzle.actors?.length || 4) - 1 ? "Give Up" : "Skip Guess (Next Hint)"}
                   </Button>
                 </div>
                 </CardContent>
@@ -1078,7 +827,7 @@ export default function CastClimbGame() {
           </div>
         )}
 
-        {gameState === "completed" && result && puzzle && (
+        {gameState === "completed" && result && puzzle && puzzle.actors && (
           <div className="max-w-4xl mx-auto space-y-4">
             <div className="max-w-md mx-auto space-y-4">
             <Card>
@@ -1151,7 +900,7 @@ export default function CastClimbGame() {
                 <div className="bg-muted rounded-lg p-4">
                   <h3 className="font-semibold mb-3">Cast</h3>
                   <div className="space-y-2 text-left">
-                    {puzzle.actors.map((actor, index) => (
+                    {puzzle.actors?.map((actor, index) => (
                       <div key={index} className="flex justify-between items-center">
                         <span className="font-medium">{actor.name}</span>
                         <span className="text-sm text-muted-foreground">as {actor.character}</span>
@@ -1170,7 +919,13 @@ export default function CastClimbGame() {
                   {(() => {
                     const shareText = (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
                       ? result.share_text 
-                      : (centralizedShareText || result.share_text)
+                      : (centralizedShareText || result.share_text || '')
+                    
+                    // Add null safety check before splitting
+                    if (!shareText) {
+                      return <p className="text-muted-foreground">Share text not available</p>
+                    }
+                    
                     const lines = shareText.split('\n')
                     const firstLine = lines[0] || ''
                     const remainingLines = lines.slice(1)
@@ -1211,7 +966,7 @@ export default function CastClimbGame() {
                     // This fixes the bug where winning on 4th attempt shows as loss
                     (result.correct && centralizedShareText && centralizedShareText.includes("Wasn't able")) 
                       ? result.share_text 
-                      : (centralizedShareText || result.share_text)
+                      : (centralizedShareText || result.share_text || '')
                   }
                   shareUrl="https://cinamini.app/game/cast-climb"
                 />
@@ -1221,9 +976,9 @@ export default function CastClimbGame() {
             {/* Progress Visualization - moved below results */}
             <div className="shadow-3d-grey bg-white border border-[rgb(var(--silver))] p-4" style={{ borderRadius: 0 }}>
               <CastClimbProgress
-                totalActors={puzzle.actors.length}
-                revealedIndex={puzzle.actors.length - 1}
-                userGuesses={result.user_guesses}
+                totalActors={puzzle.actors?.length || 4}
+                revealedIndex={(puzzle.actors?.length || 4) - 1}
+                userGuesses={result.user_guesses || []}
                 gameCompleted={true}
                 isCorrect={result.correct}
                 actors={puzzle.actors}

@@ -30,6 +30,11 @@ export default async function ProfilePage({
     redirect("/auth/login")
   }
 
+  // If user is anonymous, redirect to sign-up to upgrade account
+  if (user.is_anonymous) {
+    redirect("/auth/sign-up")
+  }
+
   // Check if email was just confirmed
   const params = await searchParams
   const emailConfirmed = params.emailConfirmed === 'true'

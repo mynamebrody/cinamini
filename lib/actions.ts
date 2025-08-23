@@ -109,27 +109,16 @@ export async function signUp(prevState: any, formData: FormData) {
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?confirmed=true`
     
     if (isAnonymous) {
-      // Link anonymous account to permanent account
+      // Convert anonymous account to permanent account with email/password
       const { error } = await supabase.auth.updateUser({
         email: email.toString(),
         password: password.toString(),
+      }, {
+        emailRedirectTo: redirectTo,
       })
 
       if (error) {
         return { error: error.message }
-      }
-
-      // Send confirmation email
-      const { error: emailError } = await supabase.auth.resend({
-        type: 'signup',
-        email: email.toString(),
-        options: {
-          emailRedirectTo: redirectTo,
-        }
-      })
-
-      if (emailError) {
-        return { error: emailError.message }
       }
 
       return { success: "Check your email to confirm your account. Your anonymous progress has been preserved." }
