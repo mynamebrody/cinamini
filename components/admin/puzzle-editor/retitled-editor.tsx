@@ -195,9 +195,11 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
       
-      // Set country name from the library
-      const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
-      setCountryName(autoCountryName)
+      // Only auto-populate country name when creating new puzzles, not when editing existing ones
+      if (!isEditMode) {
+        const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
+        setCountryName(autoCountryName)
+      }
       
       // Translate the title to English
       const translateTitle = async () => {
@@ -226,7 +228,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       
       translateTitle()
     }
-  }, [selectedTitle])
+  }, [selectedTitle, isEditMode])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
