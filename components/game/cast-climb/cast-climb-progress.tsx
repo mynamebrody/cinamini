@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 interface CastClimbProgressProps {
   totalActors: number
   revealedIndex: number
-  userGuesses: any[]
+  userGuesses?: any[]
   gameCompleted: boolean
   isCorrect?: boolean
   className?: string
@@ -16,7 +16,7 @@ interface CastClimbProgressProps {
 export function CastClimbProgress({
   totalActors,
   revealedIndex,
-  userGuesses,
+  userGuesses = [],
   gameCompleted,
   isCorrect = false,
   className,
@@ -76,7 +76,7 @@ export function CastClimbProgress({
   }
 
   const getNumberState = (index: number) => {
-    if (gameCompleted && userGuesses.length > 0) {
+    if (gameCompleted && userGuesses && userGuesses.length > 0) {
       if (index < userGuesses.length - 1) {
         return "incorrect" // Failed attempts - show ❌
       } else if (index === userGuesses.length - 1 && isCorrect) {
@@ -86,7 +86,7 @@ export function CastClimbProgress({
       } else {
         return "unused" // Never attempted - show number
       }
-    } else if (gameCompleted && userGuesses.length === 0) {
+    } else if (gameCompleted && (!userGuesses || userGuesses.length === 0)) {
       return "unused" // No attempts made - show numbers
     } else {
       // Game in progress - use same logic as before
@@ -255,11 +255,11 @@ export function CastClimbProgress({
           {gameCompleted ? (
             isCorrect ? (
               <span className="text-green-600">
-                🏆 Climbed to victory in {userGuesses.length} attempt{userGuesses.length !== 1 ? 's' : ''}!
+                🏆 Climbed to victory in {userGuesses?.length || 0} attempt{(userGuesses?.length || 0) !== 1 ? 's' : ''}!
               </span>
             ) : (
               <span className="text-cinema-red">
-                ⛰️ Climb ended after {userGuesses.length} attempt{userGuesses.length !== 1 ? 's' : ''}
+                ⛰️ Climb ended after {userGuesses?.length || 0} attempt{(userGuesses?.length || 0) !== 1 ? 's' : ''}
               </span>
             )
           ) : null}

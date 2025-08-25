@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
     // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
 
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    const isAnonymous = user.is_anonymous === true
+
     const body: SubmitGameRequest = await request.json()
     const { puzzle_id, choices, total_duration_ms } = body
 
@@ -29,52 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request parameters' }, { status: 400 })
     }
 
-    if (!user) {
-      // For anonymous users - only send webhook if not all 5 rounds (to avoid duplicate with round-guess)
-      const roundsCompleted = choices.length
-      const correctRounds = choices.filter(c => c.correct).length
-      const isPerfectGame = correctRounds === 5 && roundsCompleted === 5
-      const finalResult = calculateFinalResult(choices)
-
-      // Only send webhook if this is NOT a full 5-round completion (to avoid duplicating round-guess webhooks)
-      if (roundsCompleted < 5) {
-        sendGuessWebhook(request, {
-        event: 'guess',
-        game: 'budget-bracket',
-        user: { isAuthenticated: false },
-        guess: {
-          puzzleId: puzzle_id,
-          gameType: 'final_summary',
-          choices: choices.map(c => ({
-            round: c.round,
-            chosenMovieTmdbId: c.chosen_movie,
-            timeTakenMs: c.time_taken_ms,
-            correct: c.correct
-          })),
-          totalDurationMs: total_duration_ms,
-          roundsCompleted,
-          correctRounds,
-          isPerfectGame,
-          finalResult
-        },
-        progress: { 
-          roundsCompleted,
-          correctRounds,
-          isPerfectGame,
-          isGameComplete: true,
-          gameEndTime: new Date().toISOString()
-        },
-      }).catch(error => console.error('Webhook error (anonymous final game):', error))
-      }
-
-      return NextResponse.json({
-        message: "Anonymous play - results not saved",
-        anonymous: true,
-        rounds_completed: roundsCompleted,
-        is_perfect_game: isPerfectGame,
-        final_result: finalResult,
-      })
-    }
+    // Keep the anonymous flag for webhook purposes
+    // Anonymous users will now flow through the same database logic as authenticated users
 
     // Get the puzzle data to verify answers (using service client to bypass RLS)
     const { data: puzzle, error: puzzleError } = await supabaseService
@@ -181,7 +143,11 @@ export async function POST(request: NextRequest) {
       sendGuessWebhook(request, {
       event: 'guess',
       game: 'budget-bracket',
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null) 
+      },
       guess: {
         puzzleId: puzzle_id,
         gameType: 'final_summary',

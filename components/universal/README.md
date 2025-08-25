@@ -214,13 +214,33 @@ For each game:
 - [ ] Update game stats display
 - [ ] Add to cross-game navigation
 
+## 📊 Anonymous User Support
+
+The achievement system fully supports anonymous users with local persistence:
+
+- **Anonymous Tracking**: Achievements and progress are tracked locally for anonymous users
+- **Seamless Conversion**: When anonymous users create accounts, their progress can be preserved
+- **Local Storage**: Achievement data is stored in localStorage for anonymous users
+- **Progressive Conversion**: Achievement milestones can trigger conversion prompts
+- **Analytics Integration**: Anonymous achievement events are tracked for analytics
+
+### Anonymous Implementation Notes
+
+```tsx
+// The system automatically detects anonymous users
+const isAnonymous = user?.is_anonymous === true
+
+// Achievement progress is stored locally for anonymous users
+// and can be synced to backend when users create accounts
+```
+
 ## 🔮 Future Enhancements
 
-- Backend synchronization
+- Backend synchronization for authenticated users
 - Social features & leaderboards  
 - Custom achievement creation
-- Advanced analytics
-- Push notifications
+- Advanced analytics integration
+- Push notifications for milestones
 - Achievement sharing cards
 
 ---

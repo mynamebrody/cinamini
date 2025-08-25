@@ -17,7 +17,7 @@ export function useGameMode() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
-        setIsAnonymous(!user)
+        setIsAnonymous(user?.is_anonymous === true)
       } catch (error) {
         console.error('Error checking auth:', error)
         setIsAnonymous(true)
@@ -31,7 +31,7 @@ export function useGameMode() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      setIsAnonymous(!session?.user)
+      setIsAnonymous(session?.user?.is_anonymous === true)
     })
 
     return () => {

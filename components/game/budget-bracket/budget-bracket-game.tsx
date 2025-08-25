@@ -13,7 +13,6 @@ import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { type GameChoice } from "@/lib/budget-bracket-client"
 import { useGameMode } from "@/hooks/use-game-mode"
-import { localGameStorage } from "@/lib/local-game-storage"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
@@ -125,46 +124,15 @@ export default function BudgetBracketGame() {
       const puzzleData: PuzzleData = await response.json()
       setPuzzle(puzzleData)
 
-      // Check if already played today
-      if (isAnonymous) {
-        // Check local storage for anonymous users
-        const hasPlayedToday = localGameStorage.hasPlayedToday('budget-bracket')
-        if (hasPlayedToday) {
-          const localResult = localGameStorage.getTodayResult('budget-bracket')
-          if (localResult?.result) {
-            setGameResult(localResult.result)
-            setGameState('completed')
-          } else {
-            setGameState('ready')
-          }
-        } else {
-          // Check if this is the user's first time playing
-          const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
-          setGameState('ready')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
-        }
-      } else if (user) {
-        // Handle authenticated user states
-        if (puzzleData.has_played) {
-          // Fetch complete game result for authenticated users who have already played
-          await fetchCompletedGameResult(puzzleData.id)
-        } else {
-          // User hasn't played today
-          setGameState('ready')
-          
-          // Show how-to-play modal only if they've never seen the tutorial
-          const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
-          if (!hasSeenTutorial) {
-            setModalState('howtoplay')
-          }
-        }
+      // Check if already played today (works for both anonymous and regular users)
+      if (puzzleData.has_played) {
+        // Fetch complete game result for users who have already played
+        await fetchCompletedGameResult(puzzleData.id)
       } else {
-        // Anonymous user
+        // User hasn't played today
         setGameState('ready')
         
-        // Check if this is the user's first time playing
+        // Show how-to-play modal only if they've never seen the tutorial
         const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
         if (!hasSeenTutorial) {
           setModalState('howtoplay')
@@ -299,7 +267,7 @@ export default function BudgetBracketGame() {
       // Calculate total duration from game start to completion
       const totalDuration = Date.now() - gameStartTime
       
-      console.log('Submitting game:', { isAnonymous, user, choices: choices.length })
+      console.log('Submitting game:', { user: user?.id, choices: choices.length })
 
       // Always call the API to trigger webhooks for both anonymous and authenticated users
       const response = await fetch('/api/budget-bracket/submit-game', {
@@ -319,79 +287,9 @@ export default function BudgetBracketGame() {
 
       const result: GameResult = await response.json()
 
-      if (isAnonymous) {
-        // For anonymous users, also save to local storage and handle the result differently
-        const correctAnswers = choices.filter(choice => choice.correct).length
-        let final_result: string
-        if (correctAnswers === 5) {
-          final_result = 'perfect'
-        } else {
-          final_result = `${correctAnswers}_out_of_5`
-        }
-
-        const revealedPairs = choices.map((choice, index) => {
-          const pair = puzzle!.pairs[index]
-          return {
-            round: choice.round,
-            chosen_movie: choice.chosen_movie,
-            correct: choice.correct,
-            time_taken_ms: choice.time_taken_ms,
-            revealed_budgets: {
-              movieA: { 
-                tmdb_id: pair.movieA.tmdb_id, 
-                title: pair.movieA.title, 
-                budget: 0, // Will be populated by the result component if needed
-                budget_source: 'unknown', 
-                is_estimated: false 
-              },
-              movieB: { 
-                tmdb_id: pair.movieB.tmdb_id, 
-                title: pair.movieB.title, 
-                budget: 0, // Will be populated by the result component if needed
-                budget_source: 'unknown', 
-                is_estimated: false 
-              }
-            },
-            correct_choice: (choice.chosen_movie === pair.movieA.tmdb_id ? 'A' : 'B') as 'A' | 'B',
-            budget_difference: 0, // Will be populated by the result component if needed
-            difficulty_ratio: 1.0
-          }
-        })
-
-        // Create database-compatible structure for easier migration later
-        const anonymousResult: GameResult = {
-          game_id: Date.now(), // Temporary ID for display
-          rounds_completed: 5, // Always 5 rounds now
-          final_result,
-          is_perfect_game: correctAnswers === 5,
-          total_duration_ms: totalDuration,
-          revealed_pairs: revealedPairs,
-          // Database-compatible game data (budget_bracket_games table)
-          game_data: {
-            puzzle_id: puzzle!.id,
-            rounds_completed: 5,
-            final_result,
-            choices: choices, // Already in correct format for jsonb column
-            total_duration_ms: totalDuration,
-            completed_at: new Date().toISOString(),
-          },
-          updated_stats: {
-            current_streak: 1, // Anonymous users start with streak of 1
-            games_played: 1,
-            perfect_games: correctAnswers === 5 ? 1 : 0
-          }
-        }
-
-        // Save to local storage
-        localGameStorage.saveDailyResult('budget-bracket', anonymousResult)
-        
-        setGameResult(anonymousResult)
-        setGameState('completed')
-      } else {
-        // For authenticated users, use the server response directly
-        setGameResult(result)
-        setGameState('completed')
-      }
+      // Use the server response directly (works for both anonymous and authenticated users)
+      setGameResult(result)
+      setGameState('completed')
     } catch (error) {
       console.error('Error submitting game:', error)
       setError('Failed to submit game. Please try again.')
@@ -436,7 +334,7 @@ export default function BudgetBracketGame() {
         title="Budget Bracket" 
         onHelpClick={showHowToPlay}
       >
-        {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
+        {(gameState === 'ready' || gameState === 'completed') && (
           <Button variant="ghost" size="sm" onClick={showStats}>
             <BarChart3 className="w-4 h-4" />
           </Button>

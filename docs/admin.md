@@ -16,10 +16,11 @@
 The cinamini admin system is built with:
 - **Frontend**: Next.js 15 App Router with React 19
 - **UI Components**: shadcn/ui with Radix UI primitives
-- **Authentication**: Supabase Auth with middleware protection
+- **Authentication**: Supabase Auth with middleware protection + Anonymous Authentication
 - **Database**: PostgreSQL via Supabase with Row Level Security (RLS)
 - **External APIs**: TMDB for movie data
 - **State Management**: React hooks with optimistic updates
+- **User Flow**: Anonymous sign-in with progressive conversion to full accounts
 
 ### Key Architectural Decisions
 - Server-side authentication checks in middleware
@@ -109,7 +110,7 @@ The main hub for all administrative functions.
 Single interface for creating puzzles across all games.
 
 **Features:**
-- **Tab-based Interface**: Switch between Retitled, Budget Bracket, and Cast Climb
+- **Tab-based Interface**: Switch between Retitled, Budget Bracket, Cast Climb, and Poster Pixels
 - **Real-time Preview**: See how puzzles appear to players
 - **Draft/Published States**: Save work without making it live
 - **Movie Search Integration**: Advanced search with availability status
@@ -131,6 +132,12 @@ Single interface for creating puzzles across all games.
 - Drag-to-reorder (supporting actors shown first)
 - Fun fact generation
 - Actor profile images
+
+#### Poster Pixels Editor
+- Select movie with poster availability
+- Set clarity levels (5%, 15%, 35%, 65%, 100%)
+- Preview pixelation effects
+- Automatic movie data enrichment
 
 **Key UI Elements:**
 ```typescript
@@ -159,11 +166,11 @@ Comprehensive platform analytics with multiple views.
 - User retention cohorts
 
 **Data Points:**
-- Daily Active Users (DAU)
-- Game completion rates
-- User retention metrics
-- Popular puzzles
-- Geographic distribution
+- Daily Active Users (DAU) including anonymous users
+- Game completion rates across all four games
+- User retention metrics and anonymous conversion rates
+- Popular puzzles and poster clarity preferences
+- Geographic distribution and anonymous user behavior
 
 ### 4. Schedule Management (`/admin/schedule`)
 Visual calendar for puzzle scheduling.
@@ -211,7 +218,7 @@ Advanced movie database search with status tracking.
 // Save any puzzle type
 POST /api/admin/puzzles/save
 Body: {
-  gameType: 'retitled' | 'budget_bracket' | 'cast_climb',
+  gameType: 'retitled' | 'budget_bracket' | 'cast_climb' | 'poster_pixels',
   puzzleData: {
     // Game-specific fields
   }

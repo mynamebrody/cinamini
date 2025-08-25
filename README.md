@@ -2,19 +2,35 @@
 
 > *Snack-size movie challenges, every single day.*
 
-A daily movie puzzle platform featuring multiple games, starting with **Retitled** - a quick, mobile-first game where players identify English films from their localized titles. Daily cinema challenges with spoiler-free sharing.
+A daily movie puzzle platform featuring four complete games: **Retitled** (localized titles), **Budget Bracket** (budget guessing), **Cast Climb** (cast reveals), and **Poster Pixels** (poster clarity). Anonymous play with seamless conversion to full accounts.
 
 ![cinamini Demo](https://via.placeholder.com/800x400/161616/FFFFFF?text=cinamini+Game+Demo)
 
 ## 🎯 Game Concept
 
-**How it works:**
+**Four Daily Games:**
+
+### Retitled 🇪🇸
 1. See a foreign movie title like 🇪🇸 "*Solo en Casa*"
 2. Choose from 4-5 English film options
 3. Get instant feedback with translation tooltip
-4. Share your result with spoiler-free emoji grid
 
-**Example Share:** `cinamini #123 🇪🇸 🟩⬜⬜🟩 https://cinamini.app`
+### Budget Bracket 💰
+1. Compare movie budgets across 5 rounds
+2. Pick which film had the higher budget
+3. Survive all rounds for a perfect score
+
+### Cast Climb 🎬
+1. Reveal actors one by one (supporting→leads)
+2. Guess the movie with progressive hints
+3. Up to 4 attempts with search functionality
+
+### Poster Pixels 🖼️
+1. Start with heavily pixelated poster (5% clarity)
+2. Reveal more clarity or make your guess
+3. 5 clarity levels, score based on when you guess
+
+**Anonymous Play:** Start playing immediately - no sign-up required!
 
 ## 🚀 Quick Start
 
@@ -85,7 +101,7 @@ Seed data (like game definitions) is automatically loaded from `/supabase/seed.s
 - **Frontend**: Next.js 15 + React 19 + Tailwind CSS
 - **Backend**: Next.js API Routes + Supabase
 - **Database**: PostgreSQL (via Supabase)
-- **Authentication**: Supabase Auth
+- **Authentication**: Supabase Auth + Anonymous Sign-in
 - **External APIs**: TMDB (The Movie Database)
 - **UI Components**: shadcn/ui (Radix UI primitives)
 
@@ -93,18 +109,27 @@ Seed data (like game definitions) is automatically loaded from `/supabase/seed.s
 ```
 ├── app/                      # Next.js App Router
 │   ├── auth/                 # Authentication pages
-│   ├── game/                 # Game interface (to be built)
-│   ├── stats/                # User statistics (to be built)
-│   ├── share/[id]/           # Share pages for SEO (to be built)
-│   └── api/                  # API endpoints (to be built)
+│   ├── game/                 # Four complete game interfaces
+│   │   ├── retitled/         # Localized title guessing
+│   │   ├── budget-bracket/   # Budget comparison game
+│   │   ├── cast-climb/       # Cast member guessing  
+│   │   └── poster-pixels/    # Progressive poster clarity
+│   ├── stats/                # Cross-game user statistics
+│   ├── profile/              # User profile management
+│   └── api/                  # Complete API endpoints for all games
 ├── components/               # React components
 │   ├── ui/                   # shadcn/ui components
-│   ├── game/                 # Game-specific components (to be built)
+│   ├── game/                 # Game-specific components (all complete)
+│   ├── auth-provider.tsx     # Anonymous authentication wrapper
 │   └── *.tsx                 # Feature components
+├── hooks/                    # React hooks
+│   ├── use-game-mode.ts      # Anonymous vs authenticated user state
+│   └── useGameShare.ts       # Game sharing utilities
 ├── lib/                      # Utilities and configurations
 │   ├── supabase/             # Database client setup
-│   ├── tmdb/                 # TMDB API utilities (to be built)
-│   ├── game/                 # Game logic (to be built)
+│   ├── sharing/              # Centralized sharing system
+│   ├── game-seeding.ts       # Deterministic daily puzzle generation
+│   ├── webhooks.ts           # Analytics webhook integration
 │   └── actions.ts            # Server actions
 └── supabase/                 # Database migrations and config
 ```
@@ -113,20 +138,30 @@ Seed data (like game definitions) is automatically loaded from `/supabase/seed.s
 
 ### Daily Puzzle Generation
 
-Puzzles are generated daily at 00:01 UTC using a deterministic seed to ensure all players get the same challenge.
+Puzzles are generated daily at 00:01 UTC using deterministic seeding to ensure all players get the same challenge across all four games.
+
+**Current Games:**
+- **Retitled**: Foreign language titles with multiple choice options
+- **Budget Bracket**: Movie budget elimination rounds
+- **Cast Climb**: Progressive cast member reveals with movie search
+- **Poster Pixels**: Progressive poster clarity with 5 difficulty levels
+
+### Anonymous Authentication Flow
 
 ```typescript
-// Example Retitled puzzle structure
-interface RetitledPuzzle {
-  id: string;
-  puzzle_date: string;
-  film_id: number;           // TMDB film ID
-  film_title: string;        // English title
-  localized_title: string;   // Foreign title shown to player
-  country_code: string;      // For flag emoji
-  distractor_ids: number[];  // Wrong answer options
-  difficulty_level: number;  // 1-5 difficulty rating
+// Users automatically signed in anonymously on first visit
+// AuthProvider wraps entire app in layout.tsx
+export function AuthProvider({ children }) {
+  const { error } = await supabase.auth.signInAnonymously()
+  // Full game access without account creation
 }
+
+// Conversion prompts shown after each game
+<AnonymousResultNudge 
+  gameResult={result}
+  gameName="Poster Pixels" 
+  // Encourages account creation with progressive messaging
+/>
 ```
 
 ### TMDB Integration
@@ -146,26 +181,30 @@ const response = await fetch(
 ### Game Flow API
 
 ```typescript
-// Get available games
+// Multi-game API structure
 GET /api/games
-→ Returns list of active games
+→ Returns all four games with play status
 
-// Get today's Retitled puzzle
-GET /api/retitled/puzzle/today
-→ Returns today's puzzle data (without correct answer)
+// Game-specific endpoints (pattern for all games)
+GET /api/{game}/puzzle/today
+→ Returns today's puzzle data
 
-// Submit a Retitled guess
-POST /api/retitled/guess
-Body: { puzzleId, guessFilmId, solveTimeMs }
-→ Returns result + updated user stats
+POST /api/{game}/guess
+→ Submit guess and get result
 
-// Get cross-game user statistics
-GET /api/user/stats
-→ Returns overall streak, total games, favorite game
+GET /api/{game}/stats
+→ Game-specific user statistics
 
-// Get Retitled-specific statistics
-GET /api/retitled/stats
-→ Returns game-specific accuracy, solve times, countries guessed
+// Anonymous user support
+// All APIs work with anonymous users (user.is_anonymous = true)
+// Stats tracked, conversion prompts shown after each game
+
+// Poster Pixels example (newest game)
+GET /api/poster-pixels/puzzle/today
+POST /api/poster-pixels/start
+POST /api/poster-pixels/guess
+POST /api/poster-pixels/complete
+GET /api/poster-pixels/stats
 ```
 
 ## 🎨 Design System
@@ -196,25 +235,56 @@ GET /api/retitled/stats
 
 ## 📱 Features
 
-### Current (Phase 0.5)
-- ✅ User authentication (Supabase Auth)
-- ✅ Responsive dark theme UI
-- ✅ Mobile-optimized forms
-- 🚧 Retitled game mechanics
-- 🚧 Daily puzzle system
-- 🚧 Basic share functionality
+### ✅ Current (Phase 1.0 Complete)
+- **Anonymous Authentication**: Instant play without sign-up required
+- **Four Complete Games**: Retitled, Budget Bracket, Cast Climb, Poster Pixels
+- **Daily Puzzle System**: Deterministic seeding across all games
+- **Cross-game Statistics**: Streaks, achievements, and performance tracking
+- **User Authentication**: Supabase Auth with seamless anonymous conversion
+- **Responsive Design**: Mobile-first with dark theme UI
+- **Share Functionality**: Copy-to-clipboard with spoiler-free results
+- **Profile Management**: User settings and favorite movies
+- **Conversion System**: Progressive nudges for anonymous users
 
-### Planned (Phase 1.0)
-- Cross-game streak tracking and statistics
-- User profile and settings
-- Offline puzzle caching
-- Social sharing integration
+### 🎯 Planned (Phase 1.1)
+- **Social Features**: Friends leaderboards and comparisons  
+- **Enhanced Sharing**: Social media integration with preview cards
+- **Offline Caching**: Play puzzles without internet connection
+- **Performance Optimization**: Bundle size and loading improvements
 
-### Future (Phase 1.1+)
-- Additional game modes (Tagline Tracker, Cast Connection, etc.)
-- Friends leaderboard and cross-game achievements
-- Achievement system
-- Mobile app (Capacitor)
+### 🚀 Future (Phase 2.0+)
+- **Additional Games**: Tagline guessing, director connections, etc.
+- **Achievement System**: Badges, milestones, and unlockables
+- **Mobile App**: Native iOS/Android with Capacitor
+- **Premium Features**: Ad-free experience and exclusive content
+
+## 👤 Anonymous User Experience
+
+### Seamless Entry
+- **No Friction**: Play immediately without account creation
+- **Automatic Sign-in**: Anonymous authentication happens invisibly
+- **Full Functionality**: Access to all games and features
+- **Progress Tracking**: Stats and streaks saved automatically
+
+### Conversion Strategy
+- **Progressive Nudging**: Gentle prompts increase with engagement
+- **Data Preservation**: All progress retained after account creation
+- **Social Pressure**: Emphasize streaks and potential data loss
+- **Timing**: Conversion prompts appear after each game completion
+
+### Technical Implementation
+```typescript
+// AuthProvider automatically signs in anonymous users
+<AuthProvider>
+  {/* All users get full app access */}
+  {/* Anonymous users see conversion prompts */}
+</AuthProvider>
+
+// Middleware protects premium routes
+if (isProtectedRoute && isAnonymous) {
+  redirect("/auth/sign-up")
+}
+```
 
 ## 🧪 Development Workflow
 
@@ -271,7 +341,7 @@ http://localhost:3000/api/dev/reset-auth
 ### Environment Requirements
 - Node.js 18+ runtime
 - Environment variables configured
-- Supabase project set up
+- Supabase project with anonymous auth enabled
 - TMDB API key with sufficient quota
 
 ### Recommended Platforms

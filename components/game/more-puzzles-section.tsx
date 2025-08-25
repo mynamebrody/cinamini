@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { localGameStorage } from "@/lib/local-game-storage"
 import { useGameMode } from "@/hooks/use-game-mode"
 import Link from "next/link"
 import { GameLogo } from "../game-logo"
@@ -36,27 +35,27 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
     const checkGameStatuses = async () => {
       const statuses: Record<string, boolean> = {}
       
-      for (const game of ALL_GAMES) {
-        if (game.id !== currentGameId) {
-          if (isAnonymous) {
-            statuses[game.id] = localGameStorage.hasPlayedToday(game.id)
-          } else {
-            // For authenticated users, fetch from server
-            try {
-              const response = await fetch('/api/games')
-              if (response.ok) {
-                const data = await response.json()
-                // The API returns { games: [...] }, so we need to extract the games array
-                const games = Array.isArray(data?.games) ? data.games : []
-                const gameStatus = games.find((g: any) => g.game_id === game.id)
-                statuses[game.id] = gameStatus?.hasPlayedToday || false
-              } else {
-                statuses[game.id] = false
-              }
-            } catch (error) {
-              console.error(`Error checking ${game.id} status:`, error)
-              statuses[game.id] = false
+      // Fetch from server (works for both anonymous and authenticated users)
+      try {
+        const response = await fetch('/api/games')
+        if (response.ok) {
+          const data = await response.json()
+          // The API returns { games: [...] }, so we need to extract the games array
+          const games = Array.isArray(data?.games) ? data.games : []
+          
+          for (const game of ALL_GAMES) {
+            if (game.id !== currentGameId) {
+              const gameStatus = games.find((g: any) => g.game_id === game.id)
+              statuses[game.id] = gameStatus?.hasPlayedToday || false
             }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking game statuses:', error)
+        // Fallback: mark all as not played
+        for (const game of ALL_GAMES) {
+          if (game.id !== currentGameId) {
+            statuses[game.id] = false
           }
         }
       }

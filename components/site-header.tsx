@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { LogOut, Settings, User, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
-import { localGameStorage } from "@/lib/local-game-storage"
 import Image from "next/image"
 
 interface SiteHeaderProps {
@@ -16,11 +15,26 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
   const [streakCount, setStreakCount] = useState(0)
 
   useEffect(() => {
-    if (!user) {
-      // Show streak count for anonymous users as a nudge
-      const stats = localGameStorage.getStats()
-      setStreakCount(stats.streakData.current)
+    const fetchStreakCount = async () => {
+      if (!user) {
+        setStreakCount(0)
+        return
+      }
+      
+      try {
+        // Fetch streak from database for all users (anonymous and authenticated)
+        const response = await fetch('/api/user/streak')
+        if (response.ok) {
+          const data = await response.json()
+          setStreakCount(data.streak || 0)
+        }
+      } catch (error) {
+        console.error('Failed to fetch streak:', error)
+        setStreakCount(0)
+      }
     }
+    
+    fetchStreakCount()
   }, [user])
 
   return (
@@ -48,7 +62,16 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
 
           {/* Navigation items */}
           <div className="flex items-center space-x-4">
-            {user ? (
+            {/* Show streak for all users when > 0 */}
+            {streakCount > 0 && (
+              <div className="flex items-center text-sm text-neutral-600">
+                <Trophy className="h-4 w-4 mr-1 text-orange-500" />
+                <span className="font-medium">{streakCount}</span>
+                <span className="hidden sm:inline ml-1">day streak</span>
+              </div>
+            )}
+            
+            {user && !user.is_anonymous ? (
               <>
                 <Button asChild variant="ghost" size="sm">
                   <a href="/profile" className="flex items-center space-x-2">
@@ -65,13 +88,6 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
               </>
             ) : (
               <>
-                {streakCount > 0 && (
-                  <div className="flex items-center text-sm text-neutral-600">
-                    <Trophy className="h-4 w-4 mr-1 text-orange-500" />
-                    <span className="font-medium">{streakCount}</span>
-                    <span className="hidden sm:inline ml-1">day streak</span>
-                  </div>
-                )}
                 <Button asChild variant="ghost" size="sm">
                   <a href="/auth/login">Sign In</a>
                 </Button>

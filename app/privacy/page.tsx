@@ -30,18 +30,18 @@ export default function Privacy() {
               Information We Collect
             </h2>
             <p className="text-neutral-700 mb-4">
-              <strong>Without an Account:</strong> If you play cinamini without creating an account, all your game data (results, streaks, statistics) is stored locally in your browser only. We do not collect or store this information on our servers.
+              <strong>Anonymous Sign-In:</strong> When you first visit cinamini, you are automatically signed in anonymously. Your game data (results, streaks, statistics) is stored securely on our servers using a temporary anonymous account. We do not collect any personal information during anonymous sign-in.
             </p>
             <p className="text-neutral-700 mb-4">
-              <strong>With an Account:</strong> When you create an account, we collect:
+              <strong>With a Full Account:</strong> When you create a full account, we collect:
             </p>
             <ul className="list-disc pl-6 text-neutral-700 space-y-2">
               <li><strong>Account Information:</strong> Email address and display name</li>
-              <li><strong>Game Data:</strong> Your game results, statistics, streaks, and preferences</li>
+              <li><strong>Game Data:</strong> Your game results, statistics, streaks, and preferences (including any data from your anonymous account that gets transferred)</li>
               <li><strong>Usage Data:</strong> How you interact with our games and features</li>
             </ul>
             <p className="text-neutral-700 mb-4 mt-4">
-              <strong>For All Users:</strong> We collect basic analytics via Google Analytics (device type, browser, general usage patterns).
+              <strong>For All Users:</strong> We collect basic analytics via Google Analytics (device type, browser, general usage patterns) and store game progress data on our servers.
             </p>
           </section>
 
@@ -70,6 +70,26 @@ export default function Privacy() {
               <li>When required by law or to protect our rights</li>
               <li>In anonymized, aggregated form for analytics purposes</li>
             </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
+              Anonymous Accounts
+            </h2>
+            <p className="text-neutral-700 mb-4">
+              When you first visit cinamini, we create a temporary anonymous account for you automatically. This allows you to:
+            </p>
+            <ul className="list-disc pl-6 text-neutral-700 space-y-2 mb-4">
+              <li>Play all games and save your progress</li>
+              <li>Track your streaks and statistics</li>
+              <li>Experience the full functionality of cinamini</li>
+            </ul>
+            <p className="text-neutral-700 mb-4">
+              <strong>Important:</strong> Anonymous accounts are temporary and tied to your browser session. If you clear your browser data or use a different device, you may lose access to your anonymous account. We recommend creating a full account to permanently save your progress.
+            </p>
+            <p className="text-neutral-700">
+              When you create a full account, your anonymous account data is automatically transferred and permanently saved.
+            </p>
           </section>
 
           <section className="mb-8">

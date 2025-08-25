@@ -56,6 +56,12 @@ export async function signIn(prevState: any, formData: FormData) {
   try {
     const supabase = await createServerActionClient()
 
+    // Sign out of anonymous session first if exists
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    if (currentUser?.is_anonymous) {
+      await supabase.auth.signOut()
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email: email.toString(),
       password: password.toString(),
@@ -96,21 +102,42 @@ export async function signUp(prevState: any, formData: FormData) {
   try {
     const supabase = await createServerActionClient()
 
+    // Check if there's an anonymous user session
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    const isAnonymous = currentUser?.is_anonymous === true
+
     const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?confirmed=true`
     
-    const { error } = await supabase.auth.signUp({
-      email: email.toString(),
-      password: password.toString(),
-      options: {
+    if (isAnonymous) {
+      // Convert anonymous account to permanent account with email/password
+      const { error } = await supabase.auth.updateUser({
+        email: email.toString(),
+        password: password.toString(),
+      }, {
         emailRedirectTo: redirectTo,
-      },
-    })
+      })
 
-    if (error) {
-      return { error: error.message }
+      if (error) {
+        return { error: error.message }
+      }
+
+      return { success: "Check your email to confirm your account. Your anonymous progress has been preserved." }
+    } else {
+      // Regular sign up for non-anonymous users
+      const { error } = await supabase.auth.signUp({
+        email: email.toString(),
+        password: password.toString(),
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      })
+
+      if (error) {
+        return { error: error.message }
+      }
+
+      return { success: "Check your email to confirm your account." }
     }
-
-    return { success: "Check your email to confirm your account." }
   } catch (error) {
     console.error("Sign up error:", error)
     return { error: "An unexpected error occurred. Please try again." }

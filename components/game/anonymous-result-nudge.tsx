@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Trophy, TrendingUp, Users, Calendar, Shield, Star } from "lucide-react"
-import { localGameStorage } from "@/lib/local-game-storage"
+import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
@@ -12,6 +12,9 @@ interface AnonymousResultNudgeProps {
   gameResult: any
   gameName: string
   className?: string
+  gamesPlayed?: number
+  currentStreak?: number
+  daysPlayed?: number
 }
 
 interface NudgeContent {
@@ -28,26 +31,43 @@ interface NudgeContent {
 export default function AnonymousResultNudge({ 
   gameResult, 
   gameName,
-  className 
+  className,
+  gamesPlayed = 1,
+  currentStreak = 1,
+  daysPlayed = 1
 }: AnonymousResultNudgeProps) {
   const router = useRouter()
   const [nudgeContent, setNudgeContent] = useState<NudgeContent | null>(null)
   const [shouldShow, setShouldShow] = useState(false)
+  const [isAnonymous, setIsAnonymous] = useState(false)
 
   useEffect(() => {
-    const playCount = localGameStorage.getPlayCount()
-    const todaysGames = localGameStorage.getTodaysGamesCount()
-    const currentStreak = localGameStorage.getStats().streakData.current
-    const daysPlayed = localGameStorage.getDaysPlayed()
+    const checkAnonymousStatus = async () => {
+      const supabase = createClient()
+      if (!supabase) return
 
-    // Determine nudge content based on play patterns
-    let content: NudgeContent | null = null
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.is_anonymous) {
+        setIsAnonymous(true)
+      }
+    }
 
-    if (playCount === 1) {
-      // First play - no nudge
+    checkAnonymousStatus()
+  }, [])
+
+  useEffect(() => {
+    if (!isAnonymous) {
       setShouldShow(false)
       return
-    } else if (playCount <= 3) {
+    }
+
+    const playCount = gamesPlayed
+    const todaysGames = 1 // For now, we'll use 1 as we don't have this data yet
+    
+    // Always show nudge for anonymous users after game completion
+    let content: NudgeContent | null = null
+
+    if (playCount <= 3) {
       // Light nudge after first few games
       content = {
         title: "Nice work!",
@@ -100,11 +120,25 @@ export default function AnonymousResultNudge({
       }
     }
 
+    // Default fallback - ensure nudge always shows for anonymous users
+    if (!content) {
+      content = {
+        title: "Nice work!",
+        subtitle: "Create an account to save your progress",
+        features: [
+          { icon: Trophy, text: "Track your daily results" },
+          { icon: TrendingUp, text: "See your stats over time" }
+        ],
+        ctaText: "Sign up free",
+        variant: "subtle"
+      }
+    }
+
     if (content) {
       setNudgeContent(content)
       setShouldShow(true)
     }
-  }, [gameResult])
+  }, [isAnonymous, gameResult, gamesPlayed, currentStreak, daysPlayed])
 
   if (!shouldShow || !nudgeContent) {
     return null

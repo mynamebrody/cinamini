@@ -46,8 +46,11 @@ export async function updateSession(request: NextRequest) {
 
     // This will refresh session if expired - required for Server Components
     const { data: { user } } = await supabase.auth.getUser()
+    
+    // Check if user is anonymous
+    const isAnonymous = user?.is_anonymous === true
 
-    // Protected routes that require authentication
+    // Protected routes that require non-anonymous authentication
     const isProtectedRoute = request.nextUrl.pathname.startsWith("/profile") ||
                             request.nextUrl.pathname.startsWith("/stats")
     
@@ -58,15 +61,15 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith("/auth/reset-password") ||
       request.nextUrl.pathname === "/auth/callback"
 
-    // Only redirect to login for protected routes (profile, stats, admin) if not authenticated
-    if (isProtectedRoute && !user) {
-      const redirectUrl = new URL("/auth/login", request.url)
+    // Redirect anonymous users trying to access protected routes to sign-in
+    if (isProtectedRoute && (!user || isAnonymous)) {
+      const redirectUrl = new URL("/auth/sign-up", request.url)
       return NextResponse.redirect(redirectUrl)
     }
 
-    // If user is authenticated and trying to access auth pages, redirect to home
+    // If non-anonymous user is authenticated and trying to access auth pages, redirect to home
     // Exception: Allow access to reset-password page during recovery flow
-    if (isAuthRoute && user && !request.nextUrl.pathname.startsWith("/auth/reset-password")) {
+    if (isAuthRoute && user && !isAnonymous && !request.nextUrl.pathname.startsWith("/auth/reset-password")) {
       return NextResponse.redirect(new URL("/", request.url))
     }
 

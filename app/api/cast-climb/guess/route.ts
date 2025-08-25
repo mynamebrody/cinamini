@@ -15,92 +15,10 @@ export async function POST(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (!user) {
-      console.log("🎬 CAST CLIMB GUESS API: Processing anonymous user")
-      // For anonymous users, provide proper webhook with validation (matching Poster Pixels format)
-      const body = await request.json().catch(() => ({}))
-      const { puzzleId, guessFilmId, guessFilmTitle, actorsRevealed = 1, isSkip = false, solveTimeMs } = body
-      
-      console.log("🎬 CAST CLIMB GUESS API: Anonymous user data", {
-        puzzleId, guessFilmId, guessFilmTitle, actorsRevealed, isSkip, solveTimeMs
-      })
-      
-      // Get puzzle to validate guess
-      console.log("🎬 CAST CLIMB GUESS API: Looking for puzzle with ID:", puzzleId)
-      const { data: puzzle, error: puzzleError } = await supabase
-        .from("cast_climb_puzzles")
-        .select("*")
-        .eq("id", puzzleId)
-        .single()
-
-      console.log("🎬 CAST CLIMB GUESS API: Puzzle query result", {
-        hasData: !!puzzle,
-        error: puzzleError?.message,
-        errorCode: puzzleError?.code
-      })
-
-      if (puzzleError || !puzzle) {
-        console.error("🎬 CAST CLIMB GUESS API: Puzzle not found", { puzzleId, puzzleError })
-        return NextResponse.json({ error: "Puzzle not found" }, { status: 404 })
-      }
-
-      // Validate guess
-      const isCorrect = !isSkip && guessFilmId === puzzle.film_id
-      
-      // Calculate score for anonymous users too
-      const calculateScoreForActorsRevealed = (actors: number): number => {
-        const maxScore = 1000
-        const scoreDecrement = 250
-        return Math.max(0, maxScore - ((actors - 1) * scoreDecrement))
-      }
-      
-      const scoreForGuess = isCorrect ? calculateScoreForActorsRevealed(actorsRevealed) : 0
-      const maxAttempts = puzzle.total_actors || 4
-      
-      // Game is only completed if: correct guess, give up, or reached max actors
-      const isGiveUp = guessFilmTitle === "_GIVE_UP_"
-      const hasReachedMaxActors = actorsRevealed >= maxAttempts && !isCorrect && !isSkip
-      const gameCompleted = isCorrect || isGiveUp || hasReachedMaxActors
-      
-      // Send webhook with consistent format
-      await sendGuessWebhook(request, {
-        event: "guess",
-        game: "cast-climb",
-        user: { isAuthenticated: false },
-        guess: {
-          gameId: `anonymous-${puzzle.puzzle_number}`,
-          puzzleId: puzzle.puzzle_number,
-          guessedMovieId: guessFilmId,
-          guessedMovieTitle: guessFilmTitle,
-          timeTakenMs: solveTimeMs || null, // Include actual time from client
-          actorsRevealed,
-          skipped: isSkip,
-          score: scoreForGuess,
-        },
-        progress: {
-          attemptNumber: actorsRevealed, // Use actors revealed as attempt number
-          maxAttempts,
-          gameCompleted,
-          isSkipped: isSkip,
-          totalAttempts: actorsRevealed,
-        },
-        correctAnswer: { 
-          id: puzzle.film_id, 
-          title: puzzle.film_title,
-          isCorrect 
-        },
-      })
-
-      return NextResponse.json({ 
-        isCorrect,
-        gameCompleted,
-        anonymous: true,
-        correctAnswer: gameCompleted ? {
-          id: puzzle.film_id,
-          title: puzzle.film_title
-        } : undefined,
-        message: "Anonymous play - results not saved"
-      })
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
+
+    const isAnonymous = user.is_anonymous === true
 
     const body = await request.json()
     const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs, studioTimeMs } = body
@@ -228,7 +146,11 @@ export async function POST(request: NextRequest) {
     const webhookPromise = sendGuessWebhook(request, {
       event: "guess",
       game: "cast-climb",
-      user: { isAuthenticated: true, id: user.id, email: user.email ?? null },
+      user: { 
+        isAuthenticated: !isAnonymous, 
+        id: user.id, 
+        email: isAnonymous ? null : (user.email ?? null) 
+      },
       guess: {
         gameId: `${user.id}-${puzzle.puzzle_number}`, // Use puzzle number for consistency
         puzzleId: puzzle.puzzle_number,

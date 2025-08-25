@@ -66,38 +66,45 @@ All analytics endpoints are located in `/app/api/admin/analytics/`:
    - `retitled_guesses`: Retitled game attempts
    - `budget_bracket_games`: Budget Bracket game sessions
    - `cast_climb_guesses`: Cast Climb game attempts
+   - `poster_pixels_guesses`: Poster Pixels game attempts
+   - `poster_pixels_games`: Poster Pixels game sessions
 
 4. **Puzzle Tables**
    - `retitled_puzzles`: Daily Retitled puzzles
    - `budget_bracket_puzzles`: Budget Bracket puzzle configurations
    - `cast_climb_puzzles`: Cast Climb puzzle data
+   - `poster_pixels_puzzles`: Poster Pixels puzzle data with clarity levels
 
 ## Key Metrics Calculations
 
 ### Daily Active Users (DAU)
 ```typescript
-// Combines unique users from all three games
+// Combines unique users from all four games (including anonymous users)
 const uniqueUsers = new Set([
   ...retitledUsers,
   ...budgetBracketUsers,
-  ...castClimbUsers
+  ...castClimbUsers,
+  ...posterPixelsUsers
 ]);
 ```
 
 ### Average Session Duration
 - Calculated from actual game solve times
-- Weighted average across all three games
+- Weighted average across all four games
 - Bounded between 30 seconds and 10 minutes
+- Includes anonymous user sessions
 
 ### Completion Rates
 - **Retitled**: Correct guesses / Total guesses
 - **Budget Bracket**: All submitted games are "complete"
 - **Cast Climb**: Games where player eventually got correct answer
+- **Poster Pixels**: Games where player guessed correctly within 5 attempts
 
 ### Retention Cohorts
 - Tracks user activity at Day 1, 7, and 30
-- Groups users by signup week
+- Groups users by signup week (including anonymous sign-ups)
 - Calculates percentage of cohort active on target days
+- Tracks anonymous to authenticated user conversion rates
 
 ## Data Integrity Checks
 
@@ -181,6 +188,37 @@ The `/api/admin/analytics/test` endpoint performs:
 2. Add visualization to frontend
 3. Update test endpoint
 4. Document calculation method
+
+## Anonymous User Analytics
+
+The system now tracks both authenticated and anonymous users, providing comprehensive analytics across user types:
+
+### Key Anonymous Metrics
+- **Anonymous DAU**: Daily active anonymous users across all games
+- **Conversion Rate**: Anonymous users who create accounts after gameplay
+- **Anonymous Game Preferences**: Which games anonymous users prefer
+- **Session Duration**: Average session time for anonymous vs authenticated users
+- **Completion Rates**: Success rates comparing anonymous and authenticated users
+
+### Anonymous User Detection
+```typescript
+// Anonymous users have is_anonymous = true in their user profile
+const isAnonymous = user?.is_anonymous === true
+
+// Analytics queries include anonymous users by default
+SELECT COUNT(DISTINCT user_id) as total_users
+FROM cinamini_user_profiles
+WHERE user_id IN (
+  SELECT DISTINCT user_id FROM poster_pixels_guesses
+  WHERE created_at >= NOW() - INTERVAL '1 day'
+)
+```
+
+### Conversion Tracking
+- Track when anonymous users create full accounts
+- Measure time from first play to account creation
+- Analyze which games drive the most conversions
+- Monitor conversion rates by game completion status
 
 ## Future Improvements
 

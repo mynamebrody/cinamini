@@ -73,7 +73,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   const [loadingAnswers, setLoadingAnswers] = useState(true)
   const [showCelebration, setShowCelebration] = useState(false)
   
-  const correctAnswers = result.revealed_pairs.filter(p => p.correct).length
+  const correctAnswers = result.revealed_pairs?.filter(p => p.correct).length || 0
   
   const { shareText: centralizedShareText, fetchShare } = useBudgetBracketShare(puzzle.id.toString())
   
@@ -88,6 +88,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   // Sum the box office (budget) of all correct answers
   // Use allRoundsData if available (for anonymous users and better accuracy), otherwise use result data
   const totalBudgetMastered = useMemo(() => {
+    if (!result.revealed_pairs) return 0
     return result.revealed_pairs
       .filter(p => p.correct)
       .reduce((sum, pair) => {
@@ -129,6 +130,11 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
   
   // Fallback share text function for loading states or errors
   function generateFallbackShareText(): string {
+    if (!result.revealed_pairs) {
+      // If no revealed pairs, generate basic share text
+      const pattern = '🟥'.repeat(5) // Assume all wrong if no data
+      return `Budget Bracket #${puzzle.puzzle_number}\n${pattern}\n0/5 correct`
+    }
     const choices: GameChoice[] = result.revealed_pairs.map(pair => ({
       round: pair.round,
       chosen_movie: pair.chosen_movie,
@@ -569,8 +575,8 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
           ) : allRoundsData.length > 0 ? (
             // Show all rounds with budget data
             allRoundsData.map((roundData) => {
-              const wasPlayed = result.revealed_pairs.some(r => r.round === roundData.round)
-              const playedRound = result.revealed_pairs.find(r => r.round === roundData.round)
+              const wasPlayed = result.revealed_pairs?.some(r => r.round === roundData.round) || false
+              const playedRound = result.revealed_pairs?.find(r => r.round === roundData.round)
               const chosenMovie = playedRound ? 
                 (playedRound.chosen_movie === roundData.movieA.tmdb_id ? 'A' : 'B') : null
               
@@ -716,7 +722,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 </div>
               )
             })
-          ) : (
+          ) : result.revealed_pairs ? (
             // Show only played rounds (original behavior)
             result.revealed_pairs.map((roundData) => {
               const pair = puzzle.pairs.find(p => p.round === roundData.round)!
@@ -832,6 +838,11 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                 </div>
               )
             })
+          ) : (
+            // No revealed pairs available
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No game data available</p>
+            </div>
           )}
         </CardContent>
         </Card>
