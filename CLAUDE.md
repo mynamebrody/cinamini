@@ -60,7 +60,7 @@ Movie poster guessing game with progressive clarity:
 
 ### Tech Stack
 - **Framework**: Next.js 15 with React 19 & App Router
-- **Authentication**: Supabase Auth with SSR support
+- **Authentication**: Supabase Auth with SSR support + Anonymous Sign-in
 - **Database**: Supabase PostgreSQL
 - **Styling**: Tailwind CSS with shadcn/ui components
 - **External API**: TMDB (The Movie Database) for film data
@@ -95,8 +95,10 @@ components/                   # React components
 │   ├── budget-bracket/      # Budget comparison game components
 │   ├── cast-climb/          # Cast guessing game components
 │   ├── poster-pixels/       # Poster clarity game components
-│   └── retitle/            # Localized title game components
+│   ├── retitle/            # Localized title game components
+│   └── anonymous-result-nudge.tsx  # Conversion prompts for anonymous users
 ├── auth-dialog.tsx         # Authentication modal
+├── auth-provider.tsx       # Anonymous authentication wrapper
 ├── game-card.tsx           # Homepage game cards
 ├── games-list.tsx          # Featured games grid
 ├── movie-search-*.tsx      # Movie search functionality
@@ -114,12 +116,15 @@ lib/                         # Utilities and configurations
 ├── poster-pixels.ts        # Poster Pixels game logic
 ├── poster-pixels-config.ts # Poster Pixels configuration
 ├── retitled.ts             # Retitled game logic
-├── local-game-storage.ts   # Anonymous user local storage
 ├── webhooks.ts             # Webhook integration utilities
 ├── sharing/                # Centralized sharing system
 ├── tmdb.ts                 # TMDB API utilities
 ├── tmdb-trending.ts        # Trending movies caching
 └── actions.ts              # Server actions
+
+hooks/                       # React hooks
+├── use-game-mode.ts        # Anonymous vs authenticated user state
+└── useGameShare.ts         # Game sharing utilities
 ```
 
 ## Database Schema
@@ -298,6 +303,74 @@ CREATE TABLE cast_climb_user_stats (
 );
 ```
 
+#### Poster Pixels Game
+```sql
+-- Daily puzzles for Poster Pixels game
+CREATE TABLE poster_pixels_puzzles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    puzzle_date DATE UNIQUE NOT NULL,
+    puzzle_number INTEGER NOT NULL,
+    film_id INTEGER NOT NULL,           -- TMDB film ID
+    film_title VARCHAR NOT NULL,        -- Original English title
+    film_poster_url TEXT,
+    film_release_year INTEGER,
+    clarity_levels NUMERIC[] NOT NULL,  -- Array of clarity percentages [5, 15, 35, 65, 100]
+    difficulty_level INTEGER DEFAULT 1,
+    seed_value VARCHAR(32) NOT NULL,
+    is_published BOOLEAN DEFAULT TRUE,
+    movie_data JSONB,                   -- Legacy TMDB data for backward compatibility
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- User game sessions for Poster Pixels
+CREATE TABLE poster_pixels_games (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    puzzle_id UUID REFERENCES poster_pixels_puzzles(id),
+    won BOOLEAN NOT NULL DEFAULT FALSE,
+    total_time_ms INTEGER,
+    final_clarity_level NUMERIC(5,2),  -- Final clarity level when game ended
+    final_score INTEGER DEFAULT 0,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    num_guesses INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, puzzle_id)
+);
+
+-- Individual guesses for Poster Pixels game
+CREATE TABLE poster_pixels_guesses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id),
+    puzzle_id UUID REFERENCES poster_pixels_puzzles(id),
+    game_id UUID REFERENCES poster_pixels_games(id),
+    guessed_movie_id INTEGER NOT NULL,     -- TMDB ID of guessed film
+    guessed_movie_title VARCHAR NOT NULL,
+    is_correct BOOLEAN NOT NULL,
+    clarity_level NUMERIC(5,2) NOT NULL,  -- Clarity level when guess was made
+    guess_time_ms INTEGER,                 -- Time for this specific guess
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Poster Pixels-specific user statistics
+CREATE TABLE poster_pixels_user_stats (
+    user_id UUID PRIMARY KEY REFERENCES auth.users(id),
+    games_played INTEGER DEFAULT 0,
+    games_won INTEGER DEFAULT 0,
+    current_streak INTEGER DEFAULT 0,
+    longest_streak INTEGER DEFAULT 0,
+    total_guesses INTEGER DEFAULT 0,
+    perfect_games INTEGER DEFAULT 0,       -- Won with only 1 guess (5% clarity)
+    average_clarity_level NUMERIC(5,2),   -- Average final clarity when completing
+    average_solve_time_ms INTEGER,
+    best_solve_time_ms INTEGER,
+    total_score INTEGER DEFAULT 0,
+    best_single_game_score INTEGER DEFAULT 0,
+    last_played_date DATE,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
 ### Extensible Design Pattern
 
 When adding new games, follow this naming convention:
@@ -309,6 +382,7 @@ When adding new games, follow this naming convention:
 - **retitled_*** - Single guess per puzzle (simple guessing)
 - **budget_bracket_*** - Session-based (multi-round elimination)
 - **cast_climb_*** - Multiple guesses per puzzle (progressive actor reveals, up to 4 attempts)
+- **poster_pixels_*** - Multiple guesses per puzzle (progressive clarity reveals, up to 5 attempts)
 
 **Examples for future games:**
 - `tagline_tracker_puzzles` - Movie tagline guessing game
@@ -324,6 +398,7 @@ When adding new games, follow this naming convention:
   - **Retitled**: TMDB `/movie/{id}/translations` endpoint
   - **Budget Bracket**: TMDB movie details with budget data
   - **Cast Climb**: TMDB `/movie/{id}/credits` endpoint
+  - **Poster Pixels**: TMDB movie poster images with CSS filter effects
 - **Generation**: Server-side creation using service role client on first access
 
 ### TMDB API Integration
@@ -385,10 +460,14 @@ const selectedMovie = rng.choice(moviePool);
 // Retitled: "Retitled #123 🟩" (single guess)
 // Budget Bracket: "Budget Bracket #123 🥇 5/5" (rounds completed)
 // Cast Climb: "Cast Climb #123 ❌❌❌✅" (multiple attempts until success/failure)
+// Poster Pixels: "Poster Pixels #123 🖼️ 500pts" (clarity level and score)
 
 // Cast Climb allows up to 4 attempts (one per actor revealed)
 // Patterns: ✅ (1st guess), ❌✅ (2nd guess), ❌❌✅ (3rd guess), ❌❌❌✅ (4th guess)
 // Or all wrong: ❌❌❌❌ (failed after all 4 actors shown)
+
+// Poster Pixels allows up to 5 attempts (one per clarity level)
+// Scoring: 1000pts (5%), 750pts (15%), 500pts (35%), 250pts (65%), 100pts (100%)
 
 // All include cinamini.app link for sharing
 ```
@@ -480,6 +559,75 @@ The app uses a distinctive 3D layered shadow effect throughout the UI to create 
 - **Keyboard Navigation**: Tab order for non-touch devices
 - **Focus Indicators**: Visible focus states for all interactive elements
 
+## Anonymous Authentication System
+
+### Overview
+cinamini implements a seamless anonymous authentication system that allows users to play games immediately without creating an account, while providing conversion opportunities to full registration.
+
+### How It Works
+1. **Automatic Anonymous Sign-in**: Users are automatically signed in anonymously on first visit via `AuthProvider`
+2. **Game Access**: Anonymous users can play all games with full functionality
+3. **Data Persistence**: Game progress is saved to Supabase with `user.is_anonymous = true`
+4. **Conversion Prompts**: `AnonymousResultNudge` component encourages account creation after each game
+5. **Route Protection**: Certain routes (profile, stats) redirect anonymous users to sign-up
+
+### Key Components
+
+#### AuthProvider (`components/auth-provider.tsx`)
+```typescript
+// Wraps entire app, automatically signs in anonymous users
+export function AuthProvider({ children }: AuthProviderProps) {
+  // Checks for existing user, signs in anonymously if none found
+  const { error } = await supabase.auth.signInAnonymously()
+}
+```
+
+#### useGameMode Hook (`hooks/use-game-mode.ts`)
+```typescript
+// Provides user state and anonymous detection
+export function useGameMode() {
+  const [isAnonymous, setIsAnonymous] = useState(true)
+  
+  // Correctly detects anonymous users
+  setIsAnonymous(user?.is_anonymous === true)
+  
+  return { user, isAnonymous, loading }
+}
+```
+
+#### AnonymousResultNudge (`components/game/anonymous-result-nudge.tsx`)
+```typescript
+// Shows conversion prompts after every game completion for anonymous users
+// Different messaging based on play patterns:
+// - Light nudge: "Create an account to save your progress"  
+// - Moderate nudge: "Don't lose your streak - create an account"
+// - Strong nudge: "Your data is at risk. Sign up to protect it forever"
+```
+
+### Middleware Integration
+```typescript
+// lib/supabase/middleware.ts
+const isAnonymous = user?.is_anonymous === true
+
+// Redirect anonymous users trying to access protected routes
+if (isProtectedRoute && (!user || isAnonymous)) {
+  const redirectUrl = new URL("/auth/sign-up", request.url)
+  return NextResponse.redirect(redirectUrl)
+}
+```
+
+### Database Considerations
+- Anonymous users have full database records with `auth.users.is_anonymous = true`
+- All game tables support anonymous users through existing foreign key relationships
+- No special handling needed in RLS policies - anonymous users are authenticated users
+- Stats and progress are preserved if user converts to full account
+
+### Conversion Strategy
+- **Immediate Play**: No friction to start playing
+- **Progressive Nudging**: Gentle prompts that increase based on engagement
+- **Data Preservation**: All progress retained after account creation
+- **Social Pressure**: Emphasize streaks, achievements, and data loss risks
+
 ## API Endpoints Structure
 
 ### Game API Routes
@@ -527,6 +675,27 @@ POST /api/cast-climb/guess
 // app/api/cast-climb/stats/route.ts
 GET /api/cast-climb/stats
 // Cast Climb-specific user statistics
+
+// POSTER PIXELS GAME ENDPOINTS
+// app/api/poster-pixels/puzzle/today/route.ts
+GET /api/poster-pixels/puzzle/today
+// Returns today's Poster Pixels puzzle with movie poster data
+
+// app/api/poster-pixels/start/route.ts
+POST /api/poster-pixels/start
+// Initialize new Poster Pixels game session
+
+// app/api/poster-pixels/guess/route.ts
+POST /api/poster-pixels/guess
+// Submit individual guess for Poster Pixels game
+
+// app/api/poster-pixels/complete/route.ts
+POST /api/poster-pixels/complete
+// Mark Poster Pixels game as completed
+
+// app/api/poster-pixels/stats/route.ts
+GET /api/poster-pixels/stats
+// Poster Pixels-specific user statistics
 
 // SHARED UTILITIES
 // app/api/movies/search/route.ts
@@ -746,8 +915,9 @@ CINAMINI_GUESS_WEBHOOK_URL=https://webhook.site/your-unique-url
 ## Current Status & Roadmap
 
 ### ✅ Phase 1.0 (COMPLETED)
-- **Three Full Games**: Retitled, Budget Bracket, Cast Climb
-- **User Authentication**: Complete Supabase Auth integration
+- **Four Full Games**: Retitled, Budget Bracket, Cast Climb, Poster Pixels
+- **Anonymous Authentication**: Seamless anonymous sign-in with conversion prompts
+- **User Authentication**: Complete Supabase Auth integration with anonymous support
 - **Daily Puzzle System**: Deterministic seeding for all games
 - **Statistics Tracking**: Individual game stats with streaks and achievements
 - **Share Functionality**: Copy-to-clipboard share text generation
@@ -812,6 +982,7 @@ if (statsError) {
 - **Retitled**: Test localized titles from different countries, option shuffling
 - **Budget Bracket**: Test movie pair generation, elimination logic, perfect games
 - **Cast Climb**: Test actor ordering (supporting→leads), progressive reveals (up to 4 actors), multi-guess flow with search integration
+- **Poster Pixels**: Test progressive clarity reveals (5 levels), scoring system, image loading, CSS filter effects
 
 ### Technical Testing
 - **API Routes**: Integration tests for all game endpoints with auth contexts
@@ -822,6 +993,7 @@ if (statsError) {
 ### User Experience Testing  
 - **Mobile UX**: Manual testing on iOS/Android devices with touch interactions
 - **Authentication**: Test login/logout flows and session persistence
+- **Anonymous Authentication**: Test automatic sign-in, conversion prompts, data persistence
 - **Stats Modals**: Test all game state transitions and navigation
 - **Share Functionality**: Test clipboard API and Web Share API on different devices
 
