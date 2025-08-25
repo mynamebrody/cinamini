@@ -34,7 +34,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { getCountryFlag } from "@/lib/flag-emojis"
+import { getCountryFlag, getCountryName } from "@/lib/flag-emojis"
 
 interface Movie {
   id: number
@@ -139,6 +139,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [customTitle, setCustomTitle] = useState("")
   const [loadingRandom, setLoadingRandom] = useState(false)
   const [englishTranslation, setEnglishTranslation] = useState("")
+  const [countryName, setCountryName] = useState("")
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
@@ -193,6 +194,13 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   useEffect(() => {
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
+      
+      // Only auto-populate country name when creating new puzzles, not when editing existing ones
+      if (!isEditMode) {
+        const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
+        setCountryName(autoCountryName)
+      }
+      
       // Translate the title to English
       const translateTitle = async () => {
         try {
@@ -220,7 +228,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       
       translateTitle()
     }
-  }, [selectedTitle])
+  }, [selectedTitle, isEditMode])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -304,6 +312,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         setPuzzleDate(puzzle.puzzle_date || "")
         setCustomTitle(puzzle.localized_title || "")
         setEnglishTranslation(puzzle.english_translation || "")
+        setCountryName(puzzle.country_name || "")
         setIsPublished(puzzle.is_published || false)
         
         // Create selected title object from puzzle data
@@ -570,15 +579,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
     setLoading(true)
     try {
-      // Get country name from country code
-      const countryNames: { [key: string]: string } = {
-        "ES": "Spain", "FR": "France", "DE": "Germany", "IT": "Italy", "JP": "Japan",
-        "KR": "South Korea", "BR": "Brazil", "MX": "Mexico", "RU": "Russia", "CN": "China",
-        "US": "United States", "GB": "United Kingdom", "CA": "Canada", "AU": "Australia", "IN": "India",
-        "AR": "Argentina", "PL": "Poland", "NL": "Netherlands", "SE": "Sweden", "NO": "Norway",
-        "DK": "Denmark", "FI": "Finland", "PT": "Portugal", "GR": "Greece", "TR": "Turkey",
-        "TH": "Thailand", "ID": "Indonesia", "VN": "Vietnam", "PH": "Philippines", "MY": "Malaysia",
-      }
 
       // Generate a seed value - must match the regex constraint: ^[a-zA-Z0-9_-]+$
       const timestamp = Date.now().toString(36)
@@ -604,7 +604,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         film_title: selectedMovie.title,
         localized_title: customTitle.trim(),
         country_code: selectedTitle.iso_3166_1,
-        country_name: countryNames[selectedTitle.iso_3166_1] || selectedTitle.iso_3166_1,
+        country_name: countryName.trim() || selectedTitle.iso_3166_1,
         distractor_ids: allOptions.filter(option => !option.isCorrect).map(option => option.id),
         option_order: allOptions.map(option => option.id), // Store complete order including correct answer
         is_published: isPublished,
@@ -670,6 +670,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         setAlternativeTitles([])
         setCustomTitle("")
         setEnglishTranslation("")
+        setCountryName("")
       }
       
     } catch (error: any) {
@@ -704,7 +705,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
     return {
       flagEmoji: flag,
-      countryName: selectedTitle?.iso_3166_1 || "...",
+      countryName: countryName.trim() || selectedTitle?.iso_3166_1 || "...",
       localizedTitle: customTitle.trim() || selectedTitle?.title || "...",
       englishTranslation: englishTranslation.trim() || "",
       options
@@ -769,6 +770,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 setSelectedTitle(null)
                 setCustomTitle("")
                 setEnglishTranslation("")
+                setCountryName("")
               }}
             />
           ) : (
@@ -859,6 +861,17 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                     value={englishTranslation}
                     onChange={(e) => setEnglishTranslation(e.target.value)}
                     placeholder="English translation of the title..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="country-name" className="text-sm text-gray-600">Country Name</Label>
+                  <Input
+                    id="country-name"
+                    type="text"
+                    value={countryName}
+                    onChange={(e) => setCountryName(e.target.value)}
+                    placeholder="Country name (e.g., Spain, France, Germany...)"
                     className="mt-1"
                   />
                 </div>
