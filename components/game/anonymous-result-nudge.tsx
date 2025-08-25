@@ -62,8 +62,6 @@ export default function AnonymousResultNudge({
     }
 
     const playCount = gamesPlayed
-    const todaysGames = 1 // For now, we'll use 1 as we don't have this data yet
-
     // Determine nudge content based on play patterns
     let content: NudgeContent | null = null
 
