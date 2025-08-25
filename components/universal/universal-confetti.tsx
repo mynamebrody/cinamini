@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { GameTheme, GAME_THEMES } from "@/lib/universal-achievements"
 import { cn } from "@/lib/utils"
@@ -50,7 +50,7 @@ export function UniversalConfetti({
   const intensityConfig = INTENSITY_CONFIG[intensity]
 
   // Generate confetti pieces based on game theme
-  const generateConfetti = (): ConfettiPiece[] => {
+  const generateConfetti = useCallback((): ConfettiPiece[] => {
     const pieces: ConfettiPiece[] = []
     
     for (let i = 0; i < intensityConfig.count; i++) {
@@ -87,7 +87,7 @@ export function UniversalConfetti({
     }
     
     return pieces
-  }
+  }, [gameTheme, intensity, duration, themeConfig, intensityConfig])
 
   useEffect(() => {
     if (show) {
@@ -105,7 +105,7 @@ export function UniversalConfetti({
     } else {
       setIsVisible(false)
     }
-  }, [show, gameTheme, intensity, duration, onComplete])
+  }, [show, gameTheme, intensity, duration, onComplete, generateConfetti])
 
   if (!isVisible) return null
 
@@ -314,11 +314,7 @@ export class CanvasConfetti {
     // Clear canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     
-    // Update and draw particles
-    this.particles.forEach(particle => {
-      // Update particle physics
-      // Draw particle
-    })
+    // Update and draw particles (implementation needed)
     
     this.animationId = requestAnimationFrame(() => this.animate())
   }

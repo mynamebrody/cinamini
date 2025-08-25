@@ -5,7 +5,6 @@
  */
 
 import type { PosterPixelsShareData, ShareResult, ShareGenerator, ShareGeneratorConfig } from '../types';
-import { POSTER_PIXELS_LEVELS } from '@/lib/poster-pixels-config'
 
 export class PosterPixelsShareGenerator implements ShareGenerator {
   constructor(private config: ShareGeneratorConfig) {}

@@ -11,8 +11,7 @@ import {
   SeededRandom, 
   type SeedableGameItem 
 } from './game-seeding';
-import { createClient } from '@/lib/supabase/server';
-import { getMovieTranslations, getMovieAlternativeTitles, type TMDBMovie, type TMDBAlternativeTitles } from './tmdb';
+import { getMovieTranslations, getMovieAlternativeTitles, type TMDBMovie } from './tmdb';
 import { getBlendedMoviePool } from './tmdb-trending';
 
 // ============================================================================
@@ -321,7 +320,7 @@ export async function getLocalizedTitles(movieId: number): Promise<LocalizedTitl
   try {
     // Try alternative titles first (more accurate)
     const alternativeTitles = await getMovieAlternativeTitles(movieId);
-    let localizedTitles: LocalizedTitle[] = [];
+    const localizedTitles: LocalizedTitle[] = [];
     
     if (alternativeTitles && alternativeTitles.titles) {
       for (const altTitle of alternativeTitles.titles) {

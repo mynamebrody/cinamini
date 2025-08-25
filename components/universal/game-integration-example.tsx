@@ -12,7 +12,7 @@
  * 3. Let the system handle celebrations and notifications automatically
  */
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { GameTheme } from "@/lib/universal-achievements"
 import { useGameAchievements } from "./achievement-system"
@@ -35,11 +35,7 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
   } = useGameAchievements(gameTheme)
   
   // Get celebration utilities
-  const {
-    celebrate,
-    createConfetti,
-    triggerHaptic
-  } = useCelebration()
+  const { celebrate } = useCelebration()
 
   // Example: Handle game completion
   const handleGameWon = async (isPerfect: boolean) => {
@@ -74,12 +70,6 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
     await reportMovieEncountered(movieId)
   }
 
-  // Example: Custom celebration for game-specific moments
-  const handleSpecialMoment = () => {
-    // Use celebration library directly for custom moments
-    const confettiConfig = createConfetti(gameTheme, 'heavy', 4000)
-    triggerHaptic('success')
-  }
 
   return (
     <div className="relative min-h-screen bg-gray-900 p-4">
@@ -280,7 +270,7 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
 
 // Utility component for easy celebration testing
 export function CelebrationTester() {
-  const { celebrate, createConfetti, triggerHaptic } = useCelebration()
+  const { celebrate } = useCelebration()
   const [activeConfetti, setActiveConfetti] = useState<GameTheme | null>(null)
 
   const testCelebration = (gameTheme: GameTheme) => {

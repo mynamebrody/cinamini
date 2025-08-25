@@ -11,9 +11,7 @@ import {
   SeededRandom, 
   type SeedableGameItem 
 } from './game-seeding';
-import { createClient } from '@/lib/supabase/server';
 import { 
-  getMovieById,
   getMovieDetails,
   getPosterUrl,
   type TMDBMovie,

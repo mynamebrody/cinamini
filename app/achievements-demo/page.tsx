@@ -52,7 +52,7 @@ function AchievementsDemoContent() {
             </h1>
             <p className="text-xl text-gray-200 max-w-3xl mx-auto">
               A unified celebration and achievement system that brings consistency 
-              to the cinamini experience while preserving each game's unique personality.
+              to the cinamini experience while preserving each game&apos;s unique personality.
             </p>
             
             {/* Quick Stats */}

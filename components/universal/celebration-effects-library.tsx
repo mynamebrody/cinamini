@@ -1,6 +1,6 @@
 "use client"
 
-import { GameTheme, AchievementTier, HapticPattern, GAME_THEMES } from "@/lib/universal-achievements"
+import { GameTheme, AchievementTier, HapticPattern } from "@/lib/universal-achievements"
 import { UniversalConfetti } from "./universal-confetti"
 
 // Celebration Effects Library
@@ -66,7 +66,6 @@ export class CelebrationLibrary {
   ) {
     const {
       includeConfetti = true,
-      includeSound = true,
       includeHaptic = true,
       customIntensity
     } = options
@@ -147,7 +146,7 @@ export class CelebrationLibrary {
 }
 
 // React Hook for easy celebration triggering
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export function useCelebration() {
 

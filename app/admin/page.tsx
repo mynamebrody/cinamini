@@ -8,13 +8,9 @@ import {
   Calendar,
   Film,
   TrendingUp,
-  Users,
   DollarSign,
   Star,
   Clock,
-  Clapperboard,
-  Award,
-  Puzzle,
   PenTool,
   Info,
   CheckCircle,
@@ -23,8 +19,7 @@ import {
   X
 } from "lucide-react"
 import { format } from "date-fns"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface TrendingMovie {
   id: number
