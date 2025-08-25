@@ -155,8 +155,17 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               </>
             )}
           </h2>
-          <p className="text-muted-foreground">
-            {result.correct ? "Passport stamped for:" : "The destination was:"}
+          <p className="text-muted-foreground flex items-center justify-center gap-2">
+            {result.correct ? (
+              <>
+                <span>Passport stamped for:</span>
+                <span role="img" aria-label={`${result.puzzle?.countryName || 'Unknown country'} flag`}>
+                  {result.puzzle?.flagEmoji || "🏳️"}
+                </span>
+              </>
+            ) : (
+              "The destination was:"
+            )}
           </p>
         </div>
 
