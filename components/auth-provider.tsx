@@ -31,8 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (error) {
             console.error('Error signing in anonymously:', error)
           } else {
-            // Refresh the page to ensure auth state is properly set
-            router.refresh()
+            // Auth state is now set; no need to refresh the page. UI will update based on state.
           }
         }
       } catch (error) {
