@@ -88,6 +88,7 @@ export default function PosterPixelsGame() {
   const [isRevealing, setIsRevealing] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const [isProcessingGuess, setIsProcessingGuess] = useState(false)
   const { animatedClarity, isAnimating } = useAnimatedClarity(state.clarityLevel, {
     duration: state.won && state.clarityLevel === 100 ? 1500 : 800, // Longer animation for winning reveal
     easing: easingFunctions.easeInOutCubic
@@ -320,8 +321,12 @@ export default function PosterPixelsGame() {
   const recordGuess = async (entry: GuessEntry): Promise<GuessEntry[]> => {
     const newGuesses = [...state.guesses, entry]
     setState(prev => ({ ...prev, guesses: newGuesses }))
-    if (state.gameId && state.puzzle) {
-      try {
+    
+    // Always set processing state to prevent button spamming
+    setIsProcessingGuess(true)
+    
+    try {
+      if (state.gameId && state.puzzle) {
         await fetch("/api/poster-pixels/guess", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -336,15 +341,19 @@ export default function PosterPixelsGame() {
             guess_number: newGuesses.length, // Track which attempt this is
           }),
         })
-      } catch (e) {
-        console.error("Failed to persist guess", e)
       }
+    } catch (e) {
+      console.error("Failed to persist guess", e)
+    } finally {
+      // Always reset processing state
+      setIsProcessingGuess(false)
     }
+    
     return newGuesses
   }
 
   const handleGuessWithMovie = async (movie: { id: number; title: string }) => {
-    if (!state.puzzle || gameState !== 'playing') return
+    if (!state.puzzle || gameState !== 'playing' || isProcessingGuess) return
     
     const correctMovieId = state.puzzle.movie_data?.id || state.puzzle.film_id
     const isCorrect = movie.id === correctMovieId
@@ -360,7 +369,7 @@ export default function PosterPixelsGame() {
 
 
   const handleSkip = async () => {
-    if (gameState !== 'playing') return
+    if (gameState !== 'playing' || isProcessingGuess) return
     const entry: GuessEntry = {
       movieId: null,
       movieTitle: 'Skipped',
@@ -484,6 +493,7 @@ export default function PosterPixelsGame() {
   }
 
   const onEnhanceOrGiveUp = () => {
+    if (isProcessingGuess) return
     const levels = getLevels()
     const isLast = state.currentLevelIndex >= levels.length - 1
     if (isLast) {
@@ -728,9 +738,9 @@ export default function PosterPixelsGame() {
                           <Button 
                             onClick={onEnhanceOrGiveUp} 
                             className="w-full sm:w-auto"
-                            disabled={isAnimating || isRevealAnimating || isTransitioning}
+                            disabled={isAnimating || isRevealAnimating || isTransitioning || isProcessingGuess}
                           >
-                            {isAnimating ? 'Enhancing...' : state.won && state.clarityLevel === 100 ? 'Revealing...' : enhanceOrGiveUpLabel()}
+                            {isProcessingGuess ? 'Processing...' : isAnimating ? 'Enhancing...' : state.won && state.clarityLevel === 100 ? 'Revealing...' : enhanceOrGiveUpLabel()}
                           </Button>
                           <div className="text-sm text-muted-foreground text-center sm:text-right whitespace-nowrap">
                             Level {state.currentLevelIndex + 1} of {getLevels().length} • {formatPercent(isRevealing ? revealClarity : animatedClarity)}
@@ -746,7 +756,7 @@ export default function PosterPixelsGame() {
                           }
                         }}
                         selectedMovie={null}
-                        disabled={isAnimating || isRevealAnimating || isTransitioning}
+                        disabled={isAnimating || isRevealAnimating || isTransitioning || isProcessingGuess}
                         excludeMovieIds={state.guesses
                           .filter(g => g.movieId !== null)
                           .map(g => g.movieId as number)}
