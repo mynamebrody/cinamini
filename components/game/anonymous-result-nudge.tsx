@@ -62,14 +62,12 @@ export default function AnonymousResultNudge({
     }
 
     const playCount = gamesPlayed
-    // Determine nudge content based on play patterns
+    const todaysGames = 1 // For now, we'll use 1 as we don't have this data yet
+    
+    // Always show nudge for anonymous users after game completion
     let content: NudgeContent | null = null
 
-    if (playCount === 1) {
-      // First play - no nudge
-      setShouldShow(false)
-      return
-    } else if (playCount <= 3) {
+    if (playCount <= 3) {
       // Light nudge after first few games
       content = {
         title: "Nice work!",
@@ -118,6 +116,20 @@ export default function AnonymousResultNudge({
           { icon: TrendingUp, text: "Compare performance across games" }
         ],
         ctaText: "Start tracking",
+        variant: "subtle"
+      }
+    }
+
+    // Default fallback - ensure nudge always shows for anonymous users
+    if (!content) {
+      content = {
+        title: "Nice work!",
+        subtitle: "Create an account to save your progress",
+        features: [
+          { icon: Trophy, text: "Track your daily results" },
+          { icon: TrendingUp, text: "See your stats over time" }
+        ],
+        ctaText: "Sign up free",
         variant: "subtle"
       }
     }

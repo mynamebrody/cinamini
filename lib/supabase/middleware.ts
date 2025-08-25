@@ -62,6 +62,7 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname === "/auth/callback"
 
     // Redirect anonymous users trying to access protected routes to sign-in
+    if (isProtectedRoute && (!user || isAnonymous)) {
       const redirectUrl = new URL("/auth/sign-up", request.url)
       return NextResponse.redirect(redirectUrl)
     }
