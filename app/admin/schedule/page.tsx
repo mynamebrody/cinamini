@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { getGameStyle } from "@/lib/game-styles"
 
 interface Puzzle {
   id: string
@@ -330,14 +331,20 @@ export default function SchedulePage() {
                 <div className="space-y-2">
                   {getAvailableGames(gameMenuDate).map((game) => {
                     const Icon = game.icon
+                    const styleColors = getGameStyle(game.id)
                     return (
                       <button
                         key={game.id}
                         onClick={() => handleGameSelect(game.id)}
                         className="admin-game-btn"
+                        style={{
+                          backgroundColor: styleColors.lightBgRgba,
+                          borderColor: styleColors.borderRgba,
+                          color: styleColors.textHex
+                        }}
                       >
-                        <Icon className="w-5 h-5 text-cinema-red" />
-                        <span className="font-funnel font-medium">{game.name}</span>
+                        <Icon className="w-5 h-5" style={{ color: styleColors.textHex }} />
+                        <span className="font-funnel font-medium" style={{ color: styleColors.textHex }}>{game.name}</span>
                       </button>
                     )
                   })}
