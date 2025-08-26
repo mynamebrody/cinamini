@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { 
@@ -185,16 +185,16 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     if (prefilledMovieId && !isEditMode) {
       fetchAndSelectMovie(prefilledMovieId)
     }
-  }, [prefilledDate, prefilledMovieId, isEditMode])
+  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
 
   // Load existing puzzle data if puzzleId is provided
   useEffect(() => {
     if (puzzleId) {
       loadPuzzleData(puzzleId)
     }
-  }, [puzzleId])
+  }, [puzzleId, loadPuzzleData])
 
-  const loadPuzzleData = async (puzzleId: string) => {
+  const loadPuzzleData = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
@@ -255,7 +255,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     } finally {
       setLoadingPuzzle(false)
     }
-  }
+  }, [])
 
   // Auto-publish when date is manually set
   const handleDateChange = (date: string) => {
@@ -279,7 +279,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     }
   }
 
-  const fetchAndSelectMovie = async (movieId: string) => {
+  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
     try {
       const response = await fetch(`/api/movies/${movieId}/details`)
       if (response.ok) {
@@ -307,7 +307,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     } catch (error) {
       console.error('Error fetching movie details:', error)
     }
-  }
+  }, [])
 
 
   const fetchMovieCast = async (movieId: number, autoSelectActors = true) => {

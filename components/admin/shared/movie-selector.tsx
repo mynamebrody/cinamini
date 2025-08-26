@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Search, Film, AlertCircle, Check, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -105,14 +105,14 @@ export default function MovieSelector({
     }
   }
 
-  const hasValidBudget = (movie: any): boolean => {
+  const hasValidBudget = useCallback((movie: any): boolean => {
     // For Budget Bracket games, enforce minimum $100 budget requirement
     if (showBudget) {
       return movie.budget && typeof movie.budget === 'number' && movie.budget >= 100
     }
     // For other games, just ensure budget exists and is > 0
     return movie.budget && typeof movie.budget === 'number' && movie.budget > 0
-  }
+  }, [showBudget])
 
   // Function to fetch cached movie lists
   const fetchMovieList = async (listType: Exclude<TabType, 'search'>) => {
@@ -185,7 +185,7 @@ export default function MovieSelector({
     }
   }
 
-  const searchMovies = async (query: string) => {
+  const searchMovies = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
       return
@@ -337,7 +337,7 @@ export default function MovieSelector({
     } finally {
       setLoading(false)
     }
-  }
+  }, [excludeIds, showBudget, hasValidBudget])
 
 
   // Search with debouncing - only when on search tab
@@ -349,7 +349,7 @@ export default function MovieSelector({
 
       return () => clearTimeout(timeoutId)
     }
-  }, [searchQuery, activeTab])
+  }, [searchQuery, activeTab, searchMovies])
 
 
   const handleSelectMovie = (movie: Movie) => {

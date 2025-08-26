@@ -164,7 +164,7 @@ export default function PosterClarityPreview({
     
     // Draw initial state
     drawPixelatedPoster()
-  }, []) // Run once on mount
+  }, [drawPixelatedPoster]) // Run once on mount
 
   // Redraw when clarity changes
   useEffect(() => {

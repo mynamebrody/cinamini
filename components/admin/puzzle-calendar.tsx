@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
 import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -226,9 +226,9 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
 
   useEffect(() => {
     fetchPuzzles()
-  }, [currentMonth])
+  }, [currentMonth, fetchPuzzles])
 
-  const fetchPuzzles = async () => {
+  const fetchPuzzles = useCallback(async () => {
     setLoading(true)
     try {
       const start = startOfMonth(currentMonth)
@@ -247,7 +247,7 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentMonth])
 
   const autoScheduleDrafts = async () => {
     if (puzzles.drafts.length === 0) {

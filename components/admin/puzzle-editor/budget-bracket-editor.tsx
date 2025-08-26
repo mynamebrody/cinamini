@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Film, GripVertical, Sparkles } from "lucide-react"
@@ -472,14 +472,14 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         abortController.abort()
       }
     }
-  }, [puzzleId])
+  }, [puzzleId, loadPuzzleData])
 
   // Load recently used movies on component mount
   useEffect(() => {
     fetchRecentlyUsedMovies(puzzleId || undefined)
-  }, [puzzleId])
+  }, [puzzleId, fetchRecentlyUsedMovies])
 
-  const loadPuzzleData = async (puzzleId: string, abortSignal?: AbortSignal) => {
+  const loadPuzzleData = useCallback(async (puzzleId: string, abortSignal?: AbortSignal) => {
     // Prevent concurrent loads
     if (loadingPuzzle) {
       return
@@ -553,9 +553,9 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     } finally {
       setLoadingPuzzle(false)
     }
-  }
+  }, [loadingPuzzle])
 
-  const fetchRecentlyUsedMovies = async (excludePuzzleId?: string) => {
+  const fetchRecentlyUsedMovies = useCallback(async (excludePuzzleId?: string) => {
     try {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -751,7 +751,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     } catch (error) {
       console.error('Error fetching recently used movies:', error)
     }
-  }
+  }, [supabase])
 
   const fetchCachedMovies = async () => {
     if (cachedMoviesLoaded || cachedMoviesLoading) return

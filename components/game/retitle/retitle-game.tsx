@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
@@ -62,25 +62,7 @@ export default function RetitleGame() {
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
   const [showConfetti, setShowConfetti] = useState(false)
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadTodaysPuzzle()
-    }
-  }, [authLoading])
-
-  // Load visited countries from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('retitled-visited-countries')
-    if (saved) {
-      try {
-        setVisitedCountries(JSON.parse(saved))
-      } catch (err) {
-        console.warn('Failed to parse visited countries:', err)
-      }
-    }
-  }, [])
-
-  const loadTodaysPuzzle = async () => {
+  const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState('loading')
       setError(null)
@@ -201,7 +183,26 @@ export default function RetitleGame() {
       setError("Failed to load today's puzzle. Please try again.")
       setGameState('error')
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading, loadTodaysPuzzle])
+
+  // Load visited countries from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('retitled-visited-countries')
+    if (saved) {
+      try {
+        setVisitedCountries(JSON.parse(saved))
+      } catch (err) {
+        console.warn('Failed to parse visited countries:', err)
+      }
+    }
+  }, [])
+
 
   const startGame = () => {
     // Mark that the user has seen the tutorial if coming from how to play

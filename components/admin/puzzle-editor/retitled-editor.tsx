@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
@@ -167,7 +167,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
-  const fetchAlternativeTitles = async (movieId: number) => {
+  const fetchAlternativeTitles = useCallback(async (movieId: number) => {
     setLoadingTitles(true)
     try {
       const response = await fetch(`/api/movies/${movieId}/alternative-titles`)
@@ -183,13 +183,13 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     } finally {
       setLoadingTitles(false)
     }
-  }
+  }, [selectedMovie?.title])
 
   useEffect(() => {
     if (selectedMovie) {
       fetchAlternativeTitles(selectedMovie.id)
     }
-  }, [selectedMovie])
+  }, [selectedMovie, fetchAlternativeTitles])
 
   useEffect(() => {
     if (selectedTitle) {
@@ -247,7 +247,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     if (puzzleId && !loadingPuzzle) {
       loadExistingPuzzle(puzzleId)
     }
-  }, [puzzleId])
+  }, [puzzleId, loadExistingPuzzle, loadingPuzzle])
 
   // Reconstruct allOptions when editing mode and both movie and distractors are loaded
   // Only do this if allOptions is empty (for backward compatibility with older puzzles)
@@ -273,7 +273,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         fetchAndSelectMovie(prefilledMovieId)
       }
     }
-  }, [prefilledDate, prefilledMovieId, isEditMode])
+  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
 
   // Auto-publish when date is manually set
   const handleDateChange = (date: string) => {
@@ -297,7 +297,33 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
-  const loadExistingPuzzle = async (puzzleId: string) => {
+  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }, [])
+
+  const loadExistingPuzzle = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=retitled`)
@@ -398,33 +424,8 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     } finally {
       setLoadingPuzzle(false)
     }
-  }
+  }, [fetchAndSelectMovie])
 
-  const fetchAndSelectMovie = async (movieId: string) => {
-    try {
-      const response = await fetch(`/api/movies/${movieId}/details`)
-      if (response.ok) {
-        const movieData = await response.json()
-        
-        const movie: Movie = {
-          id: movieData.id,
-          title: movieData.title,
-          poster_path: movieData.poster_path,
-          release_date: movieData.release_date || '',
-          budget: movieData.budget,
-          revenue: movieData.revenue,
-          runtime: movieData.runtime,
-          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
-          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
-          vote_average: movieData.vote_average
-        }
-        
-        setSelectedMovie(movie)
-      }
-    } catch (error) {
-      console.error('Error fetching movie details:', error)
-    }
-  }
 
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {

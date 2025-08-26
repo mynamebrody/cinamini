@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Flame } from "lucide-react"
@@ -47,33 +47,15 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
   const { shareText: centralizedShareText, fetchShare } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
   
   
-  const generateFallbackShareText = () => {
+  const generateFallbackShareText = useCallback(() => {
     const resultEmoji = result.correct ? "✅" : "❌"
     const flagEmoji = result.puzzle?.flagEmoji || "🏳️"
     const timeText = solveTimeMs > 0 ? ` • ${formatGameTime(solveTimeMs)}` : ""
     return `Retitled #${puzzleNumber} ${flagEmoji} • ${resultEmoji}${timeText}`
-  }
+  }, [result.correct, result.puzzle?.flagEmoji, puzzleNumber, solveTimeMs])
 
-  useEffect(() => {
-    // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
-    const shouldUseFallback = !centralizedShareText || 
-      (solveTimeMs > 0 && centralizedShareText && (centralizedShareText.includes('0s') || centralizedShareText.includes('00:00:00')))
-    
-    if (shouldUseFallback) {
-      console.log('Using fallback share text generation')
-      setShareText(generateFallbackShareText())
-      setLoadingShare(false)
-    } else {
-      // Try centralized sharing first, fallback to legacy API if it fails
-      fetchShare().catch(() => {
-        console.log('Centralized sharing failed, falling back to legacy API')
-        fetchLegacyShareText()
-      })
-    }
-  }, [fetchShare, centralizedShareText, solveTimeMs])
-  
   // Fallback to legacy share API if centralized system fails
-  const fetchLegacyShareText = async () => {
+  const fetchLegacyShareText = useCallback(async () => {
     try {
       const response = await fetch(`/api/retitled/share/${puzzleId}`)
       
@@ -99,7 +81,26 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
     } finally {
       setLoadingShare(false)
     }
-  }
+  }, [puzzleId, solveTimeMs, generateFallbackShareText])
+
+  useEffect(() => {
+    // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
+    const shouldUseFallback = !centralizedShareText || 
+      (solveTimeMs > 0 && centralizedShareText && (centralizedShareText.includes('0s') || centralizedShareText.includes('00:00:00')))
+    
+    if (shouldUseFallback) {
+      console.log('Using fallback share text generation')
+      setShareText(generateFallbackShareText())
+      setLoadingShare(false)
+    } else {
+      // Try centralized sharing first, fallback to legacy API if it fails
+      fetchShare().catch(() => {
+        console.log('Centralized sharing failed, falling back to legacy API')
+        fetchLegacyShareText()
+      })
+    }
+  }, [fetchShare, centralizedShareText, solveTimeMs, generateFallbackShareText, fetchLegacyShareText])
+  
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">

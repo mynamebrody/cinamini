@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
@@ -117,38 +117,7 @@ export default function CastClimbGame() {
   // EFFECTS AND DATA LOADING
   // ============================================================================
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadTodaysPuzzle()
-    }
-  }, [authLoading])
-  
-  // Generate centralized share text when result is available
-  useEffect(() => {
-    if (result && puzzle && userGuesses?.length > 0) {
-      fetchShare().catch((error) => {
-        console.log('Centralized sharing failed for Cast Climb:', error)
-        // Fallback handled by using result.share_text
-      })
-    }
-  }, [result, puzzle, userGuesses, fetchShare])
-
-  // Elapsed time effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    
-    if (gameState === "playing" && startTime > 0) {
-      interval = setInterval(() => {
-        setElapsedTime(Date.now() - startTime)
-      }, 1000)
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [gameState, startTime])
-
-  const loadTodaysPuzzle = async () => {
+  const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState("loading")
       setError(null)
@@ -231,7 +200,39 @@ export default function CastClimbGame() {
       setError("Failed to load today's puzzle. Please try again.")
       setGameState("error")
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading, loadTodaysPuzzle])
+  
+  // Generate centralized share text when result is available
+  useEffect(() => {
+    if (result && puzzle && userGuesses?.length > 0) {
+      fetchShare().catch((error) => {
+        console.log('Centralized sharing failed for Cast Climb:', error)
+        // Fallback handled by using result.share_text
+      })
+    }
+  }, [result, puzzle, userGuesses, fetchShare])
+
+  // Elapsed time effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (gameState === "playing" && startTime > 0) {
+      interval = setInterval(() => {
+        setElapsedTime(Date.now() - startTime)
+      }, 1000)
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [gameState, startTime])
+
 
   // ============================================================================
   // GAME LOGIC
