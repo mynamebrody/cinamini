@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
@@ -23,7 +22,6 @@ import { SiteFooter } from "../../site-footer"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
 import { useCastClimbShare } from "@/hooks/useGameShare"
-import type { CastClimbShareData } from "@/lib/sharing"
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -99,8 +97,7 @@ function formatTime(seconds: number): string {
 // ============================================================================
 
 export default function CastClimbGame() {
-  const router = useRouter()
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>("loading")
   const [modalState, setModalState] = useState<ModalState>("none")
   const [puzzle, setPuzzle] = useState<CastClimbPuzzle | null>(null)
@@ -447,47 +444,6 @@ export default function CastClimbGame() {
   // UTILITY FUNCTIONS
   // ============================================================================
 
-  // Helper function to generate CastClimbShareData
-  const generateShareData = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): CastClimbShareData => {
-    // Ensure guesses is always an array
-    const safeGuesses = Array.isArray(guesses) ? guesses : []
-    return {
-      guesses: safeGuesses.map((guess, index) => ({
-        isCorrect: guess.isCorrect,
-        actorsRevealed: guess.actorsRevealed,
-        attemptNumber: guess.attemptNumber || index + 1
-      })),
-      puzzle: {
-        puzzleNumber
-      },
-      result: {
-        isWin,
-        totalGuesses: safeGuesses.length
-      }
-    }
-  }
-  
-  // Helper function to use centralized sharing and fallback to client generation
-  const getShareText = async (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean): Promise<string> => {
-    try {
-      if (puzzle && centralizedShareText) {
-        return centralizedShareText
-      }
-      
-      const shareData = generateShareData(puzzleNumber, guesses, isWin)
-      // Note: generateShare is not available in this context, so we'll just return the centralized text
-      // Use generateShare as a fallback if centralizedShareText is not available
-      if (typeof generateShare === "function") {
-        return centralizedShareText || generateShare(shareData)
-      }
-      // Return centralized share text or fallback
-      return centralizedShareText || generateFallbackShareText(puzzleNumber, guesses, isWin)
-    } catch (error) {
-      console.error('Error generating share text:', error)
-      return generateFallbackShareText(puzzleNumber, guesses, isWin)
-    }
-  }
-  
   // Fallback share text generation (matches centralized format)
   const generateFallbackShareText = (puzzleNumber: number, guesses: CastClimbGuess[], isWin: boolean, studioTimeMs?: number): string => {
     // Ensure guesses is always an array
@@ -680,7 +636,7 @@ export default function CastClimbGame() {
         {gameState === "loading" && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+              <div className="animate-pulse text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}

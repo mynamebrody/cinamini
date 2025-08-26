@@ -15,7 +15,6 @@ export default function PuzzleEditor() {
   const [activeTab, setActiveTab] = useState("retitled")
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [selectedMovieId, setSelectedMovieId] = useState<string | null>(null)
-  const [selectedPuzzleId, setSelectedPuzzleId] = useState<string | null>(null)
   
   // Persistent state for each game (survives tab switches)
   const [gameStates, setGameStates] = useState({

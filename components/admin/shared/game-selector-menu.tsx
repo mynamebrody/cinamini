@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Film, Gamepad2, DollarSign, ImageIcon, X } from "lucide-react"
@@ -48,7 +47,6 @@ const AVAILABLE_GAMES = [
 
 export default function GameSelectorMenu({ movie, date, onClose, excludeGames = [] }: GameSelectorMenuProps) {
   const router = useRouter()
-  const [selectedGame, setSelectedGame] = useState<string | null>(null)
 
   const availableGames = AVAILABLE_GAMES.filter(game => !excludeGames.includes(game.id))
 

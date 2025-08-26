@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import Cookies from "js-cookie"
 import GameSelectorMenu from "@/components/admin/shared/game-selector-menu"
 import { 
@@ -233,9 +234,11 @@ export default function AdminDashboard() {
                 onClick={() => fetchMovieDetails(movie.id)}
               >
                 <div className="admin-movie-poster relative overflow-hidden group-hover:scale-[1.02]">
-                  <img
+                  <Image
                     src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
                     alt={movie.title}
+                    width={342}
+                    height={513}
                     className="w-full aspect-[2/3] object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -271,9 +274,11 @@ export default function AdminDashboard() {
             </button>
             <div className="p-6 pr-12"> {/* Add right padding for close button */}
               <div className="flex gap-6 mb-6">
-                <img
+                <Image
                   src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
                   alt={selectedMovie.title}
+                  width={342}
+                  height={513}
                   className="w-48 border-2 border-neutral-200"
                   style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                 />

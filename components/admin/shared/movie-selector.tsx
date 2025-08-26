@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Film, AlertCircle, Check, X, Loader2 } from "lucide-react"
+import { Search, Film, AlertCircle, Check, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -71,8 +71,6 @@ interface CachedList {
 
 export default function MovieSelector({ 
   onSelect, 
-  onClose, 
-  selectedMovieId,
   showBudget = false,
   excludeIds = []
 }: MovieSelectorProps) {
@@ -83,7 +81,6 @@ export default function MovieSelector({
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsage, setMovieUsage] = useState<MovieUsage | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(false)
-  const [componentReady, setComponentReady] = useState(true)
   
   // State for cached movie lists
   const [cachedLists, setCachedLists] = useState<Record<Exclude<TabType, 'search'>, CachedList>>({
@@ -368,29 +365,6 @@ export default function MovieSelector({
       setSelectedMovie(null)
       setMovieUsage(null)
     }
-  }
-
-  const getMovieStatus = (movie: Movie) => {
-    if (!movie.release_date) {
-      return { status: "unknown", label: "Unknown Release", color: "bg-gray-100 text-gray-800" }
-    }
-    
-    const releaseDate = new Date(movie.release_date)
-    if (isNaN(releaseDate.getTime())) {
-      return { status: "unknown", label: "Unknown Release", color: "bg-gray-100 text-gray-800" }
-    }
-    
-    const today = new Date()
-    const daysUntilRelease = Math.ceil((releaseDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-    if (releaseDate > today) {
-      if (daysUntilRelease <= 30) {
-        return { status: "coming-soon", label: "Coming Soon", color: "bg-yellow-100 text-yellow-800" }
-      }
-      return { status: "unreleased", label: "Not Released", color: "bg-gray-100 text-gray-800" }
-    }
-
-    return { status: "available", label: "Available", color: "bg-green-100 text-green-800" }
   }
 
   // Get current movie list to display

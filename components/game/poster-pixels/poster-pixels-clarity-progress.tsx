@@ -17,11 +17,9 @@ export function PosterPixelsClarityProgress({
   isPlaying
 }: PosterPixelsClarityProgressProps) {
   const [showSparkles, setShowSparkles] = useState(false)
-  const [brushPosition, setBrushPosition] = useState(0)
+  const [, setBrushPosition] = useState(0)
   const [lastMilestone, setLastMilestone] = useState(0)
 
-  // Convert clarity level to percentage (20% to 100%)
-  const clarityPercent = Math.round((clarityLevel - 0.2) / 0.8 * 100)
   const overallClarityPercent = Math.round(clarityLevel * 100)
   
   // Calculate restoration progress for developer tray

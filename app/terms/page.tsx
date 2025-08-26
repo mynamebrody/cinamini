@@ -1,17 +1,18 @@
 import { SiteFooter } from "@/components/site-footer"
+import Link from "next/link"
 
 export default function Terms() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <a href="/" className="inline-block">
+          <Link href="/" className="inline-block">
             <img 
               src="/cinamini/Wordmark - Black.svg" 
               alt="cinamini" 
               className="h-8 w-auto"
             />
-          </a>
+          </Link>
         </div>
       </header>
       
@@ -95,7 +96,7 @@ export default function Terms() {
               <li>Attempt to manipulate scores or statistics</li>
               <li>Reverse engineer or exploit our systems</li>
               <li>Use the service for any illegal or unauthorized purpose</li>
-              <li>Interfere with other users' enjoyment of the games</li>
+              <li>Interfere with other users&apos; enjoyment of the games</li>
             </ul>
           </section>
 
@@ -147,7 +148,7 @@ export default function Terms() {
 
             <div className="text-sm text-neutral-600 space-y-2">
               <p>
-                <strong>Data Usage:</strong> We use TMDB's API to retrieve movie information for our puzzle games, including:
+                <strong>Data Usage:</strong> We use TMDB&apos;s API to retrieve movie information for our puzzle games, including:
               </p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Movie titles and translations</li>
@@ -177,7 +178,7 @@ export default function Terms() {
               Limitation of Liability
             </h2>
             <p className="text-neutral-700">
-              cinamini is provided "as is" without warranties. We are not liable for any damages 
+              cinamini is provided &quot;as is&quot; without warranties. We are not liable for any damages 
               arising from your use of the service, including lost data or interruption of service.
             </p>
           </section>

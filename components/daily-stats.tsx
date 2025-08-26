@@ -8,8 +8,8 @@ export default function DailyStats() {
     <section className="py-8 border-t border-white/10">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-white mb-2">Today's Community</h2>
-          <p className="text-gray-400">Join thousands of movie fans in today's challenges</p>
+          <h2 className="text-2xl font-bold text-white mb-2">Today&apos;s Community</h2>
+          <p className="text-gray-400">Join thousands of movie fans in today&apos;s challenges</p>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

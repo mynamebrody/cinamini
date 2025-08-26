@@ -70,6 +70,11 @@ export function GameIntegrationExample({ gameTheme }: { gameTheme: GameTheme }) 
     await reportMovieEncountered(movieId)
   }
 
+  // Example: Handle special moment with celebration
+  const handleSpecialMoment = () => {
+    celebrate(gameTheme, 'silver')
+  }
+
 
   return (
     <div className="relative min-h-screen bg-gray-900 p-4">

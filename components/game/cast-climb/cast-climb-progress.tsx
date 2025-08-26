@@ -269,14 +269,3 @@ export function CastClimbProgress({
   )
 }
 
-// Add custom shimmer animation to globals.css or use inline styles
-const shimmerKeyframes = `
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.animate-shimmer {
-  animation: shimmer 2s infinite;
-}
-`

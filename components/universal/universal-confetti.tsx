@@ -87,7 +87,7 @@ export function UniversalConfetti({
     }
     
     return pieces
-  }, [gameTheme, intensity, duration, themeConfig, intensityConfig])
+  }, [duration, themeConfig, intensityConfig])
 
   useEffect(() => {
     if (show) {

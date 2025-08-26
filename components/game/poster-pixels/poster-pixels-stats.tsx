@@ -9,9 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { 
   Trophy, 
   Target, 
-  Calendar, 
-  TrendingUp, 
-  Users,
   BarChart3,
   Award,
   Flame,
@@ -33,7 +30,7 @@ interface PosterPixelsStats {
 }
 
 export default function PosterPixelsStats() {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const router = useRouter()
   const [stats, setStats] = useState<PosterPixelsStats | null>(null)
   const [loading, setLoading] = useState(true)

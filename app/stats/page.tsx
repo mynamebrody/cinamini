@@ -8,6 +8,7 @@ import RetitleStats from "@/components/game/retitle/retitle-stats"
 import BudgetBracketStats from "@/components/game/budget-bracket/budget-bracket-stats"
 import PosterPixelsStats from "@/components/game/poster-pixels/poster-pixels-stats"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link"
 
 export default async function StatsPage() {
   // If Supabase is not configured, show setup message directly
@@ -42,10 +43,10 @@ export default async function StatsPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
-              <a href="/" className="text-neutral-900 hover:text-[rgb(153,37,29)] transition-colors">
+              <Link href="/" className="text-neutral-900 hover:text-[rgb(153,37,29)] transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Home
-              </a>
+              </Link>
             </Button>
             <h1 className="text-xl font-bold text-neutral-900 font-funnel-display-bold">Your Statistics</h1>
             <div className="w-[120px]"></div> {/* Spacer to center the title */}

@@ -36,7 +36,7 @@ function SubmitButton() {
 export default function ResetPasswordForm() {
   const router = useRouter()
   const [state, formAction] = useActionState(updatePassword, null)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showSuccess] = useState(false)
   const [isValidRecovery, setIsValidRecovery] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClient()

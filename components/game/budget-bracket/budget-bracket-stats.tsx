@@ -19,7 +19,7 @@ import {
 import { type BudgetBracketStats } from "@/lib/budget-bracket-client"
 
 export default function BudgetBracketStats() {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const router = useRouter()
   const [stats, setStats] = useState<BudgetBracketStats | null>(null)
   const [loading, setLoading] = useState(true)

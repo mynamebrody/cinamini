@@ -1,10 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { LogOut, Settings, User, Trophy } from "lucide-react"
+import { LogOut, User, Trophy } from "lucide-react"
 import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import Link from "next/link"
 
 interface SiteHeaderProps {
   user: any
@@ -43,7 +44,7 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo and title */}
           <div className="flex items-center">
-            <a href="/" className="flex items-center">
+            <Link href="/" className="flex items-center">
               <Image
                 src="/cinamini/Wordmark.webp"
                 alt="cinamini"
@@ -54,7 +55,7 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
               />
               {/* Fallback text logo if needed */}
               {/* <span className="text-2xl font-funnel-display-bold text-cinema-red font-bold">cinamini</span> */}
-            </a>
+            </Link>
             <span className="ml-3 text-sm text-neutral-500 hidden sm:block font-funnel">
               Daily Movie Puzzles
             </span>

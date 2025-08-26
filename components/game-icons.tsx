@@ -1,4 +1,4 @@
-import { DollarSign, Globe, Film, Users } from "lucide-react"
+import { Film } from "lucide-react"
 import { GameLogo } from "./game-logo"
 
 interface GameIconProps {

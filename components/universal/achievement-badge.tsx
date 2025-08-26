@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Achievement, AchievementTier, GameTheme, GAME_THEMES } from "@/lib/universal-achievements"
+import { Achievement, AchievementTier, GAME_THEMES } from "@/lib/universal-achievements"
 import { cn } from "@/lib/utils"
 
 interface AchievementBadgeProps {

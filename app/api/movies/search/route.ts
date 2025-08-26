@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import type { TMDBSearchResponse, MovieSearchResponse, APIErrorResponse } from '@/lib/types/tmdb'
 
 // TMDB API configuration
@@ -21,10 +20,6 @@ export async function GET(request: NextRequest) {
     console.log('TMDB API Key configured:', process.env.TMDB_API_KEY ? 'Yes' : 'No')
     console.log('TMDB API Key length:', process.env.TMDB_API_KEY?.length || 0)
 
-    // User authentication is optional for movie search
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
     // Movie search is available to both authenticated and anonymous users
 
     // Get search parameters

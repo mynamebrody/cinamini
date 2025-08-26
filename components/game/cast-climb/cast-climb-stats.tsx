@@ -36,7 +36,7 @@ interface CastClimbStats {
 }
 
 export default function CastClimbStats() {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const router = useRouter()
   const [stats, setStats] = useState<CastClimbStats | null>(null)
   const [loading, setLoading] = useState(true)

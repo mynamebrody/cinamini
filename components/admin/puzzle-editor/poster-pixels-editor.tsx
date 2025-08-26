@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, Film, Image, Check } from "lucide-react"
-import { format } from "date-fns"
+import { Save, Loader2, Plus, X, Image, Check } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -491,7 +490,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
             <div className="text-sm text-cinema-red bg-red-50 p-2 rounded border border-red-200">
               <div className="flex items-center gap-2">
                 <X className="w-4 h-4" />
-                <span>This movie doesn't have a poster. Please select a different movie.</span>
+                <span>This movie doesn&apos;t have a poster. Please select a different movie.</span>
               </div>
             </div>
           )}

@@ -5,7 +5,6 @@ import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Trophy } from "lucide-react"
 import { cn, formatGameTime } from "@/lib/utils"
 import Image from "next/image"
-import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
 interface PosterPixelsResultProps {
   puzzleId: string
@@ -27,7 +26,6 @@ interface PosterPixelsResultProps {
 }
 
 export default function PosterPixelsResult({ 
-  puzzleId,
   puzzleNumber,
   won, 
   timeElapsed, 
@@ -36,7 +34,6 @@ export default function PosterPixelsResult({
   movieYear,
   moviePosterUrl,
   guesses,
-  timedOut = false,
   finalScore = 0
 }: PosterPixelsResultProps) {
   const formatClarity = (clarity: number) => {

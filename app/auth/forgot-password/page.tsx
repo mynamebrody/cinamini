@@ -1,5 +1,6 @@
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import ForgotPasswordForm from "@/components/forgot-password-form"
+import Link from "next/link"
 
 export default async function ForgotPasswordPage() {
   // If Supabase is not configured, show setup message directly
@@ -25,9 +26,9 @@ export default async function ForgotPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="mx-auto max-w-md p-6 text-center">
           <p className="text-neutral-600">You are already logged in.</p>
-          <a href="/" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
+          <Link href="/" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
             Go to home
-          </a>
+          </Link>
         </div>
       </div>
     )

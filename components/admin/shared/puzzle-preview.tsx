@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Film, DollarSign, Users, Calendar } from "lucide-react"
+import { Film, Users, Calendar } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import PosterClarityPreview from "./poster-clarity-preview"
@@ -116,9 +116,9 @@ function RetitledPreview({
       <div className="text-center space-y-3">
         <div className="text-5xl">{flagEmoji}</div>
         <div className="text-sm text-gray-500">{countryName}</div>
-        <h3 className="text-2xl font-bold">"{localizedTitle}"</h3>
+        <h3 className="text-2xl font-bold">&quot;{localizedTitle}&quot;</h3>
         {englishTranslation && (
-          <p className="text-base text-gray-500 italic">"{englishTranslation}"</p>
+          <p className="text-base text-gray-500 italic">&quot;{englishTranslation}&quot;</p>
         )}
         <p className="text-gray-600">Which movie is this?</p>
       </div>

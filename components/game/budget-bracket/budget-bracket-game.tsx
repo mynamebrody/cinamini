@@ -448,7 +448,7 @@ export default function BudgetBracketGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+              <div className="animate-pulse text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}
@@ -530,7 +530,7 @@ export default function BudgetBracketGame() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center text-muted-foreground">
-                    You've completed today's Budget Bracket puzzle.
+                    You&apos;ve completed today&apos;s Budget Bracket puzzle.
                   </div>
                   
                   <div className="bg-muted rounded-lg p-4">

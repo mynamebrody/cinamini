@@ -5,7 +5,7 @@ import { useGameMode } from "@/hooks/use-game-mode"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { X, Trophy, Flame, Clock, Target } from "lucide-react"
+import { Trophy, Flame, Clock, Target } from "lucide-react"
 import { getCountryFlag } from "@/lib/flag-emojis"
 
 interface StatsData {
@@ -25,7 +25,7 @@ interface RetitleStatsProps {
 
 
 export default function RetitleStats({ onClose }: RetitleStatsProps) {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const router = useRouter()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)

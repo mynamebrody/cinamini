@@ -3,8 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Calendar, Save, Loader2, Plus, X, DollarSign, Film, ArrowRight, GripVertical, Sparkles } from "lucide-react"
-import { format } from "date-fns"
+import { Save, Loader2, Plus, X, Film, GripVertical, Sparkles } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -12,8 +11,6 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
-import MovieDetailsCard from "../shared/movie-details-card"
-import PuzzlePreview from "../shared/puzzle-preview"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -877,7 +874,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           }
         } else {
         }
-      } catch (error) {
+      } catch {
       }
     }
     
@@ -940,10 +937,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (bestPartnerIdx !== -1 && !used.has(bestPartnerIdx)) {
         const movieA = sortedMovies[i]
         const movieB = sortedMovies[bestPartnerIdx]
-        const budgetA = movieA.budget || 0
-        const budgetB = movieB.budget || 0
-        const difference = Math.abs(budgetA - budgetB)
-        const percentDiff = budgetA > 0 ? ((difference / Math.min(budgetA, budgetB)) * 100) : 0
         
         pairs.push({ movieA, movieB })
         used.add(i)
@@ -975,8 +968,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
     
     if (bestMatch) {
-      const difference = Math.abs((bestMatch.budget || 0) - targetBudget)
-      const percentDiff = targetBudget > 0 ? ((difference / Math.min(targetBudget, bestMatch.budget || 0)) * 100) : 0
+      // Best match found based on budget similarity
     }
     
     return bestMatch
@@ -1049,7 +1041,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           availableMovies = await fetchMoviesWithFallback(baseMovie.id)
           // Include the base movie as first option (for consistency with existing logic)
           availableMovies.unshift(baseMovie)
-        } catch (error) {
+        } catch {
           availableMovies = [baseMovie, ...cachedMovies]
         }
       }
@@ -1112,7 +1104,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
                 if (moviesWithBudgets.length >= 10) break
               }
             }
-          } catch (error) {
+          } catch {
           }
         }
         
@@ -1174,17 +1166,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       }
 
       setMoviePairs(currentPairs)
-      
-      // Count how many slots we actually filled
-      let actuallyFilled = 0
-      currentPairs.forEach(pair => {
-        if (pair.movieA) actuallyFilled++
-        if (pair.movieB) actuallyFilled++
-      })
-      
-      const totalSlots = currentPairs.length * 2
-      const filledSlots = actuallyFilled
-      const newlyFilled = filledSlots - (totalSlots - emptySlots)
       
 
     } catch (error) {
@@ -1514,24 +1495,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       }
     } finally {
       setLoading(false)
-    }
-  }
-
-  const getPreviewData = () => {
-    return {
-      pairs: moviePairs.map((pair, index) => ({
-        roundNumber: index + 1,
-        movieA: pair.movieA ? {
-          title: pair.movieA.title,
-          poster_path: pair.movieA.poster_path,
-          budget: pair.movieA.budget
-        } : null,
-        movieB: pair.movieB ? {
-          title: pair.movieB.title,
-          poster_path: pair.movieB.poster_path,
-          budget: pair.movieB.budget
-        } : null
-      }))
     }
   }
 

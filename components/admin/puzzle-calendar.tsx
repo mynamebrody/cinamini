@@ -111,7 +111,7 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
         isDraggingDisabled && "opacity-75 cursor-not-allowed",
         isDraft && "border-dashed border-2 bg-amber-50/50"
       )}
-      onClick={(e) => {
+      onClick={() => {
         // Only handle click if not currently dragging
         if (!isDragging) {
           onPuzzleClick(puzzle)
@@ -206,7 +206,7 @@ function DroppableDate({ date, puzzles, onAddPuzzle, onPuzzleClick }: { date: Da
   )
 }
 
-export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAddPuzzle }: PuzzleCalendarProps) {
+export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalendarProps, 'onDateClick'>) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [puzzles, setPuzzles] = useState<{ scheduled: Puzzle[]; drafts: Puzzle[] }>({ scheduled: [], drafts: [] })
@@ -492,7 +492,11 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
         } else {
           // No conflict, use regular update for draft publication
           // Remove fields that don't exist in the database schema
-          const { game_type, id, created_at, ...cleanPuzzleData } = draggedPuzzle
+          const cleanPuzzleData = Object.fromEntries(
+            Object.entries(draggedPuzzle).filter(([key]) => 
+              !['game_type', 'id', 'created_at'].includes(key)
+            )
+          )
           
           const response = await fetch('/api/admin/puzzles/update', {
             method: 'PUT',

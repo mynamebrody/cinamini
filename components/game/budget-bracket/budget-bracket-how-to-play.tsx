@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DollarSign, Trophy, Clock, Target } from "lucide-react"
+import { Trophy, Clock, Target } from "lucide-react"
 
 interface BudgetBracketHowToPlayProps {
   onStart: () => void
@@ -38,7 +38,7 @@ export default function BudgetBracketHowToPlay({ onStart }: BudgetBracketHowToPl
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold mb-1">Compare Movies</h3>
                   <p className="text-xs text-muted-foreground">
-                    You'll see two movie posters side by side. Click on the movie you think had the higher production budget.
+                    You&apos;ll see two movie posters side by side. Click on the movie you think had the higher production budget.
                   </p>
                 </div>
               </div>

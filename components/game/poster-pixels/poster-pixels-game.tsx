@@ -66,7 +66,7 @@ type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'complete
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function PosterPixelsGame() {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [gameStartTime, setGameStartTime] = useState<number>(0)
@@ -660,7 +660,7 @@ export default function PosterPixelsGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-lg">Loading today's puzzle...</div>
+              <div className="text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}

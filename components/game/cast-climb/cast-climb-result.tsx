@@ -7,8 +7,6 @@ import { ShareDrawer } from "@/components/ui/share-drawer"
 import { 
   Trophy, 
   BarChart3, 
-  Users,
-  Clock,
   CheckCircle,
   XCircle,
   Star,
@@ -16,7 +14,6 @@ import {
   Flame
 } from "lucide-react"
 import Image from "next/image"
-import { formatGameTime } from "@/lib/utils"
 
 interface CastClimbActor {
   name: string
@@ -79,7 +76,6 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
 
   const lastGuess = user_guesses[user_guesses.length - 1]
   const isPerfectGame = correct && lastGuess.actorsRevealed === 1
-  const solveTime = correct ? lastGuess.solveTimeMs : null
 
   return (
     <div className="max-w-md mx-auto space-y-4">
@@ -107,7 +103,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
               <CardTitle className="text-sm">Your Guesses</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {user_guesses.map((guess, index) => (
+              {user_guesses.map((guess) => (
                 <div 
                   key={guess.id} 
                   className={`flex items-center justify-between text-sm bg-white p-3 border ${

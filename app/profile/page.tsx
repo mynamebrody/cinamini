@@ -4,6 +4,7 @@ import ProfileForm from "@/components/profile-form"
 import EmailConfirmationBanner from "@/components/email-confirmation-banner"
 import { SiteFooter } from "@/components/site-footer"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default async function ProfilePage({
   searchParams,
@@ -46,9 +47,9 @@ export default async function ProfilePage({
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
-              <a href="/">
+              <Link href="/">
                 ← Back to Home
-              </a>
+              </Link>
             </Button>
             <h1 className="text-xl font-bold text-neutral-900">Profile Settings</h1>
           </div>

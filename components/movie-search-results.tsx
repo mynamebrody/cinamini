@@ -147,7 +147,7 @@ export function MovieSearchResults({
             No Movies Found
           </div>
           <p className="text-gray-300 mb-4">
-            No movies found for "{searchQuery}"
+            No movies found for &quot;{searchQuery}&quot;
           </p>
           <p className="text-gray-400 text-sm">
             Try searching for a different movie title or check your spelling.
@@ -164,7 +164,7 @@ export function MovieSearchResults({
         {/* Results header */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-white mb-2">
-            Search Results for "{searchQuery}"
+            Search Results for &quot;{searchQuery}&quot;
           </h2>
           <p className="text-gray-400 text-sm">
             Found {totalResults.toLocaleString()} movies

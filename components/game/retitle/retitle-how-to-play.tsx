@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Globe, Languages, Flame, Target } from "lucide-react"
+import { Globe, Languages, Target } from "lucide-react"
 
 interface RetitleHowToPlayProps {
   onStart: () => void
@@ -38,7 +38,7 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold mb-1">See the Foreign Title</h3>
                   <p className="text-xs text-muted-foreground">
-                    You'll see a movie title in another language, along with the country flag.
+                    You&apos;ll see a movie title in another language, along with the country flag.
                   </p>
                 </div>
               </div>
@@ -109,10 +109,10 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🇪🇸</span>
-                <span className="text-sm font-medium">"Solo en Casa"</span>
+                <span className="text-sm font-medium">&quot;Solo en Casa&quot;</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                This Spanish title literally means "Alone at Home"
+                This Spanish title literally means &quot;Alone at Home&quot;
               </p>
               <p className="text-xs">
                 <span className="text-muted-foreground">Answer:</span>{" "}

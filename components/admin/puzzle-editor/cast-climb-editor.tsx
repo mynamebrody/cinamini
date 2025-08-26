@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { 
-  Calendar, 
   Save, 
   Loader2, 
   X, 
@@ -14,7 +13,6 @@ import {
   Info,
   Sparkles
 } from "lucide-react"
-import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -67,20 +65,6 @@ interface Actor {
   order: number
 }
 
-interface CastClimbPuzzle {
-  id?: string
-  puzzle_date: string
-  puzzle_number: number
-  film_id: number
-  film_title: string
-  film_poster_url: string | null
-  film_release_year: number
-  actors: Actor[]
-  total_actors: number
-  difficulty_level: number
-  fun_fact: string
-  is_published: boolean
-}
 
 interface CastCredits {
   cast: Actor[]
@@ -771,7 +755,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
               </div>
               
               <div className="overflow-y-auto max-h-[60vh] space-y-2">
-                {fullCast.map((actor, index) => {
+                {fullCast.map((actor) => {
                   const isSelected = actors.some(a => a.id === actor.id)
                   return (
                     <button

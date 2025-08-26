@@ -248,7 +248,6 @@ async function getReleaseYearTrends(supabase: any, startDate: Date) {
 
   // Group by decade
   const decadeCounts = new Map();
-  const decadeEngagement = new Map();
 
   // Process Cast Climb movies (has release year)
   castClimbMovies.data?.forEach((movie: any) => {

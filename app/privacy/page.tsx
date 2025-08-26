@@ -1,17 +1,18 @@
 import { SiteFooter } from "@/components/site-footer"
+import Link from "next/link"
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <a href="/" className="inline-block">
+          <Link href="/" className="inline-block">
             <img 
               src="/cinamini/Wordmark - Black.svg" 
               alt="cinamini" 
               className="h-8 w-auto"
             />
-          </a>
+          </Link>
         </div>
       </header>
       
@@ -131,7 +132,7 @@ export default function Privacy() {
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
-              Children's Privacy
+              Children&apos;s Privacy
             </h2>
             <p className="text-neutral-700">
               cinamini is not intended for children under 13. We do not knowingly collect 

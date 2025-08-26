@@ -94,7 +94,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             {puzzle.englishTranslation && (
               <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
                 <p className="text-base text-muted-foreground italic">
-                  "{puzzle.englishTranslation}"
+                  &quot;{puzzle.englishTranslation}&quot;
                 </p>
                 <div className="text-xs text-muted-foreground mt-1">LITERAL TRANSLATION</div>
               </div>

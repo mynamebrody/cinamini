@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { type GameChoice } from "@/lib/budget-bracket-client"
-import { DollarSign, Trophy, Star, Briefcase, Crown } from "lucide-react"
+import { DollarSign, Trophy, Crown } from "lucide-react"
 
 interface Floor {
   level: number
@@ -146,7 +146,6 @@ const GoldenConfetti = ({ count = 8 }: { count?: number }) => (
 )
 
 export default function BudgetBracketTowerProgress({
-  currentRound,
   gameChoices,
   gameState,
   totalRounds = 5,

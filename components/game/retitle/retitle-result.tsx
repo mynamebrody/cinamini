@@ -1,15 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Flame } from "lucide-react"
 import Image from "next/image"
 import { cn, formatGameTime } from "@/lib/utils"
-import { toast } from "sonner"
 import { useRetitledShare } from "@/hooks/useGameShare"
-import type { RetitledShareData } from "@/lib/sharing"
 
 interface GuessResult {
   correct: boolean
@@ -44,22 +41,10 @@ interface RetitleResultProps {
 
 export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTimeMs = 0 }: RetitleResultProps) {
   const [shareText, setShareText] = useState<string | null>(null)
-  const [loadingShare, setLoadingShare] = useState(true)
+  const [, setLoadingShare] = useState(true)
   
-  // Use centralized sharing system - memoize to prevent infinite re-renders
-  const shareData: RetitledShareData = useMemo(() => ({
-    guess: {
-      isCorrect: result.correct,
-      solveTimeMs
-    },
-    puzzle: {
-      puzzleNumber,
-      countryCode: result.puzzle?.countryCode || 'US',
-      localizedTitle: result.puzzle?.localizedTitle || ''
-    }
-  }), [result.correct, solveTimeMs, puzzleNumber, result.puzzle?.countryCode, result.puzzle?.localizedTitle])
   
-  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
+  const { shareText: centralizedShareText, fetchShare } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
   
   
   const generateFallbackShareText = () => {
@@ -217,7 +202,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               {result.puzzle.englishTranslation && (
                 <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
                   <p className="text-base text-muted-foreground italic">
-                    "{result.puzzle.englishTranslation}"
+                    &quot;{result.puzzle.englishTranslation}&quot;
                   </p>
                   <div className="text-xs text-muted-foreground mt-1">LITERAL TRANSLATION</div>
                 </div>
@@ -323,7 +308,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         <div className="text-center space-y-2">
           <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
             <span>🌅</span>
-            <span>Next departure: Tomorrow's adventure awaits!</span>
+            <span>Next departure: Tomorrow&apos;s adventure awaits!</span>
             <span>🎆</span>
           </p>
         </div>

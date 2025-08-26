@@ -1,7 +1,6 @@
 "use client"
 
 import { Film, Calendar, DollarSign, User, Edit3, X, Clock, Star, Building2, Users } from "lucide-react"
-import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -139,7 +138,7 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
             <div className="flex-1">
               <h3 className="font-semibold text-xl">{movie.title}</h3>
               {movie.tagline && (
-                <p className="text-sm text-gray-600 italic mt-1">"{movie.tagline}"</p>
+                <p className="text-sm text-gray-600 italic mt-1">&quot;{movie.tagline}&quot;</p>
               )}
               
               <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">

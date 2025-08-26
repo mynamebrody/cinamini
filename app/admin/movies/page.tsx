@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { 
   Search, 
   Calendar, 
@@ -435,9 +436,11 @@ export default function AdminMovieSearch() {
                   boxShadow: '3px 3px 0px 0px rgba(0,0,0,0.1)'
                 }}>
                   {movie.poster_path ? (
-                    <img
+                    <Image
                       src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
                       alt={movie.title}
+                      width={342}
+                      height={513}
                       className="w-full aspect-[2/3] object-cover"
                     />
                   ) : (
@@ -549,9 +552,11 @@ export default function AdminMovieSearch() {
             <div className="p-6">
               <div className="flex gap-6 mb-6">
                 {selectedMovie.poster_path ? (
-                  <img
+                  <Image
                     src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
                     alt={selectedMovie.title}
+                    width={342}
+                    height={513}
                     className="w-48 border-2 border-neutral-200 transform transition-transform duration-300 hover:scale-[1.02]"
                     style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                   />

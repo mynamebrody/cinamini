@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
-import { Clock, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown } from "lucide-react"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -39,12 +38,6 @@ interface BudgetBracketRoundProps {
   gameStartTime: number
 }
 
-interface RevealedBudget {
-  title: string
-  budget: number
-  budget_source: string
-  is_estimated: boolean
-}
 
 export default function BudgetBracketRound({ 
   pair, 
@@ -73,7 +66,7 @@ export default function BudgetBracketRound({
   
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
-  const [elapsedTime, setElapsedTime] = useState(0)
+  const [, setElapsedTime] = useState(0)
   const [totalGameTime, setTotalGameTime] = useState(0)
   const [showingFeedback, setShowingFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)

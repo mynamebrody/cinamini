@@ -412,7 +412,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   <span className="text-2xl">🏆</span>
                 </div>
                 <div className="text-sm text-yellow-700 mt-1">
-                  You've mastered the art of budget prediction. Welcome to the penthouse!
+                  You&apos;ve mastered the art of budget prediction. Welcome to the penthouse!
                 </div>
               </motion.div>
             )}
