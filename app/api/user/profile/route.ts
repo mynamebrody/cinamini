@@ -49,7 +49,7 @@ function validateUsername(username: string): { isValid: boolean; error?: string 
 }
 
 // GET /api/user/profile - Fetch current user profile
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verify user authentication
     const supabase = await createClient()

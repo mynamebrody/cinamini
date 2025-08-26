@@ -205,7 +205,6 @@ async function updateUserStats(
 ) {
   try {
     const today = new Date().toISOString().split('T')[0]
-    const roundsCompleted = choices.length
     const correctRounds = choices.filter(c => c.correct).length
     
     // Get current stats

@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { 
-  Calendar, 
   Save, 
   Loader2, 
   X, 
@@ -14,7 +13,7 @@ import {
   Info,
   Sparkles
 } from "lucide-react"
-import { format } from "date-fns"
+import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -67,20 +66,6 @@ interface Actor {
   order: number
 }
 
-interface CastClimbPuzzle {
-  id?: string
-  puzzle_date: string
-  puzzle_number: number
-  film_id: number
-  film_title: string
-  film_poster_url: string | null
-  film_release_year: number
-  actors: Actor[]
-  total_actors: number
-  difficulty_level: number
-  fun_fact: string
-  is_published: boolean
-}
 
 interface CastCredits {
   cast: Actor[]
@@ -121,9 +106,11 @@ function SortableActor({ actor, index }: { actor: Actor; index: number }) {
       
       <div className="flex items-center gap-3 flex-1">
         {actor.profile_path ? (
-          <img
+          <Image
             src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
             alt={actor.name}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
@@ -189,6 +176,36 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector, showCastSelector])
 
+  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
+        // Automatically fetch cast when movie is selected
+        if (movie.id) {
+          fetchMovieCast(movie.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }, [])
+
   // Handle prefilled values from URL parameters
   useEffect(() => {
     if (prefilledDate && !isEditMode) {
@@ -198,16 +215,9 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     if (prefilledMovieId && !isEditMode) {
       fetchAndSelectMovie(prefilledMovieId)
     }
-  }, [prefilledDate, prefilledMovieId, isEditMode])
+  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
 
-  // Load existing puzzle data if puzzleId is provided
-  useEffect(() => {
-    if (puzzleId) {
-      loadPuzzleData(puzzleId)
-    }
-  }, [puzzleId])
-
-  const loadPuzzleData = async (puzzleId: string) => {
+  const loadPuzzleData = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
@@ -268,7 +278,14 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     } finally {
       setLoadingPuzzle(false)
     }
-  }
+  }, [])
+
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId) {
+      loadPuzzleData(puzzleId)
+    }
+  }, [puzzleId, loadPuzzleData])
 
   // Auto-publish when date is manually set
   const handleDateChange = (date: string) => {
@@ -291,37 +308,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       onDateChange?.(null)
     }
   }
-
-  const fetchAndSelectMovie = async (movieId: string) => {
-    try {
-      const response = await fetch(`/api/movies/${movieId}/details`)
-      if (response.ok) {
-        const movieData = await response.json()
-        
-        const movie: Movie = {
-          id: movieData.id,
-          title: movieData.title,
-          poster_path: movieData.poster_path,
-          release_date: movieData.release_date || '',
-          budget: movieData.budget,
-          revenue: movieData.revenue,
-          runtime: movieData.runtime,
-          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
-          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
-          vote_average: movieData.vote_average
-        }
-        
-        setSelectedMovie(movie)
-        // Automatically fetch cast when movie is selected
-        if (movie.id) {
-          fetchMovieCast(movie.id)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching movie details:', error)
-    }
-  }
-
 
   const fetchMovieCast = async (movieId: number, autoSelectActors = true) => {
     setLoadingCast(true)
@@ -771,7 +757,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
               </div>
               
               <div className="overflow-y-auto max-h-[60vh] space-y-2">
-                {fullCast.map((actor, index) => {
+                {fullCast.map((actor) => {
                   const isSelected = actors.some(a => a.id === actor.id)
                   return (
                     <button
@@ -793,9 +779,11 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
                     >
                       <div className="flex-shrink-0">
                         {actor.profile_path ? (
-                          <img
+                          <Image
                             src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                             alt={actor.name}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (

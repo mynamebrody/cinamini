@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Film, Gamepad2, DollarSign, ImageIcon, X } from "lucide-react"
+import Image from "next/image"
 
 interface Movie {
   id: number
@@ -48,7 +48,6 @@ const AVAILABLE_GAMES = [
 
 export default function GameSelectorMenu({ movie, date, onClose, excludeGames = [] }: GameSelectorMenuProps) {
   const router = useRouter()
-  const [selectedGame, setSelectedGame] = useState<string | null>(null)
 
   const availableGames = AVAILABLE_GAMES.filter(game => !excludeGames.includes(game.id))
 
@@ -94,9 +93,11 @@ export default function GameSelectorMenu({ movie, date, onClose, excludeGames = 
             </h3>
             <div className="flex items-center gap-3 mb-4">
               {movie.poster_path && (
-                <img
+                <Image
                   src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
                   alt={movie.title}
+                  width={48}
+                  height={64}
                   className="w-12 h-16 object-cover border border-neutral-200"
                   style={{ boxShadow: '1px 1px 0px rgba(0,0,0,0.1)' }}
                 />

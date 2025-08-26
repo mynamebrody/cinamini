@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useGameMode } from "@/hooks/use-game-mode"
-import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { X, Trophy, Flame, Clock, Target } from "lucide-react"
+import { Trophy, Flame, Clock, Target } from "lucide-react"
 import { getCountryFlag } from "@/lib/flag-emojis"
 
 interface StatsData {
@@ -25,20 +23,12 @@ interface RetitleStatsProps {
 
 
 export default function RetitleStats({ onClose }: RetitleStatsProps) {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
-  const router = useRouter()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!authLoading) {
-      if (isAnonymous) {
-        setLoading(false)
-      } else {
-        loadStats()
-      }
-    }
-  }, [isAnonymous, authLoading])
+    loadStats()
+  }, [])
 
   const loadStats = async () => {
     try {
@@ -62,45 +52,6 @@ export default function RetitleStats({ onClose }: RetitleStatsProps) {
     )
   }
 
-  // Show sign-up CTA for anonymous users
-  if (isAnonymous) {
-    return (
-      <div className="text-center text-foreground space-y-4">
-        <div className="space-y-2">
-          <Trophy className="w-12 h-12 text-cinema-red mx-auto" />
-          <h3 className="text-lg font-semibold text-neutral-900">
-            Interested in Seeing Your Stats?
-          </h3>
-          <p className="text-neutral-600 text-sm">
-            Sign up for an account to track your progress, compare with friends, and see detailed statistics!
-          </p>
-        </div>
-        <div className="space-y-2">
-          <div className="flex flex-col sm:flex-row gap-2 justify-center">
-            <Button 
-              onClick={() => router.push('/auth/sign-up')}
-              variant="primary"
-              size="sm"
-            >
-              Create Account
-            </Button>
-            <Button 
-              onClick={() => router.push('/auth/login')}
-              variant="outline"
-              size="sm"
-            >
-              Sign In
-            </Button>
-          </div>
-          {onClose && (
-            <Button onClick={onClose} variant="ghost" size="sm">
-              Close
-            </Button>
-          )}
-        </div>
-      </div>
-    )
-  }
 
   if (!stats) {
     return (

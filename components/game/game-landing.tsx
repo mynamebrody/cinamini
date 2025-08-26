@@ -22,7 +22,6 @@ interface GameLandingProps {
 }
 
 export function GameLanding({
-  gameId,
   gameName,
   puzzleNumber,
   puzzleName,

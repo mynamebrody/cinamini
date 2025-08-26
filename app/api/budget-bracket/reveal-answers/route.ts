@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 import { enrichMoviesWithDetails } from '@/lib/tmdb'
 import type { BudgetBracketMovie, MoviePair } from '@/lib/budget-bracket'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const supabaseService = createServiceClient()
     
     // User authentication is optional for reveal answers
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
     const body = await request.json()
     const { puzzle_id } = body
 

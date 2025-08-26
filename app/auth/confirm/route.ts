@@ -60,8 +60,21 @@ export async function GET(request: Request) {
         })
         
         if (!error) {
-          // Redirect to home page after successful signup confirmation
-          return NextResponse.redirect(new URL('/', baseUrl))
+          // Force session refresh after successful signup confirmation to prevent stale state
+          try {
+            await supabase.auth.refreshSession()
+            console.log('Session refreshed after signup confirmation')
+          } catch (refreshError) {
+            console.warn('Failed to refresh session after signup confirmation:', refreshError)
+            // Continue anyway - session will be refreshed client-side if needed
+          }
+          
+          // Redirect to home page after successful signup confirmation with cache-busting headers
+          const response = NextResponse.redirect(new URL('/', baseUrl))
+          response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+          response.headers.set('Pragma', 'no-cache')
+          response.headers.set('Expires', '0')
+          return response
         } else {
           console.error('Error verifying signup token:', error)
           // Redirect to login with error
@@ -75,8 +88,21 @@ export async function GET(request: Request) {
         })
         
         if (!error) {
-          // Redirect to profile page after successful email change
-          return NextResponse.redirect(new URL('/profile', baseUrl))
+          // Force session refresh after successful email change to prevent stale state
+          try {
+            await supabase.auth.refreshSession()
+            console.log('Session refreshed after email change confirmation')
+          } catch (refreshError) {
+            console.warn('Failed to refresh session after email change:', refreshError)
+            // Continue anyway - session will be refreshed client-side if needed
+          }
+          
+          // Redirect to profile page after successful email change with cache-busting headers
+          const response = NextResponse.redirect(new URL('/profile', baseUrl))
+          response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+          response.headers.set('Pragma', 'no-cache')
+          response.headers.set('Expires', '0')
+          return response
         } else {
           console.error('Error verifying email change token:', error)
           // Redirect to login with error

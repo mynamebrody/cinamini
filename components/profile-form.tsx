@@ -15,9 +15,6 @@ interface ProfileData {
   updatedAt: string
 }
 
-interface ApiError {
-  error: string
-}
 
 export default function ProfileForm() {
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -383,7 +380,7 @@ export default function ProfileForm() {
               
               {!profile.username && (
                 <p className="text-sm text-amber-600">
-                  You haven't set a username yet. Click "Edit" to add one.
+                  You haven&apos;t set a username yet. Click &quot;Edit&quot; to add one.
                 </p>
               )}
             </div>

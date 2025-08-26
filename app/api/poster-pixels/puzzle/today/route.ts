@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
@@ -28,7 +28,7 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const today = new Date().toISOString().split('T')[0]
     
     // Check if we already have today's puzzle (using service client to bypass RLS)
-    const { data: existingPuzzle, error: puzzleError } = await supabaseService
+    const { data: existingPuzzle } = await supabaseService
       .from("poster_pixels_puzzles")
       .select("*")
       .eq("puzzle_date", today)

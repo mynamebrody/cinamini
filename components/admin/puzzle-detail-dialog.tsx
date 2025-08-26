@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { Calendar, Film, DollarSign, Users, Trash2, Save, X, Image, Edit } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Calendar, Film, DollarSign, Users, Trash2, Image, Edit } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -70,7 +68,6 @@ export function PuzzleDetailDialog({
 }: PuzzleDetailDialogProps) {
   const [isDeleting, setIsDeleting] = useState<string | null>(null)
   const { toast } = useToast()
-  const router = useRouter()
 
   const handleRemoveFromSchedule = async (puzzle: any) => {
     setIsDeleting(puzzle.id)
@@ -115,9 +112,6 @@ export function PuzzleDetailDialog({
   }
 
   const renderPuzzleDetails = (puzzle: any) => {
-    const config = gameConfig[puzzle.game_type]
-    const Icon = config.icon
-
     switch (puzzle.game_type) {
       case 'retitled':
         return (

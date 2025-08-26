@@ -45,13 +45,13 @@ export default function ForgotPasswordForm() {
           </div>
           <h1 className="font-nyt text-3xl font-bold tracking-tight text-neutral-900">Check your email</h1>
           <p className="text-lg text-neutral-600">
-            If an account exists with that email, we've sent a password reset link.
+            If an account exists with that email, we&apos;ve sent a password reset link.
           </p>
         </div>
 
         <div className="space-y-4 text-center">
           <p className="text-sm text-neutral-500">
-            Didn't receive an email? Check your spam folder or try again.
+            Didn&apos;t receive an email? Check your spam folder or try again.
           </p>
           <Button
             onClick={() => {
@@ -76,7 +76,7 @@ export default function ForgotPasswordForm() {
     <div className="w-full max-w-md space-y-8">
       <div className="space-y-2 text-center">
         <h1 className="font-nyt text-4xl font-bold tracking-tight text-neutral-900">Reset your password</h1>
-        <p className="text-lg text-neutral-600">Enter your email and we'll send you a reset link</p>
+        <p className="text-lg text-neutral-600">Enter your email and we&apos;ll send you a reset link</p>
       </div>
 
       <form action={formAction} className="space-y-6">

@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getMultipleMovies } from "@/lib/tmdb"
 import { 
   generateDailyPuzzle,
   getCountryName,
   validatePuzzleData,
-  SeededRandom,
-  type RetitledPuzzle
+  SeededRandom
 } from "@/lib/retitled"
 import { getCountryFlag } from "@/lib/flag-emojis"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     
@@ -18,14 +17,13 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     const today = new Date()
-    const todayString = today.toISOString().split('T')[0]
     
     // Create service role client for system operations (puzzle creation)
     const { createServiceClient } = await import('@/lib/supabase/server')
     const serviceSupabase = createServiceClient()
     
     // Try to get existing puzzle from database using service role for creation if needed
-    let puzzle = await getOrCreateTodaysPuzzle(serviceSupabase, today)
+    const puzzle = await getOrCreateTodaysPuzzle(serviceSupabase, today)
     
     if (!puzzle) {
       console.error("Could not generate or retrieve today's puzzle")
@@ -49,7 +47,7 @@ export async function GET(request: NextRequest) {
       hasPlayedBefore = !!anyPreviousGuesses
       
       // Now check today's puzzle specifically
-      const { data: userGuessData, error: guessError } = await supabase
+      const { data: userGuessData } = await supabase
         .from("retitled_guesses")
         .select("*")
         .eq("user_id", user.id)

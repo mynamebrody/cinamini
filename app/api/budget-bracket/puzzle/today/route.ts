@@ -1,15 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { 
   generateBudgetBracketSeed,
-  generatePuzzlePairs, 
   DIFFICULTY_TARGETS,
   SeededRandom,
   calculateDifficultyRatio,
   type BudgetBracketMovie,
   type MoviePair 
 } from '@/lib/budget-bracket'
-import { enrichMoviesWithDetails, getMovieDetails } from '@/lib/tmdb'
 import { hydrateMoviesFromTmdbIds, createUnifiedMoviePair, validateBudgetBracketMovie } from '@/lib/movie-hydration'
 import { getBlendedMoviePool } from '@/lib/tmdb-trending'
 

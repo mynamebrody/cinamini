@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     
     // Get current user (authentication is optional for anonymous support)
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       // No user at all, return error

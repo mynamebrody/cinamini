@@ -3,10 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import { type MoviePair, type BudgetBracketMovie } from '@/lib/budget-bracket'
 import { getMovieDetails } from '@/lib/tmdb'
 
-interface BudgetRequest {
-  movieA_tmdb_id: number
-  movieB_tmdb_id: number
-}
 
 export async function POST(request: NextRequest) {
   try {

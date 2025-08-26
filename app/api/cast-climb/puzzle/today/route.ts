@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { 
   generateDailyPuzzle,
-  validatePuzzleData,
-  calculatePuzzleNumber
+  validatePuzzleData
 } from "@/lib/cast-climb"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     

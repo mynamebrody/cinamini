@@ -9,6 +9,16 @@ export function useGameMode() {
   const [isAnonymous, setIsAnonymous] = useState(true)
   const [loading, setLoading] = useState(true)
 
+  // Detect if user state appears stale (non-anonymous user showing as anonymous)
+  const detectStaleSession = (currentUser: User | null) => {
+    if (!currentUser) return false
+    
+    // If user has email and email_confirmed_at but is showing as anonymous, session is likely stale
+    return currentUser.email && 
+           currentUser.email_confirmed_at && 
+           currentUser.is_anonymous === true
+  }
+
   useEffect(() => {
     const supabase = createClient()
     
@@ -16,8 +26,24 @@ export function useGameMode() {
     const checkAuth = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-        setIsAnonymous(user?.is_anonymous === true)
+        
+        // If we detect a stale session, automatically refresh
+        if (detectStaleSession(user)) {
+          try {
+            await supabase.auth.refreshSession()
+            // Get updated user data after refresh
+            const { data: { user: refreshedUser } } = await supabase.auth.getUser()
+            setUser(refreshedUser)
+            setIsAnonymous(refreshedUser?.is_anonymous === true)
+          } catch (refreshError) {
+            console.error('Auto session refresh failed:', refreshError)
+            setUser(user)
+            setIsAnonymous(user?.is_anonymous === true)
+          }
+        } else {
+          setUser(user)
+          setIsAnonymous(user?.is_anonymous === true)
+        }
       } catch (error) {
         console.error('Error checking auth:', error)
         setIsAnonymous(true)

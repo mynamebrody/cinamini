@@ -92,11 +92,9 @@ export async function POST(request: NextRequest) {
 
     // Get or create the current game choices
     let gameChoices: GameChoice[] = []
-    let isNewGame = false
     
     if (round === 1) {
       // This is a new game
-      isNewGame = true
       gameChoices = [{
         round,
         chosen_movie: chosen_movie_tmdb_id,
@@ -115,7 +113,7 @@ export async function POST(request: NextRequest) {
     const totalDuration = game_start_time ? Date.now() - game_start_time : time_taken_ms
 
     // Save the game result
-    const { data: gameResult, error: gameError } = await supabase
+    const { error: gameError } = await supabase
       .from('budget_bracket_games')
       .insert({
         user_id: user.id,

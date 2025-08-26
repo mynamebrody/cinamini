@@ -33,6 +33,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
           } else {
             // Auth state is now set; no need to refresh the page. UI will update based on state.
           }
+        } else {
+          // User exists - check for potential session staleness and auto-refresh if needed
+          // This is especially important after account conversion
+          const hasEmail = !!user.email
+          const isConfirmed = !!user.email_confirmed_at
+          const showsAsAnonymous = user.is_anonymous === true
+          
+          if (hasEmail && isConfirmed && showsAsAnonymous) {
+            console.warn('Detected stale session after account conversion - auto-refreshing')
+            try {
+              await supabase.auth.refreshSession()
+              console.log('Session auto-refresh completed successfully')
+            } catch (refreshError) {
+              console.error('Failed to auto-refresh stale session:', refreshError)
+            }
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error)

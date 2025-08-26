@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
 import { GameLogo } from "./game-logo"
 
 interface GameCardProps {
@@ -25,7 +24,6 @@ export default function GameCard({
   name, 
   description, 
   hasPlayedToday, 
-  isAuthenticated = false,
   style = { emoji: '🎬', bgColor: '#6b7280', textColor: 'white' }
 }: GameCardProps) {
   const router = useRouter()

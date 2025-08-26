@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { useState, useEffect, useCallback } from "react"
 import { useGameMode } from "@/hooks/use-game-mode"
 import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-cookies"
 import AnonymousResultNudge from "../anonymous-result-nudge"
@@ -13,7 +12,7 @@ import RetitleStats from "./retitle-stats"
 import RetitledGlobeProgress from "./retitled-globe-progress"
 import { RetitleCelebrationConfetti } from "./retitle-celebration-confetti"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
 import { GameLanding } from "../game-landing"
@@ -61,28 +60,9 @@ export default function RetitleGame() {
   const [result, setResult] = useState<GuessResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
-  const [travelState, setTravelState] = useState<'preparing' | 'traveling' | 'arrived' | 'celebrating'>('preparing')
   const [showConfetti, setShowConfetti] = useState(false)
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadTodaysPuzzle()
-    }
-  }, [authLoading])
-
-  // Load visited countries from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('retitled-visited-countries')
-    if (saved) {
-      try {
-        setVisitedCountries(JSON.parse(saved))
-      } catch (err) {
-        console.warn('Failed to parse visited countries:', err)
-      }
-    }
-  }, [])
-
-  const loadTodaysPuzzle = async () => {
+  const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState('loading')
       setError(null)
@@ -203,7 +183,26 @@ export default function RetitleGame() {
       setError("Failed to load today's puzzle. Please try again.")
       setGameState('error')
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading, loadTodaysPuzzle])
+
+  // Load visited countries from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('retitled-visited-countries')
+    if (saved) {
+      try {
+        setVisitedCountries(JSON.parse(saved))
+      } catch (err) {
+        console.warn('Failed to parse visited countries:', err)
+      }
+    }
+  }, [])
+
 
   const startGame = () => {
     // Mark that the user has seen the tutorial if coming from how to play
@@ -419,7 +418,7 @@ export default function RetitleGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-lg">Loading today's puzzle...</div>
+              <div className="text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}

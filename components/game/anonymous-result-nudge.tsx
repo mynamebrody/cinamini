@@ -30,7 +30,6 @@ interface NudgeContent {
 
 export default function AnonymousResultNudge({ 
   gameResult, 
-  gameName,
   className,
   gamesPlayed = 1,
   currentStreak = 1,

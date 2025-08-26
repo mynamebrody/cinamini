@@ -75,7 +75,7 @@ export function GameSettings({ children, triggerClassName = '', onPause, isPause
                 <span>1.0.0</span>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Today's Puzzle</span>
+                <span>Today&apos;s Puzzle</span>
                 <span>{new Date().toLocaleDateString()}</span>
               </div>
             </CardContent>
@@ -139,7 +139,7 @@ export function GameSettingsPanel() {
               <span>1.0.0</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Today's Puzzle</span>
+              <span className="text-muted-foreground">Today&apos;s Puzzle</span>
               <span>{new Date().toLocaleDateString()}</span>
             </div>
           </div>
@@ -161,7 +161,7 @@ export function GameSettingsPanel() {
           <div>
             <h4 className="font-medium text-sm mb-1">Feedback</h4>
             <p className="text-sm text-muted-foreground">
-              We'd love to hear your thoughts on how we can improve cinamini.
+              We&apos;d love to hear your thoughts on how we can improve cinamini.
             </p>
           </div>
         </CardContent>

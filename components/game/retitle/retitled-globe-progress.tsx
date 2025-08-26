@@ -78,7 +78,6 @@ const PassportStamp = ({ isVisible, flagEmoji }: { isVisible: boolean, flagEmoji
 }
 
 export default function RetitledGlobeProgress({
-  countryCode,
   countryName,
   flagEmoji,
   gameState,
@@ -88,7 +87,7 @@ export default function RetitledGlobeProgress({
 }: RetitledGlobeProgressProps) {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showPassport, setShowPassport] = useState(false)
-  const [isPulsing, setIsPulsing] = useState(false)
+  const [, setIsPulsing] = useState(false)
 
   useEffect(() => {
     if (gameState === 'traveling') {

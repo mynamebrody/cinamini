@@ -10,7 +10,7 @@ export async function GET(
     const supabase = await createClient()
     
     // Get current user (optional for anonymous support)
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
       // For anonymous users, get basic puzzle info for share text

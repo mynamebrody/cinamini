@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import BudgetBracketRound from "./budget-bracket-round"
 import BudgetBracketResult from "./budget-bracket-result"
 import BudgetBracketStats from "./budget-bracket-stats"
@@ -83,36 +83,7 @@ export default function BudgetBracketGame() {
   const [error, setError] = useState<string | null>(null)
   const [gameStartTime, setGameStartTime] = useState<number>(0)
 
-  useEffect(() => {
-    if (!authLoading) {
-      loadTodaysPuzzle()
-    }
-  }, [authLoading])
-
-
-  const fetchCompletedGameResult = async (puzzleId: number) => {
-    try {
-      const response = await fetch('/api/budget-bracket/completed-result', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ puzzle_id: puzzleId })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch completed game result')
-      }
-
-      const result: GameResult = await response.json()
-      setGameResult(result)
-      setGameState('completed')
-    } catch (error) {
-      console.error('Error fetching completed game result:', error)
-      // Fallback to completed state without detailed result
-      setGameState('completed')
-    }
-  }
-
-  const loadTodaysPuzzle = async () => {
+  const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState('loading')
       const response = await fetch('/api/budget-bracket/puzzle/today')
@@ -143,7 +114,37 @@ export default function BudgetBracketGame() {
       setError('Failed to load today\'s puzzle. Please try again.')
       setGameState('error')
     }
+  }, [])
+
+  useEffect(() => {
+    if (!authLoading) {
+      loadTodaysPuzzle()
+    }
+  }, [authLoading, loadTodaysPuzzle])
+
+
+  const fetchCompletedGameResult = async (puzzleId: number) => {
+    try {
+      const response = await fetch('/api/budget-bracket/completed-result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ puzzle_id: puzzleId })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch completed game result')
+      }
+
+      const result: GameResult = await response.json()
+      setGameResult(result)
+      setGameState('completed')
+    } catch (error) {
+      console.error('Error fetching completed game result:', error)
+      // Fallback to completed state without detailed result
+      setGameState('completed')
+    }
   }
+
 
   const startGame = () => {
     // Mark that the user has seen the tutorial if coming from how to play
@@ -448,7 +449,7 @@ export default function BudgetBracketGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="animate-pulse text-lg">Loading today's puzzle...</div>
+              <div className="animate-pulse text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}
@@ -530,7 +531,7 @@ export default function BudgetBracketGame() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center text-muted-foreground">
-                    You've completed today's Budget Bracket puzzle.
+                    You&apos;ve completed today&apos;s Budget Bracket puzzle.
                   </div>
                   
                   <div className="bg-muted rounded-lg p-4">

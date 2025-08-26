@@ -31,7 +31,7 @@ export default function PosterPixelsSearch({
 }: PosterPixelsSearchProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Movie[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [, setIsLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const lastSearchedQueryRef = useRef('')
@@ -165,10 +165,6 @@ export default function PosterPixelsSearch({
         setSelectedIndex(-1)
         break
     }
-  }
-
-  const getReleaseYear = (releaseYear: string) => {
-    return releaseYear || "Unknown"
   }
 
   return (
