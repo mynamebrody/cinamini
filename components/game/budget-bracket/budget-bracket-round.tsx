@@ -338,7 +338,7 @@ export default function BudgetBracketRound({
                 className="w-full h-full object-cover"
                 loading="lazy"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieA: true }))}
-                onError={(e) => {
+                onError={() => {
                   console.error('Failed to load movie poster for:', pair.movieA.title);
                 }}
               />
@@ -435,7 +435,7 @@ export default function BudgetBracketRound({
                 className="w-full h-full object-cover"
                 loading="lazy"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieB: true }))}
-                onError={(e) => {
+                onError={() => {
                   console.error('Failed to load movie poster for:', pair.movieB.title);
                 }}
               />
