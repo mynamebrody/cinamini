@@ -449,36 +449,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
   }, [prefilledDate, isEditMode])
 
-  // Load existing puzzle data if puzzleId is provided
-  useEffect(() => {
-    if (puzzleId) {
-      const abortController = new AbortController()
-      
-      const loadData = async () => {
-        try {
-          await loadPuzzleData(puzzleId, abortController.signal)
-        } catch (error: any) {
-          // Ignore abort errors
-          if (error?.name !== 'AbortError') {
-            console.error('Error loading puzzle:', error)
-          }
-        }
-      }
-      
-      loadData()
-      
-      // Cleanup function to abort request if component unmounts or puzzleId changes
-      return () => {
-        abortController.abort()
-      }
-    }
-  }, [puzzleId, loadPuzzleData])
-
-  // Load recently used movies on component mount
-  useEffect(() => {
-    fetchRecentlyUsedMovies(puzzleId || undefined)
-  }, [puzzleId, fetchRecentlyUsedMovies])
-
   const loadPuzzleData = useCallback(async (puzzleId: string, abortSignal?: AbortSignal) => {
     // Prevent concurrent loads
     if (loadingPuzzle) {
@@ -554,6 +524,31 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       setLoadingPuzzle(false)
     }
   }, [loadingPuzzle])
+
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId) {
+      const abortController = new AbortController()
+      
+      const loadData = async () => {
+        try {
+          await loadPuzzleData(puzzleId, abortController.signal)
+        } catch (error: any) {
+          // Ignore abort errors
+          if (error?.name !== 'AbortError') {
+            console.error('Error loading puzzle:', error)
+          }
+        }
+      }
+      
+      loadData()
+      
+      // Cleanup function to abort request if component unmounts or puzzleId changes
+      return () => {
+        abortController.abort()
+      }
+    }
+  }, [puzzleId, loadPuzzleData])
 
   const fetchRecentlyUsedMovies = useCallback(async (excludePuzzleId?: string) => {
     try {
@@ -658,13 +653,14 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       if (budgetBracketPastData) {
         budgetBracketPastData.forEach(puzzle => {
-          if (puzzle.pairs) {
+          // Parse pairs to extract movie IDs
+          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
             puzzle.pairs.forEach((pair: any) => {
-              if (pair.movieA?.id) {
+              if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: false })
               }
-              if (pair.movieB?.id) {
+              if (pair.movieB && pair.movieB.id) {
                 usedMovieIds.add(pair.movieB.id)
                 movieDateMap.set(pair.movieB.id, { date: puzzle.puzzle_date, isFuture: false })
               }
@@ -689,13 +685,14 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       if (budgetBracketFutureData) {
         budgetBracketFutureData.forEach(puzzle => {
-          if (puzzle.pairs) {
+          // Parse pairs to extract movie IDs
+          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
             puzzle.pairs.forEach((pair: any) => {
-              if (pair.movieA?.id) {
+              if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: true })
               }
-              if (pair.movieB?.id) {
+              if (pair.movieB && pair.movieB.id) {
                 usedMovieIds.add(pair.movieB.id)
                 movieDateMap.set(pair.movieB.id, { date: puzzle.puzzle_date, isFuture: true })
               }
@@ -718,10 +715,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       if (posterPixelsPastData) {
         posterPixelsPastData.forEach(puzzle => {
-          if (puzzle.film_id) {
-            usedMovieIds.add(puzzle.film_id)
-            movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: false })
-          }
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: false })
         })
       }
 
@@ -738,13 +733,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
       if (posterPixelsFutureData) {
         posterPixelsFutureData.forEach(puzzle => {
-          if (puzzle.film_id) {
-            usedMovieIds.add(puzzle.film_id)
-            movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: true })
-          }
+          usedMovieIds.add(puzzle.film_id)
+          movieDateMap.set(puzzle.film_id, { date: puzzle.puzzle_date, isFuture: true })
         })
       }
 
+      // Store the results
       setRecentlyUsedMovies(usedMovieIds)
       setRecentlyUsedMoviesMap(movieDateMap)
 
@@ -752,6 +746,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       console.error('Error fetching recently used movies:', error)
     }
   }, [supabase])
+
+  // Load recently used movies on component mount
+  useEffect(() => {
+    fetchRecentlyUsedMovies(puzzleId || undefined)
+  }, [puzzleId, fetchRecentlyUsedMovies])
+
 
   const fetchCachedMovies = async () => {
     if (cachedMoviesLoaded || cachedMoviesLoading) return

@@ -224,10 +224,6 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
     })
   )
 
-  useEffect(() => {
-    fetchPuzzles()
-  }, [currentMonth, fetchPuzzles])
-
   const fetchPuzzles = useCallback(async () => {
     setLoading(true)
     try {
@@ -248,6 +244,10 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
       setLoading(false)
     }
   }, [currentMonth])
+
+  useEffect(() => {
+    fetchPuzzles()
+  }, [currentMonth, fetchPuzzles])
 
   const autoScheduleDrafts = async () => {
     if (puzzles.drafts.length === 0) {

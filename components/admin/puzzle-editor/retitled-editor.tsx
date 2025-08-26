@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
@@ -144,6 +144,9 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
 
+  // Ref to track the last loaded puzzle ID to prevent infinite loops
+  const lastLoadedPuzzleId = useRef<string | null>(null)
+
   const supabase = getSupabaseClient()
 
   // Drag and drop sensors
@@ -167,7 +170,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
-  const fetchAlternativeTitles = useCallback(async (movieId: number) => {
+  const fetchAlternativeTitles = useCallback(async (movieId: number, currentMovieTitle?: string) => {
     setLoadingTitles(true)
     try {
       const response = await fetch(`/api/movies/${movieId}/alternative-titles`)
@@ -175,7 +178,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         const data = await response.json()
         const titles = (data.titles || [])
           .filter((t: AlternativeTitle) => t.iso_3166_1 && t.title)
-          .filter((t: AlternativeTitle) => t.title !== selectedMovie?.title)
+          .filter((t: AlternativeTitle) => !currentMovieTitle || t.title !== currentMovieTitle)
         setAlternativeTitles(titles)
       }
     } catch (error) {
@@ -183,11 +186,11 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     } finally {
       setLoadingTitles(false)
     }
-  }, [selectedMovie?.title])
+  }, [])
 
   useEffect(() => {
     if (selectedMovie) {
-      fetchAlternativeTitles(selectedMovie.id)
+      fetchAlternativeTitles(selectedMovie.id, selectedMovie.title)
     }
   }, [selectedMovie, fetchAlternativeTitles])
 
@@ -241,61 +244,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     document.addEventListener('keydown', handleEscape)
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
-
-  // Load existing puzzle if puzzleId is provided
-  useEffect(() => {
-    if (puzzleId && !loadingPuzzle) {
-      loadExistingPuzzle(puzzleId)
-    }
-  }, [puzzleId, loadExistingPuzzle, loadingPuzzle])
-
-  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
-  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
-  useEffect(() => {
-    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
-      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
-      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
-      
-      // In edit mode for older puzzles without option_order, start with correct answer first
-      // User can reorder as needed
-      setAllOptions([correctOption, ...distractorOptions])
-    }
-  }, [isEditMode, selectedMovie, distractors, allOptions.length])
-
-  // Handle prefilled values from URL parameters (only when not in edit mode)
-  useEffect(() => {
-    if (!isEditMode) {
-      if (prefilledDate) {
-        setPuzzleDate(prefilledDate)
-        setIsPublished(true) // Auto-publish when date is set
-      }
-      if (prefilledMovieId) {
-        fetchAndSelectMovie(prefilledMovieId)
-      }
-    }
-  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
-
-  // Auto-publish when date is manually set
-  const handleDateChange = (date: string) => {
-    setPuzzleDate(date)
-    if (date) {
-      setIsPublished(true)
-    } else {
-      setIsPublished(false)
-    }
-    // Notify parent of date change
-    onDateChange?.(date || null)
-  }
-
-  // Handle published toggle change - clear date when switching to draft
-  const handlePublishedChange = (published: boolean) => {
-    setIsPublished(published)
-    if (!published) {
-      // When switching to draft, clear the date
-      setPuzzleDate("")
-      onDateChange?.(null)
-    }
-  }
 
   const fetchAndSelectMovie = useCallback(async (movieId: string) => {
     try {
@@ -426,6 +374,61 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }, [fetchAndSelectMovie])
 
+  // Load existing puzzle if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId && !loadingPuzzle && puzzleId !== lastLoadedPuzzleId.current) {
+      lastLoadedPuzzleId.current = puzzleId
+      loadExistingPuzzle(puzzleId)
+    }
+  }, [puzzleId, loadExistingPuzzle, loadingPuzzle])
+
+  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
+  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
+  useEffect(() => {
+    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
+      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
+      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
+      
+      // In edit mode for older puzzles without option_order, start with correct answer first
+      // User can reorder as needed
+      setAllOptions([correctOption, ...distractorOptions])
+    }
+  }, [isEditMode, selectedMovie, distractors, allOptions.length])
+
+  // Handle prefilled values from URL parameters (only when not in edit mode)
+  useEffect(() => {
+    if (!isEditMode) {
+      if (prefilledDate) {
+        setPuzzleDate(prefilledDate)
+        setIsPublished(true) // Auto-publish when date is set
+      }
+      if (prefilledMovieId) {
+        fetchAndSelectMovie(prefilledMovieId)
+      }
+    }
+  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
+  }
+
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
+    }
+  }
 
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {

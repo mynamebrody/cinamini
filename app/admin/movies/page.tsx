@@ -72,6 +72,7 @@ export default function AdminMovieSearch() {
   const [movieUsageData, setMovieUsageData] = useState<MovieUsageData | null>(null)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all")
   const [hoveredMovieId, setHoveredMovieId] = useState<number | null>(null)
+  const [loadingUsage, setLoadingUsage] = useState(false)
   
   // State for cached movie lists
   const [cachedLists, setCachedLists] = useState<Record<Exclude<TabType, 'search'>, CachedList>>({
@@ -603,7 +604,19 @@ export default function AdminMovieSearch() {
                   </div>
 
                   {/* Usage History */}
-                  {movieUsageData && movieUsageData.totalUsage > 0 && (
+                  {loadingUsage && (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <History className="w-4 h-4 text-gray-600" />
+                        Usage History (Last 30 Days)
+                      </h4>
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-sm text-gray-600">Loading usage data...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!loadingUsage && movieUsageData && movieUsageData.totalUsage > 0 && (
                     <div className="mt-6 p-4 bg-gray-50 rounded-xl">
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <History className="w-4 h-4 text-gray-600" />

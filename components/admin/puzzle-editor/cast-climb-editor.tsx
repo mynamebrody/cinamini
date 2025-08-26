@@ -176,6 +176,36 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector, showCastSelector])
 
+  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
+        // Automatically fetch cast when movie is selected
+        if (movie.id) {
+          fetchMovieCast(movie.id)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
+    }
+  }, [])
+
   // Handle prefilled values from URL parameters
   useEffect(() => {
     if (prefilledDate && !isEditMode) {
@@ -186,13 +216,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       fetchAndSelectMovie(prefilledMovieId)
     }
   }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
-
-  // Load existing puzzle data if puzzleId is provided
-  useEffect(() => {
-    if (puzzleId) {
-      loadPuzzleData(puzzleId)
-    }
-  }, [puzzleId, loadPuzzleData])
 
   const loadPuzzleData = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
@@ -257,6 +280,13 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     }
   }, [])
 
+  // Load existing puzzle data if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId) {
+      loadPuzzleData(puzzleId)
+    }
+  }, [puzzleId, loadPuzzleData])
+
   // Auto-publish when date is manually set
   const handleDateChange = (date: string) => {
     setPuzzleDate(date)
@@ -278,37 +308,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
       onDateChange?.(null)
     }
   }
-
-  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
-    try {
-      const response = await fetch(`/api/movies/${movieId}/details`)
-      if (response.ok) {
-        const movieData = await response.json()
-        
-        const movie: Movie = {
-          id: movieData.id,
-          title: movieData.title,
-          poster_path: movieData.poster_path,
-          release_date: movieData.release_date || '',
-          budget: movieData.budget,
-          revenue: movieData.revenue,
-          runtime: movieData.runtime,
-          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
-          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
-          vote_average: movieData.vote_average
-        }
-        
-        setSelectedMovie(movie)
-        // Automatically fetch cast when movie is selected
-        if (movie.id) {
-          fetchMovieCast(movie.id)
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching movie details:', error)
-    }
-  }, [])
-
 
   const fetchMovieCast = async (movieId: number, autoSelectActors = true) => {
     setLoadingCast(true)

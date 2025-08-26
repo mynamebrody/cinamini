@@ -95,7 +95,6 @@ export default function PuzzleEditor() {
       }
       
       if (puzzleId && gameType) {
-        setSelectedPuzzleId(puzzleId)
         // Set the puzzleId for the specific game type
         setGameStates(prev => {
           const newStates = {
