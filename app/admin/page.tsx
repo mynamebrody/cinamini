@@ -86,6 +86,13 @@ export default function AdminDashboard() {
 
   const adminTools = [
     {
+      title: "Schedule",
+      description: "View and manage puzzle calendar",
+      icon: Calendar,
+      href: "/admin/schedule",
+      color: "bg-pink-50 text-pink-700 hover:bg-pink-100"
+    },
+    {
       title: "Puzzle Editor",
       description: "Create and manage puzzles for all games",
       icon: PenTool,
@@ -93,25 +100,18 @@ export default function AdminDashboard() {
       color: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
     },
     {
-      title: "Movie Search",
-      description: "Search and explore movie database",
-      icon: Film,
-      href: "/admin/movies",
-      color: "bg-orange-50 text-orange-700 hover:bg-orange-100"
-    },
-    {
-      title: "Puzzle Schedule",
-      description: "View and manage puzzle calendar",
-      icon: Calendar,
-      href: "/admin/schedule",
-      color: "bg-pink-50 text-pink-700 hover:bg-pink-100"
-    },
-    {
       title: "Analytics",
       description: "View game statistics and player data",
       icon: TrendingUp,
       href: "/admin/analytics",
       color: "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+    },
+    {
+      title: "Movie Search",
+      description: "Search and explore movie database",
+      icon: Film,
+      href: "/admin/movies",
+      color: "bg-orange-50 text-orange-700 hover:bg-orange-100"
     }
   ]
 

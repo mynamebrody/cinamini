@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
+import { getGameStyle } from "@/lib/game-styles"
 
 interface Puzzle {
   id: string
@@ -31,22 +32,18 @@ interface PuzzleCalendarProps {
 
 const gameConfig = {
   retitled: {
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/30 hover:bg-blue-500/20",
     icon: Film,
     label: "Retitled"
   },
   budget_bracket: {
-    color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/20",
     icon: DollarSign,
     label: "Budget Bracket"
   },
   cast_climb: {
-    color: "bg-violet-500/10 text-violet-600 border-violet-500/30 hover:bg-violet-500/20",
     icon: Users,
     label: "Cast Climb"
   },
   poster_pixels: {
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/30 hover:bg-purple-500/20",
     icon: Image,
     label: "Poster Pixels"
   }
@@ -66,10 +63,14 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
     disabled: isDraggingDisabled || false
   })
 
+  const styleColors = getGameStyle(puzzle.game_type)
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.5 : 1
-  }
+    opacity: isDragging ? 0.5 : 1,
+    backgroundColor: styleColors.lightBgRgba, // Use game-specific colors for both scheduled and drafts
+    borderColor: styleColors.borderRgba as string,
+    color: styleColors.textHex // Use white text for all puzzles
+  } as React.CSSProperties
 
   const config = gameConfig[puzzle.game_type]
   const Icon = config.icon
@@ -106,10 +107,9 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
       {...listeners}
       className={cn(
         "p-2 rounded-md border transition-all hover:scale-105 hover:shadow-sm relative group cursor-pointer",
-        config.color,
         isDragging && "shadow-lg ring-2 ring-offset-2 ring-offset-background",
         isDraggingDisabled && "opacity-75 cursor-not-allowed",
-        isDraft && "border-dashed border-2 bg-amber-50/50"
+        isDraft && "border-dashed border-2"
       )}
       onClick={() => {
         // Only handle click if not currently dragging
@@ -120,8 +120,8 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
       title={isDraft ? "Click to edit • Hold to drag and schedule" : "Click to edit • Hold to drag and reschedule"}
     >
       <div className="flex items-center gap-1.5">
-        <Icon className="w-3 h-3 flex-shrink-0" />
-        <span className="text-xs font-medium truncate">{getDisplayText()}</span>
+        <Icon className="w-3 h-3 flex-shrink-0" style={{ color: styleColors.textHex }} />
+        <span className="text-xs font-medium truncate" style={{ color: styleColors.textHex }}>{getDisplayText()}</span>
       </div>
     </div>
   )

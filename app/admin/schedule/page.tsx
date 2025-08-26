@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { getGameStyle } from "@/lib/game-styles"
 
 interface Puzzle {
   id: string
@@ -183,7 +184,7 @@ export default function SchedulePage() {
     setGameMenuDate(null) // Close menu
   }
 
-  const getAvailableGames = (date: Date): Array<{id: string, name: string, icon: any}> => {
+  const getAllGamesWithStatus = (date: Date): Array<{id: string, name: string, icon: any, isAvailable: boolean}> => {
     const dateStr = format(date, 'yyyy-MM-dd')
     const scheduledForDate = scheduledGames.get(dateStr) || new Set()
     
@@ -194,7 +195,15 @@ export default function SchedulePage() {
       { id: 'poster-pixels', name: 'Poster Pixels', icon: ImageIcon }
     ]
     
-    return allGames.filter(game => !scheduledForDate.has(game.id))
+    return allGames.map(game => {
+      // Convert button ID format to database format for comparison
+      // Database uses underscores, buttons use hyphens
+      const dbGameType = game.id.replace(/-/g, '_')
+      return {
+        ...game,
+        isAvailable: !scheduledForDate.has(dbGameType)
+      }
+    })
   }
 
   const handlePuzzleClick = (puzzle: Puzzle) => {
@@ -324,23 +333,31 @@ export default function SchedulePage() {
                 <h3 className="font-funnel-display-bold text-lg mb-4">Create Puzzle for {gameMenuDate && format(gameMenuDate, 'MMM d, yyyy')}</h3>
                 <p className="text-sm text-neutral-600 mb-4">Select a game type:</p>
                 <div className="space-y-2">
-                  {getAvailableGames(gameMenuDate).map((game) => {
+                  {getAllGamesWithStatus(gameMenuDate).map((game) => {
                     const Icon = game.icon
+                    const styleColors = getGameStyle(game.id)
+                    const isDisabled = !game.isAvailable
                     return (
                       <button
                         key={game.id}
-                        onClick={() => handleGameSelect(game.id)}
-                        className="admin-game-btn"
+                        onClick={() => !isDisabled && handleGameSelect(game.id)}
+                        disabled={isDisabled}
+                        className={`admin-game-btn transition-all ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                        style={{
+                          backgroundColor: isDisabled ? 'rgba(200, 200, 200, 0.3)' : styleColors.lightBgRgba,
+                          borderColor: isDisabled ? 'rgba(150, 150, 150, 0.5)' : styleColors.borderRgba,
+                          color: isDisabled ? '#9ca3af' : styleColors.textHex
+                        }}
+                        title={isDisabled ? `${game.name} is already scheduled for this date` : `Create ${game.name} puzzle`}
                       >
-                        <Icon className="w-5 h-5 text-cinema-red" />
-                        <span className="font-funnel font-medium">{game.name}</span>
+                        <Icon className="w-5 h-5" style={{ color: isDisabled ? '#9ca3af' : styleColors.textHex }} />
+                        <span className="font-funnel font-medium" style={{ color: isDisabled ? '#9ca3af' : styleColors.textHex }}>
+                          {game.name} {isDisabled ? '(Scheduled)' : ''}
+                        </span>
                       </button>
                     )
                   })}
                 </div>
-                {getAvailableGames(gameMenuDate).length === 0 && (
-                  <p className="text-sm text-neutral-500 text-center py-4">All games already scheduled for this date.</p>
-                )}
                 <button
                   onClick={() => setGameMenuDate(null)}
                   className="admin-cancel-btn text-center"

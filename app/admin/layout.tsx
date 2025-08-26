@@ -34,9 +34,9 @@ export default async function AdminLayout({
 
   const navigation = [
     { name: "Dashboard", href: "/admin", icon: Home },
+    { name: "Schedule", href: "/admin/schedule", icon: CalendarDays },
     { name: "Puzzle Editor", href: "/admin/puzzle-editor", icon: PenTool },
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "Schedule", href: "/admin/schedule", icon: CalendarDays },
     { name: "Movie Search", href: "/admin/movies", icon: Film },
     { name: "User Controls", href: "/admin/users", icon: Users },
     { 
