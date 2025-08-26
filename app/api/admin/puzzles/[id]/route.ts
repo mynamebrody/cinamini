@@ -73,12 +73,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       )
     }
 
-    console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
-      id: data.id,
-      puzzle_date: data.puzzle_date,
-      film_title: data.film_title,
-      has_poster_override: !!data.film_poster_override_url
-    })
+    // Log game-specific data for debugging
+    if (gameType === 'budget_bracket') {
+      console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
+        id: data.id,
+        puzzle_date: data.puzzle_date,
+        seed_value: data.seed_value,
+        puzzle_number: data.puzzle_number,
+        has_movie_pairs: !!data.movie_pairs,
+        name: data.name
+      })
+    } else {
+      console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
+        id: data.id,
+        puzzle_date: data.puzzle_date,
+        film_title: data.film_title,
+        has_poster_override: !!data.film_poster_override_url
+      })
+    }
 
     return NextResponse.json({ 
       puzzle: { ...data, game_type: gameType }

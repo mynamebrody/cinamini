@@ -41,7 +41,7 @@ export function getGameStyle(id: string): {
   return {
     bgHex: base.bgHex,
     textHex: base.textHex,
-    lightBgRgba: hexToRgba(base.bgHex, 0.10),
+    lightBgRgba: hexToRgba(base.bgHex, 0.6),
     borderRgba: hexToRgba(base.bgHex, 0.30)
   }
 }

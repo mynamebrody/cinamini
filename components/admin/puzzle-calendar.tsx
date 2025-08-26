@@ -67,9 +67,9 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
   const style = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    backgroundColor: !isDraft ? styleColors.lightBgRgba : undefined,
+    backgroundColor: styleColors.lightBgRgba, // Use game-specific colors for both scheduled and drafts
     borderColor: styleColors.borderRgba as string,
-    color: styleColors.textHex
+    color: styleColors.textHex // Use white text for all puzzles
   } as React.CSSProperties
 
   const config = gameConfig[puzzle.game_type]
@@ -109,7 +109,7 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
         "p-2 rounded-md border transition-all hover:scale-105 hover:shadow-sm relative group cursor-pointer",
         isDragging && "shadow-lg ring-2 ring-offset-2 ring-offset-background",
         isDraggingDisabled && "opacity-75 cursor-not-allowed",
-        isDraft && "border-dashed border-2 bg-amber-50/50"
+        isDraft && "border-dashed border-2"
       )}
       onClick={() => {
         // Only handle click if not currently dragging

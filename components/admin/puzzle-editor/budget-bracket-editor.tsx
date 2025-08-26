@@ -449,17 +449,10 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     }
   }, [prefilledDate, isEditMode])
 
-  const loadPuzzleData = useCallback(async (puzzleId: string, abortSignal?: AbortSignal) => {
-    // Prevent concurrent loads
-    if (loadingPuzzle) {
-      return
-    }
-    
+  const loadPuzzleData = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
-      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`, {
-        signal: abortSignal
-      })
+      const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=budget_bracket`)
       
       if (!response.ok) {
         throw new Error('Failed to load puzzle data')
@@ -481,9 +474,12 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       setPuzzleName(puzzleData.name || "")
       setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
       
-      // Parse and load movie pairs
-      if (puzzleData.pairs) {
-        const loadedPairs = puzzleData.pairs.map((pair: any) => ({
+      // Parse and load movie pairs - Budget Bracket uses 'pairs' field (renamed from movie_pairs)
+      const pairsData = puzzleData.pairs || puzzleData.movie_pairs // Support both for backwards compatibility
+      let loadedPairs = []
+      
+      if (pairsData && Array.isArray(pairsData)) {
+        loadedPairs = pairsData.map((pair: any) => ({
           movieA: pair.movieA ? {
             id: pair.movieA.id,
             title: pair.movieA.title,
@@ -505,48 +501,28 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
             vote_average: pair.movieB.vote_average
           } : null
         }))
-        
-        // Ensure we have exactly 5 pairs
-        while (loadedPairs.length < TOTAL_PAIRS) {
-          loadedPairs.push({ movieA: null, movieB: null })
-        }
-        
-        setMoviePairs(loadedPairs)
       }
       
-    } catch (error: any) {
-      // Don't show error for aborted requests
-      if (error?.name !== 'AbortError') {
-        console.error('Error loading puzzle:', error)
-        alert('Failed to load puzzle data. Please try again.')
+      // Ensure we have exactly 5 pairs (create empty pairs if data is missing)
+      while (loadedPairs.length < TOTAL_PAIRS) {
+        loadedPairs.push({ movieA: null, movieB: null })
       }
+      
+      // Always set the movie pairs, even if database had no data
+      setMoviePairs(loadedPairs)
+      
+    } catch (error: any) {
+      console.error('Error loading puzzle:', error)
+      alert('Failed to load puzzle data. Please try again.')
     } finally {
       setLoadingPuzzle(false)
     }
-  }, [loadingPuzzle])
+  }, [])
 
   // Load existing puzzle data if puzzleId is provided
   useEffect(() => {
     if (puzzleId) {
-      const abortController = new AbortController()
-      
-      const loadData = async () => {
-        try {
-          await loadPuzzleData(puzzleId, abortController.signal)
-        } catch (error: any) {
-          // Ignore abort errors
-          if (error?.name !== 'AbortError') {
-            console.error('Error loading puzzle:', error)
-          }
-        }
-      }
-      
-      loadData()
-      
-      // Cleanup function to abort request if component unmounts or puzzleId changes
-      return () => {
-        abortController.abort()
-      }
+      loadPuzzleData(puzzleId)
     }
   }, [puzzleId, loadPuzzleData])
 
@@ -639,7 +615,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Check budget bracket puzzles (past 30 days)
       const budgetBracketPastQuery = supabase
         .from('budget_bracket_puzzles')
-        .select('id, pairs, puzzle_date')
+        .select('id, movie_pairs, puzzle_date')
         .gte('puzzle_date', pastDateStr)
         .lte('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
@@ -654,8 +630,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (budgetBracketPastData) {
         budgetBracketPastData.forEach(puzzle => {
           // Parse pairs to extract movie IDs
-          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
-            puzzle.pairs.forEach((pair: any) => {
+          if (puzzle.movie_pairs && Array.isArray(puzzle.movie_pairs)) {
+            puzzle.movie_pairs.forEach((pair: any) => {
               if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: false })
@@ -672,7 +648,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Check budget bracket puzzles (future scheduled)
       const budgetBracketFutureQuery = supabase
         .from('budget_bracket_puzzles')
-        .select('id, pairs, puzzle_date')
+        .select('id, movie_pairs, puzzle_date')
         .gt('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
@@ -686,8 +662,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (budgetBracketFutureData) {
         budgetBracketFutureData.forEach(puzzle => {
           // Parse pairs to extract movie IDs
-          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
-            puzzle.pairs.forEach((pair: any) => {
+          if (puzzle.movie_pairs && Array.isArray(puzzle.movie_pairs)) {
+            puzzle.movie_pairs.forEach((pair: any) => {
               if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: true })
@@ -1434,7 +1410,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         puzzle_date: puzzleDate || null,
         name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
-        pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure
+        pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure - column renamed from movie_pairs to pairs
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
         puzzle_number: puzzleNumber,
         is_published: isPublished
