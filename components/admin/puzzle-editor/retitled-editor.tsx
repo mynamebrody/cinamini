@@ -618,7 +618,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       }
 
 
-      let response, result
+      let response
       
       if (isEditMode && existingPuzzleId) {
         // Update existing puzzle
@@ -647,7 +647,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         })
       }
 
-      result = await response.json()
+      const result = await response.json()
       
       if (!response.ok) {
         console.error("API error:", result)

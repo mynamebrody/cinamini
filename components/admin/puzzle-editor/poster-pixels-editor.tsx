@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
-import { Save, Loader2, Plus, X, Image, Check } from "lucide-react"
+import { Save, Loader2, Plus, X, Image as ImageIcon, Check } from "lucide-react"
+import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -461,7 +462,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
                 {loadingAlternatives ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <Image className="w-4 h-4 mr-2" />
+                  <ImageIcon className="w-4 h-4 mr-2" />
                 )}
                 Alternative Posters
               </Button>
@@ -544,7 +545,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         ) : (
           <Card>
             <div className="p-8 text-center text-gray-500">
-              <Image className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+              <ImageIcon className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p className="text-sm">Select a movie with a poster to see preview</p>
             </div>
           </Card>
@@ -630,11 +631,12 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
                       onClick={() => handleSelectPoster(poster.file_path)}
                     >
                       <div className="aspect-[2/3] relative">
-                        <img
+                        <Image
                           src={`https://image.tmdb.org/t/p/w342${poster.file_path}`}
                           alt={`Alternative poster ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
+                          fill
+                          className="object-cover"
+                          sizes="342px"
                         />
                         
                         {/* Default badge */}

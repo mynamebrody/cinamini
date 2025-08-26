@@ -13,6 +13,7 @@ import {
   Info,
   Sparkles
 } from "lucide-react"
+import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -105,9 +106,11 @@ function SortableActor({ actor, index }: { actor: Actor; index: number }) {
       
       <div className="flex items-center gap-3 flex-1">
         {actor.profile_path ? (
-          <img
+          <Image
             src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
             alt={actor.name}
+            width={48}
+            height={48}
             className="w-12 h-12 rounded-full object-cover"
           />
         ) : (
@@ -777,9 +780,11 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
                     >
                       <div className="flex-shrink-0">
                         {actor.profile_path ? (
-                          <img
+                          <Image
                             src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                             alt={actor.name}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (

@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Film, Users, Calendar } from "lucide-react"
+import Image from "next/image"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import PosterClarityPreview from "./poster-clarity-preview"
@@ -199,9 +200,11 @@ function MovieCard({ movie, isWinner }: {
       isWinner ? "border-green-400" : "border-gray-200"
     )}>
       {movie.poster_path ? (
-        <img
+        <Image
           src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
           alt={movie.title}
+          width={185}
+          height={278}
           className="w-full aspect-[2/3] object-cover"
         />
       ) : (
@@ -236,9 +239,11 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
         {/* Movie Poster */}
         <div className="flex-shrink-0">
           {movie.poster_path ? (
-            <img
+            <Image
               src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
               alt={movie.title}
+              width={128}
+              height={192}
               className="w-32 rounded-lg shadow-md"
             />
           ) : (
@@ -258,9 +263,11 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
           {actors.slice(0, 4).map((actor, idx) => (
             <div key={`actor-${actor.id || actor.name}-${idx}`} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
               {actor.profile_path ? (
-                <img
+                <Image
                   src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                   alt={actor.name}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (

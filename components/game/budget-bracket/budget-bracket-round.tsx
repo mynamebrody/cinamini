@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
 import { TrendingUp, TrendingDown } from "lucide-react"
+import Image from "next/image"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -336,12 +337,13 @@ export default function BudgetBracketRound({
             onClick={() => handleMovieChoice('A')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
-              <img
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+              <Image
                 src={getPosterUrl(pair.movieA.poster_path, 'w342')}
                 alt={`${pair.movieA.title} poster`}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                fill
+                className="object-cover"
+                sizes="200px"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieA: true }))}
               />
             </div>
@@ -428,12 +430,13 @@ export default function BudgetBracketRound({
             onClick={() => handleMovieChoice('B')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
-              <img
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+              <Image
                 src={getPosterUrl(pair.movieB.poster_path, 'w342')}
                 alt={`${pair.movieB.title} poster`}
-                className="w-full h-full object-cover"
-                loading="lazy"
+                fill
+                className="object-cover"
+                sizes="200px"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieB: true }))}
               />
             </div>

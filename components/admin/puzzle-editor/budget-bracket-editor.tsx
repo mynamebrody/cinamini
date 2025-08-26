@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Film, GripVertical, Sparkles } from "lucide-react"
+import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -62,9 +63,11 @@ function MovieCard({ movie }: { movie: Movie }) {
     <div className="bg-white rounded-lg border border-gray-200 p-2 h-full">
       <div className="flex gap-2">
         {movie.poster_path ? (
-          <img
+          <Image
             src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
             alt={movie.title}
+            width={48}
+            height={72}
             className="w-12 h-18 object-cover rounded flex-shrink-0"
           />
         ) : (
@@ -164,9 +167,11 @@ function DraggableMovieCard({ movie, dragId, onRemove, recentlyUsedMoviesMap, bu
       )}>
         <div className="flex gap-2">
           {movie.poster_path ? (
-            <img
+            <Image
               src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
               alt={movie.title}
+              width={48}
+              height={72}
               className="w-12 h-18 object-cover rounded flex-shrink-0"
             />
           ) : (
@@ -854,7 +859,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       { name: 'trending', url: `/api/movies/trending` }
     ]
     
-    let allMovies: Movie[] = []
+    const allMovies: Movie[] = []
     
     for (const endpoint of endpoints) {
       try {

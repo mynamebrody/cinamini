@@ -1,5 +1,6 @@
 import { SiteFooter } from "@/components/site-footer"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function Terms() {
   return (
@@ -7,9 +8,11 @@ export default function Terms() {
       <header className="border-b border-neutral-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/" className="inline-block">
-            <img 
+            <Image 
               src="/cinamini/Wordmark - Black.svg" 
               alt="cinamini" 
+              width={120}
+              height={32}
               className="h-8 w-auto"
             />
           </Link>
@@ -122,9 +125,11 @@ export default function Terms() {
             </h2>
             
             <div className="flex items-start gap-6 mb-6">
-              <img 
+              <Image 
                 src="/tmdb-logo.svg" 
                 alt="The Movie Database (TMDB)" 
+                width={96}
+                height={48}
                 className="h-12 w-auto flex-shrink-0"
               />
               <div>

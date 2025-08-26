@@ -23,7 +23,7 @@ export async function GET() {
     const serviceSupabase = createServiceClient()
     
     // Try to get existing puzzle from database using service role for creation if needed
-    let puzzle = await getOrCreateTodaysPuzzle(serviceSupabase, today)
+    const puzzle = await getOrCreateTodaysPuzzle(serviceSupabase, today)
     
     if (!puzzle) {
       console.error("Could not generate or retrieve today's puzzle")
