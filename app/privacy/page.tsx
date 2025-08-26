@@ -1,19 +1,43 @@
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-export default function Privacy() {
+export default async function Privacy() {
+  // If Supabase is not configured, show setup message directly
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="mx-auto max-w-md p-6">
+          <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
+          <p className="text-neutral-600">Please set up your Supabase environment variables to enable authentication.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Get display name if user exists
+  let displayName = null
+  if (user && !user.is_anonymous) {
+    try {
+      const { data: profile } = await supabase
+        .from('cinamini_user_profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single()
+      displayName = profile?.display_name || null
+    } catch (error) {
+      // Profile doesn't exist yet, that's fine
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <a href="/" className="inline-block">
-            <img 
-              src="/cinamini/Wordmark - Black.svg" 
-              alt="cinamini" 
-              className="h-8 w-auto"
-            />
-          </a>
-        </div>
-      </header>
+      <SiteHeader user={user} displayName={displayName} />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1">
         <h1 className="text-3xl font-bold text-neutral-900 font-funnel-display-bold mb-8">
@@ -131,7 +155,7 @@ export default function Privacy() {
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-neutral-900 font-funnel-display-bold mb-4">
-              Children's Privacy
+              Children&apos;s Privacy
             </h2>
             <p className="text-neutral-700">
               cinamini is not intended for children under 13. We do not knowingly collect 

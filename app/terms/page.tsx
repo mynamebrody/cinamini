@@ -1,19 +1,44 @@
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
+import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
+import Image from "next/image"
 
-export default function Terms() {
+export default async function Terms() {
+  // If Supabase is not configured, show setup message directly
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="mx-auto max-w-md p-6">
+          <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
+          <p className="text-neutral-600">Please set up your Supabase environment variables to enable authentication.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // Get display name if user exists
+  let displayName = null
+  if (user && !user.is_anonymous) {
+    try {
+      const { data: profile } = await supabase
+        .from('cinamini_user_profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single()
+      displayName = profile?.display_name || null
+    } catch (error) {
+      // Profile doesn't exist yet, that's fine
+    }
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <a href="/" className="inline-block">
-            <img 
-              src="/cinamini/Wordmark - Black.svg" 
-              alt="cinamini" 
-              className="h-8 w-auto"
-            />
-          </a>
-        </div>
-      </header>
+      <SiteHeader user={user} displayName={displayName} />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1">
         <h1 className="text-3xl font-bold text-neutral-900 font-funnel-display-bold mb-8">
@@ -95,7 +120,7 @@ export default function Terms() {
               <li>Attempt to manipulate scores or statistics</li>
               <li>Reverse engineer or exploit our systems</li>
               <li>Use the service for any illegal or unauthorized purpose</li>
-              <li>Interfere with other users' enjoyment of the games</li>
+              <li>Interfere with other users&apos; enjoyment of the games</li>
             </ul>
           </section>
 
@@ -121,9 +146,11 @@ export default function Terms() {
             </h2>
             
             <div className="flex items-start gap-6 mb-6">
-              <img 
+              <Image 
                 src="/tmdb-logo.svg" 
                 alt="The Movie Database (TMDB)" 
+                width={96}
+                height={48}
                 className="h-12 w-auto flex-shrink-0"
               />
               <div>
@@ -147,7 +174,7 @@ export default function Terms() {
 
             <div className="text-sm text-neutral-600 space-y-2">
               <p>
-                <strong>Data Usage:</strong> We use TMDB's API to retrieve movie information for our puzzle games, including:
+                <strong>Data Usage:</strong> We use TMDB&apos;s API to retrieve movie information for our puzzle games, including:
               </p>
               <ul className="list-disc pl-6 space-y-1">
                 <li>Movie titles and translations</li>
@@ -177,7 +204,7 @@ export default function Terms() {
               Limitation of Liability
             </h2>
             <p className="text-neutral-700">
-              cinamini is provided "as is" without warranties. We are not liable for any damages 
+              cinamini is provided &quot;as is&quot; without warranties. We are not liable for any damages 
               arising from your use of the service, including lost data or interruption of service.
             </p>
           </section>

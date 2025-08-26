@@ -9,7 +9,6 @@ import {
   CrossGameStats,
   GameTheme,
   UNIVERSAL_ACHIEVEMENTS,
-  getAchievementsByGame,
   calculateAchievementScore
 } from "@/lib/universal-achievements"
 import { AchievementUnlockNotification } from "./achievement-badge"
@@ -67,7 +66,6 @@ class LocalAchievementManager implements AchievementManager {
 
   async updateProgress(event: AchievementEvent): Promise<Achievement[]> {
     const unlockedAchievements: Achievement[] = []
-    const today = new Date().toISOString().split('T')[0]
 
     // Update cross-game stats
     await this.updateCrossGameStats(event)
@@ -110,14 +108,14 @@ class LocalAchievementManager implements AchievementManager {
           break
 
         case 'country_visited':
-          if (this.shouldUpdateForCountryVisited(achievement, event)) {
+          if (this.shouldUpdateForCountryVisited(achievement)) {
             currentProgress = Math.min(currentProgress + 1, achievement.maxProgress)
             progressUpdated = true
           }
           break
 
         case 'budget_estimated':
-          if (this.shouldUpdateForBudgetEstimated(achievement, event)) {
+          if (this.shouldUpdateForBudgetEstimated(achievement)) {
             currentProgress = Math.min(currentProgress + (event.value || 0), achievement.maxProgress)
             progressUpdated = true
           }
@@ -236,11 +234,11 @@ class LocalAchievementManager implements AchievementManager {
            (achievement.category === 'exploration' && achievement.gameTheme === event.gameTheme)
   }
 
-  private shouldUpdateForCountryVisited(achievement: Achievement, event: AchievementEvent): boolean {
+  private shouldUpdateForCountryVisited(achievement: Achievement): boolean {
     return achievement.gameTheme === 'retitled' && achievement.category === 'exploration'
   }
 
-  private shouldUpdateForBudgetEstimated(achievement: Achievement, event: AchievementEvent): boolean {
+  private shouldUpdateForBudgetEstimated(achievement: Achievement): boolean {
     return achievement.id === 'budget-bracket-banker'
   }
 

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import { subDays, startOfDay, format } from 'date-fns';
+import { subDays, startOfDay } from 'date-fns';
 
 interface TestResult {
   check: string;
@@ -9,7 +9,7 @@ interface TestResult {
   message?: string;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createServiceClient();
     const results: TestResult[] = [];

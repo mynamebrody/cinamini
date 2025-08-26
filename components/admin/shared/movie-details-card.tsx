@@ -1,7 +1,7 @@
 "use client"
 
 import { Film, Calendar, DollarSign, User, Edit3, X, Clock, Star, Building2, Users } from "lucide-react"
-import { format } from "date-fns"
+import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -48,9 +48,11 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
       <Card className="p-3">
         <div className="flex items-start gap-3">
           {movie.poster_path ? (
-            <img
+            <Image
               src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
               alt={movie.title}
+              width={64}
+              height={96}
               className="w-16 h-24 rounded object-cover flex-shrink-0"
             />
           ) : (
@@ -121,9 +123,11 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
         {/* Poster */}
         <div className="flex-shrink-0">
           {movie.poster_path ? (
-            <img
+            <Image
               src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
               alt={movie.title}
+              width={185}
+              height={278}
               className="w-[185px] h-[278px] object-cover"
             />
           ) : (
@@ -139,7 +143,7 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
             <div className="flex-1">
               <h3 className="font-semibold text-xl">{movie.title}</h3>
               {movie.tagline && (
-                <p className="text-sm text-gray-600 italic mt-1">"{movie.tagline}"</p>
+                <p className="text-sm text-gray-600 italic mt-1">&quot;{movie.tagline}&quot;</p>
               )}
               
               <div className="flex items-center gap-3 mt-2 text-sm text-gray-600">

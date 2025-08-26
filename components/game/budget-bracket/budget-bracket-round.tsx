@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
-import { Clock, DollarSign, TrendingUp, TrendingDown } from "lucide-react"
+import { type GameChoice } from "@/lib/budget-bracket-client"
+import { TrendingUp, TrendingDown } from "lucide-react"
+import Image from "next/image"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -39,12 +39,6 @@ interface BudgetBracketRoundProps {
   gameStartTime: number
 }
 
-interface RevealedBudget {
-  title: string
-  budget: number
-  budget_source: string
-  is_estimated: boolean
-}
 
 export default function BudgetBracketRound({ 
   pair, 
@@ -54,26 +48,9 @@ export default function BudgetBracketRound({
   puzzle,
   gameStartTime 
 }: BudgetBracketRoundProps) {
-  // Safety check for pair data
-  if (!pair || !pair.movieA || !pair.movieB) {
-    return (
-      <div className="text-center text-red-500">
-        Error: Missing pair data for round {round}
-      </div>
-    )
-  }
-
-  // Debug: Log the actual release_date values we receive
-  console.log('Budget Bracket pair release dates:', {
-    movieA: pair.movieA.release_date,
-    movieB: pair.movieB.release_date,
-    movieA_type: typeof pair.movieA.release_date,
-    movieB_type: typeof pair.movieB.release_date
-  })
-  
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
-  const [elapsedTime, setElapsedTime] = useState(0)
+  const [, setElapsedTime] = useState(0)
   const [totalGameTime, setTotalGameTime] = useState(0)
   const [showingFeedback, setShowingFeedback] = useState(false)
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null)
@@ -126,6 +103,15 @@ export default function BudgetBracketRound({
 
     return () => clearInterval(interval)
   }, [roundStartTime])
+
+  // Safety check for pair data - AFTER all hooks are called
+  if (!pair || !pair.movieA || !pair.movieB) {
+    return (
+      <div className="text-center text-red-500">
+        Error: Missing pair data for round {round}
+      </div>
+    )
+  }
 
   const handleMovieChoice = async (movie: 'A' | 'B') => {
     if (hasChosen) return
@@ -343,13 +329,18 @@ export default function BudgetBracketRound({
             onClick={() => handleMovieChoice('A')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
-              <img
-                src={getPosterUrl(pair.movieA.poster_path, 'w342')}
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+              <Image
+                src={`https://image.tmdb.org/t/p/w342${pair.movieA.poster_path}`}
                 alt={`${pair.movieA.title} poster`}
+                width={342}
+                height={513}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieA: true }))}
+                onError={() => {
+                  console.error('Failed to load movie poster for:', pair.movieA.title);
+                }}
               />
             </div>
             <div className="text-center flex-1 flex flex-col justify-between">
@@ -435,13 +426,18 @@ export default function BudgetBracketRound({
             onClick={() => handleMovieChoice('B')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
-              <img
-                src={getPosterUrl(pair.movieB.poster_path, 'w342')}
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+              <Image
+                src={`https://image.tmdb.org/t/p/w342${pair.movieB.poster_path}`}
                 alt={`${pair.movieB.title} poster`}
+                width={342}
+                height={513}
                 className="w-full h-full object-cover"
                 loading="lazy"
                 onLoad={() => setImagesLoaded(prev => ({ ...prev, movieB: true }))}
+                onError={() => {
+                  console.error('Failed to load movie poster for:', pair.movieB.title);
+                }}
               />
             </div>
             <div className="text-center flex-1 flex flex-col justify-between">

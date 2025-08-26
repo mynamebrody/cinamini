@@ -189,7 +189,7 @@ export default function UserControlsPage() {
               Resend Email Confirmation
             </CardTitle>
             <CardDescription className="font-funnel text-neutral-600">
-              Resend a confirmation email to users who haven't verified their email address
+              Resend a confirmation email to users who haven&apos;t verified their email address
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -425,7 +425,7 @@ export default function UserControlsPage() {
           <div>
             <strong>Resend Email Confirmation:</strong>
             <ul className="list-disc list-inside mt-1 space-y-1 ml-4">
-              <li>Use this for users who signed up but haven't confirmed their email</li>
+              <li>Use this for users who signed up but haven&apos;t confirmed their email</li>
               <li>The user must have already registered but not verified their email</li>
               <li>Rate limited to prevent spam</li>
             </ul>

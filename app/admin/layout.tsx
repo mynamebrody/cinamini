@@ -3,10 +3,8 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { 
   Home,
-  Puzzle,
   Film,
   Database,
-  Settings,
   ExternalLink,
   CalendarDays,
   BarChart3,

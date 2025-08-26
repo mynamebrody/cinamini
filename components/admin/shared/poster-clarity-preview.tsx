@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
-import { Film } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
@@ -165,7 +164,7 @@ export default function PosterClarityPreview({
     
     // Draw initial state
     drawPixelatedPoster()
-  }, []) // Run once on mount
+  }, [drawPixelatedPoster]) // Run once on mount
 
   // Redraw when clarity changes
   useEffect(() => {

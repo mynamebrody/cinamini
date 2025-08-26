@@ -2,7 +2,6 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import GamesList from "@/components/games-list"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import { Banner } from "@/components/banner"
 import AuthHashProcessor from "@/components/auth-hash-processor"
 
 export default async function Home() {

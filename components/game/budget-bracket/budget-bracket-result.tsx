@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ShareSection } from "@/components/game/share-section"
+import Image from "next/image"
 import { 
   Trophy, 
   Clock,
@@ -14,7 +15,7 @@ import {
   Crown,
   Star
 } from "lucide-react"
-import { generateSharePattern, formatBudget, getPosterUrl, type GameChoice } from "@/lib/budget-bracket-client"
+import { generateSharePattern, formatBudget, type GameChoice } from "@/lib/budget-bracket-client"
 import { formatGameTime } from "@/lib/utils"
 import { useBudgetBracketShare } from "@/hooks/useGameShare"
 
@@ -121,51 +122,9 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
         setTimeout(() => setShowCelebration(false), 3000)
       }, 500)
     }
-  }, [])
-  
-  // Automatically fetch all answers when component mounts
-  useEffect(() => {
-    fetchAllAnswers()
-  }, [])
-  
-  // Fallback share text function for loading states or errors
-  function generateFallbackShareText(): string {
-    if (!result.revealed_pairs) {
-      // If no revealed pairs, generate basic share text
-      const pattern = '🟥'.repeat(5) // Assume all wrong if no data
-      return `Budget Bracket #${puzzle.puzzle_number}\n${pattern}\n0/5 correct`
-    }
-    const choices: GameChoice[] = result.revealed_pairs.map(pair => ({
-      round: pair.round,
-      chosen_movie: pair.chosen_movie,
-      correct: pair.correct,
-      time_taken_ms: pair.time_taken_ms
-    }))
+  }, [result.is_perfect_game, correctAnswers])
 
-    const pattern = generateSharePattern(choices)
-    const timeText = formatGameTime(result.total_duration_ms)
-    
-    // Create the title with optional name on separate lines
-    const baseTitle = `Budget Bracket #${puzzle.puzzle_number}`;
-    const titleWithName = puzzle.name 
-      ? `${baseTitle}\n${puzzle.name}\n${pattern}`
-      : `${baseTitle} ${pattern}`;
-    
-    if (result.is_perfect_game) {
-      return `${titleWithName}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
-    } else if (correctAnswers === 0) {
-      return `${titleWithName}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
-    } else {
-      return `${titleWithName}\n${correctAnswers}/5 correct • ${timeText}`
-    }
-  }
-
-
-  const getMovieYear = (releaseDate: string) => {
-    return new Date(releaseDate).getFullYear()
-  }
-
-  const fetchAllAnswers = async () => {
+  const fetchAllAnswers = useCallback(async () => {
     setLoadingAnswers(true)
     
     try {
@@ -240,14 +199,56 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
           budget_source: 'tmdb',
           is_estimated: false
         },
-        correct_choice: 'A',
-        budget_difference: 50000000,
-        difficulty_ratio: 2.0
+        correct_choice: 'B',
+        budget_difference: 100000000,
+        difficulty_ratio: 3.0
       }))
       setAllRoundsData(mockData)
     } finally {
       setLoadingAnswers(false)
     }
+  }, [puzzle.id, puzzle.pairs])
+
+  // Automatically fetch all answers when component mounts
+  useEffect(() => {
+    fetchAllAnswers()
+  }, [fetchAllAnswers])
+  
+  // Fallback share text function for loading states or errors
+  function generateFallbackShareText(): string {
+    if (!result.revealed_pairs) {
+      // If no revealed pairs, generate basic share text
+      const pattern = '🟥'.repeat(5) // Assume all wrong if no data
+      return `Budget Bracket #${puzzle.puzzle_number}\n${pattern}\n0/5 correct`
+    }
+    const choices: GameChoice[] = result.revealed_pairs.map(pair => ({
+      round: pair.round,
+      chosen_movie: pair.chosen_movie,
+      correct: pair.correct,
+      time_taken_ms: pair.time_taken_ms
+    }))
+
+    const pattern = generateSharePattern(choices)
+    const timeText = formatGameTime(result.total_duration_ms)
+    
+    // Create the title with optional name on separate lines
+    const baseTitle = `Budget Bracket #${puzzle.puzzle_number}`;
+    const titleWithName = puzzle.name 
+      ? `${baseTitle}\n${puzzle.name}\n${pattern}`
+      : `${baseTitle} ${pattern}`;
+    
+    if (result.is_perfect_game) {
+      return `${titleWithName}\nPerfect Producer! 🏆 • 5/5 correct • ${timeText}`
+    } else if (correctAnswers === 0) {
+      return `${titleWithName}\nWhomp, whomp 🎺 • 0/5 correct • ${timeText}`
+    } else {
+      return `${titleWithName}\n${correctAnswers}/5 correct • ${timeText}`
+    }
+  }
+
+
+  const getMovieYear = (releaseDate: string) => {
+    return new Date(releaseDate).getFullYear()
   }
 
 
@@ -412,7 +413,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                   <span className="text-2xl">🏆</span>
                 </div>
                 <div className="text-sm text-yellow-700 mt-1">
-                  You've mastered the art of budget prediction. Welcome to the penthouse!
+                  You&apos;ve mastered the art of budget prediction. Welcome to the penthouse!
                 </div>
               </motion.div>
             )}
@@ -622,10 +623,12 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
-                        <img
-                          src={getPosterUrl(roundData.movieA.poster_path, 'w185')}
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${roundData.movieA.poster_path}`}
                           alt={`${roundData.movieA.title} poster`}
+                          width={185}
+                          height={278}
                           className={`w-full h-full object-cover ${
                             roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
                               ? 'opacity-60' 
@@ -666,10 +669,12 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
-                        <img
-                          src={getPosterUrl(roundData.movieB.poster_path, 'w185')}
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${roundData.movieB.poster_path}`}
                           alt={`${roundData.movieB.title} poster`}
+                          width={185}
+                          height={278}
                           className={`w-full h-full object-cover ${
                             roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
                               ? 'opacity-60' 
@@ -756,11 +761,12 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
-                        <img
-                          src={getPosterUrl(pair.movieA.poster_path, 'w185')}
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${pair.movieA.poster_path}`}
                           alt={`${pair.movieA.title} poster`}
-                          className={`w-full h-full object-cover ${
+                          fill
+                          className={`object-cover ${
                             roundData.correct_choice === 'A' && chosenMovie !== 'A' && chosenMovie !== null
                               ? 'opacity-60' 
                               : ''
@@ -794,11 +800,12 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0 }}>
-                        <img
-                          src={getPosterUrl(pair.movieB.poster_path, 'w185')}
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                        <Image
+                          src={`https://image.tmdb.org/t/p/w185${pair.movieB.poster_path}`}
                           alt={`${pair.movieB.title} poster`}
-                          className={`w-full h-full object-cover ${
+                          fill
+                          className={`object-cover ${
                             roundData.correct_choice === 'B' && chosenMovie !== 'B' && chosenMovie !== null
                               ? 'opacity-60' 
                               : ''

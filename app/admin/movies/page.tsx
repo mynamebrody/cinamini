@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { 
   Search, 
   Calendar, 
@@ -14,7 +15,6 @@ import {
   TrendingUp,
   History,
   PenTool,
-  Filter,
   Star,
   DollarSign,
   Users,
@@ -70,9 +70,9 @@ export default function AdminMovieSearch() {
   const [recentUsage, setRecentUsage] = useState<Map<number, MovieUsage[]>>(new Map())
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsageData, setMovieUsageData] = useState<MovieUsageData | null>(null)
-  const [loadingUsage, setLoadingUsage] = useState(false)
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all")
   const [hoveredMovieId, setHoveredMovieId] = useState<number | null>(null)
+  const [loadingUsage, setLoadingUsage] = useState(false)
   
   // State for cached movie lists
   const [cachedLists, setCachedLists] = useState<Record<Exclude<TabType, 'search'>, CachedList>>({
@@ -85,18 +85,7 @@ export default function AdminMovieSearch() {
   const supabase = getSupabaseClient()
   const router = useRouter()
 
-  useEffect(() => {
-    fetchRecentMovieUsage()
-  }, [])
-
-  // Fetch usage data when hovering over a movie
-  useEffect(() => {
-    if (hoveredMovieId) {
-      fetchMovieUsage(hoveredMovieId)
-    }
-  }, [hoveredMovieId])
-
-  const fetchRecentMovieUsage = async () => {
+  const fetchRecentMovieUsage = useCallback(async () => {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
@@ -141,7 +130,18 @@ export default function AdminMovieSearch() {
     }
 
     setRecentUsage(usageMap)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchRecentMovieUsage()
+  }, [fetchRecentMovieUsage])
+
+  // Fetch usage data when hovering over a movie
+  useEffect(() => {
+    if (hoveredMovieId) {
+      fetchMovieUsage(hoveredMovieId)
+    }
+  }, [hoveredMovieId])
 
   const fetchMovieUsage = async (movieId: number) => {
     setLoadingUsage(true)
@@ -275,8 +275,7 @@ export default function AdminMovieSearch() {
     // Check if movie was used in last 30 days
     const movieUsage = recentUsage.get(movie.id)
     if (movieUsage && movieUsage.length > 0) {
-      const games = [...new Set(movieUsage.map(u => u.gameType))]
-      return { 
+        return { 
         status: "recently-used" as const, 
         label: `Recently used (${movieUsage.length}x)`, 
         color: "text-cinema-red",
@@ -420,7 +419,7 @@ export default function AdminMovieSearch() {
       ) : getCurrentMovies().length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {filteredResults.map((movie) => {
-            const { status, label, color, icon: StatusIcon, bgColor } = getMovieStatus(movie)
+            const { status, label, color, icon: StatusIcon } = getMovieStatus(movie)
             const isUnavailable = status === "not-released" || status === "recently-used"
             const movieUsage = recentUsage.get(movie.id)
             
@@ -438,9 +437,11 @@ export default function AdminMovieSearch() {
                   boxShadow: '3px 3px 0px 0px rgba(0,0,0,0.1)'
                 }}>
                   {movie.poster_path ? (
-                    <img
+                    <Image
                       src={`https://image.tmdb.org/t/p/w342${movie.poster_path}`}
                       alt={movie.title}
+                      width={342}
+                      height={513}
                       className="w-full aspect-[2/3] object-cover"
                     />
                   ) : (
@@ -519,7 +520,7 @@ export default function AdminMovieSearch() {
       ) : activeTab === 'search' && searchQuery && !getCurrentLoading() ? (
         <div className="text-center py-12">
           <Film className="w-16 h-16 text-gray-300 mx-auto mb-4 animate-pulse" />
-          <p className="text-gray-500">No movies found for "{searchQuery}"</p>
+          <p className="text-gray-500">No movies found for &quot;{searchQuery}&quot;</p>
           <p className="text-sm text-gray-400 mt-2">Try a different search term</p>
         </div>
       ) : activeTab === 'search' ? (
@@ -552,9 +553,11 @@ export default function AdminMovieSearch() {
             <div className="p-6">
               <div className="flex gap-6 mb-6">
                 {selectedMovie.poster_path ? (
-                  <img
+                  <Image
                     src={`https://image.tmdb.org/t/p/w342${selectedMovie.poster_path}`}
                     alt={selectedMovie.title}
+                    width={342}
+                    height={513}
                     className="w-48 border-2 border-neutral-200 transform transition-transform duration-300 hover:scale-[1.02]"
                     style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                   />
@@ -578,7 +581,7 @@ export default function AdminMovieSearch() {
                     </div>
                     
                     {(() => {
-                      const { status, label, color, icon: StatusIcon } = getMovieStatus(selectedMovie)
+                      const { label, color, icon: StatusIcon } = getMovieStatus(selectedMovie)
                       return (
                         <div className="flex items-center gap-2">
                           <StatusIcon className={`w-4 h-4 ${color.replace('text-', 'text-')}`} />
@@ -601,7 +604,19 @@ export default function AdminMovieSearch() {
                   </div>
 
                   {/* Usage History */}
-                  {movieUsageData && movieUsageData.totalUsage > 0 && (
+                  {loadingUsage && (
+                    <div className="mt-6 p-4 bg-gray-50 rounded-xl">
+                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <History className="w-4 h-4 text-gray-600" />
+                        Usage History (Last 30 Days)
+                      </h4>
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-sm text-gray-600">Loading usage data...</span>
+                      </div>
+                    </div>
+                  )}
+                  {!loadingUsage && movieUsageData && movieUsageData.totalUsage > 0 && (
                     <div className="mt-6 p-4 bg-gray-50 rounded-xl">
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <History className="w-4 h-4 text-gray-600" />

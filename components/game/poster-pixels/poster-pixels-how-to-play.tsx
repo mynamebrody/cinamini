@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Eye, Search, Timer, Target } from "lucide-react"
+import { Search, Timer, Target } from "lucide-react"
 
 interface PosterPixelsHowToPlayProps {
   onStart: () => void

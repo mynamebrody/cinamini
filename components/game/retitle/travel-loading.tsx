@@ -46,7 +46,7 @@ const TravelLoadingAnimation = () => {
           animate={{ opacity: [0.3, 0.8, 0.3] }}
           transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
         >
-          🗺️ Finding today's destination
+          🗺️ Finding today&apos;s destination
         </motion.p>
       </div>
       

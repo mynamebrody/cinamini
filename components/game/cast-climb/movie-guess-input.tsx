@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { Search, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
 import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
 import type { MovieSearchResult, MovieSearchResponse, APIErrorResponse } from '@/lib/types/tmdb'
 import { cn } from '@/lib/utils'
 
@@ -298,7 +297,7 @@ export function MovieGuessInput({
             </div>
           ) : searchQuery.length >= 2 && !isSearching ? (
             <div className="p-3 text-sm text-muted-foreground">
-              No movies found for "{searchQuery}"
+              No movies found for &quot;{searchQuery}&quot;
             </div>
           ) : null}
         </div>

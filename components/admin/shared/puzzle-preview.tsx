@@ -2,7 +2,8 @@
 
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Film, DollarSign, Users, Calendar } from "lucide-react"
+import { Film, Users, Calendar } from "lucide-react"
+import Image from "next/image"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import PosterClarityPreview from "./poster-clarity-preview"
@@ -116,9 +117,9 @@ function RetitledPreview({
       <div className="text-center space-y-3">
         <div className="text-5xl">{flagEmoji}</div>
         <div className="text-sm text-gray-500">{countryName}</div>
-        <h3 className="text-2xl font-bold">"{localizedTitle}"</h3>
+        <h3 className="text-2xl font-bold">&quot;{localizedTitle}&quot;</h3>
         {englishTranslation && (
-          <p className="text-base text-gray-500 italic">"{englishTranslation}"</p>
+          <p className="text-base text-gray-500 italic">&quot;{englishTranslation}&quot;</p>
         )}
         <p className="text-gray-600">Which movie is this?</p>
       </div>
@@ -199,9 +200,11 @@ function MovieCard({ movie, isWinner }: {
       isWinner ? "border-green-400" : "border-gray-200"
     )}>
       {movie.poster_path ? (
-        <img
+        <Image
           src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
           alt={movie.title}
+          width={185}
+          height={278}
           className="w-full aspect-[2/3] object-cover"
         />
       ) : (
@@ -236,9 +239,11 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
         {/* Movie Poster */}
         <div className="flex-shrink-0">
           {movie.poster_path ? (
-            <img
+            <Image
               src={`https://image.tmdb.org/t/p/w185${movie.poster_path}`}
               alt={movie.title}
+              width={128}
+              height={192}
               className="w-32 rounded-lg shadow-md"
             />
           ) : (
@@ -258,9 +263,11 @@ function CastClimbPreview({ movie, actors }: CastClimbPreviewProps["data"]) {
           {actors.slice(0, 4).map((actor, idx) => (
             <div key={`actor-${actor.id || actor.name}-${idx}`} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
               {actor.profile_path ? (
-                <img
+                <Image
                   src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
                   alt={actor.name}
+                  width={40}
+                  height={40}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
@@ -34,7 +34,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { getCountryFlag } from "@/lib/flag-emojis"
+import { getCountryFlag, getCountryName } from "@/lib/flag-emojis"
 
 interface Movie {
   id: number
@@ -139,9 +139,13 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [customTitle, setCustomTitle] = useState("")
   const [loadingRandom, setLoadingRandom] = useState(false)
   const [englishTranslation, setEnglishTranslation] = useState("")
+  const [countryName, setCountryName] = useState("")
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
+
+  // Ref to track the last loaded puzzle ID to prevent infinite loops
+  const lastLoadedPuzzleId = useRef<string | null>(null)
 
   const supabase = getSupabaseClient()
 
@@ -166,7 +170,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
-  const fetchAlternativeTitles = async (movieId: number) => {
+  const fetchAlternativeTitles = useCallback(async (movieId: number, currentMovieTitle?: string) => {
     setLoadingTitles(true)
     try {
       const response = await fetch(`/api/movies/${movieId}/alternative-titles`)
@@ -174,7 +178,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         const data = await response.json()
         const titles = (data.titles || [])
           .filter((t: AlternativeTitle) => t.iso_3166_1 && t.title)
-          .filter((t: AlternativeTitle) => t.title !== selectedMovie?.title)
+          .filter((t: AlternativeTitle) => !currentMovieTitle || t.title !== currentMovieTitle)
         setAlternativeTitles(titles)
       }
     } catch (error) {
@@ -182,17 +186,24 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     } finally {
       setLoadingTitles(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (selectedMovie) {
-      fetchAlternativeTitles(selectedMovie.id)
+      fetchAlternativeTitles(selectedMovie.id, selectedMovie.title)
     }
-  }, [selectedMovie])
+  }, [selectedMovie, fetchAlternativeTitles])
 
   useEffect(() => {
     if (selectedTitle) {
       setCustomTitle(selectedTitle.title)
+      
+      // Only auto-populate country name when creating new puzzles, not when editing existing ones
+      if (!isEditMode) {
+        const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
+        setCountryName(autoCountryName)
+      }
+      
       // Translate the title to English
       const translateTitle = async () => {
         try {
@@ -220,7 +231,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       
       translateTitle()
     }
-  }, [selectedTitle])
+  }, [selectedTitle, isEditMode])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -234,62 +245,33 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
 
-  // Load existing puzzle if puzzleId is provided
-  useEffect(() => {
-    if (puzzleId && !loadingPuzzle) {
-      loadExistingPuzzle(puzzleId)
-    }
-  }, [puzzleId])
-
-  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
-  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
-  useEffect(() => {
-    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
-      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
-      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
-      
-      // In edit mode for older puzzles without option_order, start with correct answer first
-      // User can reorder as needed
-      setAllOptions([correctOption, ...distractorOptions])
-    }
-  }, [isEditMode, selectedMovie, distractors, allOptions.length])
-
-  // Handle prefilled values from URL parameters (only when not in edit mode)
-  useEffect(() => {
-    if (!isEditMode) {
-      if (prefilledDate) {
-        setPuzzleDate(prefilledDate)
-        setIsPublished(true) // Auto-publish when date is set
+  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
+    try {
+      const response = await fetch(`/api/movies/${movieId}/details`)
+      if (response.ok) {
+        const movieData = await response.json()
+        
+        const movie: Movie = {
+          id: movieData.id,
+          title: movieData.title,
+          poster_path: movieData.poster_path,
+          release_date: movieData.release_date || '',
+          budget: movieData.budget,
+          revenue: movieData.revenue,
+          runtime: movieData.runtime,
+          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
+          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
+          vote_average: movieData.vote_average
+        }
+        
+        setSelectedMovie(movie)
       }
-      if (prefilledMovieId) {
-        fetchAndSelectMovie(prefilledMovieId)
-      }
+    } catch (error) {
+      console.error('Error fetching movie details:', error)
     }
-  }, [prefilledDate, prefilledMovieId, isEditMode])
+  }, [])
 
-  // Auto-publish when date is manually set
-  const handleDateChange = (date: string) => {
-    setPuzzleDate(date)
-    if (date) {
-      setIsPublished(true)
-    } else {
-      setIsPublished(false)
-    }
-    // Notify parent of date change
-    onDateChange?.(date || null)
-  }
-
-  // Handle published toggle change - clear date when switching to draft
-  const handlePublishedChange = (published: boolean) => {
-    setIsPublished(published)
-    if (!published) {
-      // When switching to draft, clear the date
-      setPuzzleDate("")
-      onDateChange?.(null)
-    }
-  }
-
-  const loadExistingPuzzle = async (puzzleId: string) => {
+  const loadExistingPuzzle = useCallback(async (puzzleId: string) => {
     setLoadingPuzzle(true)
     try {
       const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=retitled`)
@@ -304,6 +286,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         setPuzzleDate(puzzle.puzzle_date || "")
         setCustomTitle(puzzle.localized_title || "")
         setEnglishTranslation(puzzle.english_translation || "")
+        setCountryName(puzzle.country_name || "")
         setIsPublished(puzzle.is_published || false)
         
         // Create selected title object from puzzle data
@@ -389,31 +372,61 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     } finally {
       setLoadingPuzzle(false)
     }
+  }, [fetchAndSelectMovie])
+
+  // Load existing puzzle if puzzleId is provided
+  useEffect(() => {
+    if (puzzleId && !loadingPuzzle && puzzleId !== lastLoadedPuzzleId.current) {
+      lastLoadedPuzzleId.current = puzzleId
+      loadExistingPuzzle(puzzleId)
+    }
+  }, [puzzleId, loadExistingPuzzle, loadingPuzzle])
+
+  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
+  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
+  useEffect(() => {
+    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
+      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
+      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
+      
+      // In edit mode for older puzzles without option_order, start with correct answer first
+      // User can reorder as needed
+      setAllOptions([correctOption, ...distractorOptions])
+    }
+  }, [isEditMode, selectedMovie, distractors, allOptions.length])
+
+  // Handle prefilled values from URL parameters (only when not in edit mode)
+  useEffect(() => {
+    if (!isEditMode) {
+      if (prefilledDate) {
+        setPuzzleDate(prefilledDate)
+        setIsPublished(true) // Auto-publish when date is set
+      }
+      if (prefilledMovieId) {
+        fetchAndSelectMovie(prefilledMovieId)
+      }
+    }
+  }, [prefilledDate, prefilledMovieId, isEditMode, fetchAndSelectMovie])
+
+  // Auto-publish when date is manually set
+  const handleDateChange = (date: string) => {
+    setPuzzleDate(date)
+    if (date) {
+      setIsPublished(true)
+    } else {
+      setIsPublished(false)
+    }
+    // Notify parent of date change
+    onDateChange?.(date || null)
   }
 
-  const fetchAndSelectMovie = async (movieId: string) => {
-    try {
-      const response = await fetch(`/api/movies/${movieId}/details`)
-      if (response.ok) {
-        const movieData = await response.json()
-        
-        const movie: Movie = {
-          id: movieData.id,
-          title: movieData.title,
-          poster_path: movieData.poster_path,
-          release_date: movieData.release_date || '',
-          budget: movieData.budget,
-          revenue: movieData.revenue,
-          runtime: movieData.runtime,
-          director: movieData.credits?.crew?.find((c: any) => c.job === "Director")?.name,
-          writer: movieData.credits?.crew?.find((c: any) => c.job === "Screenplay" || c.job === "Writer")?.name,
-          vote_average: movieData.vote_average
-        }
-        
-        setSelectedMovie(movie)
-      }
-    } catch (error) {
-      console.error('Error fetching movie details:', error)
+  // Handle published toggle change - clear date when switching to draft
+  const handlePublishedChange = (published: boolean) => {
+    setIsPublished(published)
+    if (!published) {
+      // When switching to draft, clear the date
+      setPuzzleDate("")
+      onDateChange?.(null)
     }
   }
 
@@ -570,15 +583,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
     setLoading(true)
     try {
-      // Get country name from country code
-      const countryNames: { [key: string]: string } = {
-        "ES": "Spain", "FR": "France", "DE": "Germany", "IT": "Italy", "JP": "Japan",
-        "KR": "South Korea", "BR": "Brazil", "MX": "Mexico", "RU": "Russia", "CN": "China",
-        "US": "United States", "GB": "United Kingdom", "CA": "Canada", "AU": "Australia", "IN": "India",
-        "AR": "Argentina", "PL": "Poland", "NL": "Netherlands", "SE": "Sweden", "NO": "Norway",
-        "DK": "Denmark", "FI": "Finland", "PT": "Portugal", "GR": "Greece", "TR": "Turkey",
-        "TH": "Thailand", "ID": "Indonesia", "VN": "Vietnam", "PH": "Philippines", "MY": "Malaysia",
-      }
 
       // Generate a seed value - must match the regex constraint: ^[a-zA-Z0-9_-]+$
       const timestamp = Date.now().toString(36)
@@ -604,7 +608,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         film_title: selectedMovie.title,
         localized_title: customTitle.trim(),
         country_code: selectedTitle.iso_3166_1,
-        country_name: countryNames[selectedTitle.iso_3166_1] || selectedTitle.iso_3166_1,
+        country_name: countryName.trim() || selectedTitle.iso_3166_1,
         distractor_ids: allOptions.filter(option => !option.isCorrect).map(option => option.id),
         option_order: allOptions.map(option => option.id), // Store complete order including correct answer
         is_published: isPublished,
@@ -618,7 +622,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       }
 
 
-      let response, result
+      let response
       
       if (isEditMode && existingPuzzleId) {
         // Update existing puzzle
@@ -647,7 +651,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         })
       }
 
-      result = await response.json()
+      const result = await response.json()
       
       if (!response.ok) {
         console.error("API error:", result)
@@ -670,6 +674,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         setAlternativeTitles([])
         setCustomTitle("")
         setEnglishTranslation("")
+        setCountryName("")
       }
       
     } catch (error: any) {
@@ -704,7 +709,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
     return {
       flagEmoji: flag,
-      countryName: selectedTitle?.iso_3166_1 || "...",
+      countryName: countryName.trim() || selectedTitle?.iso_3166_1 || "...",
       localizedTitle: customTitle.trim() || selectedTitle?.title || "...",
       englishTranslation: englishTranslation.trim() || "",
       options
@@ -769,6 +774,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 setSelectedTitle(null)
                 setCustomTitle("")
                 setEnglishTranslation("")
+                setCountryName("")
               }}
             />
           ) : (
@@ -859,6 +865,17 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                     value={englishTranslation}
                     onChange={(e) => setEnglishTranslation(e.target.value)}
                     placeholder="English translation of the title..."
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="country-name" className="text-sm text-gray-600">Country Name</Label>
+                  <Input
+                    id="country-name"
+                    type="text"
+                    value={countryName}
+                    onChange={(e) => setCountryName(e.target.value)}
+                    placeholder="Country name (e.g., Spain, France, Germany...)"
                     className="mt-1"
                   />
                 </div>

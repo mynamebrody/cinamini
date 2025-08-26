@@ -38,7 +38,7 @@ export default function CastClimbHowToPlay({ onStart }: CastClimbHowToPlayProps)
                 <div className="flex-1">
                   <h3 className="text-sm font-semibold mb-1">First Actor Revealed</h3>
                   <p className="text-xs text-muted-foreground">
-                    You'll see one actor's name and their character. Try to guess the movie!
+                    You&apos;ll see one actor&apos;s name and their character. Try to guess the movie!
                   </p>
                 </div>
               </div>

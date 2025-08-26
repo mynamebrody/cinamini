@@ -56,8 +56,13 @@ export async function GET(request: Request) {
           return NextResponse.redirect(new URL('/profile?emailConfirmed=true', getBaseUrl()))
         }
         
-        // Otherwise redirect to home page after successful auth
-        return NextResponse.redirect(new URL('/', getBaseUrl()))
+        // Force a brief delay and clear cache to ensure session is properly updated
+        // This helps prevent stale session issues after account conversion
+        const response = NextResponse.redirect(new URL('/', getBaseUrl()))
+        response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+        response.headers.set('Pragma', 'no-cache')
+        response.headers.set('Expires', '0')
+        return response
       }
     } catch (error) {
       console.error('Error exchanging code for session:', error)

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getScoreForClarityPercent } from "@/lib/poster-pixels-config"
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +17,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const { game_id, won, total_time_ms, final_clarity_level, gave_up } = await request.json()
+    const { game_id, won, total_time_ms, final_clarity_level } = await request.json()
 
     if (!game_id || won === undefined || total_time_ms === undefined || final_clarity_level === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })

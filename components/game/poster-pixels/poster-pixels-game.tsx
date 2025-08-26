@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BarChart3 } from "lucide-react"
@@ -66,7 +66,7 @@ type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'complete
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
 export default function PosterPixelsGame() {
-  const { user, isAnonymous, loading: authLoading } = useGameMode()
+  const { isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
   const [gameStartTime, setGameStartTime] = useState<number>(0)
@@ -123,6 +123,75 @@ export default function PosterPixelsGame() {
     return () => clearInterval(interval)
   }, [gameStartTime, gameState])
 
+  const drawFallbackPoster = useCallback((ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
+    canvas.width = 300
+    canvas.height = 450
+    ctx.fillStyle = '#f3f4f6'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.strokeStyle = '#d1d5db'
+    ctx.lineWidth = 2
+    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2)
+    ctx.fillStyle = '#6b7280'
+    ctx.font = '16px sans-serif'
+    ctx.textAlign = 'center'
+    ctx.fillText('Poster Loading...', canvas.width / 2, canvas.height / 2)
+    ctx.fillText('Please check your connection', canvas.width / 2, canvas.height / 2 + 25)
+  }, [])
+
+  const drawPixelatedPoster = useCallback((clarityValue: number) => {
+    const canvas = canvasRef.current
+    if (!canvas || !state.puzzle) return
+    
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    
+    const posterPath = state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
+    if (!posterPath) {
+      console.error("No poster path found in puzzle data")
+      drawFallbackPoster(ctx, canvas)
+      return
+    }
+
+    try {
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    const imageUrl = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`
+    img.src = imageUrl
+    
+    img.onload = () => {
+      try {
+        const pixelSize = Math.max(1, Math.floor((1 - clarityValue / 100) * 50) + 1)
+        canvas.width = 300
+        canvas.height = 450
+        ctx.imageSmoothingEnabled = false
+        const tempCanvas = document.createElement("canvas")
+        const tempCtx = tempCanvas.getContext("2d")
+        if (!tempCtx) {
+          console.error("Failed to get 2D context for temporary canvas")
+          return
+        }
+        const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
+        const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
+        tempCanvas.width = scaledWidth
+        tempCanvas.height = scaledHeight
+        tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+        ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
+      } catch (error) {
+        console.error("Error drawing pixelated poster:", error)
+        drawFallbackPoster(ctx, canvas)
+      }
+    }
+    
+    img.onerror = (error) => {
+      console.error("Failed to load poster image:", error)
+      drawFallbackPoster(ctx, canvas)
+    }
+    } catch (error) {
+      console.error("Error in drawPixelatedPoster:", error)
+      drawFallbackPoster(ctx, canvas)
+    }
+  }, [state.puzzle, drawFallbackPoster])
+
   // Draw pixelated poster on clarity changes
   useEffect(() => {
     if (canvasRef.current && state.puzzle && state.gameStarted) {
@@ -138,7 +207,7 @@ export default function PosterPixelsGame() {
         }))
       }
     }
-  }, [animatedClarity, revealClarity, isRevealing, state.puzzle, state.gameStarted])
+  }, [animatedClarity, revealClarity, isRevealing, state.puzzle, state.gameStarted, drawPixelatedPoster])
 
   const getLevels = () => Array.from(POSTER_PIXELS_LEVELS) // Always use config levels
 
@@ -224,74 +293,7 @@ export default function PosterPixelsGame() {
     }
   }
 
-  const drawPixelatedPoster = (clarityValue: number) => {
-    const canvas = canvasRef.current
-    if (!canvas || !state.puzzle) return
-    
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-    
-    const posterPath = state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
-    if (!posterPath) {
-      console.error("No poster path found in puzzle data")
-      drawFallbackPoster(ctx, canvas)
-      return
-    }
-
-    try {
-    const img = new Image()
-    img.crossOrigin = "anonymous"
-    const imageUrl = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`
-    img.src = imageUrl
-    
-    img.onload = () => {
-      try {
-        const pixelSize = Math.max(1, Math.floor((1 - clarityValue / 100) * 50) + 1)
-        canvas.width = 300
-        canvas.height = 450
-        ctx.imageSmoothingEnabled = false
-        const tempCanvas = document.createElement("canvas")
-        const tempCtx = tempCanvas.getContext("2d")
-        if (!tempCtx) {
-          console.error("Failed to get 2D context for temporary canvas")
-          return
-        }
-        const scaledWidth = Math.max(1, Math.floor(canvas.width / pixelSize))
-        const scaledHeight = Math.max(1, Math.floor(canvas.height / pixelSize))
-        tempCanvas.width = scaledWidth
-        tempCanvas.height = scaledHeight
-        tempCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
-        ctx.drawImage(tempCanvas, 0, 0, scaledWidth, scaledHeight, 0, 0, canvas.width, canvas.height)
-      } catch (error) {
-        console.error("Error drawing pixelated poster:", error)
-        drawFallbackPoster(ctx, canvas)
-      }
-    }
-    
-    img.onerror = (error) => {
-      console.error("Failed to load poster image:", error)
-      drawFallbackPoster(ctx, canvas)
-    }
-    } catch (error) {
-      console.error("Error in drawPixelatedPoster:", error)
-      drawFallbackPoster(ctx, canvas)
-    }
-  }
   
-  const drawFallbackPoster = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-    canvas.width = 300
-    canvas.height = 450
-    ctx.fillStyle = '#f3f4f6'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.strokeStyle = '#d1d5db'
-    ctx.lineWidth = 2
-    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2)
-    ctx.fillStyle = '#6b7280'
-    ctx.font = '16px sans-serif'
-    ctx.textAlign = 'center'
-    ctx.fillText('Poster Loading...', canvas.width / 2, canvas.height / 2)
-    ctx.fillText('Please check your connection', canvas.width / 2, canvas.height / 2 + 25)
-  }
 
   const calculateScoreForCurrent = () => {
     const percent = Math.round(state.clarityLevel)
@@ -660,7 +662,7 @@ export default function PosterPixelsGame() {
         {gameState === 'loading' && (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-lg">Loading today's puzzle...</div>
+              <div className="text-lg">Loading today&apos;s puzzle...</div>
             </div>
           </div>
         )}

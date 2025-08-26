@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST method for programmatic clearing (e.g., from dev tools)
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   // Only allow in development environment
   if (process.env.NODE_ENV !== 'development') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 404 })

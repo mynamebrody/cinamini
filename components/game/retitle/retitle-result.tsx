@@ -1,15 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { ShareSection } from "@/components/game/share-section"
 import { Check, X, Flame } from "lucide-react"
 import Image from "next/image"
 import { cn, formatGameTime } from "@/lib/utils"
-import { toast } from "sonner"
 import { useRetitledShare } from "@/hooks/useGameShare"
-import type { RetitledShareData } from "@/lib/sharing"
 
 interface GuessResult {
   correct: boolean
@@ -44,51 +41,21 @@ interface RetitleResultProps {
 
 export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTimeMs = 0 }: RetitleResultProps) {
   const [shareText, setShareText] = useState<string | null>(null)
-  const [loadingShare, setLoadingShare] = useState(true)
-  
-  // Use centralized sharing system - memoize to prevent infinite re-renders
-  const shareData: RetitledShareData = useMemo(() => ({
-    guess: {
-      isCorrect: result.correct,
-      solveTimeMs
-    },
-    puzzle: {
-      puzzleNumber,
-      countryCode: result.puzzle?.countryCode || 'US',
-      localizedTitle: result.puzzle?.localizedTitle || ''
-    }
-  }), [result.correct, solveTimeMs, puzzleNumber, result.puzzle?.countryCode, result.puzzle?.localizedTitle])
-  
-  const { shareText: centralizedShareText, fetchShare, isLoading: isShareLoading } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
+  const [, setLoadingShare] = useState(true)
   
   
-  const generateFallbackShareText = () => {
+  const { shareText: centralizedShareText, fetchShare } = useRetitledShare(puzzleId, solveTimeMs, result.correct)
+  
+  
+  const generateFallbackShareText = useCallback(() => {
     const resultEmoji = result.correct ? "✅" : "❌"
     const flagEmoji = result.puzzle?.flagEmoji || "🏳️"
     const timeText = solveTimeMs > 0 ? ` • ${formatGameTime(solveTimeMs)}` : ""
     return `Retitled #${puzzleNumber} ${flagEmoji} • ${resultEmoji}${timeText}`
-  }
+  }, [result.correct, result.puzzle?.flagEmoji, puzzleNumber, solveTimeMs])
 
-  useEffect(() => {
-    // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
-    const shouldUseFallback = !centralizedShareText || 
-      (solveTimeMs > 0 && centralizedShareText && (centralizedShareText.includes('0s') || centralizedShareText.includes('00:00:00')))
-    
-    if (shouldUseFallback) {
-      console.log('Using fallback share text generation')
-      setShareText(generateFallbackShareText())
-      setLoadingShare(false)
-    } else {
-      // Try centralized sharing first, fallback to legacy API if it fails
-      fetchShare().catch(() => {
-        console.log('Centralized sharing failed, falling back to legacy API')
-        fetchLegacyShareText()
-      })
-    }
-  }, [fetchShare, centralizedShareText, solveTimeMs])
-  
   // Fallback to legacy share API if centralized system fails
-  const fetchLegacyShareText = async () => {
+  const fetchLegacyShareText = useCallback(async () => {
     try {
       const response = await fetch(`/api/retitled/share/${puzzleId}`)
       
@@ -114,7 +81,26 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
     } finally {
       setLoadingShare(false)
     }
-  }
+  }, [puzzleId, solveTimeMs, generateFallbackShareText])
+
+  useEffect(() => {
+    // Always use fallback for anonymous users or when we have solve time but share text doesn't include it
+    const shouldUseFallback = !centralizedShareText || 
+      (solveTimeMs > 0 && centralizedShareText && (centralizedShareText.includes('0s') || centralizedShareText.includes('00:00:00')))
+    
+    if (shouldUseFallback) {
+      console.log('Using fallback share text generation')
+      setShareText(generateFallbackShareText())
+      setLoadingShare(false)
+    } else {
+      // Try centralized sharing first, fallback to legacy API if it fails
+      fetchShare().catch(() => {
+        console.log('Centralized sharing failed, falling back to legacy API')
+        fetchLegacyShareText()
+      })
+    }
+  }, [fetchShare, centralizedShareText, solveTimeMs, generateFallbackShareText, fetchLegacyShareText])
+  
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -217,7 +203,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               {result.puzzle.englishTranslation && (
                 <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
                   <p className="text-base text-muted-foreground italic">
-                    "{result.puzzle.englishTranslation}"
+                    &quot;{result.puzzle.englishTranslation}&quot;
                   </p>
                   <div className="text-xs text-muted-foreground mt-1">LITERAL TRANSLATION</div>
                 </div>
@@ -323,7 +309,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         <div className="text-center space-y-2">
           <p className="text-muted-foreground text-sm flex items-center justify-center gap-2">
             <span>🌅</span>
-            <span>Next departure: Tomorrow's adventure awaits!</span>
+            <span>Next departure: Tomorrow&apos;s adventure awaits!</span>
             <span>🎆</span>
           </p>
         </div>

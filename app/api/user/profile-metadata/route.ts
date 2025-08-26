@@ -63,7 +63,7 @@ async function isUsernameUnique(supabase: any, username: string, currentUserId: 
 }
 
 // GET /api/user/profile-metadata - Fetch current user profile from metadata
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Verify user authentication
     const supabase = await createClient()

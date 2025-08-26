@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient()
     
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         if (data?.current_streak > maxStreak) {
           maxStreak = data.current_streak
         }
-      } catch (error) {
+      } catch {
         // Ignore errors for individual tables - user might not have stats yet
         continue
       }

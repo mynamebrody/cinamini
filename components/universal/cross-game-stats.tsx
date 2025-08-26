@@ -246,7 +246,7 @@ interface GameProgressCardProps {
   percentage: number
 }
 
-function GameProgressCard({ gameTheme, theme, unlocked, total, percentage }: GameProgressCardProps) {
+function GameProgressCard({ theme, unlocked, total, percentage }: GameProgressCardProps) {
   return (
     <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-600">
       <div className="flex items-center justify-between mb-3">

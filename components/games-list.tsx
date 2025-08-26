@@ -66,7 +66,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <Loader2 className="w-8 h-8 text-cinema-red animate-spin mx-auto mb-4" />
-          <p className="text-neutral-600">Loading today's puzzles...</p>
+          <p className="text-neutral-600">Loading today&apos;s puzzles...</p>
         </div>
       </div>
     )
@@ -135,7 +135,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 })}
               </p>
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight px-4 md:px-0 mt-4">
-                Today's Cinema Games
+                Today&apos;s Cinema Games
               </h1>
               <p className="text-base md:text-lg text-neutral-600 mt-3 md:mt-4 font-funnel max-w-2xl mx-auto px-4 md:px-0">
                 Four movie puzzles, updated daily. Can you solve them all?
@@ -144,7 +144,7 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
 
             {/* Featured Games Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-7xl mx-auto">
-              {sortedFeaturedGames.map((game, index) => {
+              {sortedFeaturedGames.map((game) => {
                 const style = getGameStyle(game.game_id)
                 
                 return (

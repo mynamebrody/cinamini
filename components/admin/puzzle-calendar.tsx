@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
 import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image, Sparkles, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -111,7 +111,7 @@ function DraggablePuzzle({ puzzle, onPuzzleClick }: { puzzle: Puzzle; onPuzzleCl
         isDraggingDisabled && "opacity-75 cursor-not-allowed",
         isDraft && "border-dashed border-2 bg-amber-50/50"
       )}
-      onClick={(e) => {
+      onClick={() => {
         // Only handle click if not currently dragging
         if (!isDragging) {
           onPuzzleClick(puzzle)
@@ -206,7 +206,7 @@ function DroppableDate({ date, puzzles, onAddPuzzle, onPuzzleClick }: { date: Da
   )
 }
 
-export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAddPuzzle }: PuzzleCalendarProps) {
+export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalendarProps, 'onDateClick'>) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month')
   const [puzzles, setPuzzles] = useState<{ scheduled: Puzzle[]; drafts: Puzzle[] }>({ scheduled: [], drafts: [] })
@@ -224,11 +224,7 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
     })
   )
 
-  useEffect(() => {
-    fetchPuzzles()
-  }, [currentMonth])
-
-  const fetchPuzzles = async () => {
+  const fetchPuzzles = useCallback(async () => {
     setLoading(true)
     try {
       const start = startOfMonth(currentMonth)
@@ -247,7 +243,11 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentMonth])
+
+  useEffect(() => {
+    fetchPuzzles()
+  }, [currentMonth, fetchPuzzles])
 
   const autoScheduleDrafts = async () => {
     if (puzzles.drafts.length === 0) {
@@ -492,7 +492,11 @@ export function PuzzleCalendar({ onDateClick: _onDateClick, onPuzzleClick, onAdd
         } else {
           // No conflict, use regular update for draft publication
           // Remove fields that don't exist in the database schema
-          const { game_type, id, created_at, ...cleanPuzzleData } = draggedPuzzle
+          const cleanPuzzleData = Object.fromEntries(
+            Object.entries(draggedPuzzle).filter(([key]) => 
+              !['game_type', 'id', 'created_at'].includes(key)
+            )
+          )
           
           const response = await fetch('/api/admin/puzzles/update', {
             method: 'PUT',

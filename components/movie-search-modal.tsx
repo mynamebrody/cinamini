@@ -18,14 +18,12 @@ interface MovieSearchModalProps {
   position?: number
 }
 
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w185'
 
 export function MovieSearchModal({
   open,
   onOpenChange,
   onMovieSelect,
-  existingMovieIds,
-  position
+  existingMovieIds
 }: MovieSearchModalProps) {
   const [searchResults, setSearchResults] = useState<MovieSearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -216,7 +214,7 @@ export function MovieSearchModal({
             ) : currentQuery && !loading ? (
               <div className="text-center py-8">
                 <p className="text-neutral-500 font-funnel">
-                  No movies found for "{currentQuery}"
+                  No movies found for &quot;{currentQuery}&quot;
                 </p>
               </div>
             ) : (

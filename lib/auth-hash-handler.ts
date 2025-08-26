@@ -68,6 +68,16 @@ export async function processAuthHash(): Promise<{
       return { success: false, error: 'Failed to create session' }
     }
 
+    // Force a session refresh to ensure we have the latest user state
+    // This is especially important after email confirmation
+    try {
+      await supabase.auth.refreshSession()
+      console.log('Session refreshed after setting session from auth hash')
+    } catch (refreshError) {
+      console.warn('Failed to refresh session after auth hash processing:', refreshError)
+      // Continue anyway - the session was set successfully
+    }
+
     // Clean up the URL hash
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', window.location.pathname + window.location.search)

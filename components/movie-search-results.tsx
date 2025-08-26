@@ -1,6 +1,7 @@
 "use client"
 
 import { Star, Calendar, Users } from 'lucide-react'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -40,11 +41,12 @@ function MovieCard({ movie }: { movie: MovieSearchResult }) {
       {/* Movie Poster */}
       <div className="aspect-[2/3] relative overflow-hidden">
         {movie.posterUrl ? (
-          <img
+          <Image
             src={movie.posterUrl}
             alt={`${movie.title} poster`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            loading="lazy"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
           />
         ) : (
           <div className="w-full h-full bg-gray-800 flex items-center justify-center">
@@ -147,7 +149,7 @@ export function MovieSearchResults({
             No Movies Found
           </div>
           <p className="text-gray-300 mb-4">
-            No movies found for "{searchQuery}"
+            No movies found for &quot;{searchQuery}&quot;
           </p>
           <p className="text-gray-400 text-sm">
             Try searching for a different movie title or check your spelling.
@@ -164,7 +166,7 @@ export function MovieSearchResults({
         {/* Results header */}
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-white mb-2">
-            Search Results for "{searchQuery}"
+            Search Results for &quot;{searchQuery}&quot;
           </h2>
           <p className="text-gray-400 text-sm">
             Found {totalResults.toLocaleString()} movies

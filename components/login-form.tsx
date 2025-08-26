@@ -152,7 +152,7 @@ export default function LoginForm() {
         <SubmitButton />
 
         <div className="text-center text-neutral-600">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/auth/sign-up" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
             Sign up
           </Link>

@@ -300,7 +300,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     
     // Get current user (optional for anonymous support)
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
     
     // Parse request body - now only requires game and puzzleId
     const body = await request.json()

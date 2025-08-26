@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, GamepadIcon, Clock, TrendingUp, Calendar, Award, Film, DollarSign } from 'lucide-react';
+import { Users, GamepadIcon, Clock, TrendingUp, Film } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -30,7 +30,7 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
 
 interface OverviewStats {
   totalPlayers: number;
@@ -109,16 +109,11 @@ export default function AnalyticsPage() {
   const [gameMetrics, setGameMetrics] = useState<GameMetrics[]>([]);
   const [engagementData, setEngagementData] = useState<EngagementData | null>(null);
   const [movieAnalytics, setMovieAnalytics] = useState<MovieAnalytics | null>(null);
-  const [selectedGame, setSelectedGame] = useState<string>('all');
   const [dateRange, setDateRange] = useState<string>('7d');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [dateRange]);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -140,7 +135,11 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
 
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);

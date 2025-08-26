@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { CheckCircle, X } from "lucide-react"
 
 interface EmailConfirmationBannerProps {
@@ -17,12 +17,12 @@ export default function EmailConfirmationBanner({ onDismiss }: EmailConfirmation
     }, 10000)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [handleDismiss])
 
-  const handleDismiss = () => {
+  const handleDismiss = useCallback(() => {
     setIsVisible(false)
     onDismiss?.()
-  }
+  }, [onDismiss])
 
   if (!isVisible) return null
 
