@@ -3,14 +3,11 @@ import { redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SiteFooter } from "@/components/site-footer"
-import CastClimbStats from "@/components/game/cast-climb/cast-climb-stats"
-import RetitleStats from "@/components/game/retitle/retitle-stats"
-import BudgetBracketStats from "@/components/game/budget-bracket/budget-bracket-stats"
-import PosterPixelsStats from "@/components/game/poster-pixels/poster-pixels-stats"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
+import StatsPageContent from "@/components/stats-page-content"
 
 export default async function StatsPage() {
+  
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -20,22 +17,18 @@ export default async function StatsPage() {
     )
   }
 
-  // Check if user is logged in
+  // Check if user is logged in using reliable server-side state
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // If no user, redirect to sign-up
-  if (!user) {
+  // If no user or anonymous user, redirect to sign-up
+  if (!user || user.is_anonymous) {
     redirect("/auth/sign-up")
   }
 
-  // If user is anonymous, redirect to sign-up to upgrade account
-  if (user.is_anonymous) {
-    redirect("/auth/sign-up")
-  }
-
+  // User is authenticated and confirmed - render stats page
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
@@ -56,38 +49,7 @@ export default async function StatsPage() {
 
       {/* Main content */}
       <main className="max-w-4xl mx-auto px-4 py-8 flex-1">
-        <div className="space-y-6">
-          {/* Page Header */}
-          <div className="text-center space-y-2">
-            <p className="text-neutral-600">Track your progress across all cinamini games</p>
-          </div>
-
-          {/* Stats Tabs */}
-          <Tabs defaultValue="cast-climb" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="cast-climb">Cast Climb</TabsTrigger>
-              <TabsTrigger value="retitled">Retitled</TabsTrigger>
-              <TabsTrigger value="budget-bracket">Budget Bracket</TabsTrigger>
-              <TabsTrigger value="poster-pixels">Poster Pixels</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="cast-climb" className="mt-6">
-              <CastClimbStats />
-            </TabsContent>
-            
-            <TabsContent value="retitled" className="mt-6">
-              <RetitleStats />
-            </TabsContent>
-            
-            <TabsContent value="budget-bracket" className="mt-6">
-              <BudgetBracketStats />
-            </TabsContent>
-            
-            <TabsContent value="poster-pixels" className="mt-6">
-              <PosterPixelsStats />
-            </TabsContent>
-          </Tabs>
-        </div>
+        <StatsPageContent />
       </main>
       <SiteFooter />
     </div>
