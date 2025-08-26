@@ -30,7 +30,7 @@ export default async function Privacy() {
         .eq('user_id', user.id)
         .single()
       displayName = profile?.display_name || null
-    } catch (error) {
+    } catch {
       // Profile doesn't exist yet, that's fine
     }
   }
