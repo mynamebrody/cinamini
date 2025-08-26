@@ -48,17 +48,6 @@ export default function BudgetBracketRound({
   puzzle,
   gameStartTime 
 }: BudgetBracketRoundProps) {
-  // Safety check for pair data
-  if (!pair || !pair.movieA || !pair.movieB) {
-    return (
-      <div className="text-center text-red-500">
-        Error: Missing pair data for round {round}
-      </div>
-    )
-  }
-
-
-  
   const [hasChosen, setHasChosen] = useState(false)
   const [chosenMovie, setChosenMovie] = useState<'A' | 'B' | null>(null)
   const [, setElapsedTime] = useState(0)
@@ -114,6 +103,15 @@ export default function BudgetBracketRound({
 
     return () => clearInterval(interval)
   }, [roundStartTime])
+
+  // Safety check for pair data - AFTER all hooks are called
+  if (!pair || !pair.movieA || !pair.movieB) {
+    return (
+      <div className="text-center text-red-500">
+        Error: Missing pair data for round {round}
+      </div>
+    )
+  }
 
   const handleMovieChoice = async (movie: 'A' | 'B') => {
     if (hasChosen) return
