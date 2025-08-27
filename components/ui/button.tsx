@@ -1,6 +1,6 @@
 import * as React from "react"
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'icon'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'icon' | 'admin-primary' | 'admin-secondary'
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -23,6 +23,10 @@ const getVariantClasses = (variant: ButtonVariant) => {
       return 'bg-destructive text-destructive-foreground border border-destructive hover:bg-background hover:text-destructive hover:border-destructive hover:shadow-[1px_1px_0px_rgb(var(--destructive)),2px_2px_0px_rgb(var(--destructive)),3px_3px_0px_rgb(var(--destructive)),4px_4px_0px_rgb(var(--destructive))] transition-all duration-150'
     case 'icon':
       return 'bg-transparent text-foreground border border-transparent p-2 hover:bg-transparent hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
+    case 'admin-primary':
+      return 'bg-primary text-primary-foreground border-2 border-primary font-medium shadow-[1px_1px_0px_rgb(var(--primary-dark)),2px_2px_0px_rgb(var(--primary-dark))] hover:shadow-[1px_1px_0px_rgb(var(--primary-dark)),2px_2px_0px_rgb(var(--primary-dark)),3px_3px_0px_rgb(var(--primary-dark)),4px_4px_0px_rgb(var(--primary-dark))] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-200'
+    case 'admin-secondary':
+      return 'bg-card text-muted-foreground border-2 border-border font-medium shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))] hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all duration-200'
     default:
       return 'bg-primary text-primary-foreground border border-primary hover:bg-background hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
   }

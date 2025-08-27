@@ -222,11 +222,11 @@ export default function SchedulePage() {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-funnel-display-bold text-neutral-900 flex items-center gap-2">
-            <CalendarDays className="w-8 h-8 text-cinema-red" />
+          <h1 className="text-3xl font-funnel-display-bold text-foreground flex items-center gap-2">
+            <CalendarDays className="w-8 h-8 text-primary" />
             Puzzle Schedule
           </h1>
-          <p className="text-neutral-600 mt-1 font-funnel">
+          <p className="text-muted-foreground mt-1 font-funnel">
             Manage and schedule puzzles across all games
           </p>
         </div>
@@ -234,21 +234,21 @@ export default function SchedulePage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="admin-card-static relative overflow-hidden">
+        <Card variant="admin-static" className="relative overflow-hidden">
           <div className="absolute top-0 right-0 w-16 h-16 bg-cinema-red/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-cinema-red" />
+              <CalendarDays className="w-4 h-4 text-primary" />
               Total Scheduled
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-funnel-display-bold text-neutral-900">{stats.totalScheduled}</div>
-            <p className="text-xs text-neutral-600 font-funnel">This month</p>
+            <div className="text-2xl font-funnel-display-bold text-foreground">{stats.totalScheduled}</div>
+            <p className="text-xs text-muted-foreground font-funnel">This month</p>
           </CardContent>
         </Card>
         
-        <Card className="admin-card-static relative overflow-hidden">
+        <Card variant="admin-static" className="relative overflow-hidden">
           <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
@@ -258,11 +258,11 @@ export default function SchedulePage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-funnel-display-bold text-amber-600">{stats.totalDrafts}</div>
-            <p className="text-xs text-neutral-600 font-funnel">Ready to schedule</p>
+            <p className="text-xs text-muted-foreground font-funnel">Ready to schedule</p>
           </CardContent>
         </Card>
         
-        <Card className="admin-card-static relative overflow-hidden">
+        <Card variant="admin-static" className="relative overflow-hidden">
           <div className="absolute top-0 right-0 w-16 h-16 bg-green-500/10" style={{borderRadius: 0}} />
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium font-funnel flex items-center gap-2">
@@ -312,10 +312,10 @@ export default function SchedulePage() {
         </Alert>
       )}
 
-      <Card className="admin-card-static">
+      <Card variant="admin-static">
         <CardHeader>
-          <CardTitle className="font-funnel-display-bold text-neutral-900">Calendar View</CardTitle>
-          <CardDescription className="font-funnel text-neutral-600">
+          <CardTitle className="font-funnel-display-bold text-foreground">Calendar View</CardTitle>
+          <CardDescription className="font-funnel text-muted-foreground">
             Click on any date to view or edit scheduled puzzles. Drag and drop puzzles to reschedule them.
           </CardDescription>
         </CardHeader>
@@ -331,7 +331,7 @@ export default function SchedulePage() {
             <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
               <div className="bg-white rounded-none admin-modal-silver p-6 max-w-sm w-full mx-4">
                 <h3 className="font-funnel-display-bold text-lg mb-4">Create Puzzle for {gameMenuDate && format(gameMenuDate, 'MMM d, yyyy')}</h3>
-                <p className="text-sm text-neutral-600 mb-4">Select a game type:</p>
+                <p className="text-sm text-muted-foreground mb-4">Select a game type:</p>
                 <div className="space-y-2">
                   {getAllGamesWithStatus(gameMenuDate).map((game) => {
                     const Icon = game.icon

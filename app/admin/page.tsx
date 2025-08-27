@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 interface TrendingMovie {
   id: number
@@ -117,11 +118,11 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-funnel-display-bold text-neutral-900 mb-8">Admin Dashboard</h1>
+      <h1 className="text-3xl font-funnel-display-bold text-foreground mb-8">Admin Dashboard</h1>
       
       {/* Quick Start Guide */}
       {showQuickGuide && (
-        <Card className="mb-8 admin-card border-blue-200 bg-blue-50/50">
+        <Card variant="admin-static" className="mb-8 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2">
@@ -133,7 +134,7 @@ export default function AdminDashboard() {
                   setShowQuickGuide(false)
                   Cookies.set('admin-guide-dismissed', 'true', { expires: 365 }) // Expires in 1 year
                 }}
-                className="text-neutral-400 hover:text-neutral-600 transition-colors p-1"
+                className="text-neutral-400 hover:text-muted-foreground transition-colors p-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -142,7 +143,7 @@ export default function AdminDashboard() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2 font-funnel">
+                <h3 className="font-semibold text-sm text-foreground flex items-center gap-2 font-funnel">
                   <CheckCircle className="w-4 h-4 text-green-600" />
                   Getting Started
                 </h3>
@@ -155,7 +156,7 @@ export default function AdminDashboard() {
               </div>
               
               <div className="space-y-3">
-                <h3 className="font-semibold text-sm text-neutral-900 flex items-center gap-2 font-funnel">
+                <h3 className="font-semibold text-sm text-foreground flex items-center gap-2 font-funnel">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
                   Important Notes
                 </h3>
@@ -177,17 +178,16 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex items-center justify-between pt-2 border-t border-neutral-200">
-              <div className="flex items-center gap-2 text-sm text-neutral-600 font-funnel">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground font-funnel">
                 <BookOpen className="w-4 h-4" />
                 <span>For detailed documentation, see</span>
                 <code className="px-2 py-0.5 bg-white border border-neutral-200 text-xs">ADMIN_SETUP_COMPLETE.md</code>
               </div>
-              <Link 
-                href="/admin/puzzle-editor"
-                className="admin-btn-primary text-sm"
-              >
-                Create First Puzzle →
-              </Link>
+              <Button asChild variant="admin-primary" size="sm">
+                <Link href="/admin/puzzle-editor">
+                  Create First Puzzle →
+                </Link>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -196,32 +196,33 @@ export default function AdminDashboard() {
       {/* Admin Tools Bento Box */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
         {adminTools.map((tool) => (
-          <Link
-            key={tool.title}
-            href={tool.href}
-            className="admin-card block p-6 transition-all"
-          >
-            <div className="flex items-start justify-between">
+          <Card key={tool.title} variant="admin">
+            <Link
+              href={tool.href}
+              className="block p-6"
+            >
+              <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-lg font-funnel-display-bold mb-2 text-neutral-900">{tool.title}</h3>
-                <p className="text-sm text-neutral-600 font-funnel">{tool.description}</p>
+                <h3 className="text-lg font-funnel-display-bold mb-2 text-foreground">{tool.title}</h3>
+                <p className="text-sm text-muted-foreground font-funnel">{tool.description}</p>
               </div>
-              <tool.icon className="w-8 h-8 text-cinema-red opacity-80" />
+              <tool.icon className="w-8 h-8 text-primary opacity-80" />
             </div>
-          </Link>
+            </Link>
+          </Card>
         ))}
       </div>
 
       {/* Trending Movies Section */}
       <div>
-        <h2 className="text-2xl font-funnel-display-bold text-neutral-900 mb-6">Trending Movies This Week</h2>
+        <h2 className="text-2xl font-funnel-display-bold text-foreground mb-6">Trending Movies This Week</h2>
         
         {loading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="bg-neutral-200 aspect-[2/3] mb-2"></div>
-                <div className="bg-neutral-200 h-4 w-3/4"></div>
+                <div className="bg-muted aspect-[2/3] mb-2"></div>
+                <div className="bg-muted h-4 w-3/4"></div>
               </div>
             ))}
           </div>
@@ -283,7 +284,7 @@ export default function AdminDashboard() {
                   style={{ boxShadow: '4px 4px 0px 0px rgba(0,0,0,0.1)' }}
                 />
                 <div className="flex-1">
-                  <h3 className="text-2xl font-funnel-display-bold mb-2 text-neutral-900">{selectedMovie.title}</h3>
+                  <h3 className="text-2xl font-funnel-display-bold mb-2 text-foreground">{selectedMovie.title}</h3>
                   <div className="space-y-2 text-sm font-funnel">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-neutral-500" />
@@ -330,15 +331,15 @@ export default function AdminDashboard() {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Overview</h4>
-                  <p className="text-sm text-neutral-600 font-funnel">{selectedMovie.overview}</p>
+                  <h4 className="font-semibold mb-2 font-funnel-display-bold text-foreground">Overview</h4>
+                  <p className="text-sm text-muted-foreground font-funnel">{selectedMovie.overview}</p>
                 </div>
 
                 {selectedMovie.credits && (
                   <>
                     <div>
-                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Director</h4>
-                      <p className="text-sm text-neutral-600 font-funnel">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-foreground">Director</h4>
+                      <p className="text-sm text-muted-foreground font-funnel">
                         {selectedMovie.credits.crew
                           .filter(c => c.job === "Director")
                           .map(d => d.name)
@@ -347,8 +348,8 @@ export default function AdminDashboard() {
                     </div>
                     
                     <div>
-                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Writers</h4>
-                      <p className="text-sm text-neutral-600 font-funnel">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-foreground">Writers</h4>
+                      <p className="text-sm text-muted-foreground font-funnel">
                         {selectedMovie.credits.crew
                           .filter(c => c.job === "Screenplay" || c.job === "Writer")
                           .map(w => w.name)
@@ -358,8 +359,8 @@ export default function AdminDashboard() {
                     </div>
 
                     <div>
-                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-neutral-900">Top Cast</h4>
-                      <p className="text-sm text-neutral-600 font-funnel">
+                      <h4 className="font-semibold mb-2 font-funnel-display-bold text-foreground">Top Cast</h4>
+                      <p className="text-sm text-muted-foreground font-funnel">
                         {selectedMovie.credits.cast
                           .slice(0, 5)
                           .map(a => a.name)
@@ -372,14 +373,15 @@ export default function AdminDashboard() {
 
               {/* Add to Puzzle button */}
               <div className="mt-6 flex justify-end">
-                <button
+                <Button
                   onClick={() => {
                     setShowGameSelector(true)
                   }}
-                  className="admin-btn-puzzle"
+                  variant="admin-primary"
+                  size="sm"
                 >
                   Add to Puzzle
-                </button>
+                </Button>
               </div>
             </div>
           </div>

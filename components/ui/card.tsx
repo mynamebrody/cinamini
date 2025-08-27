@@ -10,6 +10,8 @@ const cardVariants = cva(
         default: "shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]",
         interactive: "shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] hover:border-primary hover:-translate-y-0.5 cursor-pointer",
         featured: "shadow-[2px_2px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border)),6px_6px_0px_rgb(var(--border))] hover:shadow-[2px_2px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary)),6px_6px_0px_rgb(var(--primary)),8px_8px_0px_rgb(var(--primary))] hover:border-primary hover:-translate-y-1",
+        admin: "border-2 border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary)),5px_5px_0px_rgb(var(--primary)),6px_6px_0px_rgb(var(--primary))] hover:-translate-x-0.5 hover:-translate-y-0.5 cursor-pointer transition-all duration-200",
+        "admin-static": "border-2 border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]",
       },
     },
     defaultVariants: {
