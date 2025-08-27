@@ -621,6 +621,8 @@ if (isProtectedRoute && (!user || isAnonymous)) {
 - All game tables support anonymous users through existing foreign key relationships
 - No special handling needed in RLS policies - anonymous users are authenticated users
 - Stats and progress are preserved if user converts to full account
+- **Game Sessions**: Anonymous users get proper database records (not temporary IDs)
+- **API Consistency**: All game APIs work identically for anonymous and authenticated users
 
 ### Conversion Strategy
 - **Immediate Play**: No friction to start playing
@@ -939,6 +941,66 @@ CINAMINI_GUESS_WEBHOOK_URL=https://webhook.site/your-unique-url
 
 ## Common Development Patterns
 
+### Historical Puzzle Management
+Only today's puzzles should be created automatically. Historical puzzles are read-only:
+```typescript
+// In puzzle by-date APIs, disable creation for historical dates
+const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate, puzzleConfig, false)
+
+// Frontend should redirect when historical puzzles don't exist
+if (!response.ok && response.status === 404 && date) {
+  window.location.href = '/game/[game-name]'
+  return
+}
+```
+
+### Date Handling and Timezone Issues
+Always use UTC parsing for database date strings to prevent timezone shifts:
+```typescript
+// Problem: Timezone-dependent parsing
+const date = new Date(dateString) // Can shift dates based on user timezone
+
+// Solution: Force UTC interpretation
+const [year, month, day] = dateString.split('-').map(Number)
+const utcDate = new Date(Date.UTC(year, month - 1, day))
+const formatted = utcDate.toLocaleDateString('en-US', { 
+  timeZone: 'UTC' // Consistent display across timezones
+})
+```
+
+### Performance Optimization Patterns
+Prevent unnecessary re-renders and API calls:
+```typescript
+// Problem: Inline object creation causes re-renders
+<Component excludeIds={state.guesses.map(g => g.id)} />
+
+// Solution: Memoize expensive computations
+const excludeIds = useMemo(() => 
+  state.guesses.map(g => g.id), 
+  [state.guesses]
+)
+<Component excludeIds={excludeIds} />
+
+// Hook order: Define callbacks before useEffects that use them
+const loadData = useCallback(async () => { ... }, [deps])
+useEffect(() => { loadData() }, [loadData])
+```
+
+### API Response Consistency
+Maintain consistent field names between API endpoints:
+```typescript
+// Problem: Different field names between endpoints
+// today API: { hasPlayedToday: true, previousGame: {...} }
+// by-date API: { hasPlayed: true, userGame: {...} }
+
+// Solution: Standardize response structure
+return NextResponse.json({
+  hasPlayedToday: hasPlayed,  // Consistent field name
+  previousGame: userGame,     // Consistent field name
+  // ... other fields
+})
+```
+
 ### Database Precision Types
 When defining numeric fields in database migrations, always specify precision:
 ```sql
@@ -1006,6 +1068,11 @@ if (statsError) {
 ### Edge Case Testing
 - **Skip vs Give Up**: Ensure skips don't mark game as completed
 - **Max Attempts**: Test behavior at maximum attempt limits
-- **Time Zones**: Verify UTC midnight puzzle transitions
+- **Time Zones**: Verify UTC midnight puzzle transitions and date display consistency
 - **Network Failures**: Test offline gameplay for anonymous users
 - **Concurrent Play**: Test multiple tabs/devices with same account
+- **Historical Puzzle Access**: Test missing vs existing historical puzzles redirect properly
+- **API Field Consistency**: Verify today vs by-date endpoints return same field names
+- **Anonymous vs Authenticated**: Ensure identical functionality for both user types
+- **Component Re-renders**: Test for excessive API calls during state transitions
+- **Hook Dependencies**: Verify proper useCallback/useEffect dependency arrays

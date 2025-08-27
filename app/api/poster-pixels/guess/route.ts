@@ -81,6 +81,11 @@ export async function POST(request: NextRequest) {
       isAnonymous
     })
     
+    console.log("🚀 POSTER PIXELS GUESS API: Looking for game", {
+      gameId: game_id,
+      userId: user.id,
+      isAnonymous
+    })
 
     // Get the game
     const { data: game, error: gameError } = await supabase
@@ -89,6 +94,12 @@ export async function POST(request: NextRequest) {
       .eq("id", game_id)
       .eq("user_id", user.id)
       .single()
+
+    console.log("🚀 POSTER PIXELS GUESS API: Game lookup result", {
+      found: !!game,
+      error: gameError?.message,
+      errorCode: gameError?.code
+    })
 
     if (gameError || !game) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 })

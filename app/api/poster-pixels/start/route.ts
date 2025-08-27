@@ -15,15 +15,16 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      // For anonymous users, return a temporary game session
-      return NextResponse.json({
-        gameId: `anonymous-${Date.now()}`,
-        startTime: new Date().toISOString(),
-        isAnonymous: true
-      })
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // Check if user has already played this puzzle
+    console.log("🚀 POSTER PIXELS START API: User check", {
+      userId: user.id,
+      isAnonymous: user.is_anonymous === true,
+      puzzleId: puzzle_id
+    })
+
+    // Check if user has already played this puzzle (works for both anonymous and authenticated)
     const { data: existingGame } = await supabase
       .from("poster_pixels_games")
       .select("*")
@@ -32,6 +33,10 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (existingGame) {
+      console.log("🚀 POSTER PIXELS START API: Existing game found", {
+        gameId: existingGame.id,
+        userId: existingGame.user_id
+      })
       return NextResponse.json({ 
         gameId: existingGame.id,
         startTime: existingGame.start_time,
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Create new game
+    // Create new game (works for both anonymous and authenticated users)
     const { data: newGame, error: gameError } = await supabase
       .from("poster_pixels_games")
       .insert({
@@ -54,6 +59,13 @@ export async function POST(request: NextRequest) {
       console.error("Error creating game:", gameError)
       throw gameError
     }
+
+    console.log("🚀 POSTER PIXELS START API: Game created", {
+      gameId: newGame.id,
+      userId: user.id,
+      isAnonymous: user.is_anonymous === true,
+      startTime: newGame.start_time
+    })
 
     return NextResponse.json({
       gameId: newGame.id,

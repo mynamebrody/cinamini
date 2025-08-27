@@ -136,6 +136,7 @@ export default function PosterPixelsResult({
                   src={moviePosterUrl}
                   alt={`${movieTitle} poster`}
                   fill
+                  priority
                   className="object-cover"
                   sizes="(max-width: 768px) 192px, 192px"
                 />
