@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
+import { calculatePuzzleNumberForGame } from "@/lib/puzzle-numbering"
 
 
 // Seed for consistent daily puzzles
@@ -66,11 +67,16 @@ export async function GET() {
         const selectedIndex = Math.floor(random() * moviesWithPosters.length)
         const selectedMovie = moviesWithPosters[selectedIndex]
 
+        // Calculate the puzzle number based on the last puzzle date
+        const puzzleNumber = await calculatePuzzleNumberForGame(supabaseService, 'poster_pixels', new Date(today))
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${today}`)
+
         // Create the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
+            puzzle_number: puzzleNumber,
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,
@@ -130,10 +136,15 @@ export async function GET() {
         const selectedIndex = Math.floor(random() * fallbackMovies.length)
         const selectedMovie = fallbackMovies[selectedIndex]
 
+        // Calculate the puzzle number for fallback scenario too
+        const puzzleNumber = await calculatePuzzleNumberForGame(supabaseService, 'poster_pixels', new Date(today))
+        console.log(`Calculated puzzle number (fallback): ${puzzleNumber} for date: ${today}`)
+        
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
+            puzzle_number: puzzleNumber,
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,

@@ -8,6 +8,7 @@ import {
   SeededRandom
 } from "@/lib/retitled"
 import { getCountryFlag } from "@/lib/flag-emojis"
+import { calculatePuzzleNumberForGame } from "@/lib/puzzle-numbering"
 
 export async function GET() {
   try {
@@ -135,11 +136,16 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
       return null
     }
 
+    // Calculate the puzzle number based on the last puzzle date
+    const puzzleNumber = await calculatePuzzleNumberForGame(supabase, 'retitled', date)
+    console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${dateString}`)
+
     // Insert new puzzle into database
     const { data: insertedPuzzle, error: insertError } = await supabase
       .from("retitled_puzzles")
       .insert({
         puzzle_date: generatedPuzzle.puzzle_date,
+        puzzle_number: puzzleNumber,
         film_id: generatedPuzzle.film_id,
         film_title: generatedPuzzle.film_title,
         localized_title: generatedPuzzle.localized_title,

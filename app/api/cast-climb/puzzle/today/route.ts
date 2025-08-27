@@ -4,6 +4,7 @@ import {
   generateDailyPuzzle,
   validatePuzzleData
 } from "@/lib/cast-climb"
+import { calculatePuzzleNumberForGame } from "@/lib/puzzle-numbering"
 
 export async function GET() {
   try {
@@ -41,7 +42,13 @@ export async function GET() {
     if (!existingPuzzle || puzzleError) {
       try {
         console.log('Generating new Cast Climb puzzle for', todayString)
-        const generatedPuzzle = await generateDailyPuzzle(today)
+        
+        // Calculate the puzzle number based on the last puzzle date
+        const serviceSupabase = createServiceClient()
+        const puzzleNumber = await calculatePuzzleNumberForGame(serviceSupabase, 'cast_climb', today)
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${todayString}`)
+        
+        const generatedPuzzle = await generateDailyPuzzle(today, puzzleNumber)
         
         if (!validatePuzzleData(generatedPuzzle)) {
           throw new Error('Invalid puzzle data generated')

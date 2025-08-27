@@ -10,6 +10,7 @@ import {
 } from '@/lib/budget-bracket'
 import { hydrateMoviesFromTmdbIds, createUnifiedMoviePair, validateBudgetBracketMovie } from '@/lib/movie-hydration'
 import { getBlendedMoviePool } from '@/lib/tmdb-trending'
+import { calculatePuzzleNumberForGame } from '@/lib/puzzle-numbering'
 
 export async function GET() {
   try {
@@ -74,11 +75,16 @@ export async function GET() {
         
         
         
+        // Calculate the puzzle number based on the last puzzle date
+        const puzzleNumber = await calculatePuzzleNumberForGame(supabaseService, 'budget_bracket', today)
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${todayStr}`)
+        
         // Store the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from('budget_bracket_puzzles')
           .insert({
             puzzle_date: todayStr,
+            puzzle_number: puzzleNumber,
             seed_value: seed,
             pairs: pairs,
             difficulty_progression: DIFFICULTY_TARGETS,
