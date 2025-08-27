@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { createPortal } from "react-dom"
-import { getSupabaseClient } from "@/lib/supabase/client"
 import { 
   Save, 
   Loader2, 
@@ -154,8 +153,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   const [showCastSelector, setShowCastSelector] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
-
-  const supabase = getSupabaseClient()
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -398,29 +395,9 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
 
     setLoading(true)
     try {
-      // Get puzzle number (existing for edits, new for creates)
-      let nextPuzzleNumber: number
-      
-      if (isEditMode && puzzleId) {
-        // For updates, preserve existing puzzle number
-        const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=cast_climb`)
-        const existingPuzzle = await response.json()
-        nextPuzzleNumber = existingPuzzle.puzzle_number
-      } else {
-        // For new puzzles, get the next number
-        const { data: latestPuzzle } = await supabase
-          .from('cast_climb_puzzles')
-          .select('puzzle_number')
-          .order('puzzle_number', { ascending: false })
-          .limit(1)
-          .single()
-
-        nextPuzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
-      }
 
       const puzzleData = {
         puzzle_date: puzzleDate || null,
-        puzzle_number: nextPuzzleNumber,
         film_id: selectedMovie.id,
         film_title: selectedMovie.title,
         film_poster_url: selectedMovie.poster_path,

@@ -8,7 +8,7 @@ import {
   SeededRandom
 } from "@/lib/retitled"
 import { getCountryFlag } from "@/lib/flag-emojis"
-import { calculatePuzzleNumberForGame } from "@/lib/puzzle-numbering"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function GET() {
   try {
@@ -79,7 +79,7 @@ export async function GET() {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date)),
         localizedTitle: puzzle.localized_title,
         englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,
@@ -114,7 +114,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     // First, try to get existing puzzle
     const { data: existingPuzzle, error: fetchError } = await supabase
       .from("retitled_puzzles")
-      .select("*, puzzle_number")
+.select("*")
       .eq("puzzle_date", dateString)
       .single()
 
@@ -136,8 +136,8 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
       return null
     }
 
-    // Calculate the puzzle number based on the last puzzle date
-    const puzzleNumber = await calculatePuzzleNumberForGame(supabase, 'retitled', date)
+    // Calculate the puzzle number based on days since launch
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'retitled', date)
     console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${dateString}`)
 
     // Insert new puzzle into database
@@ -145,7 +145,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
       .from("retitled_puzzles")
       .insert({
         puzzle_date: generatedPuzzle.puzzle_date,
-        puzzle_number: puzzleNumber,
         film_id: generatedPuzzle.film_id,
         film_title: generatedPuzzle.film_title,
         localized_title: generatedPuzzle.localized_title,
@@ -156,7 +155,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         translation_note: generatedPuzzle.translation_note,
         seed_value: generatedPuzzle.seed_value
       })
-      .select("*, puzzle_number")
+.select("*")
       .single()
 
     if (insertError) {
@@ -165,7 +164,7 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         console.log("Puzzle was created concurrently, fetching existing one")
         const { data: concurrentPuzzle } = await supabase
           .from("retitled_puzzles")
-          .select("*, puzzle_number")
+    .select("*")
           .eq("puzzle_date", dateString)
           .single()
         return concurrentPuzzle

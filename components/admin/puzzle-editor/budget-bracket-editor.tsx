@@ -1374,11 +1374,10 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
 
 
       // Step 3: Generate puzzle metadata
-      let puzzleNumber: number
       let seedValue: string
       
       if (isEditMode && puzzleId) {
-        // For updates, preserve existing puzzle number and seed value
+        // For updates, preserve existing seed value
         // Use cached puzzle data if available, otherwise fetch
         let existingPuzzle = loadedPuzzleData
         if (!existingPuzzle) {
@@ -1386,33 +1385,22 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           const responseData = await response.json()
           existingPuzzle = responseData.puzzle
         }
-        puzzleNumber = existingPuzzle.puzzle_number
         seedValue = existingPuzzle.seed_value
       } else {
         // For new puzzles, generate new values
         const timestamp = Date.now().toString(36)
         const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
         seedValue = `bb_${dateStr}_${timestamp}`.substring(0, 32)
-
-        // Get the highest puzzle number and increment
-        const { data: latestPuzzle } = await supabase
-          .from('budget_bracket_puzzles')
-          .select('puzzle_number')
-          .order('puzzle_number', { ascending: false })
-          .limit(1)
-          .single()
-
-        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
       }
       
       // Step 4: Create puzzle data with hydrated pairs
+      // puzzle_number is no longer stored in database
       const puzzleData = {
         puzzle_date: puzzleDate || null,
         name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
         pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure - column renamed from movie_pairs to pairs
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
-        puzzle_number: puzzleNumber,
         is_published: isPublished
       }
 

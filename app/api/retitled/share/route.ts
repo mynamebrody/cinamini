@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCountryFlag } from "@/lib/flag-emojis"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function GET() {
   try {
@@ -17,7 +18,7 @@ export async function GET() {
     
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("id, puzzle_date, country_code, puzzle_number")
+      .select("id, puzzle_date, country_code")
       .eq("puzzle_date", today)
       .single()
 
@@ -37,8 +38,8 @@ export async function GET() {
       return NextResponse.json({ error: "No guess found for this puzzle" }, { status: 404 })
     }
 
-    // Use puzzle number from database
-    const puzzleNumber = puzzle.puzzle_number || ''
+    // Calculate puzzle number from launch date
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date))
 
     // Get flag emoji
     const flagEmoji = getCountryFlag(puzzle.country_code)

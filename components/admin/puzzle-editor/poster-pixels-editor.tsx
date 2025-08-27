@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Image as ImageIcon, Check } from "lucide-react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -64,8 +63,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   const [alternativePosters, setAlternativePosters] = useState<PosterOption[]>([])
   const [selectedPosterPath, setSelectedPosterPath] = useState<string | null>(null)
   const [loadingAlternatives, setLoadingAlternatives] = useState(false)
-
-  const supabase = getSupabaseClient()
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -288,30 +285,18 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
     setLoading(true)
     try {
       // Generate puzzle metadata (existing for edits, new for creates)
-      let puzzleNumber: number
       let seedValue: string
       
       if (isEditMode && puzzleId) {
-        // For updates, preserve existing puzzle number and seed value
+        // For updates, preserve existing seed value
         const response = await fetch(`/api/admin/puzzles/${puzzleId}?gameType=poster_pixels`)
         const existingPuzzle = await response.json()
-        puzzleNumber = existingPuzzle.puzzle_number
         seedValue = existingPuzzle.seed_value
       } else {
         // For new puzzles, generate new values
         const timestamp = Date.now().toString(36)
         const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
         seedValue = `pp_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
-
-        // Get the highest puzzle number and increment
-        const { data: latestPuzzle } = await supabase
-          .from('poster_pixels_puzzles')
-          .select('puzzle_number')
-          .order('puzzle_number', { ascending: false })
-          .limit(1)
-          .single()
-
-        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
       }
 
       const puzzleData = {
@@ -324,8 +309,8 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         clarity_levels: Array.from(POSTER_PIXELS_LEVELS), // Default clarity progression
         fun_fact: funFact.trim() || null,
         is_published: isPublished,
-        seed_value: seedValue,
-        puzzle_number: puzzleNumber
+        seed_value: seedValue
+        // puzzle_number is no longer stored in database
       }
 
 

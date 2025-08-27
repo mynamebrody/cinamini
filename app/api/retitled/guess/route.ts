@@ -4,6 +4,7 @@ import { getMovieById, getReleaseYear } from "@/lib/tmdb"
 import { getCountryFlag } from "@/lib/flag-emojis"
 import { getCountryName } from "@/lib/retitled"
 import { sendGuessWebhook } from "@/lib/webhooks"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Get the puzzle to check the correct answer
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("*, puzzle_number")
+      .select("*")
       .eq("id", puzzleId)
       .single()
 
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
       },
       guess: {
         puzzleId,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date)),
         guessFilmId,
         guessedMovieTitle,
         solveTimeMs,

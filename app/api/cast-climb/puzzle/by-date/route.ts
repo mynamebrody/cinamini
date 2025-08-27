@@ -8,6 +8,7 @@ import {
   checkUserPlayHistory,
   type PuzzleConfig
 } from '@/lib/api/puzzle-by-date'
+import { calculatePuzzleNumberFromLaunch } from '@/lib/puzzle-numbering'
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
       generatePuzzle: generateDailyPuzzle,
       insertPuzzleData: (puzzle) => ({
         puzzle_date: puzzle.puzzle_date,
-        puzzle_number: puzzle.puzzle_number,
+        // puzzle_number calculated dynamically, not stored
         seed_value: puzzle.seed_value,
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,
@@ -92,7 +93,7 @@ export async function GET(request: NextRequest) {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date)),
         filmId: puzzle.film_id,
         filmTitle: puzzle.film_title,
         filmPosterUrl: puzzle.film_poster_url,

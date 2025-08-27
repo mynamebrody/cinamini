@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
-import { calculatePuzzleNumberForGame } from "@/lib/puzzle-numbering"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 
 // Seed for consistent daily puzzles
@@ -68,7 +68,7 @@ export async function GET() {
         const selectedMovie = moviesWithPosters[selectedIndex]
 
         // Calculate the puzzle number based on the last puzzle date
-        const puzzleNumber = await calculatePuzzleNumberForGame(supabaseService, 'poster_pixels', new Date(today))
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
         console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${today}`)
 
         // Create the puzzle (using service client to bypass RLS)
@@ -76,7 +76,7 @@ export async function GET() {
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
-            puzzle_number: puzzleNumber,
+            // puzzle_number calculated dynamically, not stored
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,
@@ -137,14 +137,14 @@ export async function GET() {
         const selectedMovie = fallbackMovies[selectedIndex]
 
         // Calculate the puzzle number for fallback scenario too
-        const puzzleNumber = await calculatePuzzleNumberForGame(supabaseService, 'poster_pixels', new Date(today))
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
         console.log(`Calculated puzzle number (fallback): ${puzzleNumber} for date: ${today}`)
         
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
-            puzzle_number: puzzleNumber,
+            // puzzle_number calculated dynamically, not stored
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,
@@ -200,7 +200,7 @@ export async function GET() {
       puzzle: {
         id: puzzle.id,
         puzzle_date: puzzle.puzzle_date,
-        puzzle_number: puzzle.puzzle_number,
+        puzzle_number: await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(puzzle.puzzle_date)),
         // New admin structure fields
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,

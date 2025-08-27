@@ -171,15 +171,6 @@ export function generatePosterPixelsSeed(date: Date): string {
   });
 }
 
-/**
- * Calculate puzzle number based on game launch date
- */
-export function calculatePuzzleNumber(date: Date): number {
-  const launchDate = new Date('2025-07-31'); // Poster Pixels launch date
-  const diffTime = date.getTime() - launchDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(1, diffDays + 1);
-}
 
 /**
  * Filter movies suitable for Poster Pixels puzzles
@@ -273,7 +264,8 @@ export async function generatePosterPixelsPuzzle(
 ): Promise<PosterPixelsPuzzle> {
   const seed = generatePosterPixelsSeed(date);
   const rng = new SeededRandom(seed);
-  const puzzleNumber = calculatePuzzleNumber(date);
+  // Puzzle number is handled by APIs, use 1 as fallback for puzzle generation
+  const puzzleNumber = 1;
   
   // Get movie pool with blended trending/classic mix
   const moviePool = await getBlendedMoviePool();
@@ -404,7 +396,7 @@ export function validatePuzzleData(puzzle: any): puzzle is PosterPixelsPuzzle {
  * Generate share text for social media
  */
 export function getPosterPixelsShareText(
-  puzzle: PosterPixelsPuzzle,
+  puzzleNumber: number,
   attempts: PosterPixelsGuess[],
   timedOut: boolean = false
 ): string {
@@ -429,7 +421,7 @@ export function getPosterPixelsShareText(
     }
   }
   
-  return `Poster Pixels #${puzzle.puzzle_number} ${pattern}\n${resultText}`;
+  return `Poster Pixels #${puzzleNumber} ${pattern}\n${resultText}`;
 }
 
 /**

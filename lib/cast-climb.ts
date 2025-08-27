@@ -139,17 +139,6 @@ export function generateCastClimbSeed(date: Date): string {
   return generateDailySeed(date, { gameId: 'cast-climb' });
 }
 
-/**
- * Calculate puzzle number based on game launch date
- * @deprecated Use calculatePuzzleNumberForGame from puzzle-numbering.ts instead
- * This function is kept for backward compatibility but should not be used for new puzzles
- */
-export function calculatePuzzleNumber(date: Date): number {
-  const launchDate = new Date('2025-07-28'); // Cast Climb launch date
-  const diffTime = date.getTime() - launchDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(1, diffDays + 1);
-}
 
 /**
  * Filter movies suitable for Cast Climb puzzles
@@ -235,13 +224,12 @@ export function generateFunFact(
  * Generate today's Cast Climb puzzle using deterministic seeding
  */
 export async function generateDailyPuzzle(
-  date: Date = new Date(),
-  puzzleNumber?: number
+  date: Date = new Date()
 ): Promise<CastClimbPuzzle> {
   const seed = generateCastClimbSeed(date);
   const rng = new SeededRandom(seed);
-  // Use provided puzzle number or fall back to old calculation (for backward compatibility)
-  const actualPuzzleNumber = puzzleNumber ?? calculatePuzzleNumber(date);
+  // Puzzle number is handled by APIs, use 1 as fallback for puzzle generation
+  const actualPuzzleNumber = 1;
   
   // Get movie pool with blended trending/classic mix
   const moviePool = await getBlendedMoviePool();

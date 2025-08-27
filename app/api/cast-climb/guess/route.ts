@@ -6,6 +6,7 @@ import {
   type CastClimbResult
 } from "@/lib/cast-climb"
 import { sendGuessWebhook } from "@/lib/webhooks"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function POST(request: NextRequest) {
   try {
@@ -152,8 +153,8 @@ export async function POST(request: NextRequest) {
         email: isAnonymous ? null : (user.email ?? null) 
       },
       guess: {
-        gameId: `${user.id}-${puzzle.puzzle_number}`, // Use puzzle number for consistency
-        puzzleId: puzzle.puzzle_number,
+        gameId: `${user.id}-${await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date))}`, // Use puzzle number for consistency
+        puzzleId: await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date)),
         guessedMovieId: guessFilmId,
         guessedMovieTitle: guessFilmTitle,
         timeTakenMs: solveTimeMs || null, // Include time for all guesses, not just correct ones
@@ -214,7 +215,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate share text (only if game is completed)
-    const shareText = isGameCompleted ? generateShareText(puzzle.puzzle_number, allGuesses, isCorrect, isCorrect ? studioTimeMs : undefined) : ''
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date))
+    const shareText = isGameCompleted ? generateShareText(puzzleNumber, allGuesses, isCorrect, isCorrect ? studioTimeMs : undefined) : ''
     
     // Prepare response
     const result: CastClimbResult = {
@@ -222,7 +224,7 @@ export async function POST(request: NextRequest) {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: puzzleNumber,
         seedValue: '', // Don't expose seed
         filmId: puzzle.film_id,
         filmTitle: puzzle.film_title,
