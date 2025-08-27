@@ -8,57 +8,69 @@ import {
   SeededRandom
 } from "@/lib/retitled"
 import { getCountryFlag } from "@/lib/flag-emojis"
+import {
+  validatePuzzleDate,
+  getOrCreatePuzzleForDate,
+  createErrorResponse,
+  checkUserPlayHistory,
+  type PuzzleConfig
+} from '@/lib/api/puzzle-by-date'
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const dateString = searchParams.get('date')
     
-    if (!dateString) {
-      return NextResponse.json({ error: "Date parameter is required" }, { status: 400 })
+    // Validate date using shared utility
+    const validation = validatePuzzleDate(dateString)
+    if (!validation.isValid) {
+      return createErrorResponse(validation.error!.message, validation.error!.status)
     }
     
-    // Validate date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(dateString)) {
-      return NextResponse.json({ error: "Invalid date format. Use YYYY-MM-DD" }, { status: 400 })
-    }
-    
+    const puzzleDate = validation.puzzleDate!
     const supabase = await createClient()
     
     // Get current user (optional - no longer required)
     const { data: { user } } = await supabase.auth.getUser()
-
-    const puzzleDate = new Date(dateString + 'T00:00:00Z')
-    const today = new Date()
-    today.setUTCHours(0, 0, 0, 0)
-    
-    // Check if date is valid
-    if (isNaN(puzzleDate.getTime())) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 })
-    }
-    
-    // Check if date is in the future
-    if (puzzleDate > today) {
-      return NextResponse.json({ error: "Cannot access future puzzles" }, { status: 400 })
-    }
-    
-    // Check if date is before game launch
-    const launchDate = new Date('2024-01-01T00:00:00Z')
-    if (puzzleDate < launchDate) {
-      return NextResponse.json({ error: "No puzzle available for this date" }, { status: 404 })
-    }
     
     // Create service role client for system operations (puzzle creation)
     const { createServiceClient } = await import('@/lib/supabase/server')
     const serviceSupabase = createServiceClient()
     
-    // Try to get existing puzzle from database using service role for creation if needed
-    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate)
+    // Configuration for Retitled puzzle generation
+    const puzzleConfig: PuzzleConfig = {
+      tableName: 'retitled_puzzles',
+      generatePuzzle: generateRetitledPuzzle,
+      insertPuzzleData: (puzzle) => ({
+        puzzle_date: puzzle.puzzle_date,
+        film_id: puzzle.film_id,
+        film_title: puzzle.film_title,
+        localized_title: puzzle.localized_title,
+        country_code: puzzle.country_code,
+        country_name: puzzle.country_name,
+        distractor_ids: puzzle.distractor_ids,
+        difficulty_level: puzzle.difficulty_level,
+        translation_note: puzzle.translation_note,
+        seed_value: puzzle.seed_value,
+        english_translation: puzzle.english_translation
+      })
+    }
+    
+    // Get or create puzzle using shared utility
+    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate, puzzleConfig)
     
     if (!puzzle) {
-      console.error("Could not generate or retrieve puzzle for date:", dateString)
-      return NextResponse.json({ error: "No puzzle available for this date" }, { status: 404 })
+      return createErrorResponse('No puzzle available for this date', 404)
+    }
+    
+    // Ensure puzzle has puzzle_number
+    if (!puzzle.puzzle_number) {
+      const { count } = await supabase
+        .from('retitled_puzzles')
+        .select('*', { count: 'exact', head: true })
+        .lt('puzzle_date', puzzle.puzzle_date)
+      
+      puzzle.puzzle_number = (count || 0) + 1
     }
 
     // Check if user has already played this puzzle (only if authenticated)
@@ -68,14 +80,7 @@ export async function GET(request: NextRequest) {
     
     if (user) {
       // First check if user has EVER played Retitled before (for how-to-play modal)
-      const { data: anyPreviousGuesses } = await supabase
-        .from("retitled_guesses")
-        .select("id")
-        .eq("user_id", user.id)
-        .limit(1)
-        .single()
-      
-      hasPlayedBefore = !!anyPreviousGuesses
+      hasPlayedBefore = await checkUserPlayHistory(supabase, user.id, 'retitled_guesses')
       
       // Now check this specific puzzle
       const { data: userGuessData } = await supabase
@@ -130,82 +135,35 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error in puzzle by date API:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    
+    // Return standardized error response
+    if (error instanceof Error) {
+      return createErrorResponse(error.message, 500)
+    }
+    return createErrorResponse('Internal server error', 500)
   }
 }
 
-/**
- * Get existing puzzle or create a new one for the specified date
- */
-async function getOrCreatePuzzleForDate(supabase: any, date: Date): Promise<any> {
-  const dateString = date.toISOString().split('T')[0]
-  
+// Retitled specific puzzle generation
+async function generateRetitledPuzzle(date: Date) {
   try {
-    // First, try to get existing puzzle
-    const { data: existingPuzzle, error: fetchError } = await supabase
-      .from("retitled_puzzles")
-      .select("*, puzzle_number")
-      .eq("puzzle_date", dateString)
-      .single()
-
-    if (existingPuzzle && !fetchError) {
-      // Validate existing puzzle data
-      if (validatePuzzleData(existingPuzzle)) {
-        return existingPuzzle
-      } else {
-        console.warn("Existing puzzle has invalid data, regenerating...")
-      }
-    }
-
     // Generate new puzzle using the unified seeding system
-    console.log(`Generating new Retitled puzzle for ${dateString}`)
     const generatedPuzzle = await generateDailyPuzzle(date)
     
     if (!generatedPuzzle) {
-      console.error("Failed to generate puzzle")
+      console.error("Failed to generate Retitled puzzle")
       return null
     }
 
-    // Insert new puzzle into database
-    const { data: insertedPuzzle, error: insertError } = await supabase
-      .from("retitled_puzzles")
-      .insert({
-        puzzle_date: generatedPuzzle.puzzle_date,
-        film_id: generatedPuzzle.film_id,
-        film_title: generatedPuzzle.film_title,
-        localized_title: generatedPuzzle.localized_title,
-        country_code: generatedPuzzle.country_code,
-        country_name: generatedPuzzle.country_name,
-        distractor_ids: generatedPuzzle.distractor_ids,
-        difficulty_level: generatedPuzzle.difficulty_level,
-        translation_note: generatedPuzzle.translation_note,
-        seed_value: generatedPuzzle.seed_value,
-        english_translation: generatedPuzzle.english_translation
-      })
-      .select("*, puzzle_number")
-      .single()
-
-    if (insertError) {
-      // Check if it's a unique constraint violation (puzzle already exists)
-      if (insertError.code === '23505') {
-        console.log("Puzzle was created concurrently, fetching existing one")
-        const { data: concurrentPuzzle } = await supabase
-          .from("retitled_puzzles")
-          .select("*, puzzle_number")
-          .eq("puzzle_date", dateString)
-          .single()
-        return concurrentPuzzle
-      } else {
-        console.error("Error inserting puzzle:", insertError)
-        return null
-      }
+    // Validate the generated puzzle
+    if (!validatePuzzleData(generatedPuzzle)) {
+      console.error("Generated puzzle has invalid data")
+      return null
     }
 
-    console.log(`Successfully created Retitled puzzle for ${dateString}`)
-    return insertedPuzzle
-    
+    return generatedPuzzle
   } catch (error) {
-    console.error("Error in getOrCreatePuzzleForDate:", error)
+    console.error("Error generating Retitled puzzle:", error)
     return null
   }
 }

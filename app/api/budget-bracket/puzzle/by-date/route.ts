@@ -1,56 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateDailyPuzzle } from '@/lib/budget-bracket'
+import { 
+  validatePuzzleDate, 
+  getOrCreatePuzzleForDate,
+  createErrorResponse,
+  checkUserPlayHistory,
+  calculatePuzzleNumber,
+  type PuzzleConfig 
+} from '@/lib/api/puzzle-by-date'
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const dateString = searchParams.get('date')
     
-    if (!dateString) {
-      return NextResponse.json({ error: "Date parameter is required" }, { status: 400 })
+    // Validate date using shared utility
+    const validation = validatePuzzleDate(dateString)
+    if (!validation.isValid) {
+      return createErrorResponse(validation.error!.message, validation.error!.status)
     }
     
-    // Validate date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-    if (!dateRegex.test(dateString)) {
-      return NextResponse.json({ error: "Invalid date format. Use YYYY-MM-DD" }, { status: 400 })
-    }
-    
+    const puzzleDate = validation.puzzleDate!
     const supabase = await createClient()
     
     // Get current user for checking play status
     const { data: { user } } = await supabase.auth.getUser()
-    
-    const puzzleDate = new Date(dateString + 'T00:00:00Z')
-    const today = new Date()
-    today.setUTCHours(0, 0, 0, 0)
-    
-    // Check if date is valid
-    if (isNaN(puzzleDate.getTime())) {
-      return NextResponse.json({ error: "Invalid date" }, { status: 400 })
-    }
-    
-    // Check if date is in the future
-    if (puzzleDate > today) {
-      return NextResponse.json({ error: "Cannot access future puzzles" }, { status: 400 })
-    }
-    
-    // Check if date is before game launch
-    const launchDate = new Date('2024-01-01T00:00:00Z')
-    if (puzzleDate < launchDate) {
-      return NextResponse.json({ error: "No puzzle available for this date" }, { status: 404 })
-    }
 
     // Service role client for creating puzzles if needed
     const { createServiceClient } = await import('@/lib/supabase/server')
     const serviceSupabase = createServiceClient()
     
-    // Get or create puzzle for the specified date
-    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate)
+    // Configuration for Budget Bracket puzzle generation
+    const puzzleConfig: PuzzleConfig = {
+      tableName: 'budget_bracket_puzzles',
+      generatePuzzle: generateBudgetBracketPuzzle,
+      insertPuzzleData: (puzzle) => ({
+        puzzle_date: puzzle.puzzle_date,
+        seed_value: puzzle.seed_value,
+        pairs: puzzle.pairs
+      })
+    }
+    
+    // Get or create puzzle using shared utility
+    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate, puzzleConfig)
     
     if (!puzzle) {
-      return NextResponse.json({ error: 'No puzzle available for this date' }, { status: 404 })
+      return createErrorResponse('No puzzle available for this date', 404)
     }
 
     // Check if user has already played this puzzle
@@ -60,14 +55,7 @@ export async function GET(request: NextRequest) {
     
     if (user) {
       // Check if user has EVER played Budget Bracket before
-      const { data: anyPreviousGames } = await supabase
-        .from('budget_bracket_games')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1)
-        .single()
-      
-      hasPlayedBefore = !!anyPreviousGames
+      hasPlayedBefore = await checkUserPlayHistory(supabase, user.id, 'budget_bracket_games')
       
       // Check if the user has already played this specific puzzle
       const { data: existingGame } = await supabase
@@ -88,13 +76,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calculate puzzle number based on the date
-    const { count: previousPuzzleCount } = await supabase
-      .from('budget_bracket_puzzles')
-      .select('*', { count: 'exact', head: true })
-      .lt('puzzle_date', puzzle.puzzle_date)
-
-    const puzzleNumber = (previousPuzzleCount || 0) + 1
+    // Calculate puzzle number using shared utility
+    const puzzleNumber = await calculatePuzzleNumber(
+      supabase, 
+      'budget_bracket_puzzles', 
+      puzzle.puzzle_date
+    )
 
     return NextResponse.json({
       puzzle: {
@@ -110,39 +97,26 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching puzzle by date:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    
+    // Return standardized error response
+    if (error instanceof Error) {
+      return createErrorResponse(error.message, 500)
+    }
+    return createErrorResponse('Internal server error', 500)
   }
 }
 
-async function getOrCreatePuzzleForDate(supabase: any, date: Date): Promise<any | null> {
+// Budget Bracket specific puzzle generation
+async function generateBudgetBracketPuzzle(date: Date) {
   const dateString = date.toISOString().split('T')[0]
   
   try {
-    // First, try to get existing puzzle
-    const { data: existingPuzzle, error: fetchError } = await supabase
-      .from('budget_bracket_puzzles')
-      .select('*')
-      .eq('puzzle_date', dateString)
-      .single()
-
-    if (existingPuzzle && !fetchError) {
-      return existingPuzzle
-    }
-
-    // If no existing puzzle, generate a new one (copy logic from today's puzzle)
-    console.log(`Generating new Budget Bracket puzzle for ${dateString}`)
-    
     // Import necessary functions and generate puzzle
     const { 
       generateBudgetBracketSeed,
-      DIFFICULTY_TARGETS,
-      SeededRandom,
-      calculateDifficultyRatio,
-      type BudgetBracketMovie,
-      type MoviePair,
       validateBudgetBracketMovie
     } = await import('@/lib/budget-bracket')
-    const { hydrateMoviesFromTmdbIds, createUnifiedMoviePair } = await import('@/lib/movie-hydration')
+    const { hydrateMoviesFromTmdbIds } = await import('@/lib/movie-hydration')
     const { getBlendedMoviePool } = await import('@/lib/tmdb-trending')
     
     const seed = generateBudgetBracketSeed(date)
@@ -175,47 +149,23 @@ async function getOrCreatePuzzleForDate(supabase: any, date: Date): Promise<any 
     }
     
     // Generate puzzle pairs using the same algorithm as today's puzzle
-    const pairs = generatePairsWithUnifiedStructure(validMovies, seed)
+    const pairs = await generatePairsWithUnifiedStructure(validMovies, seed)
 
-    // Insert the new puzzle
-    const { data: insertedPuzzle, error: insertError } = await supabase
-      .from('budget_bracket_puzzles')
-      .insert({
-        puzzle_date: dateString,
-        seed_value: seed,
-        pairs: pairs
-      })
-      .select()
-      .single()
-
-    if (insertError) {
-      // Check if it's a unique constraint violation (puzzle already exists)
-      if (insertError.code === '23505') {
-        console.log('Puzzle was created concurrently, fetching existing one')
-        const { data: concurrentPuzzle } = await supabase
-          .from('budget_bracket_puzzles')
-          .select('*')
-          .eq('puzzle_date', dateString)
-          .single()
-        return concurrentPuzzle
-      } else {
-        console.error('Error inserting puzzle:', insertError)
-        return null
-      }
+    return {
+      puzzle_date: dateString,
+      seed_value: seed,
+      pairs: pairs
     }
-
-    console.log(`Successfully created Budget Bracket puzzle for ${dateString}`)
-    return insertedPuzzle
   } catch (error) {
-    console.error('Error in getOrCreatePuzzleForDate:', error)
+    console.error('Error generating Budget Bracket puzzle:', error)
     return null
   }
 }
 
 // Helper function to generate pairs with unified structure
-function generatePairsWithUnifiedStructure(movies: any[], seed: string) {
-  const { SeededRandom, DIFFICULTY_TARGETS, calculateDifficultyRatio } = require('@/lib/budget-bracket')
-  const { createUnifiedMoviePair } = require('@/lib/movie-hydration')
+async function generatePairsWithUnifiedStructure(movies: any[], seed: string) {
+  const { SeededRandom, DIFFICULTY_TARGETS, calculateDifficultyRatio } = await import('@/lib/budget-bracket')
+  const { createUnifiedMoviePair } = await import('@/lib/movie-hydration')
   
   const rng = new SeededRandom(seed)
   const pairs = []
