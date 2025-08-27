@@ -142,7 +142,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
             )}
           </h2>
           <p className="text-muted-foreground">
-            {result.correct ? "Passport stamped for:" : "The destination was:"}
+            {result.correct ? `Passport stamped for: ${result.puzzle?.flagEmoji || '🏳️'}` : "The destination was:"}
           </p>
         </div>
 
