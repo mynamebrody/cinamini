@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { format, addMonths, isAfter, formatDistanceToNow } from "date-fns"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 
 interface Movie {
   id: number
@@ -382,8 +383,8 @@ export default function AdminMovieSearch() {
                   flex items-center gap-2 px-4 py-2 text-sm font-funnel font-medium border-2
                   transition-all duration-200 transform hover:scale-[1.02]
                   ${filterStatus === filter.value 
-                    ? 'admin-btn-primary' 
-                    : 'admin-btn-secondary'
+                    ? 'variant="admin-primary"' 
+                    : 'variant="admin-secondary"'
                   }
                 `}
                 style={{ borderRadius: 0 }}
@@ -547,7 +548,8 @@ export default function AdminMovieSearch() {
           onClick={() => setSelectedMovie(null)}
         >
           <div
-            className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto admin-card"
+            className="bg-card max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]"
+            style={{ borderRadius: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
@@ -658,26 +660,27 @@ export default function AdminMovieSearch() {
               <div className="mt-6 flex justify-between items-center">
                 <div>
                   {getMovieStatus(selectedMovie).status === "available" && (
-                    <button
+                    <Button
                       onClick={() => {
                         router.push(`/admin/puzzle-editor?movieId=${selectedMovie.id}`)
                       }}
-                      className="admin-btn-primary flex items-center gap-2"
+                      variant="admin-primary"
+                      className="flex items-center gap-2"
                     >
                       <PenTool className="w-4 h-4" />
                       Use in Puzzle
-                    </button>
+                    </Button>
                   )}
                 </div>
-                <button
+                <Button
                   onClick={() => {
                     setSelectedMovie(null)
                     setMovieUsageData(null)
                   }}
-                  className="admin-btn-secondary"
+                  variant="admin-secondary"
                 >
                   Close
-                </button>
+                </Button>
               </div>
             </div>
           </div>

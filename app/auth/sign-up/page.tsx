@@ -8,8 +8,8 @@ export default async function SignUpPage() {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <h1 className="text-2xl font-bold mb-4 text-foreground font-funnel-display-bold">Connect Supabase to get started</h1>
       </div>
     )
   }
@@ -41,7 +41,7 @@ export default async function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <SiteHeader user={user} displayName={displayName} />
       
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">

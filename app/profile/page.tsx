@@ -14,8 +14,8 @@ export default async function ProfilePage({
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <h1 className="text-2xl font-bold mb-4 text-foreground font-funnel-display-bold">Connect Supabase to get started</h1>
       </div>
     )
   }
@@ -41,9 +41,9 @@ export default async function ProfilePage({
   const emailConfirmed = params.emailConfirmed === 'true'
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-[rgb(var(--silver))] bg-white/90 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-background/90 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Button variant="ghost" asChild>
@@ -51,7 +51,7 @@ export default async function ProfilePage({
                 ← Back to Home
               </Link>
             </Button>
-            <h1 className="text-xl font-bold text-neutral-900">Profile Settings</h1>
+            <h1 className="text-xl font-bold text-foreground font-funnel-display-bold">Profile Settings</h1>
           </div>
         </div>
       </header>

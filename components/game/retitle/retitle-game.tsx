@@ -393,7 +393,7 @@ export default function RetitleGame() {
             <Button onClick={() => {
               setTutorialViewed('retitled')
               setModalState('none')
-            }} className="btn btn-primary">
+            }} variant="primary">
               Back to Game
             </Button>
           </div>

@@ -637,7 +637,7 @@ export default function PosterPixelsGame() {
             <Button onClick={() => {
               setTutorialViewed('poster-pixels')
               setModalState('none')
-            }} className="btn btn-primary">
+            }} variant="primary">
               Back to Game
             </Button>
           </div>

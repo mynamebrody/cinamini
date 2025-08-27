@@ -193,7 +193,7 @@ export default function AnalyticsPage() {
 
       {/* Overview Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="admin-card">
+        <Card variant="admin-static">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-funnel">Total Players</CardTitle>
             <Users className="h-4 w-4 text-cinema-red" />
@@ -206,7 +206,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="admin-card">
+        <Card variant="admin-static">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-funnel">Daily Active Users</CardTitle>
             <TrendingUp className="h-4 w-4 text-cinema-red" />
@@ -219,7 +219,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="admin-card">
+        <Card variant="admin-static">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-funnel">Avg Session</CardTitle>
             <Clock className="h-4 w-4 text-cinema-red" />
@@ -230,7 +230,7 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="admin-card">
+        <Card variant="admin-static">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium font-funnel">Total Games</CardTitle>
             <GamepadIcon className="h-4 w-4 text-cinema-red" />
@@ -257,7 +257,7 @@ export default function AnalyticsPage() {
         {/* Engagement Tab */}
         <TabsContent value="engagement" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="admin-card">
+            <Card variant="admin-static">
               <CardHeader>
                 <CardTitle className="font-funnel-display-bold text-neutral-900">Daily Active Users</CardTitle>
                 <CardDescription className="font-funnel text-neutral-600">User activity over time</CardDescription>
@@ -296,7 +296,7 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="admin-card">
+            <Card variant="admin-static">
               <CardHeader>
                 <CardTitle className="font-funnel-display-bold text-neutral-900">Game Popularity</CardTitle>
                 <CardDescription className="font-funnel text-neutral-600">Distribution of plays by game</CardDescription>

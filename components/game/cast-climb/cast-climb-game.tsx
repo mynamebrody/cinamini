@@ -612,7 +612,7 @@ export default function CastClimbGame() {
             <Button onClick={() => {
               setTutorialViewed('cast-climb')
               setModalState('none')
-            }} className="btn btn-primary">
+            }} variant="primary">
               Back to Game
             </Button>
           </div>

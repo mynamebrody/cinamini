@@ -66,16 +66,16 @@ export function GameModal({
       
       {/* Modal content */}
       <div className={cn(
-        "relative bg-white w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
-        "border border-[#3a3a3c]",
-        "shadow-[2px_2px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60),6px_6px_0px_rgb(58,58,60),8px_8px_0px_rgb(58,58,60)]",
+        "relative bg-card w-full max-w-4xl max-h-[90vh] overflow-hidden animate-fade-in",
+        "border-2 border-border",
+        "shadow-[2px_2px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border)),6px_6px_0px_rgb(var(--border)),8px_8px_0px_rgb(var(--border))]",
         className
       )}
       style={{ borderRadius: 0 }}>
         {showCloseButton && (
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-2 bg-transparent border border-transparent hover:bg-transparent hover:border-[rgb(153,37,29)] hover:text-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] transition-all z-10"
+            className="absolute top-4 right-4 p-2 bg-transparent border border-transparent hover:bg-transparent hover:border-primary hover:text-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all z-10"
             style={{ borderRadius: 0 }}
             aria-label="Close modal"
           >
@@ -95,7 +95,7 @@ interface GameModalHeaderProps {
 
 export function GameModalHeader({ children, className }: GameModalHeaderProps) {
   return (
-    <div className={cn("px-5 pt-4 pb-3 border-b border-neutral-200", className)}>
+    <div className={cn("px-5 pt-4 pb-3 border-b border-border", className)}>
       {children}
     </div>
   )
@@ -134,7 +134,7 @@ interface GameModalFooterProps {
 
 export function GameModalFooter({ children, className }: GameModalFooterProps) {
   return (
-    <div className={cn("px-5 py-3 border-t border-neutral-200", className)}>
+    <div className={cn("px-5 py-3 border-t border-border", className)}>
       {children}
     </div>
   )

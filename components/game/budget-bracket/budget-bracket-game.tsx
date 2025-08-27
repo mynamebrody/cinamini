@@ -424,7 +424,7 @@ export default function BudgetBracketGame() {
             <Button onClick={() => {
               setTutorialViewed('budget-bracket')
               setModalState('none')
-            }} className="btn btn-primary">
+            }} variant="primary">
               Back to Game
             </Button>
           </div>
