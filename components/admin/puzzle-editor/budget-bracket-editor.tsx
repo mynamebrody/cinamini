@@ -1394,7 +1394,6 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       }
       
       // Step 4: Create puzzle data with hydrated pairs
-      // puzzle_number is no longer stored in database
       const puzzleData = {
         puzzle_date: puzzleDate || null,
         name: puzzleName.trim() || null, // Include optional name

@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
       generatePuzzle: generatePosterPixelsPuzzle,
       insertPuzzleData: (puzzle) => ({
         puzzle_date: puzzle.puzzle_date,
-        // puzzle_number calculated dynamically, not stored
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,
         film_poster_url: puzzle.film_poster_url,

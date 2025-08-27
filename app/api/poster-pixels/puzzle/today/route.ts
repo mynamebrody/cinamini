@@ -76,7 +76,6 @@ export async function GET() {
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
-            // puzzle_number calculated dynamically, not stored
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,
@@ -144,7 +143,6 @@ export async function GET() {
           .from("poster_pixels_puzzles")
           .insert({
             puzzle_date: today,
-            // puzzle_number calculated dynamically, not stored
             is_published: true,
             film_id: selectedMovie.id,
             film_title: selectedMovie.title,

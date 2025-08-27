@@ -310,7 +310,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         fun_fact: funFact.trim() || null,
         is_published: isPublished,
         seed_value: seedValue
-        // puzzle_number is no longer stored in database
       }
 
 

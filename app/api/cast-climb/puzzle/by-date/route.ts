@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
       generatePuzzle: generateDailyPuzzle,
       insertPuzzleData: (puzzle) => ({
         puzzle_date: puzzle.puzzle_date,
-        // puzzle_number calculated dynamically, not stored
         seed_value: puzzle.seed_value,
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,

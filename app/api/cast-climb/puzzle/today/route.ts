@@ -61,7 +61,6 @@ export async function GET() {
           .from("cast_climb_puzzles")
           .insert({
             puzzle_date: generatedPuzzle.puzzle_date,
-            // puzzle_number calculated dynamically, not stored
             seed_value: generatedPuzzle.seed_value,
             film_id: generatedPuzzle.film_id,
             film_title: generatedPuzzle.film_title,

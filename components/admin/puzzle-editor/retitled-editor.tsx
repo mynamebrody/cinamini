@@ -601,7 +601,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       }
 
       // Only include seed_value field when creating new puzzles
-      // puzzle_number is no longer stored in database
       if (!isEditMode) {
         puzzleData.seed_value = seedValue
       }
