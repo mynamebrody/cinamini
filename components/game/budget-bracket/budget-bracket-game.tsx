@@ -72,7 +72,11 @@ interface GameResult {
 type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
-export default function BudgetBracketGame() {
+interface BudgetBracketGameProps {
+  date?: string
+}
+
+export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {}) {
   const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
@@ -86,7 +90,8 @@ export default function BudgetBracketGame() {
   const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState('loading')
-      const response = await fetch('/api/budget-bracket/puzzle/today')
+      const endpoint = date ? `/api/budget-bracket/puzzle/by-date?date=${date}` : '/api/budget-bracket/puzzle/today'
+      const response = await fetch(endpoint)
       
       if (!response.ok) {
         throw new Error('Failed to load puzzle')
@@ -114,7 +119,7 @@ export default function BudgetBracketGame() {
       setError('Failed to load today\'s puzzle. Please try again.')
       setGameState('error')
     }
-  }, [])
+  }, [date])
 
   useEffect(() => {
     if (!authLoading) {

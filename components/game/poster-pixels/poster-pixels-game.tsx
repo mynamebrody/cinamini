@@ -65,7 +65,11 @@ interface GameState {
 type GameStateType = 'loading' | 'ready' | 'playing' | 'celebrating' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
-export default function PosterPixelsGame() {
+interface PosterPixelsGameProps {
+  date?: string
+}
+
+export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
   const { isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameStateType>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
@@ -110,7 +114,7 @@ export default function PosterPixelsGame() {
     if (!authLoading) {
       loadTodaysPuzzle()
     }
-  }, [authLoading])
+  }, [authLoading, date])
 
   // Update total game time
   useEffect(() => {
@@ -214,7 +218,8 @@ export default function PosterPixelsGame() {
   const loadTodaysPuzzle = async () => {
     try {
       // Load puzzle (works for both anonymous and authenticated users)
-      const response = await fetch("/api/poster-pixels/puzzle/today")
+      const endpoint = date ? `/api/poster-pixels/puzzle/by-date?date=${date}` : "/api/poster-pixels/puzzle/today"
+      const response = await fetch(endpoint)
       const data = await response.json()
 
       if (!response.ok) {
