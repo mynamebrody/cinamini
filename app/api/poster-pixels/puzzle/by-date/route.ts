@@ -103,16 +103,21 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       puzzle: {
         id: puzzle.id,
-        puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
-        filmId: puzzle.film_id,
-        filmTitle: puzzle.film_title,
-        filmPosterUrl: puzzle.film_poster_url,
-        filmReleaseYear: puzzle.film_release_year,
-        clarityLevels: puzzle.clarity_levels,
-        difficultyLevel: puzzle.difficulty_level,
-        seedValue: puzzle.seed_value,
-        movieData: puzzle.movie_data
+        puzzle_date: puzzle.puzzle_date,
+        puzzle_number: puzzle.puzzle_number,
+        // New admin structure fields
+        film_id: puzzle.film_id,
+        film_title: puzzle.film_title,
+        film_poster_url: puzzle.film_poster_url,
+        film_release_year: puzzle.film_release_year,
+        clarity_levels: puzzle.clarity_levels,
+        // Legacy movie_data for backward compatibility
+        movie_data: puzzle.movie_data || {
+          id: puzzle.film_id,
+          title: puzzle.film_title,
+          poster_path: puzzle.film_poster_url,
+          release_date: puzzle.film_release_year ? `${puzzle.film_release_year}-01-01` : null,
+        },
       },
       hasPlayed,
       hasPlayedBefore,

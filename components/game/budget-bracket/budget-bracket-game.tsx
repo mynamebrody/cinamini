@@ -103,7 +103,18 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
         throw new Error('Failed to load puzzle')
       }
 
-      const puzzleData: PuzzleData = await response.json()
+      const rawResponse = await response.json()
+      
+      // Handle both wrapped and unwrapped response formats
+      const puzzleData: PuzzleData = rawResponse.puzzle || rawResponse
+      
+      // Validate puzzle data - check for malformed or missing pairs
+      if (puzzleData && (!puzzleData.pairs || !Array.isArray(puzzleData.pairs) || puzzleData.pairs.length === 0)) {
+        console.log("Invalid puzzle data detected, redirecting to today's puzzle")
+        window.location.href = '/game/budget-bracket'
+        return
+      }
+      
       setPuzzle(puzzleData)
 
       // Check if already played today (works for both anonymous and regular users)
@@ -319,7 +330,7 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
 
 
   // Don't render the game container UI if we're showing the landing page
-  if (gameState === "ready" && modalState !== 'howtoplay') {
+  if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzle_date) {
     return (
       <GameLanding
         gameId="budget-bracket"
@@ -334,7 +345,7 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
         onStart={startGame}
         showBackButton={true}
       >
-        {/* How to Play content removed from splash page */}
+        <></>
       </GameLanding>
     )
   }

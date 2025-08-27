@@ -109,6 +109,96 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     }
   )
 
+  // Load today's puzzle function (moved before useEffect to fix initialization)
+  const loadTodaysPuzzle = useCallback(async () => {
+    try {
+      // Load puzzle (works for both anonymous and authenticated users)
+      const endpoint = date ? `/api/poster-pixels/puzzle/by-date?date=${date}` : "/api/poster-pixels/puzzle/today"
+      const response = await fetch(endpoint)
+      const data = await response.json()
+
+      if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/poster-pixels'
+          return
+        }
+        throw new Error(data.error || "Failed to load puzzle")
+      }
+
+      const initialIndex = 0
+      const wonFromDb = !!(data.hasPlayedToday && data.previousGame?.won)
+      const clarityFromDb = data.previousGame?.final_clarity_level ?? getClarityPercentForIndex(initialIndex)
+      const timeFromDb = data.previousGame?.total_time_ms ?? 0
+      const guessesFromDb = data.previousGame?.guesses || []
+      const scoreFromDb = wonFromDb ? getScoreForClarityPercent(Math.round(clarityFromDb)) : 0
+
+      setState(prev => ({
+        ...prev,
+        puzzle: data.puzzle,
+        hasPlayedToday: data.hasPlayedToday,
+        won: wonFromDb,
+        timeElapsed: timeFromDb,
+        clarityLevel: clarityFromDb,
+        currentLevelIndex: initialIndex,
+        guesses: guessesFromDb,
+        finalScore: scoreFromDb,
+      }))
+
+      if (data.hasPlayedToday) {
+        // Set the total game time for display
+        setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
+        setGameState('completed')
+        setShowResults(true) // Show results immediately for completed games
+        
+        // Trigger celebration confetti if they won
+        if (data.previousGame?.won) {
+          setTimeout(() => {
+            confetti({ 
+              particleCount: 150, 
+              spread: 70, 
+              origin: { y: 0.6 },
+              colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
+            })
+            
+            // Add more confetti bursts
+            setTimeout(() => {
+              confetti({ 
+                particleCount: 100, 
+                spread: 60, 
+                origin: { y: 0.7, x: 0.3 }
+              })
+            }, 200)
+            
+            setTimeout(() => {
+              confetti({ 
+                particleCount: 100, 
+                spread: 60, 
+                origin: { y: 0.7, x: 0.7 }
+              })
+            }, 400)
+          }, 500)
+        }
+      } else {
+        setGameState('ready')
+        
+        // Show how-to-play modal only if they've never seen the tutorial
+        const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
+        if (!hasSeenTutorial) {
+          setModalState('howtoplay')
+        }
+      }
+    } catch (error) {
+      console.error("Error loading puzzle:", error)
+      setState(prev => ({
+        ...prev,
+        error: error instanceof Error ? error.message : "Failed to load puzzle",
+      }))
+      setGameState('error')
+    }
+  }, [date])
+
   // Load today's puzzle
   useEffect(() => {
     if (!authLoading) {
@@ -215,96 +305,6 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
 
   const getLevels = () => Array.from(POSTER_PIXELS_LEVELS) // Always use config levels
 
-  const loadTodaysPuzzle = useCallback(async () => {
-    try {
-      // Load puzzle (works for both anonymous and authenticated users)
-      const endpoint = date ? `/api/poster-pixels/puzzle/by-date?date=${date}` : "/api/poster-pixels/puzzle/today"
-      const response = await fetch(endpoint)
-      const data = await response.json()
-
-      if (!response.ok) {
-        // If it's a 404 for a historical puzzle, redirect to today's puzzle
-        if (response.status === 404 && date) {
-          console.log("Historical puzzle not found, redirecting to today's puzzle")
-          window.location.href = '/game/poster-pixels'
-          return
-        }
-        throw new Error(data.error || "Failed to load puzzle")
-      }
-
-      const initialIndex = 0
-      const wonFromDb = !!(data.hasPlayedToday && data.previousGame?.won)
-      const clarityFromDb = data.previousGame?.final_clarity_level ?? getClarityPercentForIndex(initialIndex)
-      const timeFromDb = data.previousGame?.total_time_ms ?? 0
-      const guessesFromDb = data.previousGame?.guesses || []
-      const scoreFromDb = wonFromDb ? getScoreForClarityPercent(Math.round(clarityFromDb)) : 0
-
-      setState(prev => ({
-        ...prev,
-        puzzle: data.puzzle,
-        hasPlayedToday: data.hasPlayedToday,
-        won: wonFromDb,
-        timeElapsed: timeFromDb,
-        clarityLevel: clarityFromDb,
-        currentLevelIndex: initialIndex,
-        guesses: guessesFromDb,
-        finalScore: scoreFromDb,
-      }))
-
-      if (data.hasPlayedToday) {
-        // Set the total game time for display
-        setTotalGameTime(Math.floor((data.previousGame?.totalTimeMs || 0) / 1000))
-        setGameState('completed')
-        setShowResults(true) // Show results immediately for completed games
-        
-        // Trigger celebration confetti if they won
-        if (data.previousGame?.won) {
-          setTimeout(() => {
-            confetti({ 
-              particleCount: 150, 
-              spread: 70, 
-              origin: { y: 0.6 },
-              colors: ['#FFD700', '#FFA500', '#FF6347', '#FF69B4', '#00CED1']
-            })
-            
-            // Add more confetti bursts
-            setTimeout(() => {
-              confetti({ 
-                particleCount: 100, 
-                spread: 60, 
-                origin: { y: 0.7, x: 0.3 }
-              })
-            }, 200)
-            
-            setTimeout(() => {
-              confetti({ 
-                particleCount: 100, 
-                spread: 60, 
-                origin: { y: 0.7, x: 0.7 }
-              })
-            }, 400)
-          }, 500)
-        }
-      } else {
-        setGameState('ready')
-        
-        // Show how-to-play modal only if they've never seen the tutorial
-        const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
-        if (!hasSeenTutorial) {
-          setModalState('howtoplay')
-        }
-      }
-    } catch (error) {
-      console.error("Error loading puzzle:", error)
-      setState(prev => ({
-        ...prev,
-        error: error instanceof Error ? error.message : "Failed to load puzzle",
-      }))
-      setGameState('error')
-    }
-  }, [date])
-
-  
 
   const calculateScoreForCurrent = () => {
     const percent = Math.round(state.clarityLevel)
@@ -572,13 +572,13 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     }
   }
 
-  if (gameState === "ready" && modalState !== 'howtoplay') {
+  if (gameState === "ready" && modalState !== 'howtoplay' && state.puzzle?.puzzle_date) {
     return (
       <GameLanding
         gameId="poster-pixels"
         gameName="Poster Pixels"
         puzzleNumber={state.puzzle?.puzzle_number}
-        puzzleDate={new Date().toISOString().split('T')[0]}
+        puzzleDate={state.puzzle?.puzzle_date}
         backgroundColor="#3a3a3c"
         logo="/cinamini/games/PosterPixelsPoster.svg"
         logoPng="/cinamini/games/PosterPixelsPoster.png"

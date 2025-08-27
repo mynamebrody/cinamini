@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
         id: puzzle.id,
         puzzle_date: puzzle.puzzle_date,
         puzzle_number: puzzleNumber,
+        name: puzzle.name, // Include puzzle name for consistency with today route
         seed_value: puzzle.seed_value,
         pairs: puzzle.pairs,
         has_played: hasPlayed,

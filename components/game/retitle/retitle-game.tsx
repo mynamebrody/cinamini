@@ -276,7 +276,7 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
   }
 
   // Don't render the game container UI if we're showing the landing page
-  if (gameState === "ready" && modalState !== 'howtoplay') {
+  if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzleDate) {
     return (
       <GameLanding
         gameId="retitled"
