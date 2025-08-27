@@ -131,7 +131,7 @@ export default function PosterPixelsResult({
           {/* Movie Poster */}
           {moviePosterUrl && (
             <div className="flex justify-center mb-4">
-              <div className="relative w-48 h-72 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
+              <div className="relative w-48 h-72 border border-border shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] overflow-hidden" style={{ borderRadius: 0 }}>
                 <Image
                   src={moviePosterUrl}
                   alt={`${movieTitle} poster`}
@@ -161,7 +161,7 @@ export default function PosterPixelsResult({
                 <div 
                   key={index} 
                   className={cn(
-                    "flex items-center justify-between p-3 bg-white border",
+                    "flex items-center justify-between p-3 bg-card border",
                     guess.isCorrect 
                       ? "border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]"
                       : guess.movieTitle === 'Gave Up' 
@@ -194,7 +194,7 @@ export default function PosterPixelsResult({
                 </div>
               ))
             ) : (
-              <div className="p-3 bg-[#f8f9fa] border border-[#d1d2d4] text-center text-muted-foreground" style={{ borderRadius: 0 }}>
+              <div className="p-3 bg-[#f8f9fa] border border-border text-center text-muted-foreground" style={{ borderRadius: 0 }}>
                 No guess recorded
               </div>
             )}
@@ -223,7 +223,7 @@ export default function PosterPixelsResult({
           {/* Share Section */}
           <div className="border-t pt-4">
             {/* Share Preview */}
-            <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+            <div className="bg-gradient-to-b from-muted/50 to-muted border border-border p-4 text-center mb-3" style={{ borderRadius: 0 }}>
               {(() => {
                 const text = generateFallbackShareText()
                 const lines = text.split('\n')

@@ -485,7 +485,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
               className="border-t pt-4"
             > 
               {/* Share Preview */}
-              <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+              <div className="bg-gradient-to-b from-muted/50 to-muted border border-border p-4 text-center mb-3" style={{ borderRadius: 0 }}>
                 {(() => {
                   const text = (centralizedShareText && !centralizedShareText.includes('0/5 correct') && correctAnswers > 0) 
                     ? centralizedShareText
@@ -623,7 +623,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${roundData.movieA.poster_path}`}
                           alt={`${roundData.movieA.title} poster`}
@@ -669,7 +669,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${roundData.movieB.poster_path}`}
                           alt={`${roundData.movieB.title} poster`}
@@ -761,7 +761,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${pair.movieA.poster_path}`}
                           alt={`${pair.movieA.title} poster`}
@@ -800,7 +800,7 @@ export default function BudgetBracketResult({ result, puzzle }: BudgetBracketRes
                           ? 'bg-green-50 border border-green-200 shadow-3d-green'
                           : 'opacity-60'
                     }`}>
-                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] relative" style={{ borderRadius: 0 }}>
+                      <div className="aspect-[2/3] bg-muted overflow-hidden mb-2 max-w-20 mx-auto border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
                         <Image
                           src={`https://image.tmdb.org/t/p/w185${pair.movieB.poster_path}`}
                           alt={`${pair.movieB.title} poster`}

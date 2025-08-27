@@ -213,20 +213,20 @@ export function CastClimbProgress({
                     const numberState = getNumberState(index)
                     return {
                       // Empty state - silver 3D shadows
-                      "bg-muted border-muted-foreground/30 text-muted-foreground shadow-3d-grey": numberState === "empty",
+                      "bg-muted border-muted-foreground/30 text-muted-foreground shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]": numberState === "empty",
                       
                       // States with actor names - charcoal shadows
-                      "bg-charcoal border-charcoal text-white animate-bounce shadow-3d-charcoal": numberState === "current",
-                      "bg-charcoal border-charcoal text-white shadow-3d-charcoal": numberState === "revealed", 
+                      "bg-charcoal border-charcoal text-white animate-bounce shadow-[1px_1px_0px_rgb(var(--charcoal)),2px_2px_0px_rgb(var(--charcoal))]": numberState === "current",
+                      "bg-charcoal border-charcoal text-white shadow-[1px_1px_0px_rgb(var(--charcoal)),2px_2px_0px_rgb(var(--charcoal))]": numberState === "revealed", 
                       
                       // Failed attempts - red background
-                      "bg-red-500 border-red-600 text-white shadow-3d-red": numberState === "incorrect",
+                      "bg-red-500 border-red-600 text-white shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68)]": numberState === "incorrect",
                       
                       // Correct guess - green 3D shadows
-                      "bg-green-500 border-green-600 text-white animate-pulse shadow-3d-green": numberState === "correct",
+                      "bg-green-500 border-green-600 text-white animate-pulse shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94)]": numberState === "correct",
                       
                       // Unused attempts - charcoal but show number
-                      "bg-charcoal border-charcoal text-white shadow-3d-charcoal": numberState === "unused",
+                      "bg-charcoal border-charcoal text-white shadow-[1px_1px_0px_rgb(var(--charcoal)),2px_2px_0px_rgb(var(--charcoal))]": numberState === "unused",
                     }
                   })()
                 )}

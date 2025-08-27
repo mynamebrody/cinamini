@@ -28,8 +28,8 @@ export function PosterPixelsClarityProgress({
   // Get restoration skill level based on clarity
   const getSkillLevel = (clarity: number) => {
     if (clarity >= 0.9) return { level: "Master Restorer", icon: "🏆", color: "text-yellow-600" }
-    if (clarity >= 0.7) return { level: "Expert Artist", icon: "🎨", color: "text-gray-700" }
-    if (clarity >= 0.5) return { level: "Skilled Artisan", icon: "✨", color: "text-gray-600" }
+    if (clarity >= 0.7) return { level: "Expert Artist", icon: "🎨", color: "text-foreground" }
+    if (clarity >= 0.5) return { level: "Skilled Artisan", icon: "✨", color: "text-muted-foreground" }
     if (clarity >= 0.3) return { level: "Apprentice", icon: "🖌️", color: "text-gray-500" }
     return { level: "Novice Restorer", icon: "🔍", color: "text-gray-400" }
   }
@@ -197,7 +197,7 @@ export function PosterPixelsClarityProgress({
         </div>
 
         {/* Developer tray label */}
-        <div className="text-center mt-2 text-sm text-gray-600">
+        <div className="text-center mt-2 text-sm text-muted-foreground">
           <span className="font-medium">Development Progress: {Math.round(developmentProgress)}%</span>
         </div>
       </div>
@@ -206,16 +206,16 @@ export function PosterPixelsClarityProgress({
       <div className="mb-6">
         <div className="flex items-center justify-center mb-3">
           <span className="text-lg mr-2">🎞️</span>
-          <span className="text-sm font-medium text-gray-700">Restoration Timeline</span>
+          <span className="text-sm font-medium text-foreground">Restoration Timeline</span>
         </div>
         
-        <div className="flex justify-between items-center bg-black rounded-lg p-2 border-4 border-[#3a3a3c]">
+        <div className="flex justify-between items-center bg-black rounded-lg p-2 border-4 border-border">
           {filmFrames.map((frame, index) => (
             <motion.div
               key={index}
               className={`flex-1 mx-1 h-12 rounded border-2 relative overflow-hidden ${
                 frame.active 
-                  ? 'border-[#d1d2d4] bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef]' 
+                  ? 'border-border bg-gradient-to-br from-[#f8f9fa] to-[#e9ecef]' 
                   : 'border-[#6c757d] bg-[#495057]'
               }`}
               animate={{
@@ -305,7 +305,7 @@ export function PosterPixelsClarityProgress({
             </motion.div>
           </div>
 
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-muted-foreground">
             <div className="font-medium">Restoration Tools</div>
             <div>Ready for masterpiece</div>
           </div>
@@ -313,7 +313,7 @@ export function PosterPixelsClarityProgress({
 
         {/* Clarity Meter */}
         <div className="text-right">
-          <div className="text-xs text-gray-600 mb-1">Image Clarity</div>
+          <div className="text-xs text-muted-foreground mb-1">Image Clarity</div>
           <div className="flex items-center gap-2">
             <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
               <motion.div
@@ -326,7 +326,7 @@ export function PosterPixelsClarityProgress({
                 }}
               />
             </div>
-            <span className="text-sm font-bold text-gray-700">
+            <span className="text-sm font-bold text-foreground">
               {overallClarityPercent}%
             </span>
           </div>
@@ -342,7 +342,7 @@ export function PosterPixelsClarityProgress({
             : "rgba(255, 255, 255, 0.5)"
         }}
       >
-        <div className="text-sm font-medium text-gray-700">
+        <div className="text-sm font-medium text-foreground">
           {clarityLevel >= 0.9 && "🏆 Masterpiece restoration in progress!"}
           {clarityLevel >= 0.7 && clarityLevel < 0.9 && "✨ Excellent detail work!"}
           {clarityLevel >= 0.5 && clarityLevel < 0.7 && "🔍 Key features emerging..."}

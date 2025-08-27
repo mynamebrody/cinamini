@@ -106,7 +106,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
               {user_guesses.map((guess) => (
                 <div 
                   key={guess.id} 
-                  className={`flex items-center justify-between text-sm bg-white p-3 border ${
+                  className={`flex items-center justify-between text-sm bg-card p-3 border ${
                     guess.isCorrect 
                       ? 'border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
                       : 'border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]'
@@ -138,7 +138,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
           {/* Movie Poster */}
           {puzzle.filmPosterUrl && (
             <div className="flex justify-center">
-              <div className="border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
+              <div className="border border-border shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]" style={{ borderRadius: 0 }}>
                 <Image 
                   src={`https://image.tmdb.org/t/p/w500${puzzle.filmPosterUrl}`} 
                   alt={`${puzzle.filmTitle} poster`}
@@ -208,7 +208,7 @@ export default function CastClimbResult({ result, onPlayAgain, onViewStats }: Ca
       {/* Action Buttons */}
       <div className="space-y-2">
         {/* Share Preview */}
-        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center mb-3" style={{ borderRadius: 0 }}>
+        <div className="bg-gradient-to-b from-muted/50 to-muted border border-border p-4 text-center mb-3" style={{ borderRadius: 0 }}>
           {(() => {
             const lines = share_text.split('\n')
             const firstLine = lines[0] || ''

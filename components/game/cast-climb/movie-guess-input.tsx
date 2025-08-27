@@ -238,7 +238,8 @@ export function MovieGuessInput({
       {showResults && (
         <div
           ref={resultsRef}
-          className="absolute top-full left-0 right-0 z-50 mt-1 bg-white/95 border border-border rounded-md shadow-lg max-h-80 overflow-y-auto backdrop-blur-md"
+          className="absolute top-full left-0 right-0 z-50 mt-1 bg-card/95 border border-border shadow-lg max-h-80 overflow-y-auto backdrop-blur-md"
+          style={{ borderRadius: 0 }}
         >
           {error ? (
             <div className="p-3 text-sm text-red-500">

@@ -65,7 +65,7 @@ export default function BudgetBracketStats() {
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-red-500">{error || 'No statistics available'}</p>
+          <p className="text-destructive">{error || 'No statistics available'}</p>
         </CardContent>
       </Card>
     )
