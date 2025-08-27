@@ -6,6 +6,7 @@ import { signOut } from "@/lib/actions"
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface SiteHeaderProps {
   user: any
@@ -39,7 +40,7 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
   }, [user])
 
   return (
-    <header className="border-b border-neutral-200 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and title */}
@@ -56,7 +57,7 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
               {/* Fallback text logo if needed */}
               {/* <span className="text-2xl font-funnel-display-bold text-cinema-red font-bold">cinamini</span> */}
             </Link>
-            <span className="ml-3 text-sm text-neutral-500 hidden sm:block font-funnel">
+            <span className="ml-3 text-sm text-muted-foreground hidden sm:block font-funnel">
               Daily Movie Puzzles
             </span>
           </div>
@@ -65,12 +66,15 @@ export function SiteHeader({ user, displayName }: SiteHeaderProps) {
           <div className="flex items-center space-x-4">
             {/* Show streak for all users when > 0 */}
             {streakCount > 0 && (
-              <div className="flex items-center text-sm text-neutral-600">
+              <div className="flex items-center text-sm text-muted-foreground">
                 <Trophy className="h-4 w-4 mr-1 text-orange-500" />
                 <span className="font-medium">{streakCount}</span>
                 <span className="hidden sm:inline ml-1">day streak</span>
               </div>
             )}
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
             
             {user && !user.is_anonymous ? (
               <>

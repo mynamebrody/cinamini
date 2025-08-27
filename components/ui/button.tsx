@@ -12,39 +12,39 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 const getVariantClasses = (variant: ButtonVariant) => {
   switch (variant) {
     case 'primary':
-      return 'btn-primary'
+      return 'bg-primary text-primary-foreground border border-primary hover:bg-background hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
     case 'secondary':
-      return 'btn-secondary'
+      return 'bg-secondary text-secondary-foreground border border-border hover:bg-background hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
     case 'ghost':
-      return 'btn-ghost'
+      return 'bg-transparent text-foreground border border-transparent hover:bg-transparent hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
     case 'outline':
-      return 'btn-outline'
+      return 'bg-transparent text-foreground border border-transparent hover:bg-transparent hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
     case 'destructive':
-      return 'bg-red-500 text-white border-red-500 hover:bg-cinema-red hover:border-cinema-red'
+      return 'bg-destructive text-destructive-foreground border border-destructive hover:bg-background hover:text-destructive hover:border-destructive hover:shadow-[1px_1px_0px_rgb(var(--destructive)),2px_2px_0px_rgb(var(--destructive)),3px_3px_0px_rgb(var(--destructive)),4px_4px_0px_rgb(var(--destructive))] transition-all duration-150'
     case 'icon':
-      return 'btn-icon'
+      return 'bg-transparent text-foreground border border-transparent p-2 hover:bg-transparent hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
     default:
-      return 'btn-primary'
+      return 'bg-primary text-primary-foreground border border-primary hover:bg-background hover:text-primary hover:border-primary hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))] transition-all duration-150'
   }
 }
 
 const getSizeClasses = (size: ButtonSize) => {
   switch (size) {
     case 'sm':
-      return 'btn-sm'
+      return 'h-9 px-3 text-xs'
     case 'lg':
-      return 'btn-lg'
+      return 'h-11 px-8 text-base'
     case 'icon':
       return 'h-10 w-10 p-0'
     case 'md':
     default:
-      return 'btn-md'
+      return 'h-10 px-4 py-2 text-sm'
   }
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className = '', variant = 'primary', size = 'md', asChild = false, children, ...props }, ref) => {
-    const baseClasses = 'btn'
+    const baseClasses = 'inline-flex items-center justify-center whitespace-nowrap font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50'
     const variantClasses = getVariantClasses(variant)
     const sizeClasses = getSizeClasses(size)
     const combinedClasses = `${baseClasses} ${variantClasses} ${sizeClasses} ${className}`.trim()

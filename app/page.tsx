@@ -8,10 +8,10 @@ export default async function Home() {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4 text-neutral-900 font-funnel-display-bold">Connect Supabase to get started</h1>
-          <p className="text-neutral-600">Please configure your Supabase connection to continue.</p>
+          <h1 className="text-2xl font-bold mb-4 text-foreground font-funnel-display-bold">Connect Supabase to get started</h1>
+          <p className="text-muted-foreground">Please configure your Supabase connection to continue.</p>
         </div>
       </div>
     )
@@ -36,7 +36,7 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Auth Hash Processor for invite links */}
       <AuthHashProcessor 
         redirectPath="/profile"

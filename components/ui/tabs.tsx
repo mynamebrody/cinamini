@@ -30,10 +30,10 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-      "border border-[#d1d2d4] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212)]",
-      "data-[state=active]:border-[#99251d] data-[state=active]:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29)] data-[state=active]:bg-background data-[state=active]:text-foreground",
-      "data-[state=inactive]:bg-gray-50",
+      "inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+      "border border-border bg-muted shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]",
+      "data-[state=active]:border-primary data-[state=active]:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary))] data-[state=active]:bg-background data-[state=active]:text-foreground",
+      "hover:bg-accent hover:text-accent-foreground",
       className
     )}
     style={{ borderRadius: 0 }}
