@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BarChart3 } from "lucide-react"
@@ -572,6 +572,14 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     }
   }
 
+  // Memoize excludeMovieIds to prevent unnecessary re-renders of search component
+  const excludeMovieIds = useMemo(() => 
+    state.guesses
+      .filter(g => g.movieId !== null)
+      .map(g => g.movieId as number),
+    [state.guesses]
+  )
+
   if (gameState === "ready" && modalState !== 'howtoplay' && state.puzzle?.puzzle_date) {
     return (
       <GameLanding
@@ -770,9 +778,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
                         }}
                         selectedMovie={null}
                         disabled={isAnimating || isRevealAnimating || isTransitioning || isProcessingGuess}
-                        excludeMovieIds={state.guesses
-                          .filter(g => g.movieId !== null)
-                          .map(g => g.movieId as number)}
+                        excludeMovieIds={excludeMovieIds}
                       />
 
                       {/* Previous Guesses */}

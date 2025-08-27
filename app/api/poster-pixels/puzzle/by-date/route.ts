@@ -119,18 +119,25 @@ export async function GET(request: NextRequest) {
           release_date: puzzle.film_release_year ? `${puzzle.film_release_year}-01-01` : null,
         },
       },
-      hasPlayed,
+      hasPlayedToday: hasPlayed,
       hasPlayedBefore,
-      userGame: userGame ? {
+      previousGame: userGame ? {
         id: userGame.id,
         won: userGame.won,
         totalTimeMs: userGame.total_time_ms,
+        total_time_ms: userGame.total_time_ms,
+        final_clarity_level: userGame.final_clarity_level,
         finalClarityLevel: userGame.final_clarity_level,
         finalScore: userGame.final_score,
         completed: userGame.completed,
-        numGuesses: userGame.num_guesses
-      } : null,
-      userGuesses
+        numGuesses: userGame.num_guesses,
+        guesses: userGuesses.map(guess => ({
+          movieId: guess.guessedMovieId,
+          movieTitle: guess.guessedMovieTitle,
+          isCorrect: guess.isCorrect,
+          clarityLevel: guess.clarityLevel,
+        }))
+      } : null
     })
   } catch (error) {
     console.error('Error fetching puzzle by date:', error)
