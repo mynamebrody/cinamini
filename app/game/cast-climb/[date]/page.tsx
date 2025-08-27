@@ -4,9 +4,9 @@ import CastClimbGame from "@/components/game/cast-climb/cast-climb-game"
 import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
 export const metadata = constructMetadata({
-  title: gameMetadata.castClimb.title,
-  description: gameMetadata.castClimb.description,
-  image: gameMetadata.castClimb.ogImage,
+  title: gameMetadata["cast-climb"].title,
+  description: gameMetadata["cast-climb"].description,
+  image: gameMetadata["cast-climb"].ogImage,
 })
 
 interface CastClimbDatePageProps {

@@ -94,6 +94,12 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
       const response = await fetch(endpoint)
       
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/budget-bracket'
+          return
+        }
         throw new Error('Failed to load puzzle')
       }
 

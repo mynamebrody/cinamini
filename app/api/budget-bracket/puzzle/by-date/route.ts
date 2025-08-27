@@ -41,11 +41,11 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Get or create puzzle using shared utility
-    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate, puzzleConfig)
+    // Get puzzle without allowing creation (by-date should not create puzzles)
+    const puzzle = await getOrCreatePuzzleForDate(serviceSupabase, puzzleDate, puzzleConfig, false)
     
     if (!puzzle) {
-      return createErrorResponse('No puzzle available for this date', 404)
+      return createErrorResponse('No puzzle available for this date. Try today\'s puzzle instead.', 404)
     }
 
     // Check if user has already played this puzzle

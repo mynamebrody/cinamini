@@ -40,6 +40,13 @@ interface GuessResult {
     releaseYear: string
     translationNote: string
   }
+  puzzle?: {
+    localizedTitle: string
+    englishTranslation: string
+    countryCode: string
+    countryName: string
+    flagEmoji: string
+  }
   stats: {
     gamesPlayed: number
     accuracy: number
@@ -74,6 +81,12 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
       const endpoint = date ? `/api/retitled/puzzle/by-date?date=${date}` : "/api/retitled/puzzle/today"
       const response = await fetch(endpoint)
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/retitled'
+          return
+        }
         throw new Error("Failed to load puzzle")
       }
       

@@ -4,9 +4,9 @@ import BudgetBracketGame from "@/components/game/budget-bracket/budget-bracket-g
 import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
 export const metadata = constructMetadata({
-  title: gameMetadata.budgetBracket.title,
-  description: gameMetadata.budgetBracket.description,
-  image: gameMetadata.budgetBracket.ogImage,
+  title: gameMetadata["budget-bracket"].title,
+  description: gameMetadata["budget-bracket"].description,
+  image: gameMetadata["budget-bracket"].ogImage,
 })
 
 interface BudgetBracketDatePageProps {

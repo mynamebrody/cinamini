@@ -114,7 +114,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     if (!authLoading) {
       loadTodaysPuzzle()
     }
-  }, [authLoading, date])
+  }, [authLoading, loadTodaysPuzzle])
 
   // Update total game time
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
 
   const getLevels = () => Array.from(POSTER_PIXELS_LEVELS) // Always use config levels
 
-  const loadTodaysPuzzle = async () => {
+  const loadTodaysPuzzle = useCallback(async () => {
     try {
       // Load puzzle (works for both anonymous and authenticated users)
       const endpoint = date ? `/api/poster-pixels/puzzle/by-date?date=${date}` : "/api/poster-pixels/puzzle/today"
@@ -223,6 +223,12 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
       const data = await response.json()
 
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/poster-pixels'
+          return
+        }
         throw new Error(data.error || "Failed to load puzzle")
       }
 
@@ -296,7 +302,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
       }))
       setGameState('error')
     }
-  }
+  }, [date])
 
   
 

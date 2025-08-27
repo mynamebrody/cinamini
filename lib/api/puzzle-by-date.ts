@@ -77,7 +77,8 @@ export interface PuzzleConfig {
 export async function getOrCreatePuzzleForDate(
   supabase: any,
   date: Date,
-  config: PuzzleConfig
+  config: PuzzleConfig,
+  allowCreation: boolean = true
 ): Promise<any | null> {
   const dateString = date.toISOString().split('T')[0]
 
@@ -91,6 +92,12 @@ export async function getOrCreatePuzzleForDate(
 
     if (existingPuzzle && !fetchError) {
       return existingPuzzle
+    }
+
+    // If no existing puzzle and creation is not allowed, return null
+    if (!allowCreation) {
+      console.log(`No existing puzzle found for ${config.tableName} on ${dateString} and creation is disabled`)
+      return null
     }
 
     // If no existing puzzle, generate a new one

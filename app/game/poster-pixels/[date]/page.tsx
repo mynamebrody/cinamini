@@ -4,9 +4,9 @@ import PosterPixelsGame from "@/components/game/poster-pixels/poster-pixels-game
 import { constructMetadata, gameMetadata } from "@/lib/metadata"
 
 export const metadata = constructMetadata({
-  title: gameMetadata.posterPixels.title,
-  description: gameMetadata.posterPixels.description,
-  image: gameMetadata.posterPixels.ogImage,
+  title: gameMetadata["poster-pixels"].title,
+  description: gameMetadata["poster-pixels"].description,
+  image: gameMetadata["poster-pixels"].ogImage,
 })
 
 interface PosterPixelsDatePageProps {

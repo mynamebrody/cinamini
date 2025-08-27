@@ -128,7 +128,14 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
       
       const endpoint = date ? `/api/cast-climb/puzzle/by-date?date=${date}` : "/api/cast-climb/puzzle/today"
       const response = await fetch(endpoint)
+      
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/cast-climb'
+          return
+        }
         throw new Error("Failed to load puzzle")
       }
       
