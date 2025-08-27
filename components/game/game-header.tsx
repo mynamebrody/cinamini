@@ -3,7 +3,7 @@
 import React from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar } from "lucide-react"
 import { GameSettingsButton } from "@/components/game-settings"
 import { HelpIconButton } from "./game-modal"
 import { cn } from "@/lib/utils"
@@ -13,6 +13,8 @@ interface GameHeaderProps {
   onHelpClick?: () => void
   showHelp?: boolean
   showSettings?: boolean
+  showArchive?: boolean
+  archiveUrl?: string
   className?: string
   children?: React.ReactNode
 }
@@ -22,6 +24,8 @@ export function GameHeader({
   onHelpClick,
   showHelp = true,
   showSettings = true,
+  showArchive = false,
+  archiveUrl,
   className,
   children
 }: GameHeaderProps) {
@@ -34,8 +38,8 @@ export function GameHeader({
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left side - Back button */}
-          <div className="flex items-center">
+          {/* Left side - Back button and Archive */}
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="sm" 
@@ -44,6 +48,16 @@ export function GameHeader({
               <ArrowLeft className="w-4 h-4 mr-2" />
               Home
             </Button>
+            {showArchive && archiveUrl && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => router.push(archiveUrl)}
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Archive
+              </Button>
+            )}
           </div>
 
           {/* Center - Title */}
