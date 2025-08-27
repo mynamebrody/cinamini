@@ -54,11 +54,18 @@ export function GameLanding({
       year: 'numeric'
     })
     
-    return new Date(dateString).toLocaleDateString('en-US', { 
+    // Parse date components manually to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number)
+    
+    // Create date using UTC constructor to prevent timezone shifts
+    const utcDate = new Date(Date.UTC(year, month - 1, day))
+    
+    return utcDate.toLocaleDateString('en-US', { 
       weekday: 'long',
       month: 'long', 
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC' // Force UTC timezone for consistent display
     })
   }
 

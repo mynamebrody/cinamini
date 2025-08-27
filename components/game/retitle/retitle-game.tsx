@@ -40,6 +40,13 @@ interface GuessResult {
     releaseYear: string
     translationNote: string
   }
+  puzzle?: {
+    localizedTitle: string
+    englishTranslation: string
+    countryCode: string
+    countryName: string
+    flagEmoji: string
+  }
   stats: {
     gamesPlayed: number
     accuracy: number
@@ -50,7 +57,11 @@ interface GuessResult {
 type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
-export default function RetitleGame() {
+interface RetitleGameProps {
+  date?: string
+}
+
+export default function RetitleGame({ date }: RetitleGameProps = {}) {
   const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
@@ -67,8 +78,15 @@ export default function RetitleGame() {
       setGameState('loading')
       setError(null)
       
-      const response = await fetch("/api/retitled/puzzle/today")
+      const endpoint = date ? `/api/retitled/puzzle/by-date?date=${date}` : "/api/retitled/puzzle/today"
+      const response = await fetch(endpoint)
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/retitled'
+          return
+        }
         throw new Error("Failed to load puzzle")
       }
       
@@ -183,7 +201,7 @@ export default function RetitleGame() {
       setError("Failed to load today's puzzle. Please try again.")
       setGameState('error')
     }
-  }, [user])
+  }, [user, date])
 
   useEffect(() => {
     if (!authLoading) {
@@ -258,7 +276,7 @@ export default function RetitleGame() {
   }
 
   // Don't render the game container UI if we're showing the landing page
-  if (gameState === "ready" && modalState !== 'howtoplay') {
+  if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzleDate) {
     return (
       <GameLanding
         gameId="retitled"

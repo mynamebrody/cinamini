@@ -72,7 +72,11 @@ interface GameResult {
 type GameState = 'loading' | 'ready' | 'playing' | 'completed' | 'error'
 type ModalState = 'none' | 'howtoplay' | 'stats'
 
-export default function BudgetBracketGame() {
+interface BudgetBracketGameProps {
+  date?: string
+}
+
+export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {}) {
   const { user, isAnonymous, loading: authLoading } = useGameMode()
   const [gameState, setGameState] = useState<GameState>('loading')
   const [modalState, setModalState] = useState<ModalState>('none')
@@ -86,13 +90,31 @@ export default function BudgetBracketGame() {
   const loadTodaysPuzzle = useCallback(async () => {
     try {
       setGameState('loading')
-      const response = await fetch('/api/budget-bracket/puzzle/today')
+      const endpoint = date ? `/api/budget-bracket/puzzle/by-date?date=${date}` : '/api/budget-bracket/puzzle/today'
+      const response = await fetch(endpoint)
       
       if (!response.ok) {
+        // If it's a 404 for a historical puzzle, redirect to today's puzzle
+        if (response.status === 404 && date) {
+          console.log("Historical puzzle not found, redirecting to today's puzzle")
+          window.location.href = '/game/budget-bracket'
+          return
+        }
         throw new Error('Failed to load puzzle')
       }
 
-      const puzzleData: PuzzleData = await response.json()
+      const rawResponse = await response.json()
+      
+      // Handle both wrapped and unwrapped response formats
+      const puzzleData: PuzzleData = rawResponse.puzzle || rawResponse
+      
+      // Validate puzzle data - check for malformed or missing pairs
+      if (puzzleData && (!puzzleData.pairs || !Array.isArray(puzzleData.pairs) || puzzleData.pairs.length === 0)) {
+        console.log("Invalid puzzle data detected, redirecting to today's puzzle")
+        window.location.href = '/game/budget-bracket'
+        return
+      }
+      
       setPuzzle(puzzleData)
 
       // Check if already played today (works for both anonymous and regular users)
@@ -114,7 +136,7 @@ export default function BudgetBracketGame() {
       setError('Failed to load today\'s puzzle. Please try again.')
       setGameState('error')
     }
-  }, [])
+  }, [date])
 
   useEffect(() => {
     if (!authLoading) {
@@ -308,7 +330,7 @@ export default function BudgetBracketGame() {
 
 
   // Don't render the game container UI if we're showing the landing page
-  if (gameState === "ready" && modalState !== 'howtoplay') {
+  if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzle_date) {
     return (
       <GameLanding
         gameId="budget-bracket"
@@ -323,7 +345,7 @@ export default function BudgetBracketGame() {
         onStart={startGame}
         showBackButton={true}
       >
-        {/* How to Play content removed from splash page */}
+        <></>
       </GameLanding>
     )
   }

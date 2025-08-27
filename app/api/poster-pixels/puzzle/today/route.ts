@@ -199,6 +199,7 @@ export async function GET() {
     return NextResponse.json({
       puzzle: {
         id: puzzle.id,
+        puzzle_date: puzzle.puzzle_date,
         puzzle_number: puzzle.puzzle_number,
         // New admin structure fields
         film_id: puzzle.film_id,

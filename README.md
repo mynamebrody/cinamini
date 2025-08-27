@@ -235,16 +235,18 @@ GET /api/poster-pixels/stats
 
 ## 📱 Features
 
-### ✅ Current (Phase 1.0 Complete)
-- **Anonymous Authentication**: Instant play without sign-up required
-- **Four Complete Games**: Retitled, Budget Bracket, Cast Climb, Poster Pixels
-- **Daily Puzzle System**: Deterministic seeding across all games
+### ✅ Current (Phase 1.0 - Stable Release)
+- **Anonymous Authentication**: Instant play without sign-up required with full database integration
+- **Four Complete Games**: Retitled, Budget Bracket, Cast Climb, Poster Pixels (all fully functional)
+- **Daily Puzzle System**: Deterministic seeding with proper historical puzzle management
 - **Cross-game Statistics**: Streaks, achievements, and performance tracking
 - **User Authentication**: Supabase Auth with seamless anonymous conversion
-- **Responsive Design**: Mobile-first with dark theme UI
+- **Responsive Design**: Mobile-first with dark theme UI and consistent date display
 - **Share Functionality**: Copy-to-clipboard with spoiler-free results
 - **Profile Management**: User settings and favorite movies
 - **Conversion System**: Progressive nudges for anonymous users
+- **Performance Optimized**: Efficient API usage, proper caching, and optimized re-renders
+- **Historical Game Support**: Proper handling of past puzzles with redirect logic
 
 ### 🎯 Planned (Phase 1.1)
 - **Social Features**: Friends leaderboards and comparisons  
@@ -382,6 +384,62 @@ On Vercel, use Vercel Cron:
 - TMDB API response times
 - Database query performance
 - Share card generation speed
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Date Display Problems
+**Issue**: Game splash screens showing wrong dates (e.g., yesterday instead of today)
+**Cause**: Timezone conversion when parsing date strings
+**Solution**: The app uses UTC date parsing to prevent timezone shifts
+```typescript
+// Dates are parsed with explicit UTC timezone
+const utcDate = new Date(dateString + 'T00:00:00Z')
+```
+
+#### Historical Puzzle Access
+**Issue**: Getting "Failed to load puzzle" for historical dates
+**Expected**: Only today's puzzles can be created; historical puzzles are read-only
+**Behavior**: 
+- Missing historical puzzles redirect to today's puzzle
+- Existing historical puzzles display normally
+- Future dates are blocked by validation
+
+#### Anonymous User Issues
+**Issue**: Anonymous users getting authentication errors
+**Solution**: All APIs support anonymous users with `user.is_anonymous = true`
+**Database**: Anonymous users get full database records and functionality
+
+#### Performance Issues
+**Issue**: Excessive API calls during transitions
+**Cause**: Component re-renders triggering repeated requests
+**Solution**: Use `useMemo` for expensive computations and avoid inline object creation in props
+
+### Development Tips
+
+#### TMDB Rate Limits
+- **Limit**: 40 requests per 10 seconds (2,000 per day free tier)
+- **Prevention**: Cache all responses in database
+- **Testing**: Use mock data during development to avoid limits
+
+#### Database Migrations
+```bash
+# Always test migrations locally first
+npx supabase db push --dry-run
+
+# Apply to remote
+npx supabase db push
+```
+
+#### Authentication Reset
+After database resets, clear browser auth state:
+```bash
+# Visit auth reset endpoint
+http://localhost:3000/api/dev/reset-auth
+
+# Or clear browser storage manually
+```
 
 ## 🤝 Contributing
 
