@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { getBlendedMoviePool } from "@/lib/tmdb-trending"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 
 // Seed for consistent daily puzzles
@@ -65,6 +66,10 @@ export async function GET() {
         const random = seededRandom(seed)
         const selectedIndex = Math.floor(random() * moviesWithPosters.length)
         const selectedMovie = moviesWithPosters[selectedIndex]
+
+        // Calculate the puzzle number based on the last puzzle date
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${today}`)
 
         // Create the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
@@ -130,6 +135,10 @@ export async function GET() {
         const selectedIndex = Math.floor(random() * fallbackMovies.length)
         const selectedMovie = fallbackMovies[selectedIndex]
 
+        // Calculate the puzzle number for fallback scenario too
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
+        console.log(`Calculated puzzle number (fallback): ${puzzleNumber} for date: ${today}`)
+        
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
@@ -189,7 +198,7 @@ export async function GET() {
       puzzle: {
         id: puzzle.id,
         puzzle_date: puzzle.puzzle_date,
-        puzzle_number: puzzle.puzzle_number,
+        puzzle_number: await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(puzzle.puzzle_date)),
         // New admin structure fields
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,

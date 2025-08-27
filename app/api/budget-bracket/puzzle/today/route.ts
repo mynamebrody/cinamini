@@ -10,6 +10,7 @@ import {
 } from '@/lib/budget-bracket'
 import { hydrateMoviesFromTmdbIds, createUnifiedMoviePair, validateBudgetBracketMovie } from '@/lib/movie-hydration'
 import { getBlendedMoviePool } from '@/lib/tmdb-trending'
+import { calculatePuzzleNumberFromLaunch } from '@/lib/puzzle-numbering'
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
     // Check if today's puzzle already exists (using service client to bypass RLS)
     const { data: existingPuzzle, error: puzzleError } = await supabaseService
       .from('budget_bracket_puzzles')
-      .select('*, puzzle_number')
+.select('*')
       .eq('puzzle_date', todayStr)
       .single()
 
@@ -74,6 +75,10 @@ export async function GET() {
         
         
         
+        // Calculate the puzzle number based on days since launch
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'budget_bracket', today)
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${todayStr}`)
+        
         // Store the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from('budget_bracket_puzzles')
@@ -84,7 +89,7 @@ export async function GET() {
             difficulty_progression: DIFFICULTY_TARGETS,
             is_published: true
           })
-          .select('*, puzzle_number')
+.select('*')
           .single()
 
         if (insertError) {
@@ -138,7 +143,7 @@ export async function GET() {
       existingGame = gameData
     }
 
-    return createPuzzleResponse(puzzle, existingGame, hasPlayedBefore)
+    return await createPuzzleResponse(puzzle, existingGame, hasPlayedBefore)
   } catch (error) {
     console.error('Unexpected error in Budget Bracket puzzle API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -300,7 +305,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
         difficulty_progression: DIFFICULTY_TARGETS,
         is_published: true
       })
-      .select('*, puzzle_number')
+.select('*')
       .single()
 
     if (insertError) {
@@ -308,7 +313,7 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
     }
     
     console.log('Created fallback puzzle using hardcoded movies')
-    return createPuzzleResponse(newPuzzle, null)
+    return await createPuzzleResponse(newPuzzle, null)
   } catch (error) {
     console.error('Fallback system failed:', error)
     return NextResponse.json({ error: 'Fallback system failed' }, { status: 500 })
@@ -318,7 +323,9 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
 /**
  * Create consistent puzzle response
  */
-function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBefore: boolean = false) {
+async function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBefore: boolean = false) {
+  const supabase = await createClient()
+  
   const pairs = (puzzle.pairs as MoviePair[]).map(pair => ({
     round: pair.round,
     movieA: {
@@ -339,7 +346,7 @@ function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBefore: b
   const puzzleData = {
     id: puzzle.id,
     puzzle_date: puzzle.puzzle_date,
-    puzzle_number: puzzle.puzzle_number,
+    puzzle_number: await calculatePuzzleNumberFromLaunch(supabase, 'budget-bracket', new Date(puzzle.puzzle_date)),
     name: puzzle.name, // Include optional name
     seed_value: puzzle.seed_value,
     pairs,

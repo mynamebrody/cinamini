@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { generateGameShare, ShareGenerationError } from "@/lib/sharing"
 import type { GameShareData, ShareResult, GameType } from "@/lib/sharing"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 /**
  * Server-side share generation that fetches data from database
@@ -45,7 +46,7 @@ async function generateRetitledServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('retitled_puzzles')
-    .select('puzzle_number, country_code, localized_title')
+    .select('puzzle_date, country_code, localized_title')
     .eq('id', puzzleId)
     .single()
   
@@ -82,7 +83,7 @@ async function generateRetitledServerShare(
     gameData: {
       guess: { isCorrect, solveTimeMs },
       puzzle: {
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date)),
         countryCode: puzzle.country_code,
         localizedTitle: puzzle.localized_title
       }
@@ -101,7 +102,7 @@ async function generateBudgetBracketServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('budget_bracket_puzzles')
-    .select('puzzle_date, puzzle_number')
+    .select('puzzle_date')
     .eq('id', puzzleId)
     .single()
   
@@ -109,8 +110,8 @@ async function generateBudgetBracketServerShare(
     throw new ShareGenerationError('Puzzle not found', 'budget-bracket', puzzleId)
   }
 
-  // Use the puzzle_number field from the database
-  const puzzleNumber = puzzle.puzzle_number
+  // Calculate the puzzle number from launch date
+  const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'budget-bracket', new Date(puzzle.puzzle_date))
 
   // Fetch user game if authenticated  
   let gameData = {
@@ -162,7 +163,7 @@ async function generateCastClimbServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('cast_climb_puzzles')
-    .select('puzzle_number, total_actors')
+    .select('puzzle_date, total_actors')
     .eq('id', puzzleId)
     .single()
   
@@ -171,13 +172,15 @@ async function generateCastClimbServerShare(
   }
 
   // Fetch user guesses if authenticated
+  const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date))
+  
   let gameData: {
     guesses: Array<{ isCorrect: boolean; actorsRevealed: number; attemptNumber: number }>
     puzzle: { puzzleNumber: number }
     result: { isWin: boolean; totalGuesses: number }
   } = {
     guesses: [],
-    puzzle: { puzzleNumber: puzzle.puzzle_number },
+    puzzle: { puzzleNumber },
     result: { isWin: false, totalGuesses: 0 }
   }
   
@@ -200,7 +203,7 @@ async function generateCastClimbServerShare(
           actorsRevealed: guess.actors_revealed,
           attemptNumber: guess.attempt_number
         })),
-        puzzle: { puzzleNumber: puzzle.puzzle_number },
+        puzzle: { puzzleNumber },
         result: { isWin, totalGuesses: guesses.length, solveTimeMs }
       }
     }
@@ -224,7 +227,7 @@ async function generatePosterPixelsServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('poster_pixels_puzzles')
-    .select('puzzle_number')
+    .select('puzzle_date')
     .eq('id', puzzleId)
     .single()
 
@@ -275,7 +278,7 @@ async function generatePosterPixelsServerShare(
 
   const gameData = {
     attempts,
-    puzzle: { puzzleNumber: puzzle.puzzle_number },
+    puzzle: { puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'poster-pixels', new Date(puzzle.puzzle_date)) },
     result: { isWin, finalScore, timedOut: false },
   }
 

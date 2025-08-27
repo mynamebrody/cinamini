@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { getCountryFlag } from "@/lib/flag-emojis"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function GET(
   request: NextRequest,
@@ -17,11 +18,11 @@ export async function GET(
       const { puzzleId } = await params
       const { data: puzzle } = await supabase
         .from("retitled_puzzles")
-        .select("puzzle_number, country_code")
+        .select("puzzle_date, country_code")
         .eq("id", puzzleId)
         .single()
         
-      const puzzleNumber = puzzle?.puzzle_number || "???"
+      const puzzleNumber = puzzle?.puzzle_date ? await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date)) : "???"
       const flagEmoji = getCountryFlag(puzzle?.country_code || "US")
       
       return NextResponse.json({
@@ -35,7 +36,7 @@ export async function GET(
     // Get the puzzle info
     const { data: puzzle, error: puzzleError } = await supabase
       .from("retitled_puzzles")
-      .select("puzzle_date, country_code, puzzle_number")
+      .select("puzzle_date, country_code")
       .eq("id", puzzleId)
       .single()
 
@@ -56,7 +57,7 @@ export async function GET(
     }
 
     // Use puzzle number from database
-    const puzzleNumber = puzzle.puzzle_number || 1
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'retitled', new Date(puzzle.puzzle_date))
 
     // Get flag emoji
     const flagEmoji = getCountryFlag(puzzle.country_code)

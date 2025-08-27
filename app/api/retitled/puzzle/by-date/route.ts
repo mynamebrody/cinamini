@@ -15,6 +15,7 @@ import {
   checkUserPlayHistory,
   type PuzzleConfig
 } from '@/lib/api/puzzle-by-date'
+import { calculatePuzzleNumberFromLaunch } from '@/lib/puzzle-numbering'
 
 export async function GET(request: NextRequest) {
   try {
@@ -63,15 +64,6 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('No puzzle available for this date. Try today\'s puzzle instead.', 404)
     }
     
-    // Ensure puzzle has puzzle_number
-    if (!puzzle.puzzle_number) {
-      const { count } = await supabase
-        .from('retitled_puzzles')
-        .select('*', { count: 'exact', head: true })
-        .lt('puzzle_date', puzzle.puzzle_date)
-      
-      puzzle.puzzle_number = (count || 0) + 1
-    }
 
     // Check if user has already played this puzzle (only if authenticated)
     let userGuess = null
@@ -114,7 +106,7 @@ export async function GET(request: NextRequest) {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(serviceSupabase, 'retitled', new Date(puzzle.puzzle_date)),
         localizedTitle: puzzle.localized_title,
         englishTranslation: puzzle.english_translation || '',
         countryCode: puzzle.country_code,

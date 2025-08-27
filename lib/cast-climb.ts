@@ -139,15 +139,6 @@ export function generateCastClimbSeed(date: Date): string {
   return generateDailySeed(date, { gameId: 'cast-climb' });
 }
 
-/**
- * Calculate puzzle number based on game launch date
- */
-export function calculatePuzzleNumber(date: Date): number {
-  const launchDate = new Date('2025-07-28'); // Cast Climb launch date
-  const diffTime = date.getTime() - launchDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(1, diffDays + 1);
-}
 
 /**
  * Filter movies suitable for Cast Climb puzzles
@@ -237,7 +228,8 @@ export async function generateDailyPuzzle(
 ): Promise<CastClimbPuzzle> {
   const seed = generateCastClimbSeed(date);
   const rng = new SeededRandom(seed);
-  const puzzleNumber = calculatePuzzleNumber(date);
+  // Puzzle number is handled by APIs, use 1 as fallback for puzzle generation
+  const actualPuzzleNumber = 1;
   
   // Get movie pool with blended trending/classic mix
   const moviePool = await getBlendedMoviePool();
@@ -288,7 +280,7 @@ export async function generateDailyPuzzle(
   return {
     id: '', // Will be set by database
     puzzle_date: date.toISOString().split('T')[0],
-    puzzle_number: puzzleNumber,
+    puzzle_number: actualPuzzleNumber,
     seed_value: seed,
     film_id: selectedMovie.tmdb_id,
     film_title: selectedMovie.title,

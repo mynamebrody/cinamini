@@ -5,9 +5,9 @@ import {
   getOrCreatePuzzleForDate,
   createErrorResponse,
   checkUserPlayHistory,
-  calculatePuzzleNumber,
   type PuzzleConfig 
 } from '@/lib/api/puzzle-by-date'
+import { calculatePuzzleNumberFromLaunch } from '@/lib/puzzle-numbering'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,10 +77,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate puzzle number using shared utility
-    const puzzleNumber = await calculatePuzzleNumber(
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(
       supabase, 
-      'budget_bracket_puzzles', 
-      puzzle.puzzle_date
+      'budget-bracket', 
+      new Date(puzzle.puzzle_date)
     )
 
     return NextResponse.json({

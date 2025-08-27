@@ -4,6 +4,7 @@ import {
   generateDailyPuzzle,
   validatePuzzleData
 } from "@/lib/cast-climb"
+import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
 
 export async function GET() {
   try {
@@ -41,21 +42,25 @@ export async function GET() {
     if (!existingPuzzle || puzzleError) {
       try {
         console.log('Generating new Cast Climb puzzle for', todayString)
-        const generatedPuzzle = await generateDailyPuzzle(today)
+        
+        // Calculate the puzzle number based on the last puzzle date
+        const serviceSupabase = createServiceClient()
+        const puzzleNumber = await calculatePuzzleNumberFromLaunch(serviceSupabase, 'cast-climb', today)
+        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${todayString}`)
+        
+        const generatedPuzzle = await generateDailyPuzzle(today, puzzleNumber)
         
         if (!validatePuzzleData(generatedPuzzle)) {
           throw new Error('Invalid puzzle data generated')
         }
 
-        // Create service role client for puzzle insertion (system operation)
-        const serviceSupabase = createServiceClient()
+        // Use existing service role client for puzzle insertion (system operation)
 
         // Insert puzzle into database using service role client
         const { data: insertedPuzzle, error: insertError } = await serviceSupabase
           .from("cast_climb_puzzles")
           .insert({
             puzzle_date: generatedPuzzle.puzzle_date,
-            puzzle_number: generatedPuzzle.puzzle_number,
             seed_value: generatedPuzzle.seed_value,
             film_id: generatedPuzzle.film_id,
             film_title: generatedPuzzle.film_title,
@@ -75,7 +80,6 @@ export async function GET() {
             console.log('Puzzle already exists (race condition), fetching existing puzzle')
             // Use service client for consistency and add small delay for transaction completion
             await new Promise(resolve => setTimeout(resolve, 100))
-            const serviceSupabase = createServiceClient()
             const { data: existingPuzzleRetry, error: retryError } = await serviceSupabase
               .from("cast_climb_puzzles")
               .select("*")
@@ -185,7 +189,7 @@ export async function GET() {
       puzzle: {
         id: puzzle.id,
         puzzleDate: puzzle.puzzle_date,
-        puzzleNumber: puzzle.puzzle_number,
+        puzzleNumber: await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date)),
         filmId: puzzle.film_id,
         filmTitle: puzzle.film_title,
         filmPosterUrl: puzzle.film_poster_url,

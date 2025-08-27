@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
-import { getSupabaseClient } from "@/lib/supabase/client"
 import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -146,8 +145,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
   // Ref to track the last loaded puzzle ID to prevent infinite loops
   const lastLoadedPuzzleId = useRef<string | null>(null)
-
-  const supabase = getSupabaseClient()
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -589,18 +586,6 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       const dateStr = puzzleDate ? puzzleDate.replace(/-/g, '') : `draft${timestamp}`
       const seedValue = `retitled_${dateStr}_${timestamp}`.substring(0, 32) // Max 32 chars
 
-      // Only get new puzzle number for new puzzles, not when editing
-      let puzzleNumber = null
-      if (!isEditMode && supabase) {
-        const { data: latestPuzzle } = await supabase
-          .from('retitled_puzzles')
-          .select('puzzle_number')
-          .order('puzzle_number', { ascending: false })
-          .limit(1)
-          .single()
-
-        puzzleNumber = (latestPuzzle?.puzzle_number || 0) + 1
-      }
 
       const puzzleData: any = {
         puzzle_date: puzzleDate || null,
@@ -615,10 +600,9 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         english_translation: englishTranslation.trim()
       }
 
-      // Only include these fields when creating new puzzles
+      // Only include seed_value field when creating new puzzles
       if (!isEditMode) {
         puzzleData.seed_value = seedValue
-        puzzleData.puzzle_number = puzzleNumber
       }
 
 
