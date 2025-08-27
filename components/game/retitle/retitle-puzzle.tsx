@@ -58,14 +58,14 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
       <div className="text-center space-y-4">
         <div className="max-w-2xl mx-auto">
           {/* Boarding Pass Style Display */}
-          <div className="bg-white p-6 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0, borderColor: 'rgb(209,210,212)' }}>
+          <div className="bg-card p-6 border-2 border-border space-y-3 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]" style={{ borderRadius: 0 }}>
             {/* Ticket header */}
-            <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2">
+            <div className="text-center border-b border-dashed border-border pb-2">
               <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
             </div>
             
             {/* Flight Status */}
-            <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2">
+            <div className="text-center border-b border-dashed border-border pb-2">
               <div className="flex items-center justify-center gap-2">
                 <div className="text-sm font-mono text-red-600 animate-pulse">✈️ IN FLIGHT</div>
               </div>
@@ -92,7 +92,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             </div>
             
             {puzzle.englishTranslation && (
-              <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
+              <div className="text-center border-t border-dashed border-border pt-2">
                 <p className="text-base text-muted-foreground italic">
                   &quot;{puzzle.englishTranslation}&quot;
                 </p>
@@ -101,7 +101,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             )}
             
             {/* Travel time - dynamic timer */}
-            <div className="text-center pt-2 border-t border-dashed border-[#d1d2d4]">
+            <div className="text-center pt-2 border-t border-dashed border-border">
               <div className="text-xs text-muted-foreground font-mono">
                 ⏱️ FLIGHT TIME: {formatTime(elapsedTime)}
               </div>
@@ -123,14 +123,14 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
             onClick={() => handleSelect(option.id)}
             className={cn(
               "p-4 cursor-pointer transition-all duration-200 relative overflow-hidden",
-              "bg-card border border border-[rgb(var(--silver))] hover:border-[rgb(153,37,29)]",
-              "hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
-              selectedId === option.id && "ring-2 ring-primary/50 bg-accent border-[rgb(153,37,29)] shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
+              "bg-card border border-border hover:border-primary",
+              "hover:shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))]",
+              selectedId === option.id && "ring-2 ring-primary/50 bg-accent border-primary shadow-[1px_1px_0px_rgb(var(--primary)),2px_2px_0px_rgb(var(--primary)),3px_3px_0px_rgb(var(--primary)),4px_4px_0px_rgb(var(--primary))]",
               isSubmitting && "pointer-events-none opacity-50"
             )}
           >
             {/* Boarding pass perforation effect */}
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-muted/20 to-transparent" />
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -143,7 +143,7 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
               </div>
               
               {selectedId === option.id && (
-                <div className="text-red-700 animate-pulse">
+                <div className="text-primary animate-pulse">
                   ✈️
                 </div>
               )}

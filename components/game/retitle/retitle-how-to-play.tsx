@@ -28,10 +28,10 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
 
           {/* How to Play Steps */}
           <div className="space-y-2">
-            <Card style={{ borderRadius: 0 }} className="p-3 shadow-3d-grey">
+            <Card style={{ borderRadius: 0 }} className="p-3 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]">
               <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]" style={{ borderRadius: 0 }}>
                     <span className="text-base font-semibold">1</span>
                   </div>
                 </div>
@@ -44,10 +44,10 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
               </div>
             </Card>
 
-            <Card style={{ borderRadius: 0 }} className="p-3 shadow-3d-grey">
+            <Card style={{ borderRadius: 0 }} className="p-3 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]">
               <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]" style={{ borderRadius: 0 }}>
                     <span className="text-base font-semibold">2</span>
                   </div>
                 </div>
@@ -60,10 +60,10 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
               </div>
             </Card>
 
-            <Card style={{ borderRadius: 0 }} className="p-3 shadow-3d-grey">
+            <Card style={{ borderRadius: 0 }} className="p-3 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]">
               <div className="flex gap-3">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-3d-grey" style={{ borderRadius: 0 }}>
+                  <div className="w-8 h-8 bg-primary/10 flex items-center justify-center shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]" style={{ borderRadius: 0 }}>
                     <span className="text-base font-semibold">3</span>
                   </div>
                 </div>
@@ -104,7 +104,7 @@ export default function RetitleHowToPlay({ onStart }: RetitleHowToPlayProps) {
           </div>
 
           {/* Example */}
-          <Card style={{ borderRadius: 0 }} className="p-3 space-y-2 shadow-3d-grey">
+          <Card style={{ borderRadius: 0 }} className="p-3 space-y-2 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]">
             <h3 className="text-sm font-semibold">Example</h3>
             <div className="space-y-1">
               <div className="flex items-center gap-2">

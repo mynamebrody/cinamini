@@ -107,7 +107,7 @@ export default function BudgetBracketRound({
   // Safety check for pair data - AFTER all hooks are called
   if (!pair || !pair.movieA || !pair.movieB) {
     return (
-      <div className="text-center text-red-500">
+      <div className="text-center text-destructive">
         Error: Missing pair data for round {round}
       </div>
     )
@@ -234,7 +234,7 @@ export default function BudgetBracketRound({
           transition={{ type: "spring" }}
           className="space-y-1"
         >
-          <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border border-[rgb(var(--silver))]">
+          <Badge variant="secondary" className="text-lg px-4 py-2 bg-transparent border-2 border-border">
             🎬 Round {round} of 5 🏢
           </Badge>
           {puzzle.name && (
@@ -299,13 +299,13 @@ export default function BudgetBracketRound({
               ? chosenMovie === 'A' 
                 ? showingFeedback && isCorrect !== null
                   ? isCorrect 
-                    ? 'shadow-3d-green' 
-                    : 'shadow-3d-red'
-                  : 'shadow-3d-grey'
+                    ? 'shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                    : 'shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
+                  : 'shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]'
                 : showingFeedback && budgetA && budgetB && budgetA > budgetB && chosenMovie === 'B'
-                  ? 'shadow-3d-green'
+                  ? 'shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]'
                   : showingFeedback && budgetA && budgetB && budgetA < budgetB && chosenMovie === 'B'
-                    ? 'shadow-3d-red'
+                    ? 'shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                     : ''
               : ''
           }`}
@@ -324,12 +324,12 @@ export default function BudgetBracketRound({
                     : showingFeedback && budgetA && budgetB && budgetA < budgetB && chosenMovie === 'B'
                       ? 'border-2 border-red-500 bg-red-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                       : 'opacity-60 grayscale'
-                : 'border-2 border border-[rgb(var(--silver))] hover:border-[#3a3a3c] hover:shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]'
+                : 'border-2 border border-border hover:border-border hover:shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]'
             }`}
             onClick={() => handleMovieChoice('A')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
               <Image
                 src={`https://image.tmdb.org/t/p/w342${pair.movieA.poster_path}`}
                 alt={`${pair.movieA.title} poster`}
@@ -361,8 +361,8 @@ export default function BudgetBracketRound({
                   transition={{ delay: 0.2, type: "spring" }}
                   className={`mt-3 p-1.5 rounded ${
                     budgetB && budgetA > budgetB 
-                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
-                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-3d-red'
+                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                   }`}
                 >
                   <div className={`flex items-center justify-center gap-1 text-xs font-mono font-bold ${
@@ -396,13 +396,13 @@ export default function BudgetBracketRound({
               ? chosenMovie === 'B' 
                 ? showingFeedback && isCorrect !== null
                   ? isCorrect 
-                    ? 'shadow-3d-green' 
-                    : 'shadow-3d-red'
-                  : 'shadow-3d-grey'
+                    ? 'shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                    : 'shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
+                  : 'shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]'
                 : showingFeedback && budgetA && budgetB && budgetB > budgetA && chosenMovie === 'A'
-                  ? 'shadow-3d-green'
+                  ? 'shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]'
                   : showingFeedback && budgetA && budgetB && budgetB < budgetA && chosenMovie === 'A'
-                    ? 'shadow-3d-red'
+                    ? 'shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                     : ''
               : ''
           }`}
@@ -421,12 +421,12 @@ export default function BudgetBracketRound({
                     : showingFeedback && budgetA && budgetB && budgetB < budgetA && chosenMovie === 'A'
                       ? 'border-2 border-red-500 bg-red-50 opacity-60 grayscale shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                       : 'opacity-60 grayscale'
-                : 'border-2 border border-[rgb(var(--silver))] hover:border-[#3a3a3c] hover:shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)]'
+                : 'border-2 border border-border hover:border-border hover:shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]'
             }`}
             onClick={() => handleMovieChoice('B')}
           >
           <CardContent className="p-4 md:p-8 flex flex-col h-full">
-            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-[#3a3a3c] shadow-[1px_1px_0px_rgb(58,58,60),2px_2px_0px_rgb(58,58,60),3px_3px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60)] relative" style={{ borderRadius: 0 }}>
+            <div className="aspect-[2/3] bg-muted overflow-hidden mt-4 mb-4 max-w-[200px] mx-auto flex-shrink-0 border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))] relative" style={{ borderRadius: 0 }}>
               <Image
                 src={`https://image.tmdb.org/t/p/w342${pair.movieB.poster_path}`}
                 alt={`${pair.movieB.title} poster`}
@@ -458,8 +458,8 @@ export default function BudgetBracketRound({
                   transition={{ delay: 0.2, type: "spring" }}
                   className={`mt-3 p-1.5 rounded ${
                     budgetA && budgetB > budgetA 
-                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-3d-green' 
-                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-3d-red'
+                      ? 'bg-gradient-to-r from-green-100 to-green-50 border border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]' 
+                      : 'bg-gradient-to-r from-red-100 to-red-50 border border-red-400 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]'
                   }`}
                 >
                   <div className={`flex items-center justify-center gap-1 text-xs font-mono font-bold ${
@@ -526,7 +526,7 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-green-600 font-semibold bg-green-50 p-3 border border-green-500 shadow-3d-green"
+              className="text-green-600 font-semibold bg-green-50 p-3 border border-green-500 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]"
             >
               <div className="flex items-center justify-center space-x-2">
                 <motion.span
@@ -549,7 +549,7 @@ export default function BudgetBracketRound({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", delay: 0.4 }}
-              className="text-red-800 font-semibold bg-red-50 p-3 border border-red-400 shadow-3d-red"
+              className="text-red-800 font-semibold bg-red-50 p-3 border border-red-400 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]"
             >
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-sm flex items-center">🟥</span>
@@ -563,7 +563,7 @@ export default function BudgetBracketRound({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="text-sm text-muted-foreground bg-gray-50 p-2 border border-[rgb(var(--silver))] shadow-3d-grey"
+              className="text-sm text-muted-foreground bg-gray-50 p-2 border border-border shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border))]"
             >
               <strong>Budget Difference:</strong> {Math.abs(budgetA - budgetB).toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })}
             </motion.div>

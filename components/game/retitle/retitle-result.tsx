@@ -107,11 +107,10 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
       {/* Result Card */}
       <Card className={cn(
         "p-8 text-center space-y-6",
-        "bg-card border",
         result.correct 
           ? "border-green-500/50 shadow-[1px_1px_0px_rgb(34,197,94),2px_2px_0px_rgb(34,197,94),3px_3px_0px_rgb(34,197,94),4px_4px_0px_rgb(34,197,94)]" 
           : "border-red-500/50 shadow-[1px_1px_0px_rgb(239,68,68),2px_2px_0px_rgb(239,68,68),3px_3px_0px_rgb(239,68,68),4px_4px_0px_rgb(239,68,68)]"
-      )} style={{ borderRadius: 0 }}>
+      )}>
         {/* Icon */}
         <div className={cn(
           "w-20 h-20 rounded-full mx-auto flex items-center justify-center",
@@ -126,7 +125,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
 
         {/* Result Text with Travel Theme */}
         <div>
-          <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center justify-center gap-2">
+          <h2 className="text-2xl font-bold text-foreground mb-2 flex items-center justify-center gap-2 font-funnel-display-bold">
             {result.correct ? (
               <>
                 <span>🎆</span>
@@ -163,18 +162,18 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
 
         {/* Movie Details */}
         <div className="space-y-3">
-          <h3 className="text-xl font-semibold text-foreground">
+          <h3 className="text-xl font-semibold text-foreground font-funnel-display-bold">
             {result.correctAnswer.title} ({result.correctAnswer.releaseYear})
           </h3>
           
           {/* Travel Ticket Style Display */}
           {result.puzzle && (
-            <div className="bg-white p-4 border-2 border-solid space-y-3 shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)]" style={{ borderRadius: 0, borderColor: 'rgb(209,210,212)' }}>
+            <div className="bg-card p-4 border-2 border-border space-y-3 shadow-[1px_1px_0px_rgb(var(--border)),2px_2px_0px_rgb(var(--border)),3px_3px_0px_rgb(var(--border)),4px_4px_0px_rgb(var(--border))]" style={{ borderRadius: 0 }}>
               {/* Ticket header */}
-              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2">
+              <div className="text-center border-b border-dashed border-border pb-2">
                 <div className="text-xs font-mono text-muted-foreground">CINAMINI AIRLINES - BOARDING PASS</div>
               </div>
-              <div className="text-center border-b border-dashed border-[#d1d2d4] pb-2 mt-2">
+              <div className="text-center border-b border-dashed border-border pb-2 mt-2">
                 <div className="text-xs font-mono text-muted-foreground">
                   Retitled #{puzzleNumber}
                 </div>
@@ -201,7 +200,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               </div>
               
               {result.puzzle.englishTranslation && (
-                <div className="text-center border-t border-dashed border-[#d1d2d4] pt-2">
+                <div className="text-center border-t border-dashed border-border pt-2">
                   <p className="text-base text-muted-foreground italic">
                     &quot;{result.puzzle.englishTranslation}&quot;
                   </p>
@@ -210,7 +209,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               )}
               
               {result.correctAnswer.translationNote && (
-                <div className="bg-white/50 dark:bg-black/20 rounded p-2 text-center">
+                <div className="bg-muted/50 p-2 text-center" style={{ borderRadius: 0 }}>
                   <p className="text-sm text-muted-foreground">
                     📝 {result.correctAnswer.translationNote}
                   </p>
@@ -218,7 +217,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
               )}
               
               {/* Travel time and ticket stub */}
-              <div className="text-center pt-2 border-t border-dashed border-[#d1d2d4]">
+              <div className="text-center pt-2 border-t border-dashed border-border">
                 {solveTimeMs > 0 && (
                   <div className="text-xs text-muted-foreground font-mono mb-1">
                     ⏱️ TRAVEL TIME: {formatGameTime(solveTimeMs)}
@@ -256,7 +255,7 @@ export default function RetitleResult({ result, puzzleId, puzzleNumber, solveTim
         {/* Actions */}
       <div className="space-y-3">
         {/* Share Preview */}
-        <div className="bg-gradient-to-b from-gray-50 to-gray-100 border border-[#d1d2d4] p-4 text-center" style={{ borderRadius: 0 }}>
+        <div className="bg-gradient-to-b from-muted/50 to-muted border border-border p-4 text-center" style={{ borderRadius: 0 }}>
           {(() => {
             const text = centralizedShareText || shareText || generateFallbackShareText()
             const lines = text.split('\n')
