@@ -198,7 +198,7 @@ async function updateUserStats(
     
     // Get current stats
     const { data: currentStats } = await supabase
-      .from('budget_bracket_stats')
+      .from('budget_bracket_user_stats')
       .select('*')
       .eq('user_id', userId)
       .single()
@@ -224,7 +224,7 @@ async function updateUserStats(
       }
 
       await supabase
-        .from('budget_bracket_stats')
+        .from('budget_bracket_user_stats')
         .update(newStats)
         .eq('user_id', userId)
     } else {
@@ -241,7 +241,7 @@ async function updateUserStats(
       }
 
       await supabase
-        .from('budget_bracket_stats')
+        .from('budget_bracket_user_stats')
         .insert(newStats)
     }
   } catch (error) {

@@ -5,6 +5,7 @@ import { getCountryFlag } from "@/lib/flag-emojis"
 import { getCountryName } from "@/lib/retitled"
 import { sendGuessWebhook } from "@/lib/webhooks"
 import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
+import { updateGlobalStats } from "@/lib/global-stats"
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,8 +126,8 @@ export async function POST(request: NextRequest) {
     let newStats = {
       games_played: 1,
       games_correct: isCorrect ? 1 : 0,
-      current_streak: isCorrect ? 1 : 0,
-      longest_streak: isCorrect ? 1 : 0,
+      current_streak: 1,  // Playing streak: they played today, so streak is 1
+      longest_streak: 1,  // Playing streak: they played today, so streak is 1
       average_solve_time_ms: solveTimeMs,
       countries_guessed: isCorrect ? [puzzle.country_code] : [],
       last_played_date: today
@@ -135,8 +136,9 @@ export async function POST(request: NextRequest) {
     if (currentStats) {
       // Update existing stats
       const wasYesterday = currentStats.last_played_date === yesterday
-      const continueStreak = isCorrect && wasYesterday
-      const newCurrentStreak = continueStreak ? currentStats.current_streak + 1 : (isCorrect ? 1 : 0)
+      // Track playing streak (consecutive days played), not winning streak
+      const continueStreak = wasYesterday
+      const newCurrentStreak = continueStreak ? currentStats.current_streak + 1 : 1
       
       newStats = {
         games_played: currentStats.games_played + 1,
@@ -203,6 +205,9 @@ export async function POST(request: NextRequest) {
         isCorrect,
       },
     }).catch(error => console.error('Webhook error:', error))
+
+    // Update global stats (tracks consecutive days with any game played)
+    await updateGlobalStats(supabase, user.id)
 
     return NextResponse.json({
       correct: isCorrect,
