@@ -5,9 +5,9 @@ import { getGameLaunchDate } from "@/lib/puzzle-numbering"
 import PosterPixelsArchive from "@/components/game/poster-pixels/poster-pixels-archive"
 
 export const metadata = constructMetadata({
-  title: `${gameMetadata.posterPixels.title} Archive`,
-  description: `Browse and play past ${gameMetadata.posterPixels.title} puzzles`,
-  image: gameMetadata.posterPixels.ogImage,
+  title: `${gameMetadata["poster-pixels"].title} Archive`,
+  description: `Browse and play past ${gameMetadata["poster-pixels"].title} puzzles`,
+  image: gameMetadata["poster-pixels"].ogImage,
 })
 
 export default async function PosterPixelsArchivePage() {

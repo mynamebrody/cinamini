@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import {
   Select,
@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
 
 export interface PuzzleDateInfo {
   date: string // YYYY-MM-DD format
@@ -27,6 +26,7 @@ interface GameCalendarProps {
   puzzleDates?: PuzzleDateInfo[]
   currentDate?: string // Currently selected date
   onDateSelect?: (date: string) => void
+  onMonthChange?: (year: number, month: number) => void // Callback when user navigates months
 }
 
 export function GameCalendar({
@@ -36,6 +36,7 @@ export function GameCalendar({
   puzzleDates = [],
   currentDate,
   onDateSelect,
+  onMonthChange,
 }: GameCalendarProps) {
   const router = useRouter()
   const today = React.useMemo(() => {
@@ -51,19 +52,30 @@ export function GameCalendar({
     return today
   })
   
-  // Create a map for quick lookup of puzzle dates
-  const puzzleDateMap = React.useMemo(() => {
-    const map = new Map<string, PuzzleDateInfo>()
+  // Process puzzle dates for react-day-picker modifiers
+  const { playedDates, availableDates, disabledDates } = React.useMemo(() => {
+    const played: Date[] = []
+    const available: Date[] = []
+    const disabled: Date[] = []
+    
     puzzleDates.forEach(info => {
-      map.set(info.date, info)
+      const date = new Date(info.date + 'T00:00:00Z')
+      const isFuture = date > today
+      const isBeforeLaunch = date < launchDate
+      
+      if (isFuture || isBeforeLaunch || !info.hasPuzzle) {
+        disabled.push(date)
+      } else if (info.hasPlayed) {
+        played.push(date)
+      } else if (info.hasPuzzle) {
+        available.push(date)
+      }
     })
-    return map
-  }, [puzzleDates])
+    
+    return { playedDates: played, availableDates: available, disabledDates: disabled }
+  }, [puzzleDates, today, launchDate])
   
-  const currentMonth = viewDate.getMonth()
-  const currentYear = viewDate.getFullYear()
-  
-  // Get available months (from launch to current month)
+  // Get available months for navigation
   const availableMonths = React.useMemo(() => {
     const months = []
     const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0)
@@ -74,7 +86,7 @@ export function GameCalendar({
       months.push({
         month: date.getMonth(),
         year: date.getFullYear(),
-        label: format(date, "MMMM"),
+        label: format(date, "MMMM yyyy"),
       })
       date.setMonth(date.getMonth() + 1)
     }
@@ -82,126 +94,45 @@ export function GameCalendar({
     return months
   }, [launchDate, today])
   
-  // Get available years
-  const availableYears = React.useMemo(() => {
-    const years = []
-    const startYear = launchDate.getFullYear()
-    const endYear = today.getFullYear()
+  const handleDateClick = (date: Date | undefined) => {
+    if (!date) return
     
-    for (let year = startYear; year <= endYear; year++) {
-      years.push(year)
-    }
-    
-    return years
-  }, [launchDate, today])
-  
-  const handleDateClick = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd')
     
     if (onDateSelect) {
       onDateSelect(dateString)
     } else {
-      // Default behavior: navigate to the game page for that date
       router.push(`/game/${gameSlug}/${dateString}`)
     }
   }
   
-  const handleMonthChange = (month: string) => {
-    const newDate = new Date(viewDate)
-    newDate.setMonth(parseInt(month))
+  const handleMonthChange = (monthYear: string) => {
+    const [monthName, year] = monthYear.split(' ')
+    const monthNum = new Date(`${monthName} 1, ${year}`).getMonth()
+    const newDate = new Date(parseInt(year), monthNum, 1)
     setViewDate(newDate)
-  }
-  
-  const handleYearChange = (year: string) => {
-    const newDate = new Date(viewDate)
-    newDate.setFullYear(parseInt(year))
-    setViewDate(newDate)
-  }
-  
-  const navigateToPreviousMonth = () => {
-    const newDate = new Date(viewDate)
-    newDate.setMonth(newDate.getMonth() - 1)
-    setViewDate(newDate)
-  }
-  
-  const navigateToNextMonth = () => {
-    const newDate = new Date(viewDate)
-    newDate.setMonth(newDate.getMonth() + 1)
-    setViewDate(newDate)
-  }
-  
-  const getDayStyles = (date: Date) => {
-    const dateString = format(date, 'yyyy-MM-dd')
-    const puzzleInfo = puzzleDateMap.get(dateString)
-    const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-    const isLaunchDate = format(date, 'yyyy-MM-dd') === format(launchDate, 'yyyy-MM-dd')
-    const isFuture = date > today
-    const isBeforeLaunch = date < launchDate
-    const isSelected = currentDate === dateString
     
-    // Determine if date should be disabled
-    const isDisabled = isFuture || isBeforeLaunch || (puzzleInfo && !puzzleInfo.hasPuzzle)
-    
-    return cn(
-      "h-10 w-10 p-0 font-normal hover:bg-accent hover:text-accent-foreground transition-colors rounded-md",
-      "flex items-center justify-center cursor-pointer relative",
-      {
-        // Disabled states (future dates or before launch)
-        "text-muted-foreground/50 cursor-not-allowed hover:bg-transparent": isDisabled,
-        
-        // Today's date - special gold highlight
-        "bg-cinema-gold text-white hover:bg-cinema-gold/90": isToday && !isDisabled,
-        "ring-2 ring-cinema-gold ring-offset-2": isToday && !isDisabled,
-        
-        // Launch date - special marker
-        "bg-cinema-red/10 text-cinema-red font-semibold": isLaunchDate && !isToday,
-        "after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2": isLaunchDate,
-        "after:w-1 after:h-1 after:bg-cinema-red after:rounded-full": isLaunchDate,
-        
-        // Previously played dates
-        "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20": 
-          puzzleInfo?.hasPlayed && !isToday && !isSelected,
-        
-        // Selected date
-        "bg-cinema-red text-white hover:bg-cinema-red/90": isSelected && !isToday,
-        
-        // Available but unplayed dates
-        "hover:bg-gray-100 dark:hover:bg-gray-800": 
-          !isDisabled && !puzzleInfo?.hasPlayed && !isToday && !isSelected && !isLaunchDate,
-      }
-    )
-  }
-  
-  // Generate calendar days
-  const generateCalendarDays = () => {
-    const firstDay = new Date(currentYear, currentMonth, 1)
-    const lastDay = new Date(currentYear, currentMonth + 1, 0)
-    const startDate = new Date(firstDay)
-    startDate.setDate(startDate.getDate() - firstDay.getDay())
-    
-    const days = []
-    const currentMonthStart = firstDay.getTime()
-    const currentMonthEnd = lastDay.getTime()
-    
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate)
-      date.setDate(startDate.getDate() + i)
-      
-      const isOutsideMonth = date.getTime() < currentMonthStart || date.getTime() > currentMonthEnd
-      
-      if (isOutsideMonth && date.getDate() > 7) {
-        // Skip rendering days from next month after we've filled the grid
-        break
-      }
-      
-      days.push(date)
+    if (onMonthChange) {
+      onMonthChange(newDate.getFullYear(), newDate.getMonth())
     }
-    
-    return days
   }
   
-  const calendarDays = generateCalendarDays()
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+  // Setup react-day-picker modifiers for visual styling
+  const modifiers = React.useMemo(() => ({
+    today: [today],
+    launchDate: [launchDate], 
+    played: playedDates,
+    available: availableDates,
+    disabled: disabledDates,
+  }), [today, launchDate, playedDates, availableDates, disabledDates])
+  
+  const modifiersClassNames = React.useMemo(() => ({
+    today: "bg-cinema-gold text-white hover:bg-cinema-gold/90 ring-2 ring-cinema-gold ring-offset-2",
+    launchDate: "bg-cinema-red/10 text-cinema-red font-semibold relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-cinema-red after:rounded-full",
+    played: "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20",
+    available: "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100",
+    disabled: "text-muted-foreground/50 cursor-not-allowed opacity-50",
+  }), [])
   
   return (
     <div className="w-full max-w-2xl mx-auto p-4">
@@ -213,103 +144,56 @@ export function GameCalendar({
         </p>
       </div>
       
-      {/* Month/Year Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={navigateToPreviousMonth}
-          disabled={viewDate <= launchDate}
-          className="h-10 w-10"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        
+      {/* Month Navigation */}
+      <div className="flex items-center justify-center mb-6">
         <div className="flex gap-2">
-          <Select value={currentMonth.toString()} onValueChange={handleMonthChange}>
-            <SelectTrigger className="w-[140px]">
+          <Select value={format(viewDate, "MMMM yyyy")} onValueChange={handleMonthChange}>
+            <SelectTrigger className="w-[200px] rounded-none">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {availableMonths
-                .filter(m => m.year === currentYear)
-                .map(({ month, label }) => (
-                  <SelectItem key={month} value={month.toString()}>
-                    {label}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={currentYear.toString()} onValueChange={handleYearChange}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
+            <SelectContent className="rounded-none bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-700">
+              {availableMonths.map(({ label }) => (
+                <SelectItem key={label} value={label}>
+                  {label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={navigateToNextMonth}
-          disabled={
-            viewDate.getMonth() === today.getMonth() && 
-            viewDate.getFullYear() === today.getFullYear()
-          }
-          className="h-10 w-10"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
       </div>
       
-      {/* Calendar Grid */}
-      <div className="bg-white dark:bg-gray-950 rounded-lg border p-4 shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]">
-        {/* Week days header */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekDays.map((day, index) => (
-            <div
-              key={index}
-              className="text-center text-sm font-medium text-muted-foreground p-2"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        {/* Calendar days */}
-        <div className="grid grid-cols-7 gap-1">
-          {calendarDays.map((date, index) => {
-            const dateString = format(date, 'yyyy-MM-dd')
-            const puzzleInfo = puzzleDateMap.get(dateString)
-            const isOutsideMonth = date.getMonth() !== currentMonth
-            const isFuture = date > today
-            const isBeforeLaunch = date < launchDate
-            const isDisabled = isFuture || isBeforeLaunch || (puzzleInfo && !puzzleInfo.hasPuzzle)
-            
-            if (isOutsideMonth) {
-              return <div key={index} className="h-10 w-10" />
+      {/* Calendar using UI Calendar component */}
+      <div className="bg-white dark:bg-gray-950 rounded-none border p-4 shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]">
+        <Calendar
+          mode="single"
+          month={viewDate}
+          onMonthChange={(newMonth) => {
+            if (newMonth) {
+              setViewDate(newMonth)
+              if (onMonthChange) {
+                onMonthChange(newMonth.getFullYear(), newMonth.getMonth())
+              }
             }
-            
-            return (
-              <button
-                key={index}
-                onClick={() => !isDisabled && handleDateClick(date)}
-                disabled={isDisabled}
-                className={getDayStyles(date)}
-                aria-label={`Select ${format(date, 'MMMM d, yyyy')}`}
-              >
-                {date.getDate()}
-              </button>
-            )
-          })}
-        </div>
+          }}
+          onDayClick={handleDateClick}
+          modifiers={modifiers}
+          modifiersClassNames={modifiersClassNames}
+          disabled={[
+            { before: launchDate },
+            { after: today },
+            ...disabledDates
+          ]}
+          className="w-full"
+          classNames={{
+            table: "w-full border-collapse",
+            head_row: "flex w-full",
+            head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center p-2",
+            row: "flex w-full mt-1",
+            cell: "flex-1 text-center p-1",
+            day: "h-10 w-10 mx-auto font-normal rounded-md transition-colors",
+            day_outside: "text-muted-foreground/50",
+          }}
+        />
       </div>
       
       {/* Legend */}
@@ -329,7 +213,7 @@ export function GameCalendar({
           <span>Played</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-200 dark:bg-gray-800 rounded" />
+          <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded" />
           <span>Available</span>
         </div>
         <div className="flex items-center gap-2">

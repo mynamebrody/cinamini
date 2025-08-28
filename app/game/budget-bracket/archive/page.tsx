@@ -5,9 +5,9 @@ import { getGameLaunchDate } from "@/lib/puzzle-numbering"
 import BudgetBracketArchive from "@/components/game/budget-bracket/budget-bracket-archive"
 
 export const metadata = constructMetadata({
-  title: `${gameMetadata.budgetBracket.title} Archive`,
-  description: `Browse and play past ${gameMetadata.budgetBracket.title} puzzles`,
-  image: gameMetadata.budgetBracket.ogImage,
+  title: `${gameMetadata["budget-bracket"].title} Archive`,
+  description: `Browse and play past ${gameMetadata["budget-bracket"].title} puzzles`,
+  image: gameMetadata["budget-bracket"].ogImage,
 })
 
 export default async function BudgetBracketArchivePage() {

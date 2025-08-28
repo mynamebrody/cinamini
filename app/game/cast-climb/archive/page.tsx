@@ -5,9 +5,9 @@ import { getGameLaunchDate } from "@/lib/puzzle-numbering"
 import CastClimbArchive from "@/components/game/cast-climb/cast-climb-archive"
 
 export const metadata = constructMetadata({
-  title: `${gameMetadata.castClimb.title} Archive`,
-  description: `Browse and play past ${gameMetadata.castClimb.title} puzzles`,
-  image: gameMetadata.castClimb.ogImage,
+  title: `${gameMetadata["cast-climb"].title} Archive`,
+  description: `Browse and play past ${gameMetadata["cast-climb"].title} puzzles`,
+  image: gameMetadata["cast-climb"].ogImage,
 })
 
 export default async function CastClimbArchivePage() {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { GameCalendar, type PuzzleDateInfo } from "@/components/game/game-calendar"
@@ -15,32 +15,36 @@ export default function BudgetBracketArchive({ launchDate }: BudgetBracketArchiv
   const router = useRouter()
   const [puzzleDates, setPuzzleDates] = useState<PuzzleDateInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const today = new Date()
-    return format(today, 'yyyy-MM')
-  })
+  const [dataCache, setDataCache] = useState<Map<string, PuzzleDateInfo[]>>(new Map())
 
-  useEffect(() => {
-    fetchPuzzleDates(currentMonth)
-  }, [currentMonth])
-
-  const fetchPuzzleDates = async (monthStr: string) => {
+  const fetchPuzzleDatesForMonth = useCallback(async (year: number, month: number) => {
     try {
       setLoading(true)
       
-      // Calculate start and end of month
-      const [year, month] = monthStr.split('-').map(Number)
-      const startDate = new Date(year, month - 1, 1)
-      const endDate = new Date(year, month, 0) // Last day of month
+      // Create cache key
+      const cacheKey = `${year}-${month.toString().padStart(2, '0')}`
       
-      const response = await fetch(
-        `/api/games/budget-bracket/archive?` + 
+      // Check cache first
+      if (dataCache.has(cacheKey)) {
+        setPuzzleDates(dataCache.get(cacheKey)!)
+        setLoading(false)
+        return
+      }
+      
+      // Calculate start and end of month (month is 0-indexed in JavaScript Date)
+      const startDate = new Date(year, month, 1)
+      const endDate = new Date(year, month + 1, 0) // Last day of month
+      
+      const apiUrl = `/api/games/budget-bracket/archive?` + 
         `startDate=${format(startDate, 'yyyy-MM-dd')}&` +
         `endDate=${format(endDate, 'yyyy-MM-dd')}`
-      )
+      
+      
+      const response = await fetch(apiUrl)
       
       if (!response.ok) {
-        console.error('Failed to fetch puzzle dates')
+        const errorText = await response.text()
+        console.error('🐛 [Budget Bracket Archive] Failed to fetch puzzle dates:', response.status, errorText)
         return
       }
       
@@ -53,17 +57,30 @@ export default function BudgetBracketArchive({ launchDate }: BudgetBracketArchiv
         hasPuzzle: item.hasPuzzle && item.isAvailable,
       }))
       
+      
+      // Cache the result
+      setDataCache(prev => new Map(prev).set(cacheKey, dates))
       setPuzzleDates(dates)
     } catch (error) {
-      console.error('Error fetching puzzle dates:', error)
+      console.error('🐛 [Budget Bracket Archive] Error fetching puzzle dates:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [dataCache])
 
-  const handleDateSelect = (date: string) => {
+  // Initialize with current month data
+  useEffect(() => {
+    const today = new Date()
+    fetchPuzzleDatesForMonth(today.getFullYear(), today.getMonth())
+  }, [fetchPuzzleDatesForMonth])
+
+  const handleDateSelect = useCallback((date: string) => {
     router.push(`/game/budget-bracket/${date}`)
-  }
+  }, [router])
+
+  const handleMonthChange = useCallback((year: number, month: number) => {
+    fetchPuzzleDatesForMonth(year, month)
+  }, [fetchPuzzleDatesForMonth])
 
 
   return (
@@ -97,6 +114,7 @@ export default function BudgetBracketArchive({ launchDate }: BudgetBracketArchiv
               launchDate={launchDate}
               puzzleDates={puzzleDates}
               onDateSelect={handleDateSelect}
+              onMonthChange={handleMonthChange}
             />
           )}
         </div>
