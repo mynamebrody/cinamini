@@ -356,6 +356,8 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
       <GameHeader 
         title="Budget Bracket" 
         onHelpClick={showHowToPlay}
+        showArchive={true}
+        archiveUrl="/game/budget-bracket/archive"
       >
         {(gameState === 'ready' || gameState === 'completed') && (
           <Button variant="ghost" size="sm" onClick={showStats}>

@@ -318,6 +318,8 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
       <GameHeader 
         title="Retitled" 
         onHelpClick={showHowToPlay}
+        showArchive={true}
+        archiveUrl="/game/retitled/archive"
       >
         {(gameState === 'ready' || gameState === 'completed') && !isAnonymous && (
           <Button variant="ghost" size="sm" onClick={showStats}>

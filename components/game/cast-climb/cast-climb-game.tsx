@@ -537,6 +537,8 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
       <GameHeader 
         title="Cast Climb" 
         onHelpClick={showHowToPlay}
+        showArchive={true}
+        archiveUrl="/game/cast-climb/archive"
       >
         {(gameState === 'ready' || gameState === 'completed') && (
           <Button variant="ghost" size="sm" onClick={showStats}>
