@@ -2,8 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { format } from "date-fns"
-import { Calendar } from "@/components/ui/calendar"
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns"
 import { cn } from "@/lib/utils"
 import {
   Select,
@@ -17,16 +16,16 @@ export interface PuzzleDateInfo {
   date: string // YYYY-MM-DD format
   hasPlayed: boolean
   hasPuzzle: boolean
+  isAvailable: boolean
 }
 
 interface GameCalendarProps {
-  gameSlug: string // e.g., 'retitled', 'budget-bracket', etc.
-  gameTitle: string // e.g., 'Retitled', 'Budget Bracket', etc.
+  gameSlug: string
+  gameTitle: string
   launchDate: Date
   puzzleDates?: PuzzleDateInfo[]
-  currentDate?: string // Currently selected date
   onDateSelect?: (date: string) => void
-  onMonthChange?: (year: number, month: number) => void // Callback when user navigates months
+  onMonthChange?: (monthYear: string) => void
 }
 
 export function GameCalendar({
@@ -34,53 +33,64 @@ export function GameCalendar({
   gameTitle,
   launchDate,
   puzzleDates = [],
-  currentDate,
   onDateSelect,
   onMonthChange,
 }: GameCalendarProps) {
   const router = useRouter()
-  const today = React.useMemo(() => {
-    const date = new Date()
-    date.setHours(0, 0, 0, 0)
-    return date
-  }, [])
-  
-  const [viewDate, setViewDate] = React.useState(() => {
-    if (currentDate) {
-      return new Date(currentDate + 'T00:00:00Z')
-    }
-    return today
+  const today = React.useMemo(() => new Date(), [])
+
+  const [currentMonth, setCurrentMonth] = React.useState(() => {
+    const now = new Date()
+    return { year: now.getFullYear(), month: now.getMonth() }
   })
-  
-  // Process puzzle dates for react-day-picker modifiers
-  const { playedDates, availableDates, disabledDates } = React.useMemo(() => {
-    const played: Date[] = []
-    const available: Date[] = []
-    const disabled: Date[] = []
-    
-    puzzleDates.forEach(info => {
-      const date = new Date(info.date + 'T00:00:00Z')
-      const isFuture = date > today
-      const isBeforeLaunch = date < launchDate
-      
-      if (isFuture || isBeforeLaunch || !info.hasPuzzle) {
-        disabled.push(date)
-      } else if (info.hasPlayed) {
-        played.push(date)
-      } else if (info.hasPuzzle) {
-        available.push(date)
-      }
+
+  // Get all days in the current month
+  const monthDays = React.useMemo(() => {
+    const start = startOfMonth(new Date(currentMonth.year, currentMonth.month))
+    const end = endOfMonth(new Date(currentMonth.year, currentMonth.month))
+    return eachDayOfInterval({ start, end })
+  }, [currentMonth])
+
+  // Create a map of puzzle data for quick lookup
+  const puzzleMap = React.useMemo(() => {
+    const map = new Map<string, PuzzleDateInfo>()
+    puzzleDates.forEach(puzzle => {
+      map.set(puzzle.date, puzzle)
     })
-    
-    return { playedDates: played, availableDates: available, disabledDates: disabled }
-  }, [puzzleDates, today, launchDate])
-  
-  // Get available months for navigation
+    return map
+  }, [puzzleDates])
+
+  const handleDateClick = (date: Date) => {
+    const dateString = format(date, 'yyyy-MM-dd')
+    const puzzleInfo = puzzleMap.get(dateString)
+
+    // Only allow clicking if there's an available puzzle
+    if (puzzleInfo?.isAvailable && puzzleInfo?.hasPuzzle) {
+      if (onDateSelect) {
+        onDateSelect(dateString)
+      } else {
+        router.push(`/game/${gameSlug}/${dateString}`)
+      }
+    }
+  }
+
+  const handleMonthChange = (monthYear: string) => {
+    const [monthName, year] = monthYear.split(' ')
+    const monthNum = new Date(`${monthName} 1, ${year}`).getMonth()
+    const newMonth = { year: parseInt(year), month: monthNum }
+    setCurrentMonth(newMonth)
+
+    if (onMonthChange) {
+      onMonthChange(monthYear)
+    }
+  }
+
+  // Generate months from August 2025 to December 2025
   const availableMonths = React.useMemo(() => {
     const months = []
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-    const startDate = new Date(launchDate)
-    
+    const startDate = new Date(2025, 7, 1) // August 2025 (month 7)
+    const endDate = new Date(2025, 11, 31) // December 2025 (month 11)
+
     const date = new Date(startDate)
     while (date <= endDate) {
       months.push({
@@ -90,135 +100,251 @@ export function GameCalendar({
       })
       date.setMonth(date.getMonth() + 1)
     }
-    
+
     return months
-  }, [launchDate, today])
-  
-  const handleDateClick = (date: Date | undefined) => {
-    if (!date) return
-    
+  }, [])
+
+  const getDayStyle = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd')
-    
-    if (onDateSelect) {
-      onDateSelect(dateString)
+    const puzzleInfo = puzzleMap.get(dateString)
+    const isToday = isSameDay(date, today)
+    const isBeforeLaunch = date < launchDate
+    const isFuture = date > today
+    const isAugust2nd = date.getMonth() === 7 && date.getDate() === 2 // Month 7 = August
+
+    // Determine if the date is disabled
+    const isDisabled = isBeforeLaunch || (isFuture && !puzzleInfo?.hasPuzzle)
+
+    if (isDisabled) {
+      // Disabled dates - no hover, no pointer cursor
+      if (isBeforeLaunch) {
+        // Before launch - light gray background
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-200 text-gray-500 border border-gray-200 cursor-not-allowed`
+      } else {
+        // Future or no puzzle - disabled gray
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-100 cursor-not-allowed`
+      }
     } else {
-      router.push(`/game/${gameSlug}/${dateString}`)
+      // Enabled dates - add hover effects
+
+      if (isAugust2nd) {
+        // Anniversary day - gold background
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-cinema-gold text-cinema-red font-semibold border border-cinema-gold transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+      } else if (isToday) {
+        // Today - red background
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-cinema-red text-white border border-cinema-red transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+      } else if (puzzleInfo?.hasPlayed) {
+        // Played - green background and border
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-cinema-green text-white border border-cinema-green transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+      } else if (puzzleInfo?.isAvailable) {
+        // Available but not played - white with gray border
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-white text-gray-900 border border-gray-300 transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+      } else {
+        // Unavailable but not disabled - gray
+        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-100 transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+      }
     }
   }
-  
-  const handleMonthChange = (monthYear: string) => {
-    const [monthName, year] = monthYear.split(' ')
-    const monthNum = new Date(`${monthName} 1, ${year}`).getMonth()
-    const newDate = new Date(parseInt(year), monthNum, 1)
-    setViewDate(newDate)
-    
-    if (onMonthChange) {
-      onMonthChange(newDate.getFullYear(), newDate.getMonth())
-    }
+
+  const getWeekdays = () => {
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   }
-  
-  // Setup react-day-picker modifiers for visual styling
-  const modifiers = React.useMemo(() => ({
-    today: [today],
-    launchDate: [launchDate], 
-    played: playedDates,
-    available: availableDates,
-    disabled: disabledDates,
-  }), [today, launchDate, playedDates, availableDates, disabledDates])
-  
-  const modifiersClassNames = React.useMemo(() => ({
-    today: "bg-cinema-gold text-white hover:bg-cinema-gold/90 ring-2 ring-cinema-gold ring-offset-2",
-    launchDate: "bg-cinema-red/10 text-cinema-red font-semibold relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-cinema-red after:rounded-full",
-    played: "bg-green-500/10 text-green-700 dark:text-green-400 hover:bg-green-500/20",
-    available: "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100",
-    disabled: "text-muted-foreground/50 cursor-not-allowed opacity-50",
-  }), [])
-  
+
+  const getDaysInMonth = () => {
+    const firstDay = monthDays[0]
+    const lastDay = monthDays[monthDays.length - 1]
+    const firstDayOfWeek = firstDay.getDay()
+
+    // Add empty cells for days before the first day of the month
+    const emptyDays = Array.from({ length: firstDayOfWeek }, (_, i) => null)
+
+    return [...emptyDays, ...monthDays]
+  }
+
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      {/* Header */}
-      <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-cinema-red mb-2">{gameTitle} archive</h2>
-        <p className="text-muted-foreground">
-          Play puzzles since {format(launchDate, 'MMMM d, yyyy')}
-        </p>
-      </div>
-      
-      {/* Month Navigation */}
-      <div className="flex items-center justify-center mb-6">
-        <div className="flex gap-2">
-          <Select value={format(viewDate, "MMMM yyyy")} onValueChange={handleMonthChange}>
-            <SelectTrigger className="w-[200px] rounded-none">
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Calendar Grid */}
+      <div className="bg-white border border-[rgb(209,210,212)] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] p-6">
+        {/* Month and Year Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Select
+            value={format(new Date(currentMonth.year, currentMonth.month), "MMMM yyyy")}
+            onValueChange={handleMonthChange}
+          >
+            <SelectTrigger className="w-[200px] bg-white border border-[rgb(209,210,212)] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212)] rounded-none">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-none bg-white dark:bg-gray-950 border-gray-300 dark:border-gray-700">
+            <SelectContent className="bg-white border border-[rgb(209,210,212)] shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212)] rounded-none">
               {availableMonths.map(({ label }) => (
-                <SelectItem key={label} value={label}>
+                <SelectItem key={label} value={label} className="rounded-none">
                   {label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-      </div>
-      
-      {/* Calendar using UI Calendar component */}
-      <div className="bg-white dark:bg-gray-950 rounded-none border p-4 shadow-[2px_2px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]">
-        <Calendar
-          mode="single"
-          month={viewDate}
-          onMonthChange={(newMonth) => {
-            if (newMonth) {
-              setViewDate(newMonth)
-              if (onMonthChange) {
-                onMonthChange(newMonth.getFullYear(), newMonth.getMonth())
-              }
-            }
-          }}
-          onDayClick={handleDateClick}
-          modifiers={modifiers}
-          modifiersClassNames={modifiersClassNames}
-          disabled={[
-            { before: launchDate },
-            { after: today },
-            ...disabledDates
-          ]}
-          className="w-full"
-          classNames={{
-            table: "w-full border-collapse",
-            head_row: "flex w-full",
-            head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center p-2",
-            row: "flex w-full mt-1",
-            cell: "flex-1 text-center p-1",
-            day: "h-10 w-10 mx-auto font-normal rounded-md transition-colors",
-            day_outside: "text-muted-foreground/50",
-          }}
-        />
-      </div>
-      
-      {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 justify-center text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-cinema-gold rounded" />
-          <span>Today</span>
+
+        {/* Weekday Headers */}
+        <div className="grid grid-cols-7 gap-2 mb-4 ml-2">
+          {getWeekdays().map(day => (
+            <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
+              {day}
+            </div>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-cinema-red/10 rounded relative">
-            <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-cinema-red rounded-full" />
+
+        {/* Calendar Days */}
+        <div className="grid grid-cols-7 gap-2 ml-2">
+          {getDaysInMonth().map((date, index) => (
+            <div key={index} className="aspect-square">
+              {date ? (
+                <button
+                  onClick={() => handleDateClick(date)}
+                  className={getDayStyle(date)}
+                  disabled={
+                    date < launchDate ||
+                    (date > today && !puzzleMap.get(format(date, 'yyyy-MM-dd'))?.hasPuzzle)
+                  }
+                >
+                  {date.getDate()}
+                </button>
+              ) : (
+                <div className="w-14 h-14" /> // Empty cell
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Shared Archive Component
+interface GameArchiveProps {
+  gameSlug: string
+  gameTitle: string
+  launchDate: Date
+}
+
+export function GameArchive({
+  gameSlug,
+  gameTitle,
+  launchDate
+}: GameArchiveProps) {
+  const router = useRouter()
+  const [puzzleDates, setPuzzleDates] = React.useState<PuzzleDateInfo[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [dataCache, setDataCache] = React.useState<Map<string, PuzzleDateInfo[]>>(new Map())
+  const [selectedMonth, setSelectedMonth] = React.useState(() => {
+    const today = new Date()
+    return { year: today.getFullYear(), month: today.getMonth() }
+  })
+
+  const fetchPuzzleDatesForMonth = React.useCallback(async (year: number, month: number) => {
+    try {
+      setLoading(true)
+
+      // Create cache key
+      const cacheKey = `${year}-${month.toString().padStart(2, '0')}`
+
+      // Check cache first
+      if (dataCache.has(cacheKey)) {
+        setPuzzleDates(dataCache.get(cacheKey)!)
+        setLoading(false)
+        return
+      }
+
+      // Calculate start and end of month
+      const startDate = new Date(year, month, 1)
+      const endDate = new Date(year, month + 1, 0)
+
+      const apiUrl = `/api/games/${gameSlug}/archive?` +
+        `startDate=${format(startDate, 'yyyy-MM-dd')}&` +
+        `endDate=${format(endDate, 'yyyy-MM-dd')}`
+
+      const response = await fetch(apiUrl)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error(`🐛 [${gameTitle} Archive] Failed to fetch puzzle dates:`, response.status, errorText)
+        return
+      }
+
+      const data = await response.json()
+
+      // Transform the API response to match our component's expected format
+      const dates: PuzzleDateInfo[] = data.dates.map((item: any) => ({
+        date: item.date,
+        hasPlayed: item.hasPlayed,
+        hasPuzzle: item.hasPuzzle,
+        isAvailable: item.isAvailable,
+      }))
+
+      // Cache the result
+      setDataCache(prev => new Map(prev).set(cacheKey, dates))
+      setPuzzleDates(dates)
+    } catch (error) {
+      console.error(`🐛 [${gameTitle} Archive] Error fetching puzzle dates:`, error)
+    } finally {
+      setLoading(false)
+    }
+  }, [dataCache, gameSlug, gameTitle])
+
+  // Initialize with current month data
+  React.useEffect(() => {
+    fetchPuzzleDatesForMonth(selectedMonth.year, selectedMonth.month)
+  }, [fetchPuzzleDatesForMonth, selectedMonth])
+
+  const handleDateSelect = React.useCallback((date: string) => {
+    router.push(`/game/${gameSlug}/${date}`)
+  }, [router, gameSlug])
+
+  const handleMonthChange = React.useCallback((monthYear: string) => {
+    const [monthName, year] = monthYear.split(' ')
+    const monthNum = new Date(`${monthName} 1, ${year}`).getMonth()
+    const newMonth = { year: parseInt(year), month: monthNum }
+    setSelectedMonth(newMonth)
+    fetchPuzzleDatesForMonth(parseInt(year), monthNum)
+  }, [fetchPuzzleDatesForMonth])
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Archive Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-cinema-red">{gameTitle} Archive</h1>
+        </div>
+
+        {/* Calendar */}
+        {loading && puzzleDates.length === 0 ? (
+          <div className="flex items-center justify-center py-32">
+            <div className="text-center space-y-4">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-2 border-cinema-red border-t-transparent"></div>
+              <div>
+                <p className="text-lg font-medium text-cinema-red">Loading Archive</p>
+                <p className="text-sm text-muted-foreground mt-2">Fetching puzzle data...</p>
+              </div>
+            </div>
           </div>
-          <span>Launch Date</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500/10 rounded" />
-          <span>Played</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded" />
-          <span>Available</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-100 dark:bg-gray-900 rounded opacity-50" />
-          <span>Unavailable</span>
+        ) : (
+          <GameCalendar
+            gameSlug={gameSlug}
+            gameTitle={gameTitle}
+            launchDate={launchDate}
+            puzzleDates={puzzleDates}
+            onDateSelect={handleDateSelect}
+            onMonthChange={handleMonthChange}
+          />
+        )}
+
+        {/* Instructions */}
+        <div className="mt-8 text-center space-y-2 max-w-2xl mx-auto">
+          <p className="text-muted-foreground">
+            Click on any available date to play that day's puzzle
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Dates with a green tint indicate puzzles you've already played
+          </p>
         </div>
       </div>
     </div>
