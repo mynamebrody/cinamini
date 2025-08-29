@@ -3,7 +3,6 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns"
-import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -21,7 +20,6 @@ export interface PuzzleDateInfo {
 
 interface GameCalendarProps {
   gameSlug: string
-  gameTitle: string
   launchDate: Date
   puzzleDates?: PuzzleDateInfo[]
   onDateSelect?: (date: string) => void
@@ -30,7 +28,6 @@ interface GameCalendarProps {
 
 export function GameCalendar({
   gameSlug,
-  gameTitle,
   launchDate,
   puzzleDates = [],
   onDateSelect,
@@ -149,11 +146,10 @@ export function GameCalendar({
 
   const getDaysInMonth = () => {
     const firstDay = monthDays[0]
-    const lastDay = monthDays[monthDays.length - 1]
     const firstDayOfWeek = firstDay.getDay()
 
     // Add empty cells for days before the first day of the month
-    const emptyDays = Array.from({ length: firstDayOfWeek }, (_, i) => null)
+    const emptyDays = Array(firstDayOfWeek).fill(null)
 
     return [...emptyDays, ...monthDays]
   }
@@ -326,7 +322,6 @@ export function GameArchive({
         ) : (
           <GameCalendar
             gameSlug={gameSlug}
-            gameTitle={gameTitle}
             launchDate={launchDate}
             puzzleDates={puzzleDates}
             onDateSelect={handleDateSelect}
@@ -337,10 +332,10 @@ export function GameArchive({
         {/* Instructions */}
         <div className="mt-8 text-center space-y-2 max-w-2xl mx-auto">
           <p className="text-muted-foreground">
-            Click on any available date to play that day's puzzle
+            Click on any available date to play that day&apos;s puzzle
           </p>
           <p className="text-xs text-muted-foreground opacity-70">
-            Dates with a green tint indicate puzzles you've already played
+            Dates with a green tint indicate puzzles you&apos;ve already played
           </p>
         </div>
       </div>
