@@ -110,38 +110,35 @@ export function GameCalendar({
     const isToday = isSameDay(date, today)
     const isBeforeLaunch = date < launchDate
     const isFuture = date > today
-    const isAugust2nd = date.getMonth() === 7 && date.getDate() === 2 // Month 7 = August
 
     // Determine if the date is disabled
-    const isDisabled = isBeforeLaunch || (isFuture && !puzzleInfo?.hasPuzzle)
+    // Disabled if: before launch, in the future, or there is no puzzle for that date
+    const isDisabled = isBeforeLaunch || isFuture || !puzzleInfo?.hasPuzzle
 
     if (isDisabled) {
       // Disabled dates - no hover, no pointer cursor
       if (isBeforeLaunch) {
         // Before launch - light gray background
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-200 text-gray-500 border border-gray-200 cursor-not-allowed`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed`
       } else {
         // Future or no puzzle - disabled gray
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-100 cursor-not-allowed`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed`
       }
     } else {
       // Enabled dates - add hover effects
 
-      if (isAugust2nd) {
-        // Anniversary day - gold background
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-cinema-gold text-cinema-red font-semibold border border-cinema-gold transition-all duration-150 hover:border-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
-      } else if (isToday) {
+      if (isToday) {
         // Today - white background, bold black text
-        return `w-14 h-14 flex items-center justify-center text-lg font-bold bg-white text-black border border-gray-300 transition-all duration-150 hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-bold bg-white text-black border-2 border-[rgb(58,58,60)] transition-all duration-150 hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
       } else if (puzzleInfo?.hasPlayed) {
         // Played - green background and border
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-[rgb(101,187,126)] text-white border border-[rgb(39,134,70)] transition-all duration-150 hover:bg-[rgb(55,160,90)] hover:border-[rgb(39,134,70)] hover:shadow-[1px_1px_0px_rgb(39,134,70),2px_2px_0px_rgb(39,134,70)]`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-medium bg-[rgb(101,187,126)] text-white border border-[rgb(39,134,70)] transition-all duration-150 hover:bg-[rgb(55,160,90)] hover:border-[rgb(39,134,70)] hover:shadow-[1px_1px_0px_rgb(39,134,70),2px_2px_0px_rgb(39,134,70)]`
       } else if (puzzleInfo?.isAvailable) {
         // Available but not played - white with gray border
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-white text-gray-900 border border-gray-300 transition-all duration-150 hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-medium bg-white text-gray-900 border border-gray-300 transition-all duration-150 hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
       } else {
         // No puzzle available – treat as disabled
-        return `w-14 h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-100 cursor-not-allowed`
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-medium bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed`
       }
     }
   }
@@ -185,7 +182,7 @@ export function GameCalendar({
         </div>
 
         {/* Weekday Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-4 justify-items-center">
+        <div className="grid grid-cols-7 gap-2 md:gap-4 mb-4 justify-items-center">
           {getWeekdays().map(day => (
             <div key={day} className="text-center text-sm font-medium text-gray-600 py-2">
               {day}
@@ -194,9 +191,9 @@ export function GameCalendar({
         </div>
 
         {/* Calendar Days */}
-        <div className="grid grid-cols-7 gap-4 justify-items-center">
+        <div className="grid grid-cols-7 gap-2 md:gap-4 justify-items-center">
           {getDaysInMonth().map((date, index) => (
-            <div key={index} className="aspect-square flex items-center justify-center">
+            <div key={index} className="flex items-center justify-center">
               {date ? (
                 <button
                   onClick={() => handleDateClick(date)}
@@ -342,7 +339,7 @@ export function GameArchive({
           <p className="text-muted-foreground">
             Click on any available date to play that day's puzzle
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground opacity-70">
             Dates with a green tint indicate puzzles you've already played
           </p>
         </div>
