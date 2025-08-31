@@ -603,6 +603,8 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
       <GameHeader 
         title="Poster Pixels" 
         onHelpClick={() => setModalState('howtoplay')}
+        showArchive={true}
+        archiveUrl="/game/poster-pixels/archive"
       >
         <Button variant="ghost" size="sm" onClick={() => setModalState('stats')}>
           <BarChart3 className="w-4 h-4" />
