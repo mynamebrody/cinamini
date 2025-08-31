@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns"
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns"
 import {
   Select,
   SelectContent,
@@ -34,7 +34,18 @@ export function GameCalendar({
   onMonthChange,
 }: GameCalendarProps) {
   const router = useRouter()
-  const today = React.useMemo(() => new Date(), [])
+  // Helper function to check if a date is today in UTC
+  const isDateTodayUTC = React.useCallback((date: Date) => {
+    const now = new Date()
+    const todayUTC = {
+      year: now.getUTCFullYear(),
+      month: now.getUTCMonth(),
+      date: now.getUTCDate()
+    }
+    return date.getUTCFullYear() === todayUTC.year &&
+           date.getUTCMonth() === todayUTC.month &&
+           date.getUTCDate() === todayUTC.date
+  }, [])
 
   const [currentMonth, setCurrentMonth] = React.useState(() => {
     const now = new Date()
@@ -104,9 +115,16 @@ export function GameCalendar({
   const getDayStyle = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd')
     const puzzleInfo = puzzleMap.get(dateString)
-    const isToday = isSameDay(date, today)
+    const isToday = isDateTodayUTC(date)
     const isBeforeLaunch = date < launchDate
-    const isFuture = date > today
+    // Check if date is after today (future) by comparing UTC date components
+    const now = new Date()
+    const isFuture = date.getUTCFullYear() > now.getUTCFullYear() ||
+                    (date.getUTCFullYear() === now.getUTCFullYear() &&
+                     date.getUTCMonth() > now.getUTCMonth()) ||
+                    (date.getUTCFullYear() === now.getUTCFullYear() &&
+                     date.getUTCMonth() === now.getUTCMonth() &&
+                     date.getUTCDate() > now.getUTCDate())
 
     // Determine if the date is disabled
     // Disabled if: before launch, in the future, or there is no puzzle for that date
@@ -124,7 +142,10 @@ export function GameCalendar({
     } else {
       // Enabled dates - add hover effects
 
-      if (isToday) {
+      if (isToday && puzzleInfo?.hasPlayed) {
+        // Today and played - green background, bold white text, thick border
+        return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-bold bg-[rgb(101,187,126)] text-white border-2 border-[rgb(39,134,70)] transition-all duration-150 hover:bg-[rgb(55,160,90)] hover:border-[rgb(39,134,70)] hover:shadow-[1px_1px_0px_rgb(39,134,70),2px_2px_0px_rgb(39,134,70)]`
+      } else if (isToday) {
         // Today - white background, bold black text
         return `w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 flex items-center justify-center text-lg font-bold bg-white text-black border-2 border-[rgb(58,58,60)] transition-all duration-150 hover:border-[rgb(153,37,29)] hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29)]`
       } else if (puzzleInfo?.hasPlayed) {
@@ -196,7 +217,7 @@ export function GameCalendar({
                   className={getDayStyle(date)}
                   disabled={
                     date < launchDate ||
-                    (date > today && !puzzleMap.get(format(date, 'yyyy-MM-dd'))?.hasPuzzle)
+                    (isDateTodayUTC(date) && !puzzleMap.get(format(date, 'yyyy-MM-dd'))?.hasPuzzle)
                   }
                 >
                   {date.getDate()}
