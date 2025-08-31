@@ -51,6 +51,8 @@ export async function GET() {
         }
       } catch (error) {
         // Table might not exist or user might not have played this game
+        // Log for debugging but continue processing other tables
+        console.warn(`Error querying ${table}:`, error)
         continue
       }
     }
