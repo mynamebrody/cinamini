@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PosterClarityPreview from "../shared/poster-clarity-preview"
+import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
 
@@ -265,6 +266,27 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
     setShowAlternativesModal(false)
   }
 
+  const handleSmartGeneration = async (puzzleData: any) => {
+    // Handle smart-generated puzzle data
+    if (puzzleData.selectedMovie) {
+      // User selected a suggestion - load it as the base movie
+      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
+    } else if (puzzleData) {
+      // Full puzzle generated - populate all fields
+      if (puzzleData.film_id) {
+        await fetchAndSelectMovie(puzzleData.film_id.toString())
+      }
+      
+      if (puzzleData.puzzle_date) {
+        setPuzzleDate(puzzleData.puzzle_date)
+      }
+      
+      if (puzzleData.difficulty_level) {
+        setDifficultyLevel(puzzleData.difficulty_level)
+      }
+    }
+  }
+
   const savePuzzle = async () => {
     if (!selectedMovie) {
       alert("Please select a movie")
@@ -428,7 +450,16 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
 
         {/* Movie Selection */}
         <div className="space-y-2">
-          <Label>Movie (must have poster)</Label>
+          <div className="flex items-center justify-between">
+            <Label>Movie (must have poster)</Label>
+            {!selectedMovie && puzzleDate && (
+              <SmartGenerationDialog
+                gameType="poster-pixels"
+                targetDate={puzzleDate}
+                onGenerate={handleSmartGeneration}
+              />
+            )}
+          </div>
           {selectedMovie ? (
             <div className="space-y-3">
               <MovieDetailsCard 

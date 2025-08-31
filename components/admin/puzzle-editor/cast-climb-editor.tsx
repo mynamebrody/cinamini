@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
+import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -381,6 +382,31 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     }
   }
 
+  const handleSmartGeneration = async (puzzleData: any) => {
+    // Handle smart-generated puzzle data
+    if (puzzleData.selectedMovie) {
+      // User selected a suggestion - load it as the base movie
+      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
+    } else if (puzzleData) {
+      // Full puzzle generated - populate all fields
+      if (puzzleData.film_id) {
+        await fetchAndSelectMovie(puzzleData.film_id.toString())
+      }
+      
+      if (puzzleData.puzzle_date) {
+        setPuzzleDate(puzzleData.puzzle_date)
+      }
+      
+      if (puzzleData.actors && puzzleData.actors.length > 0) {
+        setActors(puzzleData.actors)
+      }
+      
+      if (puzzleData.fun_fact) {
+        setFunFact(puzzleData.fun_fact)
+      }
+    }
+  }
+
   const savePuzzle = async () => {
     if (!selectedMovie || actors.length !== 4) {
       alert("Please select a movie and exactly 4 actors")
@@ -552,7 +578,16 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
 
         {/* Movie Selection */}
         <div className="space-y-2">
-          <Label>Movie to Guess</Label>
+          <div className="flex items-center justify-between">
+            <Label>Movie to Guess</Label>
+            {!selectedMovie && puzzleDate && (
+              <SmartGenerationDialog
+                gameType="cast-climb"
+                targetDate={puzzleDate}
+                onGenerate={handleSmartGeneration}
+              />
+            )}
+          </div>
           {selectedMovie ? (
             <MovieDetailsCard 
               movie={selectedMovie}

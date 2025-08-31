@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
+import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -682,6 +683,59 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
+  const handleSmartGeneration = async (puzzleData: any) => {
+    // Handle smart-generated puzzle data
+    if (puzzleData.selectedMovie) {
+      // User selected a suggestion - load it as the base movie
+      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
+    } else if (puzzleData) {
+      // Full puzzle generated - populate all fields
+      if (puzzleData.film_id) {
+        await fetchAndSelectMovie(puzzleData.film_id.toString())
+      }
+      
+      if (puzzleData.puzzle_date) {
+        setPuzzleDate(puzzleData.puzzle_date)
+      }
+      
+      if (puzzleData.localized_title) {
+        setCustomTitle(puzzleData.localized_title)
+      }
+      
+      if (puzzleData.country_code) {
+        setSelectedTitle({
+          iso_3166_1: puzzleData.country_code,
+          title: puzzleData.localized_title,
+          type: 'translation'
+        })
+        setCountryName(getCountryName(puzzleData.country_code))
+      }
+      
+      // Load distractor movies
+      if (puzzleData.distractor_ids && puzzleData.distractor_ids.length > 0) {
+        const distractorMovies = await Promise.all(
+          puzzleData.distractor_ids.map(async (id: number) => {
+            const response = await fetch(`/api/movies/${id}/details`)
+            if (response.ok) {
+              const movieData = await response.json()
+              return {
+                id: movieData.id,
+                title: movieData.title,
+                poster_path: movieData.poster_path,
+                release_date: movieData.release_date || '',
+                isCorrect: false
+              }
+            }
+            return null
+          })
+        )
+        
+        const validDistractors = distractorMovies.filter(m => m !== null) as PuzzleOption[]
+        setDistractors(validDistractors)
+      }
+    }
+  }
+
   const getPreviewData = () => {
     const flag = selectedTitle ? getCountryFlag(selectedTitle.iso_3166_1) : "🏳️"
     // Use allOptions directly to maintain user-specified order
@@ -748,7 +802,16 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
         {/* Movie Selection */}
         <div className="space-y-2">
-          <Label>Original Movie</Label>
+          <div className="flex items-center justify-between">
+            <Label>Original Movie</Label>
+            {!selectedMovie && puzzleDate && (
+              <SmartGenerationDialog
+                gameType="retitled"
+                targetDate={puzzleDate}
+                onGenerate={handleSmartGeneration}
+              />
+            )}
+          </div>
           {selectedMovie ? (
             <MovieDetailsCard 
               movie={selectedMovie}

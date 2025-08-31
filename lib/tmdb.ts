@@ -377,6 +377,38 @@ export async function enrichMoviesWithDetails(movies: TMDBMovie[]): Promise<any[
 }
 
 /**
+ * Search for movies on TMDB
+ */
+export async function searchMovies(query: string, page: number = 1): Promise<TMDBMovie[]> {
+  if (!TMDB_API_KEY) {
+    console.warn('TMDB API key not configured')
+    return []
+  }
+
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&language=en-US&page=${page}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    )
+    
+    if (!response.ok) {
+      throw new Error(`TMDB API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data.results || []
+  } catch (error) {
+    console.error(`Error searching movies with query "${query}":`, error)
+    return []
+  }
+}
+
+/**
  * Get movie cast and crew credits from TMDB API
  */
 export async function getMovieCredits(movieId: number): Promise<TMDBCreditsResponse | null> {
