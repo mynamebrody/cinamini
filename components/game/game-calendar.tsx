@@ -49,7 +49,7 @@ export function GameCalendar({
 
   const [currentMonth, setCurrentMonth] = React.useState(() => {
     const now = new Date()
-    return { year: now.getFullYear(), month: now.getMonth() }
+    return { year: now.getUTCFullYear(), month: now.getUTCMonth() }
   })
 
   // Get all days in the current month
@@ -251,7 +251,7 @@ export function GameArchive({
   const [dataCache, setDataCache] = React.useState<Map<string, PuzzleDateInfo[]>>(new Map())
   const [selectedMonth, setSelectedMonth] = React.useState(() => {
     const today = new Date()
-    return { year: today.getFullYear(), month: today.getMonth() }
+    return { year: today.getUTCFullYear(), month: today.getUTCMonth() }
   })
 
   const fetchPuzzleDatesForMonth = React.useCallback(async (year: number, month: number) => {
