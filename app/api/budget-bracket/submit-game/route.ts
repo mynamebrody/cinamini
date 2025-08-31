@@ -6,6 +6,7 @@ import {
   type MoviePair 
 } from '@/lib/budget-bracket'
 import { sendGuessWebhook } from '@/lib/webhooks'
+import { updateGlobalStats } from '@/lib/global-stats'
 
 interface SubmitGameRequest {
   puzzle_id: number
@@ -106,6 +107,9 @@ export async function POST(request: NextRequest) {
 
     // Update user statistics
     const updatedStats = await updateUserStats(supabase, user.id, verifiedChoices, isPerfectGame)
+    
+    // Update global stats (tracks consecutive days with any game played)
+    await updateGlobalStats(supabase, user.id)
 
     // Prepare detailed response with all revealed information
     const revealedPairs = verifiedChoices.map(choice => {
@@ -209,7 +213,7 @@ async function updateUserStats(
     
     // Get current stats
     const { data: currentStats } = await supabase
-      .from('budget_bracket_stats')
+      .from('budget_bracket_user_stats')
       .select('*')
       .eq('user_id', userId)
       .single()
@@ -234,7 +238,7 @@ async function updateUserStats(
       }
 
       const { data: updatedStats } = await supabase
-        .from('budget_bracket_stats')
+        .from('budget_bracket_user_stats')
         .update(newStats)
         .eq('user_id', userId)
         .select()
@@ -255,7 +259,7 @@ async function updateUserStats(
       }
 
       const { data: createdStats } = await supabase
-        .from('budget_bracket_stats')
+        .from('budget_bracket_user_stats')
         .insert(newStats)
         .select()
         .single()

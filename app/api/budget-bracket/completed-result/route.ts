@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
 
     // Get user stats
     const { data: userStats } = await supabase
-      .from('budget_bracket_stats')
+      .from('budget_bracket_user_stats')
       .select('*')
       .eq('user_id', user.id)
       .single()

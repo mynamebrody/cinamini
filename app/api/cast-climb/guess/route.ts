@@ -7,6 +7,7 @@ import {
 } from "@/lib/cast-climb"
 import { sendGuessWebhook } from "@/lib/webhooks"
 import { calculatePuzzleNumberFromLaunch } from "@/lib/puzzle-numbering"
+import { updateGlobalStats } from "@/lib/global-stats"
 
 export async function POST(request: NextRequest) {
   try {
@@ -212,6 +213,9 @@ export async function POST(request: NextRequest) {
         console.error('Error updating user stats:', statsError)
         // Don't fail the request if stats update fails
       }
+      
+      // Update global stats (tracks consecutive days with any game played)
+      await updateGlobalStats(supabase, user.id)
     }
 
     // Generate share text (only if game is completed)

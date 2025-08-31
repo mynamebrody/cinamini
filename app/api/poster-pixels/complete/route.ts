@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { updateGlobalStats } from "@/lib/global-stats"
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +95,9 @@ export async function POST(request: NextRequest) {
       console.error("Error updating user stats:", statsError)
       // Don't fail the request if stats update fails
     }
+    
+    // Update global stats (tracks consecutive days with any game played)
+    await updateGlobalStats(supabase, user.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

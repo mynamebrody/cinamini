@@ -13,7 +13,7 @@ export async function GET() {
 
     // Get user stats
     const { data: stats, error: statsError } = await supabase
-      .from('budget_bracket_stats')
+      .from('budget_bracket_user_stats')
       .select('*')
       .eq('user_id', user.id)
       .single()
