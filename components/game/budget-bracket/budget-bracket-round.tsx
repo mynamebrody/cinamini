@@ -5,21 +5,12 @@ import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { type GameChoice } from "@/lib/budget-bracket-client"
+import { type MoviePair } from "@/lib/budget-bracket"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import Image from "next/image"
 
-interface PuzzleMovie {
-  tmdb_id: number
-  title: string
-  poster_path: string | null
-  release_date: string | null | undefined
-}
-
-interface PuzzlePair {
-  round: number
-  movieA: PuzzleMovie
-  movieB: PuzzleMovie
-}
+// Use the proper types from the budget-bracket library
+type PuzzlePair = MoviePair
 
 interface PuzzleData {
   id: number
@@ -39,6 +30,43 @@ interface BudgetBracketRoundProps {
   gameStartTime: number
 }
 
+
+// Helper function to extract budget data from puzzle pairs
+// Returns null if budget data is not available (today's puzzles)
+function extractBudgetDataFromPuzzle(pair: PuzzlePair) {
+  try {
+    // Check if budget data is available in the pair (historical puzzles have this)
+    const movieABudget = (pair.movieA as any).production_budget
+    const movieBBudget = (pair.movieB as any).production_budget
+    
+    // If budget data is missing, return null (this is expected for today's puzzles)
+    if (typeof movieABudget !== 'number' || typeof movieBBudget !== 'number') {
+      return null
+    }
+    
+    return {
+      movieA: {
+        tmdb_id: pair.movieA.tmdb_id,
+        title: pair.movieA.title,
+        budget: movieABudget,
+        budget_source: (pair.movieA as any).budget_source || 'TMDB',
+        is_estimated: (pair.movieA as any).is_budget_estimated || false,
+        release_date: pair.movieA.release_date
+      },
+      movieB: {
+        tmdb_id: pair.movieB.tmdb_id,
+        title: pair.movieB.title,
+        budget: movieBBudget,
+        budget_source: (pair.movieB as any).budget_source || 'TMDB',
+        is_estimated: (pair.movieB as any).is_budget_estimated || false,
+        release_date: pair.movieB.release_date
+      }
+    }
+  } catch (error) {
+    console.error('Error extracting budget data from puzzle:', error)
+    return null
+  }
+}
 
 export default function BudgetBracketRound({ 
   pair, 
@@ -128,26 +156,19 @@ export default function BudgetBracketRound({
       navigator.vibrate(50)
     }
 
-    // Fetch budget information to show feedback
+    // Hybrid approach: try local extraction first, then API fallback
     try {
-      // Get budget data from the API (we'll create a simple endpoint for this)
-      const response = await fetch(`/api/budget-bracket/movie-budgets`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          movieA_tmdb_id: pair.movieA.tmdb_id,
-          movieB_tmdb_id: pair.movieB.tmdb_id
-        })
-      })
-
-      if (response.ok) {
-        const budgetData = await response.json()
+      // First, try to extract budget data from puzzle pairs (works for historical puzzles)
+      const budgetData = extractBudgetDataFromPuzzle(pair)
+      
+      if (budgetData) {
+        // Budget data available locally (historical puzzles)
         setBudgetA(budgetData.movieA.budget)
         setBudgetB(budgetData.movieB.budget)
         
-        // Set hydrated release dates
-        setReleaseDateA(budgetData.movieA.release_date)
-        setReleaseDateB(budgetData.movieB.release_date)
+        // Set hydrated release dates from puzzle data
+        setReleaseDateA(budgetData.movieA.release_date || pair.movieA.release_date)
+        setReleaseDateB(budgetData.movieB.release_date || pair.movieB.release_date)
         
         // Determine if choice was correct
         const movieABudget = budgetData.movieA.budget
@@ -165,9 +186,51 @@ export default function BudgetBracketRound({
         } else if (!correct && navigator.vibrate) {
           navigator.vibrate([200])
         }
+      } else {
+        // Budget data not available locally, fall back to API call (today's puzzles)
+        const requestBody = {
+          movieA_tmdb_id: pair.movieA.tmdb_id,
+          movieB_tmdb_id: pair.movieB.tmdb_id,
+          ...(puzzle.puzzle_date && { puzzle_date: puzzle.puzzle_date }) // Include puzzle date for historical games
+        }
+        
+        const response = await fetch(`/api/budget-bracket/movie-budgets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        })
+
+        if (response.ok) {
+          const apiBudgetData = await response.json()
+          setBudgetA(apiBudgetData.movieA.budget)
+          setBudgetB(apiBudgetData.movieB.budget)
+          
+          // Set hydrated release dates
+          setReleaseDateA(apiBudgetData.movieA.release_date)
+          setReleaseDateB(apiBudgetData.movieB.release_date)
+          
+          // Determine if choice was correct
+          const movieABudget = apiBudgetData.movieA.budget
+          const movieBBudget = apiBudgetData.movieB.budget
+          const chosenBudget = movie === 'A' ? movieABudget : movieBBudget
+          const otherBudget = movie === 'A' ? movieBBudget : movieABudget
+          const correct = chosenBudget > otherBudget
+          
+          setIsCorrect(correct)
+          setShowingFeedback(true)
+          
+          // Celebration vibration for correct answers
+          if (correct && navigator.vibrate) {
+            navigator.vibrate([100, 50, 100, 50, 200])
+          } else if (!correct && navigator.vibrate) {
+            navigator.vibrate([200])
+          }
+        } else {
+          console.error('API call failed:', response.status, response.statusText)
+        }
       }
     } catch (error) {
-      console.error('Error fetching budget data:', error)
+      console.error('Error getting budget data:', error)
     }
 
     // Call the parent with the choice (after showing feedback)

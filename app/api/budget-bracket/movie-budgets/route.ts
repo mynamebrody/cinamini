@@ -7,12 +7,13 @@ import { getMovieDetails } from '@/lib/tmdb'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { movieA_tmdb_id, movieB_tmdb_id } = body
+    const { movieA_tmdb_id, movieB_tmdb_id, puzzle_date } = body
 
     // Enhanced debugging
     console.log('Budget API received body:', JSON.stringify(body))
     console.log('movieA_tmdb_id:', movieA_tmdb_id, 'type:', typeof movieA_tmdb_id)
     console.log('movieB_tmdb_id:', movieB_tmdb_id, 'type:', typeof movieB_tmdb_id)
+    console.log('puzzle_date:', puzzle_date, 'type:', typeof puzzle_date)
 
     // Validate input
     if (!movieA_tmdb_id || !movieB_tmdb_id) {
@@ -26,17 +27,20 @@ export async function POST(request: NextRequest) {
     // No authentication required - this is public data
     const supabase = await createClient()
 
-    // Get today's puzzle to extract budget data from movie pairs (using service client to bypass RLS)
-    const today = new Date().toISOString().split('T')[0]
+    // Use provided puzzle_date or default to today (for backward compatibility)
+    const targetDate = puzzle_date || new Date().toISOString().split('T')[0]
+    console.log('Fetching puzzle for date:', targetDate)
+    
+    // Get puzzle for the specified date to extract budget data from movie pairs
     const { data: puzzle, error: puzzleError } = await supabase
       .from('budget_bracket_puzzles')
       .select('pairs')
-      .eq('puzzle_date', today)
+      .eq('puzzle_date', targetDate)
       .single()
 
     if (puzzleError || !puzzle) {
-      console.error('Error fetching today\'s puzzle:', puzzleError)
-      return NextResponse.json({ error: 'Today\'s puzzle not found' }, { status: 404 })
+      console.error(`Error fetching puzzle for ${targetDate}:`, puzzleError)
+      return NextResponse.json({ error: `Puzzle not found for date: ${targetDate}` }, { status: 404 })
     }
 
     // Find the pair containing these movies
@@ -47,7 +51,8 @@ export async function POST(request: NextRequest) {
     )
 
     if (!targetPair) {
-      return NextResponse.json({ error: 'Movie pair not found in today\'s puzzle' }, { status: 404 })
+      console.error(`Movie pair not found in puzzle for ${targetDate}. Looking for movies:`, { movieA_tmdb_id, movieB_tmdb_id })
+      return NextResponse.json({ error: `Movie pair not found in puzzle for date: ${targetDate}` }, { status: 404 })
     }
 
     // Extract budget data from the pair
