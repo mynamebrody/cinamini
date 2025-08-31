@@ -44,7 +44,7 @@ export async function updateGlobalStats(
     const sortedDates = Array.from(playDates).sort((a, b) => b.localeCompare(a))
     
     // Calculate consecutive days streak
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date(new Date().toUTCString()).toISOString().split('T')[0]
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
     
     let currentStreak = 0
