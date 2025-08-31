@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     
     // Parse request body
     const body = await request.json()
-    const { puzzleId, guessFilmId, solveTimeMs } = body
+    const { puzzleId, guessFilmId, solveTimeMs, hintUsed = false } = body
     
     if (!puzzleId || !guessFilmId || solveTimeMs === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
         guess_film_id: guessFilmId,
         is_correct: isCorrect,
         solve_time_ms: solveTimeMs,
+        hint_used: hintUsed,
         attempt_number: 1
       })
 
@@ -195,6 +196,7 @@ export async function POST(request: NextRequest) {
         guessFilmId,
         guessedMovieTitle,
         solveTimeMs,
+        hintUsed,
       },
       progress: { attemptNumber: 1 },
       correctAnswer: {

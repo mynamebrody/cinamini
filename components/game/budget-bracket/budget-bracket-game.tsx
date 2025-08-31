@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import BudgetBracketRound from "./budget-bracket-round"
 import BudgetBracketResult from "./budget-bracket-result"
 import BudgetBracketStats from "./budget-bracket-stats"
+import { HintButton } from "@/components/game/hint-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Trophy, BarChart3 } from "lucide-react"
@@ -38,12 +39,14 @@ interface PuzzleData {
   name?: string
   seed_value: string
   pairs: PuzzlePair[]
+  hint?: string | null
   has_played: boolean
   user_result?: {
     rounds_completed: number
     final_result: string
     choices: GameChoice[]
     total_duration_ms: number
+    hint_used?: boolean
   }
 }
 
@@ -86,6 +89,7 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
   const [gameResult, setGameResult] = useState<GameResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [gameStartTime, setGameStartTime] = useState<number>(0)
+  const [hintUsed, setHintUsed] = useState(false)
 
   const loadTodaysPuzzle = useCallback(async () => {
     try {
@@ -299,7 +303,8 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
         body: JSON.stringify({
           puzzle_id: puzzle!.id,
           choices,
-          total_duration_ms: totalDuration
+          total_duration_ms: totalDuration,
+          hint_used: hintUsed
         })
       })
 
@@ -495,6 +500,15 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
 
         {gameState === 'playing' && puzzle && puzzle.pairs && puzzle.pairs[currentRound - 1] && (
           <div className="max-w-4xl mx-auto space-y-6">
+            {/* Hint Button */}
+            <div className="flex justify-center">
+              <HintButton 
+                hint={puzzle.hint} 
+                onHintUsed={() => setHintUsed(true)}
+                className="max-w-md"
+              />
+            </div>
+            
             {/* Game Round */}
             <div className="max-w-md mx-auto">
               <BudgetBracketRound

@@ -88,6 +88,7 @@ export async function GET() {
         difficultyLevel: puzzle.difficulty_level,
         translationNote: puzzle.translation_note,
         seedValue: puzzle.seed_value,
+        hint: puzzle.hint || null,
         options: shuffledOptions
       },
       hasPlayed,
@@ -95,7 +96,8 @@ export async function GET() {
       userGuess: userGuess ? {
         guessFilmId: userGuess.guess_film_id,
         isCorrect: userGuess.is_correct,
-        solveTimeMs: userGuess.solve_time_ms
+        solveTimeMs: userGuess.solve_time_ms,
+        hintUsed: userGuess.hint_used || false
       } : null
     })
   } catch (error) {

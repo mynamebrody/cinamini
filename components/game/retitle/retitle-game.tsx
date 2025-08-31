@@ -29,6 +29,7 @@ interface PuzzleData {
   countryName: string
   flagEmoji: string
   options: Array<{ id: number; title: string }>
+  hint?: string | null
 }
 
 interface GuessResult {
@@ -72,6 +73,7 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
   const [error, setError] = useState<string | null>(null)
   const [visitedCountries, setVisitedCountries] = useState<string[]>([])
   const [showConfetti, setShowConfetti] = useState(false)
+  const [hintUsed, setHintUsed] = useState(false)
 
   const loadTodaysPuzzle = useCallback(async () => {
     try {
@@ -232,7 +234,7 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
     setModalState('none')
   }
 
-  const handleGuess = async (guessFilmId: number) => {
+  const handleGuess = async (guessFilmId: number, hintUsed: boolean) => {
     if (!puzzle) return
 
     const currentSolveTime = Date.now() - startTime
@@ -248,7 +250,8 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
         body: JSON.stringify({
           puzzleId: puzzle.id,
           guessFilmId,
-          solveTimeMs: currentSolveTime
+          solveTimeMs: currentSolveTime,
+          hintUsed
         })
       })
 
@@ -464,6 +467,7 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
               puzzle={puzzle}
               onGuess={handleGuess}
               startTime={startTime}
+              onHintUsed={() => setHintUsed(true)}
             />
           </div>
         )}

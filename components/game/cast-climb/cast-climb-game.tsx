@@ -13,6 +13,7 @@ import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
 import { ShareSection } from "../share-section"
 import { MorePuzzlesSection } from "../more-puzzles-section"
+import { HintButton } from "@/components/game/hint-button"
 import { MovieGuessInput } from "./movie-guess-input"
 import CastClimbStats from "./cast-climb-stats"
 import { CastClimbProgress } from "./cast-climb-progress"
@@ -47,6 +48,7 @@ interface CastClimbPuzzle {
   totalActors: number
   difficultyLevel: number
   funFact: string | null
+  hint?: string | null
 }
 
 interface CastClimbGuess {
@@ -58,6 +60,7 @@ interface CastClimbGuess {
   actorsRevealed: number
   solveTimeMs: number | null
   attemptNumber: number
+  hintUsed?: boolean
   createdAt: string
 }
 
@@ -113,6 +116,7 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
   const [result, setResult] = useState<CastClimbResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [hintUsed, setHintUsed] = useState(false)
   
   // Centralized sharing system
   const { shareText: centralizedShareText, fetchShare } = useCastClimbShare(puzzle?.id || '')
@@ -284,7 +288,8 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
           guessFilmYear: movie.releaseYear,
           actorsRevealed,
           solveTimeMs,
-          studioTimeMs
+          studioTimeMs,
+          hintUsed
         })
       })
 
@@ -772,6 +777,13 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
                   </div>
                 )}
 
+                {/* Hint Button */}
+                <HintButton 
+                  hint={puzzle.hint} 
+                  onHintUsed={() => setHintUsed(true)}
+                  className="w-full mb-4"
+                />
+                
                 <MovieGuessInput
                   onGuess={handleGuess}
                   loading={isGuessing}

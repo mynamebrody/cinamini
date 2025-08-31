@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const isAnonymous = user.is_anonymous === true
 
     const body = await request.json()
-    const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs, studioTimeMs } = body
+    const { puzzleId, guessFilmId, guessFilmTitle, guessFilmYear, actorsRevealed, solveTimeMs, studioTimeMs, hintUsed = false } = body
 
     // Validate input
     if (!puzzleId || !guessFilmId || !guessFilmTitle || !actorsRevealed) {
@@ -114,7 +114,8 @@ export async function POST(request: NextRequest) {
         is_correct: isCorrect,
         actors_revealed: actorsRevealed,
         solve_time_ms: isCorrect ? solveTimeMs : null,
-        attempt_number: attemptNumber
+        attempt_number: attemptNumber,
+        hint_used: hintUsed
       })
       .select()
       .single()
@@ -162,6 +163,7 @@ export async function POST(request: NextRequest) {
         actorsRevealed,
         skipped: isSkip,
         score: scoreForGuess,
+        hintUsed,
       },
       progress: {
         attemptNumber,

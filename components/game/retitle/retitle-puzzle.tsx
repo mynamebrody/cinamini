@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { HintButton } from "@/components/game/hint-button"
 
 interface PuzzleData {
   id: string
@@ -13,18 +14,21 @@ interface PuzzleData {
   countryName: string
   flagEmoji: string
   options: Array<{ id: number; title: string }>
+  hint?: string | null
 }
 
 interface RetitlePuzzleProps {
   puzzle: PuzzleData
-  onGuess: (filmId: number) => void
+  onGuess: (filmId: number, hintUsed: boolean) => void
   startTime: number
+  onHintUsed?: () => void
 }
 
-export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuzzleProps) {
+export default function RetitlePuzzle({ puzzle, onGuess, startTime, onHintUsed }: RetitlePuzzleProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [elapsedTime, setElapsedTime] = useState(0)
+  const [hintUsed, setHintUsed] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -42,8 +46,13 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
     
     // Small delay for animation
     setTimeout(() => {
-      onGuess(filmId)
+      onGuess(filmId, hintUsed)
     }, 300)
+  }
+
+  const handleHintUsed = () => {
+    setHintUsed(true)
+    onHintUsed?.()
   }
 
   const formatTime = (seconds: number) => {
@@ -113,6 +122,15 @@ export default function RetitlePuzzle({ puzzle, onGuess, startTime }: RetitlePuz
           <span>Which movie was lost in translation?</span>
           <span>🎬</span>
         </p>
+        
+        {/* Hint Button */}
+        <div className="flex justify-center">
+          <HintButton 
+            hint={puzzle.hint} 
+            onHintUsed={handleHintUsed}
+            className="max-w-md"
+          />
+        </div>
       </div>
 
       {/* Movie Options with Boarding Pass Style */}

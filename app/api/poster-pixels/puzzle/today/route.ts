@@ -205,6 +205,7 @@ export async function GET() {
         film_poster_url: puzzle.film_poster_url,
         film_release_year: puzzle.film_release_year,
         clarity_levels: puzzle.clarity_levels,
+        hint: puzzle.hint || null,
         // Legacy movie_data for backward compatibility
         movie_data: puzzle.movie_data || {
           id: puzzle.film_id,

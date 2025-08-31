@@ -197,7 +197,8 @@ export async function GET() {
         actors: puzzle.actors,
         totalActors: puzzle.total_actors,
         difficultyLevel: puzzle.difficulty_level,
-        funFact: puzzle.fun_fact
+        funFact: puzzle.fun_fact,
+        hint: puzzle.hint || null
       },
       hasPlayed,
       hasStarted,
@@ -212,6 +213,7 @@ export async function GET() {
         actorsRevealed: guess.actors_revealed,
         solveTimeMs: guess.solve_time_ms,
         attemptNumber: guess.attempt_number,
+        hintUsed: guess.hint_used || false,
         createdAt: guess.created_at
       })) : []
     }

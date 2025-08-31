@@ -349,6 +349,7 @@ async function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBef
     puzzle_number: await calculatePuzzleNumberFromLaunch(supabase, 'budget-bracket', new Date(puzzle.puzzle_date)),
     name: puzzle.name, // Include optional name
     seed_value: puzzle.seed_value,
+    hint: puzzle.hint || null,
     pairs,
     has_played: !!existingGame,
     hasPlayedBefore,
@@ -356,7 +357,8 @@ async function createPuzzleResponse(puzzle: any, existingGame: any, hasPlayedBef
       rounds_completed: existingGame.rounds_completed,
       final_result: existingGame.final_result,
       choices: existingGame.choices,
-      total_duration_ms: existingGame.total_duration_ms
+      total_duration_ms: existingGame.total_duration_ms,
+      hint_used: existingGame.hint_used || false
     } : null
   }
 

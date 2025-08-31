@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       clarity_level,
       skipped = false,
       guess_number = 1, // Default to 1 if not provided
+      hint_used = false,
     } = await request.json()
 
     const maxAttempts = POSTER_PIXELS_LEVELS.length
@@ -169,6 +170,7 @@ export async function POST(request: NextRequest) {
         clarityLevel: clarity_level,
         skipped,
         score: currentGuessScore,
+        hintUsed: hint_used,
       },
       progress: { 
         guessNumber, 
@@ -201,6 +203,7 @@ export async function POST(request: NextRequest) {
         is_correct: guessIsCorrect,
         time_taken_ms,
         clarity_level,
+        hint_used,
       })
       .select()
       .single()

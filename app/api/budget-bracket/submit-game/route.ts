@@ -12,6 +12,7 @@ interface SubmitGameRequest {
   puzzle_id: number
   choices: GameChoice[]
   total_duration_ms: number
+  hint_used?: boolean
 }
 
 export async function POST(request: NextRequest) {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const isAnonymous = user.is_anonymous === true
 
     const body: SubmitGameRequest = await request.json()
-    const { puzzle_id, choices, total_duration_ms } = body
+    const { puzzle_id, choices, total_duration_ms, hint_used = false } = body
 
     // Validate input
     if (!puzzle_id || !choices || !Array.isArray(choices) || choices.length === 0) {
@@ -95,7 +96,8 @@ export async function POST(request: NextRequest) {
         rounds_completed: roundsCompleted,
         final_result: finalResult,
         choices: verifiedChoices,
-        total_duration_ms
+        total_duration_ms,
+        hint_used
       })
       .select()
       .single()
@@ -165,6 +167,7 @@ export async function POST(request: NextRequest) {
         roundsCompleted,
         correctAnswers,
         isPerfectGame,
+        hintUsed: hint_used,
         finalResult
       },
       progress: { 

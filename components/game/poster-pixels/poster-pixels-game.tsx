@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { HintButton } from "@/components/game/hint-button"
 import { BarChart3 } from "lucide-react"
 import { GameHeader } from "../game-header"
 import { GameLanding } from "../game-landing"
@@ -39,6 +40,7 @@ interface PuzzleData {
   film_poster_url?: string
   film_release_year?: number
   clarity_levels?: number[]
+  hint?: string | null
 }
 
 interface GuessEntry {
@@ -46,6 +48,7 @@ interface GuessEntry {
   movieTitle: string
   isCorrect: boolean
   clarityLevel: number
+  hintUsed?: boolean
 }
 
 interface GameState {
@@ -93,6 +96,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showResults, setShowResults] = useState(false)
   const [isProcessingGuess, setIsProcessingGuess] = useState(false)
+  const [hintUsed, setHintUsed] = useState(false)
   const { animatedClarity, isAnimating } = useAnimatedClarity(state.clarityLevel, {
     duration: state.won && state.clarityLevel === 100 ? 1500 : 800, // Longer animation for winning reveal
     easing: easingFunctions.easeInOutCubic
@@ -352,6 +356,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
             clarity_level: entry.clarityLevel,
             skipped: entry.movieId === null,
             guess_number: newGuesses.length, // Track which attempt this is
+            hint_used: entry.hintUsed || false,
           }),
         })
       }
@@ -375,6 +380,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
       movieTitle: movie.title,
       isCorrect,
       clarityLevel: Math.round(animatedClarity), // Use the current animated clarity
+      hintUsed,
     }
     const updated = await recordGuess(entry)
     advanceLevelOrEnd(isCorrect, updated)
@@ -386,6 +392,7 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     const entry: GuessEntry = {
       movieId: null,
       movieTitle: 'Skipped',
+      hintUsed,
       isCorrect: false,
       clarityLevel: Math.round(animatedClarity), // Use the current animated clarity
     }
@@ -770,6 +777,13 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Hint Button */}
+                      <HintButton 
+                        hint={state.puzzle?.hint} 
+                        onHintUsed={() => setHintUsed(true)}
+                        className="w-full mb-4"
+                      />
                       
                       <PosterPixelsSearch
                         onMovieSelect={(movie) => {
