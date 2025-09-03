@@ -2,17 +2,19 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
-import { Save, Loader2, Plus, X, Shuffle, GripVertical } from "lucide-react"
+import { Save, Loader2, Plus, X, Shuffle, GripVertical, Sparkles, ExternalLink } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
 import MovieDetailsCard from "../shared/movie-details-card"
 import PuzzlePreview from "../shared/puzzle-preview"
+import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -142,6 +144,10 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
+  const [translationNote, setTranslationNote] = useState("")
+  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFactIndex, setFunFactIndex] = useState(0)
+  const [isGeneratingNote, setIsGeneratingNote] = useState(false)
 
   // Ref to track the last loaded puzzle ID to prevent infinite loops
   const lastLoadedPuzzleId = useRef<string | null>(null)
@@ -285,6 +291,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         setEnglishTranslation(puzzle.english_translation || "")
         setCountryName(puzzle.country_name || "")
         setIsPublished(puzzle.is_published || false)
+        setTranslationNote(puzzle.translation_note || "")
         
         // Create selected title object from puzzle data
         if (puzzle.country_code && puzzle.localized_title) {
@@ -426,6 +433,14 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
       onDateChange?.(null)
     }
   }
+
+  // Auto-generate translation note after user selects a movie (new puzzles only)
+  useEffect(() => {
+    if (selectedMovie && !isEditMode && !translationNote && !isGeneratingNote) {
+      generateTranslationNote()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMovie])
 
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {
@@ -597,7 +612,8 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         distractor_ids: allOptions.filter(option => !option.isCorrect).map(option => option.id),
         option_order: allOptions.map(option => option.id), // Store complete order including correct answer
         is_published: isPublished,
-        english_translation: englishTranslation.trim()
+        english_translation: englishTranslation.trim(),
+        translation_note: translationNote.trim() || null
       }
 
       // Only include seed_value field when creating new puzzles
@@ -682,6 +698,101 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
+  const handleSmartGeneration = async (puzzleData: any) => {
+    // Handle smart-generated puzzle data
+    if (puzzleData.selectedMovie) {
+      // User selected a suggestion - load it as the base movie
+      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
+    } else if (puzzleData) {
+      // Full puzzle generated - populate all fields
+      if (puzzleData.film_id) {
+        await fetchAndSelectMovie(puzzleData.film_id.toString())
+      }
+      
+      if (puzzleData.puzzle_date) {
+        setPuzzleDate(puzzleData.puzzle_date)
+      }
+      
+      if (puzzleData.localized_title) {
+        setCustomTitle(puzzleData.localized_title)
+      }
+      
+      if (puzzleData.country_code) {
+        setSelectedTitle({
+          iso_3166_1: puzzleData.country_code,
+          title: puzzleData.localized_title,
+          type: 'translation'
+        })
+        setCountryName(getCountryName(puzzleData.country_code))
+      }
+      
+      // Load distractor movies
+      if (puzzleData.distractor_ids && puzzleData.distractor_ids.length > 0) {
+        const distractorMovies = await Promise.all(
+          puzzleData.distractor_ids.map(async (id: number) => {
+            const response = await fetch(`/api/movies/${id}/details`)
+            if (response.ok) {
+              const movieData = await response.json()
+              return {
+                id: movieData.id,
+                title: movieData.title,
+                poster_path: movieData.poster_path,
+                release_date: movieData.release_date || '',
+                isCorrect: false
+              }
+            }
+            return null
+          })
+        )
+        
+        const validDistractors = distractorMovies.filter(m => m !== null) as PuzzleOption[]
+        setDistractors(validDistractors)
+      }
+
+      if (puzzleData.translation_note) {
+        setTranslationNote(puzzleData.translation_note)
+      }
+    }
+  }
+
+  const generateTranslationNote = async () => {
+    if (!selectedMovie) return
+    
+    // Cycle through preloaded facts first
+    if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
+      const nextIndex = funFactIndex + 1
+      setFunFactIndex(nextIndex)
+      setTranslationNote(funFacts[nextIndex].text)
+      return
+    }
+    
+    setIsGeneratingNote(true)
+    try {
+      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
+      const resp = await fetch('/api/admin/movies/fun-facts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: selectedMovie.title, year })
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new Error(data.error || 'Failed to generate notes')
+      }
+      const facts = Array.isArray(data.facts) ? data.facts : []
+      if (facts.length === 0) {
+        throw new Error('No facts returned')
+      }
+      setFunFacts(facts)
+      setFunFactIndex(0)
+      setTranslationNote(facts[0].text)
+    } catch (e: any) {
+      console.error('Translation note generation failed:', e)
+      alert(e?.message || 'Failed to generate translation notes')
+    } finally {
+      setIsGeneratingNote(false)
+    }
+  }
+
   const getPreviewData = () => {
     const flag = selectedTitle ? getCountryFlag(selectedTitle.iso_3166_1) : "🏳️"
     // Use allOptions directly to maintain user-specified order
@@ -748,7 +859,16 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
         {/* Movie Selection */}
         <div className="space-y-2">
-          <Label>Original Movie</Label>
+          <div className="flex items-center justify-between">
+            <Label>Original Movie</Label>
+            {!selectedMovie && puzzleDate && (
+              <SmartGenerationDialog
+                gameType="retitled"
+                targetDate={puzzleDate}
+                onGenerate={handleSmartGeneration}
+              />
+            )}
+          </div>
           {selectedMovie ? (
             <MovieDetailsCard 
               movie={selectedMovie}
@@ -865,6 +985,55 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Translation Notes / Fun Facts */}
+        {selectedMovie && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="translation-note">Translation Notes / Fun Facts</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateTranslationNote}
+                  disabled={isGeneratingNote}
+                >
+                  {isGeneratingNote ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      {funFacts.length > 0 && funFactIndex < funFacts.length - 1 ? 'Next' : 'Generate'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!funFacts.length || !funFacts[funFactIndex]?.source?.url}
+                  className={cn((!funFacts.length || !funFacts[funFactIndex]?.source?.url) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '')}
+                  onClick={() => {
+                    const url = funFacts[funFactIndex]?.source?.url
+                    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  Source
+                </Button>
+              </div>
+            </div>
+            <Textarea
+              id="translation-note"
+              value={translationNote}
+              onChange={(e) => setTranslationNote(e.target.value)}
+              placeholder="Context or fun fact about this localization (optional)"
+              rows={5}
+            />
           </div>
         )}
 
