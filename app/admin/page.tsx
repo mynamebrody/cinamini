@@ -131,7 +131,10 @@ export default function AdminDashboard() {
               <button
                 onClick={() => {
                   setShowQuickGuide(false)
-                  Cookies.set('admin-guide-dismissed', 'true', { expires: 365 }) // Expires in 1 year
+                  Cookies.set('admin-guide-dismissed', 'true', { 
+                    expires: 365,
+                    ...(process.env.NODE_ENV === 'production' ? { secure: true, sameSite: 'lax' as const } : {})
+                  }) // Expires in 1 year
                 }}
                 className="text-neutral-400 hover:text-neutral-600 transition-colors p-1"
               >

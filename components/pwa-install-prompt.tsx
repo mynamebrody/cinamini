@@ -5,6 +5,25 @@ import Image from 'next/image'
 import Cookies from 'js-cookie'
 import { toast } from '@/hooks/use-toast'
 
+// Debug + timing constants
+const DEBUG_PWA_PROMPT = process.env.NODE_ENV !== 'production'
+const IOS_INSTALL_MIN_HIDE_MS = 2000
+const IOS_FOCUS_CHECK_DELAY_MS = 1000
+const IOS_HANDLED_COOLDOWN_MS = 3000
+const IOS_FALLBACK_PROMPT_DELAY_MS = 2000
+
+const debugLog = (...args: any[]) => {
+  if (DEBUG_PWA_PROMPT) {
+    // Prefix for easier filtering
+    // eslint-disable-next-line no-console
+    console.log('PWA Install Prompt:', ...args)
+  }
+}
+
+const PROD_COOKIE_OPTIONS = process.env.NODE_ENV === 'production' 
+  ? ({ secure: true, sameSite: 'lax' as const })
+  : ({} as Record<string, any>)
+
 function isIosSafari(): boolean {
   if (typeof window === 'undefined') return false
   const ua = window.navigator.userAgent
@@ -53,6 +72,14 @@ export default function PwaInstallPrompt() {
   const deferredPromptRef = useRef<any>(null)
   const [ready, setReady] = useState(false)
   const toastRef = useRef<any>(null)
+  const beforeInstallHandlerRef = useRef<((e: any) => void) | null>(null)
+  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // iOS detection state (refs protect against re-renders and race conditions)
+  const iosShareOpenedRef = useRef(false)
+  const iosHiddenStartRef = useRef<number | null>(null)
+  const iosLastHandledAtRef = useRef<number>(0)
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const COOKIE_KEY = 'cinamini_pwa_install_dismissed'
   const ADDED_TO_HOME_SCREEN_KEY = 'cinamini_added_to_home_screen'
@@ -60,7 +87,7 @@ export default function PwaInstallPrompt() {
 
   const dismissToast = useCallback((decision: 'installed' | 'dismissed') => {
     // Store user's decision in cookie
-    Cookies.set(COOKIE_KEY, decision, { expires: COOKIE_EXPIRY })
+    Cookies.set(COOKIE_KEY, decision, { expires: COOKIE_EXPIRY, ...PROD_COOKIE_OPTIONS })
     
     // Dismiss the toast using the toast's dismiss method
     if (toastRef.current) {
@@ -73,45 +100,54 @@ export default function PwaInstallPrompt() {
   const setupIosDetection = useCallback(() => {
     if (!isIosSafari()) return
 
-    let shareSheetOpened = false
-    const startTime = Date.now()
-
-    // Track when page becomes hidden (share sheet opens)
+    // Track when page becomes hidden (share sheet likely opens)
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        shareSheetOpened = true
-        console.log('PWA Install Prompt: iOS page hidden (share sheet likely opened)')
-      } else if (shareSheetOpened) {
-        // Page became visible again after being hidden
-        const timeDiff = Date.now() - startTime
-        console.log('PWA Install Prompt: iOS page visible again after', timeDiff, 'ms')
-        
-        // If they were away for more than 2 seconds, they likely interacted with share sheet
-        if (timeDiff > 2000) {
-          console.log('PWA Install Prompt: Assuming iOS app was added to home screen')
-          Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY })
-          
+        iosShareOpenedRef.current = true
+        iosHiddenStartRef.current = Date.now()
+        debugLog('iOS page hidden (share sheet likely opened)')
+      } else if (iosShareOpenedRef.current) {
+        const hiddenStart = iosHiddenStartRef.current ?? Date.now()
+        const timeDiff = Date.now() - hiddenStart
+        debugLog('iOS page visible again after', timeDiff, 'ms')
+
+        // Throttle repeated handling to avoid rapid hide/show cycles
+        const now = Date.now()
+        if (now - iosLastHandledAtRef.current < IOS_HANDLED_COOLDOWN_MS) {
+          iosShareOpenedRef.current = false
+          return
+        }
+
+        // If away long enough, assume interaction with share sheet occurred
+        if (timeDiff >= IOS_INSTALL_MIN_HIDE_MS) {
+          debugLog('Assuming iOS app was added to home screen')
+          Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY, ...PROD_COOKIE_OPTIONS })
+          iosLastHandledAtRef.current = now
+
           // Dismiss the toast if it's showing
           if (toastRef.current) {
             toastRef.current.dismiss()
             toastRef.current = null
           }
         }
-        shareSheetOpened = false
+        iosShareOpenedRef.current = false
+        iosHiddenStartRef.current = null
       }
     }
 
     // Also listen for focus events as backup
     const handleFocus = () => {
-      if (shareSheetOpened) {
-        setTimeout(() => {
-          console.log('PWA Install Prompt: iOS window refocused, checking if app was added')
-          // Small delay to let any potential installation complete
-          if (isInStandaloneMode()) {
-            Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY })
-          }
-        }, 1000)
+      if (!iosShareOpenedRef.current) return
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current)
       }
+      focusTimeoutRef.current = setTimeout(() => {
+        debugLog('iOS window refocused, checking if app was added')
+        // Small delay to let any potential installation complete
+        if (isInStandaloneMode()) {
+          Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY, ...PROD_COOKIE_OPTIONS })
+        }
+      }, IOS_FOCUS_CHECK_DELAY_MS)
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -120,19 +156,23 @@ export default function PwaInstallPrompt() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('focus', handleFocus)
+      if (focusTimeoutRef.current) {
+        clearTimeout(focusTimeoutRef.current)
+        focusTimeoutRef.current = null
+      }
     }
   }, [ADDED_TO_HOME_SCREEN_KEY, COOKIE_EXPIRY])
 
   const initializePwaPrompt = useCallback(() => {
     const onBeforeInstall = (e: any) => {
-      console.log('PWA Install Prompt: beforeinstallprompt event fired')
+      debugLog('beforeinstallprompt event fired')
       e.preventDefault()
       deferredPromptRef.current = e
       setReady(true)
 
       // Show toast prompting install on Android/Chrome
       if (!isIosSafari()) {
-        console.log('PWA Install Prompt: Showing Android/Chrome install toast')
+        debugLog('Showing Android/Chrome install toast')
         const t = toast({
           duration: Infinity, // Never auto-dismiss
           title: (
@@ -189,12 +229,16 @@ export default function PwaInstallPrompt() {
     }
 
     window.addEventListener('beforeinstallprompt', onBeforeInstall as any)
-    console.log('PWA Install Prompt: Added beforeinstallprompt listener')
-    
-    // Fallback: Show iOS prompt immediately if no beforeinstallprompt after 2 seconds
-    setTimeout(() => {
-      if (!ready && isIosSafari()) {
-        console.log('PWA Install Prompt: Fallback - showing iOS prompt after 2s delay')
+    beforeInstallHandlerRef.current = onBeforeInstall
+    debugLog('Added beforeinstallprompt listener')
+
+    // Fallback: Show iOS prompt after a short delay (iOS doesn't fire beforeinstallprompt)
+    if (isIosSafari()) {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current)
+      }
+      fallbackTimeoutRef.current = setTimeout(() => {
+        debugLog('Fallback - showing iOS prompt after delay')
         const t = toast({
           duration: Infinity,
           title: (
@@ -217,8 +261,8 @@ export default function PwaInstallPrompt() {
               <button
                 className="w-full h-10 flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-gray-900 hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation"
                 onClick={() => {
-                  console.log('PWA Install Prompt: iOS user clicked "I added it"')
-                  Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY })
+                  debugLog('iOS user clicked "I added it"')
+                  Cookies.set(ADDED_TO_HOME_SCREEN_KEY, 'true', { expires: COOKIE_EXPIRY, ...PROD_COOKIE_OPTIONS })
                   dismissToast('installed')
                 }}
               >
@@ -234,50 +278,65 @@ export default function PwaInstallPrompt() {
           ),
         })
         toastRef.current = t
+      }, IOS_FALLBACK_PROMPT_DELAY_MS)
+    }
+
+    return () => {
+      if (beforeInstallHandlerRef.current) {
+        window.removeEventListener('beforeinstallprompt', beforeInstallHandlerRef.current as any)
+        beforeInstallHandlerRef.current = null
       }
-    }, 2000)
-  }, [ready, ADDED_TO_HOME_SCREEN_KEY, COOKIE_EXPIRY, dismissToast])
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current)
+        fallbackTimeoutRef.current = null
+      }
+    }
+  }, [ADDED_TO_HOME_SCREEN_KEY, COOKIE_EXPIRY, dismissToast])
 
   useEffect(() => {
-    console.log('PWA Install Prompt: Checking conditions...')
-    console.log('Is standalone mode:', isInStandaloneMode())
-    console.log('Is iOS Safari:', isIosSafari())
-    console.log('User agent:', navigator.userAgent)
-    
-    // Check if PWA is already installed
-    isPwaInstalled().then(installed => {
-      console.log('PWA Install Prompt: Is PWA installed:', installed)
+    debugLog('Checking conditions...')
+    debugLog('Is standalone mode:', isInStandaloneMode())
+    debugLog('Is iOS Safari:', isIosSafari())
+    if (typeof navigator !== 'undefined') {
+      debugLog('User agent:', navigator.userAgent)
+    }
+
+    let didUnmount = false
+    let initCleanup: (() => void) | void
+    let iosCleanup: (() => void) | void
+
+    const run = async () => {
+      const installed = await isPwaInstalled()
+      if (didUnmount) return
+      debugLog('Is PWA installed:', installed)
       if (installed) {
-        console.log('PWA Install Prompt: PWA already installed, not showing')
+        debugLog('PWA already installed, not showing')
         return
       }
-      
-      // Check if user has already made a decision
+
       const userDecision = Cookies.get(COOKIE_KEY)
-      console.log('User decision cookie:', userDecision)
+      debugLog('User decision cookie:', userDecision)
       if (userDecision) {
-        console.log('PWA Install Prompt: User already made decision, not showing')
+        debugLog('User already made decision, not showing')
         return
       }
-      
+
       // Continue with the rest of the logic...
-      initializePwaPrompt()
-      
-      // Set up iOS-specific detection
-      const cleanupIosDetection = setupIosDetection()
-      
-      return cleanupIosDetection
-    })
-  }, [initializePwaPrompt, setupIosDetection, COOKIE_KEY])
-  
-  // Add cleanup for event listeners
-  useEffect(() => {
+      initCleanup = initializePwaPrompt()
+      iosCleanup = setupIosDetection()
+    }
+
+    run()
+
     return () => {
+      didUnmount = true
+      if (iosCleanup) iosCleanup()
+      if (initCleanup) initCleanup()
       if (toastRef.current) {
         toastRef.current.dismiss()
       }
     }
-  }, [])
+  }, [initializePwaPrompt, setupIosDetection, COOKIE_KEY])
 
 
 
