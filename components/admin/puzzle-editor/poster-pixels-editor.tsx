@@ -220,10 +220,21 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
     // Reset poster selection to default when selecting a new movie
     setSelectedPosterPath(movie.poster_path)
     setAlternativePosters([])
+    // Clear generated fun facts on new movie
+    setFunFacts([])
+    setFunFactIndex(0)
+    setFunFact("")
     
     // Notify parent of movie change
     onMovieChange?.(movie.id.toString())
   }
+
+  useEffect(() => {
+    if (selectedMovie && !isEditMode && funFacts.length === 0) {
+      generateFunFact()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMovie])
 
   // Fetch alternative posters from TMDB
   const fetchAlternativePosters = async () => {

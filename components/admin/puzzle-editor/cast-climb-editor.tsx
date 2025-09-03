@@ -350,9 +350,19 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     setSelectedMovie(movie)
     fetchMovieCast(movie.id)
     setShowMovieSelector(false)
+    setFunFacts([])
+    setFunFactIndex(0)
+    setFunFact("")
     // Notify parent of movie change
     onMovieChange?.(movie.id.toString())
   }
+
+  useEffect(() => {
+    if (selectedMovie && !isEditMode && funFacts.length === 0) {
+      generateFunFact()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMovie])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event

@@ -434,6 +434,14 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
+  // Auto-generate translation note after user selects a movie (new puzzles only)
+  useEffect(() => {
+    if (selectedMovie && !isEditMode && !translationNote && !isGeneratingNote) {
+      generateTranslationNote()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMovie])
+
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {
       const newDistractors = [...distractors]
