@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Search, Film, AlertCircle, Check, Loader2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -78,6 +78,10 @@ export default function MovieSelector({
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Movie[]>([])
   const [loading, setLoading] = useState(false)
+  // Track the current in-flight search to cancel when typing stops or tab changes
+  const activeSearchControllerRef = useRef<AbortController | null>(null)
+  const lastIssuedQueryRef = useRef<string>("")
+  const lastCompletedQueryRef = useRef<string>("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsage, setMovieUsage] = useState<MovieUsage | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(false)
@@ -191,14 +195,31 @@ export default function MovieSelector({
       return
     }
 
+    // Prevent duplicate requests for the same query
+    // 1) If there's an in-flight request for the same query, skip
+    if (
+      activeSearchControllerRef.current &&
+      !activeSearchControllerRef.current.signal.aborted &&
+      lastIssuedQueryRef.current === query
+    ) {
+      return
+    }
+    // 2) If the last completed request already handled this query and nothing changed, skip
+    if (lastIssuedQueryRef.current === query && lastCompletedQueryRef.current === query) {
+      return
+    }
+    lastIssuedQueryRef.current = query
+
     setLoading(true)
     try {
-      console.log('Starting movie search for:', query)
-      
-      // Add timeout to the fetch request
+      // Cancel any in-flight search before issuing a new one
+      if (activeSearchControllerRef.current) {
+        try { activeSearchControllerRef.current.abort() } catch {}
+      }
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-      
+      activeSearchControllerRef.current = controller
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
       const response = await fetch(`/api/movies/search?q=${encodeURIComponent(query)}`, {
         signal: controller.signal,
         headers: {
@@ -319,20 +340,19 @@ export default function MovieSelector({
       })
         
       setSearchResults(filteredMovies)
+      lastCompletedQueryRef.current = query
       
     } catch (error) {
-      console.error("Error searching movies:", error)
-      
-      // Show user-friendly error message
+      // Swallow expected abort/timeout without logging to avoid perceived errors
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          console.error('Request was aborted (timeout)')
-        } else if (error.message.includes('Failed to fetch')) {
-          console.error('Network error - check connection and API endpoints')
+          return
+        }
+        if (error.message.includes('timeout') || error.message.includes('aborted')) {
+          return
         }
       }
-      
-      // Set empty results on error to show no results state
+      console.error("Error searching movies:", error)
       setSearchResults([])
     } finally {
       setLoading(false)
@@ -342,14 +362,27 @@ export default function MovieSelector({
 
   // Search with debouncing - only when on search tab
   useEffect(() => {
-    if (activeTab === 'search') {
-      const timeoutId = setTimeout(() => {
-        searchMovies(searchQuery)
-      }, 300)
-
-      return () => clearTimeout(timeoutId)
+    if (activeTab !== 'search') {
+      // Leaving search tab; cancel any pending search
+      if (activeSearchControllerRef.current) {
+        try { activeSearchControllerRef.current.abort() } catch {}
+      }
+      return
     }
+    const timeoutId = setTimeout(() => {
+      searchMovies(searchQuery)
+    }, 300)
+    return () => clearTimeout(timeoutId)
   }, [searchQuery, activeTab, searchMovies])
+
+  // Abort on unmount to avoid stray completions
+  useEffect(() => {
+    return () => {
+      if (activeSearchControllerRef.current) {
+        try { activeSearchControllerRef.current.abort() } catch {}
+      }
+    }
+  }, [])
 
 
   const handleSelectMovie = (movie: Movie) => {
@@ -532,7 +565,7 @@ export default function MovieSelector({
 
       {/* Selected Movie Usage & Selection - Fixed at bottom */}
       {selectedMovie && (
-        <div className="border-t pt-4 mt-4 bg-white flex-shrink-0 max-h-48 overflow-y-auto">
+        <div className="border-t pt-4 mt-4 pb-3 bg-white flex-shrink-0 max-h-48 overflow-y-auto">
           <Card className="p-4 bg-cinema-red/5 border-cinema-red/20">
             <div className="space-y-3">
               <div className="flex justify-between items-center">

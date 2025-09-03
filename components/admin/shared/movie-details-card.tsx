@@ -89,10 +89,12 @@ export default function MovieDetailsCard({ movie, onRemove, compact = false, sho
               </div>
             )}
             <div className="space-y-0.5 mt-1">
-              {movie.budget && movie.budget > 0 && (
+              {movie.budget && movie.budget > 0 ? (
                 <p className="text-xs text-green-600 font-medium">
                   💰 ${(movie.budget / 1000000).toFixed(1)}M budget
                 </p>
+              ) : (
+                <p className="text-xs text-gray-500">Budget Unavailable</p>
               )}
               {movie.director && (
                 <p className="text-xs text-gray-600">
