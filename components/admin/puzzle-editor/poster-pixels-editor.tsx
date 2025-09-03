@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { Save, Loader2, Plus, X, Image as ImageIcon, Check } from "lucide-react"
+import { Save, Loader2, Plus, X, Image as ImageIcon, Check, Sparkles, ExternalLink } from "lucide-react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -53,6 +53,9 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [funFact, setFunFact] = useState("")
+  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFactIndex, setFunFactIndex] = useState(0)
+  const [isGeneratingFact, setIsGeneratingFact] = useState(false)
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showMovieSelector, setShowMovieSelector] = useState(false)
@@ -264,6 +267,43 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   const handleSelectPoster = (posterPath: string) => {
     setSelectedPosterPath(posterPath)
     setShowAlternativesModal(false)
+  }
+
+  const generateFunFact = async () => {
+    if (!selectedMovie) return
+    
+    if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
+      const nextIndex = funFactIndex + 1
+      setFunFactIndex(nextIndex)
+      setFunFact(funFacts[nextIndex].text)
+      return
+    }
+    
+    setIsGeneratingFact(true)
+    try {
+      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
+      const resp = await fetch('/api/admin/movies/fun-facts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: selectedMovie.title, year })
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new Error(data.error || 'Failed to generate fun facts')
+      }
+      const facts = Array.isArray(data.facts) ? data.facts : []
+      if (facts.length === 0) {
+        throw new Error('No fun facts returned')
+      }
+      setFunFacts(facts)
+      setFunFactIndex(0)
+      setFunFact(facts[0].text)
+    } catch (e: any) {
+      console.error('Fun fact generation failed:', e)
+      alert(e?.message || 'Failed to generate fun facts')
+    } finally {
+      setIsGeneratingFact(false)
+    }
   }
 
   const handleSmartGeneration = async (puzzleData: any) => {
@@ -514,7 +554,42 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
 
         {/* Fun Fact */}
         <div className="space-y-2">
-          <Label htmlFor="fun-fact">Fun Fact (optional)</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="fun-fact">Fun Fact (optional)</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={generateFunFact}
+                disabled={isGeneratingFact || !selectedMovie}
+              >
+                {isGeneratingFact ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-1" />
+                    {funFacts.length > 0 && funFactIndex < funFacts.length - 1 ? 'Next' : 'Generate'}
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!funFacts.length || !funFacts[funFactIndex]?.source?.url}
+                className={cn((!funFacts.length || !funFacts[funFactIndex]?.source?.url) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '')}
+                onClick={() => {
+                  const url = funFacts[funFactIndex]?.source?.url
+                  if (url) window.open(url, '_blank', 'noopener,noreferrer')
+                }}
+              >
+                <ExternalLink className="w-4 h-4 mr-1" />
+                Source
+              </Button>
+            </div>
+          </div>
           <Textarea
             id="fun-fact"
             value={funFact}

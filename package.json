@@ -5,7 +5,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
-    "quick-dev": "concurrently 'npm i && next dev --turbopack' 'npm run ngrok'",
+    "quick-dev": "concurrently 'npm i --legacy-peer-deps && next dev --turbopack' 'npm run ngrok'",
     "ngrok": "ngrok http --url=cinamini.ngrok.app 3000",
     "lint": "next lint",
     "start": "next start",
@@ -44,6 +44,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.525.0",
     "next": "15.4.2",
+    "openai": "^5.18.1",
     "react": "^19",
     "react-day-picker": "^9.8.1",
     "react-dom": "^19",

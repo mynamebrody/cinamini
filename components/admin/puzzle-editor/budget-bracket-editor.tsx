@@ -1570,7 +1570,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Movie Pairs</h3>
             <div className="flex items-center gap-3">
-              {rounds.length === 0 && puzzleDate && (
+              {!moviePairs.some(p => p.movieA || p.movieB) && puzzleDate && (
                 <SmartGenerationDialog
                   gameType="budget-bracket"
                   targetDate={puzzleDate}

@@ -10,7 +10,8 @@ import {
   Users, 
   GripVertical,
   Info,
-  Sparkles
+  Sparkles,
+  ExternalLink
 } from "lucide-react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -145,6 +146,9 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [actors, setActors] = useState<Actor[]>([])
   const [funFact, setFunFact] = useState("")
+  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFactIndex, setFunFactIndex] = useState(0)
+  const [isGeneratingFact, setIsGeneratingFact] = useState(false)
   const [difficultyLevel, setDifficultyLevel] = useState(1)
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -365,20 +369,38 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   const generateFunFact = async () => {
     if (!selectedMovie) return
     
-    setLoading(true)
+    // If we have cached facts and not at the end, cycle to next
+    if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
+      const nextIndex = funFactIndex + 1
+      setFunFactIndex(nextIndex)
+      setFunFact(funFacts[nextIndex].text)
+      return
+    }
+    
+    setIsGeneratingFact(true)
     try {
-      // In a real implementation, this could call an AI API to generate fun facts
-      // For now, we'll use placeholder text
-      const facts = [
-        `The cast had to undergo extensive training for their roles.`,
-        `This movie was filmed in multiple locations around the world.`,
-        `The production team used innovative techniques for the special effects.`,
-        `Several scenes were improvised by the actors.`,
-        `The movie's soundtrack became a chart-topping hit.`,
-      ]
-      setFunFact(facts[Math.floor(Math.random() * facts.length)])
+      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
+      const resp = await fetch('/api/admin/movies/fun-facts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: selectedMovie.title, year })
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new Error(data.error || 'Failed to generate fun facts')
+      }
+      const facts = Array.isArray(data.facts) ? data.facts : []
+      if (facts.length === 0) {
+        throw new Error('No fun facts returned')
+      }
+      setFunFacts(facts)
+      setFunFactIndex(0)
+      setFunFact(facts[0].text)
+    } catch (e: any) {
+      console.error('Fun fact generation failed:', e)
+      alert(e?.message || 'Failed to generate fun facts')
     } finally {
-      setLoading(false)
+      setIsGeneratingFact(false)
     }
   }
 
@@ -662,15 +684,39 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="fun-fact">Fun Fact (Optional)</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={generateFunFact}
-                disabled={loading}
-              >
-                <Sparkles className="w-4 h-4 mr-1" />
-                Generate
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateFunFact}
+                  disabled={isGeneratingFact}
+                >
+                  {isGeneratingFact ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      {funFacts.length > 0 && funFactIndex < funFacts.length - 1 ? 'Next' : 'Generate'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!funFacts.length || !funFacts[funFactIndex]?.source?.url}
+                  className={cn((!funFacts.length || !funFacts[funFactIndex]?.source?.url) ? 'opacity-50 cursor-not-allowed pointer-events-none' : '')}
+                  onClick={() => {
+                    const url = funFacts[funFactIndex]?.source?.url
+                    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  Source
+                </Button>
+              </div>
             </div>
             <Textarea
               id="fun-fact"
