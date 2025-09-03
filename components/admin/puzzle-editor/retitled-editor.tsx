@@ -1051,7 +1051,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
             }
           }}
         >
-          <Card className="admin-modal-silver w-full max-w-2xl h-[80vh] flex flex-col relative" style={{ borderRadius: 0 }}>
+          <Card className="admin-modal-silver w-full max-w-2xl h-[85vh] flex flex-col relative overflow-hidden" style={{ borderRadius: 0 }}>
             <button
               onClick={() => {
                 setShowMovieSelector(false)
@@ -1061,7 +1061,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="p-6 pr-12 flex flex-col h-full">
+            <div className="p-6 pr-12 flex flex-col h-full overflow-hidden">
               <h3 className="text-lg font-semibold mb-4 font-funnel-display-bold text-neutral-900">Select Movie</h3>
               <MovieSelector
                 onSelect={handleSelectMovie}
