@@ -5,6 +5,7 @@ import { constructMetadata } from "@/lib/metadata"
 import GoogleAnalytics from "@/components/google-analytics"
 import { AuthProvider } from "@/components/auth-provider"
 import { Banner } from "@/components/banner"
+import { InstallPrompt } from "@/components/install-prompt"
 import "./globals.css"
 
 // Load Funnel Display Bold for headings
@@ -38,6 +39,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${funnelDisplayBold.variable} ${funnelSansLight.variable}`}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Cinamini" />
+        <link rel="apple-touch-icon" href="/app-icons/playstore.png" />
+      </head>
       <body className={funnelSansLight.className}>
         <GoogleAnalytics />
         <AuthProvider>
@@ -58,6 +66,7 @@ export default function RootLayout({
               </svg>
             </a>
           </Banner>
+          <InstallPrompt />
           {children}
         </AuthProvider>
       </body>
