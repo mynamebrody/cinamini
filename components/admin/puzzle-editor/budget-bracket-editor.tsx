@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import MovieSelector from "../shared/movie-selector"
+import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import {
   DndContext,
@@ -1302,6 +1303,30 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
     return null
   }
 
+  const handleSmartGeneration = async (puzzleData: any) => {
+    // Handle smart-generated puzzle data
+    if (puzzleData.pairs) {
+      // Full puzzle generated - populate all fields
+      if (puzzleData.puzzle_date) {
+        setPuzzleDate(puzzleData.puzzle_date)
+      }
+      
+      // Load the movie pairs
+      const newRounds = puzzleData.pairs.map((pair: any[], index: number) => ({
+        round: index + 1,
+        pair: pair.map(movie => ({
+          id: movie.id,
+          title: movie.title,
+          poster_path: movie.poster_path,
+          release_date: movie.release_date,
+          budget: movie.budget
+        }))
+      }))
+      
+      setRounds(newRounds)
+    }
+  }
+
   const savePuzzle = async () => {
     // Require date only if published
     if (isPublished && !puzzleDate) {
@@ -1545,6 +1570,13 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Movie Pairs</h3>
             <div className="flex items-center gap-3">
+              {!moviePairs.some(p => p.movieA || p.movieB) && puzzleDate && (
+                <SmartGenerationDialog
+                  gameType="budget-bracket"
+                  targetDate={puzzleDate}
+                  onGenerate={handleSmartGeneration}
+                />
+              )}
               <Button
                 variant="outline"
                 size="sm"
