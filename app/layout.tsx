@@ -3,6 +3,9 @@ import type { Viewport } from "next"
 import { Funnel_Display, Funnel_Sans } from "next/font/google"
 import { constructMetadata } from "@/lib/metadata"
 import GoogleAnalytics from "@/components/google-analytics"
+import PwaInstallPrompt from "@/components/pwa-install-prompt"
+import ServiceWorkerRegister from "@/components/service-worker-register"
+import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from "@/components/auth-provider"
 import { Banner } from "@/components/banner"
 import "./globals.css"
@@ -59,6 +62,9 @@ export default function RootLayout({
             </a>
           </Banner>
           {children}
+          <PwaInstallPrompt />
+          <ServiceWorkerRegister />
+          <Toaster />
         </AuthProvider>
       </body>
     </html>
