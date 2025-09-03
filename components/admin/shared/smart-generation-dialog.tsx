@@ -288,11 +288,15 @@ export default function SmartGenerationDialog({
                   >
                     <div className="flex items-center gap-2">
                       {movie.poster_path && (
-                        <img
-                          src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
-                          alt={movie.title}
-                          className="w-8 h-12 object-cover rounded"
-                        />
+                        <picture>
+                          <img
+                            src={`https://image.tmdb.org/t/p/w92${movie.poster_path}`}
+                            alt={movie.title}
+                            width={32}
+                            height={48}
+                            className="w-8 h-12 object-cover rounded"
+                          />
+                        </picture>
                       )}
                       <div className="flex-1">
                         <div className="font-medium text-sm">{movie.title}</div>

@@ -1,9 +1,8 @@
 // OpenAI service for smart puzzle generation with web search
-import { TMDBMovie, TMDBMovieDetails, TMDBAlternativeTitles, TMDBCreditsResponse } from './types/tmdb'
-import { getMovieById, searchMovies, getMovieAlternativeTitles, getMovieCredits } from './tmdb'
+import { TMDBMovie, TMDBMovieDetails } from './types/tmdb'
+import { getMovieById, getMovieAlternativeTitles, getMovieCredits } from './tmdb'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
-const TMDB_API_KEY = process.env.TMDB_API_KEY || process.env.NEXT_PUBLIC_TMDB_API_KEY
 
 export interface GenerationConfig {
   obscurityThreshold?: number // 1-10, where 1 is mainstream and 10 is very obscure
@@ -71,8 +70,7 @@ function isMovieAppropriate(movie: TMDBMovieDetails, config: GenerationConfig): 
 // Query OpenAI for movie suggestions
 async function queryOpenAIForMovies(
   gameType: string,
-  prompt: string,
-  config: GenerationConfig
+  prompt: string
 ): Promise<number[]> {
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured')
@@ -117,7 +115,7 @@ async function queryOpenAIForMovies(
     let parsedContent
     try {
       parsedContent = JSON.parse(content)
-    } catch (e) {
+    } catch {
       console.error('Failed to parse OpenAI response:', content)
       throw new Error('Invalid JSON response from OpenAI')
     }
@@ -148,7 +146,7 @@ async function generateRetitledPuzzle(
   Avoid these recent movie IDs: ${recentMovieIds.join(', ')}.
   Suggest 5 potential movies and return their TMDB IDs.`
   
-  const suggestedIds = await queryOpenAIForMovies('retitled', prompt, config)
+  const suggestedIds = await queryOpenAIForMovies('retitled', prompt)
   
   // Validate and select the best movie
   for (const movieId of suggestedIds) {
@@ -176,7 +174,7 @@ async function generateRetitledPuzzle(
     that could be plausible wrong answers. They should be from similar genres and time periods.
     Return only TMDB IDs.`
     
-    const distractorIds = await queryOpenAIForMovies('retitled', distractorPrompt, config)
+    const distractorIds = await queryOpenAIForMovies('retitled', distractorPrompt)
     
     return {
       puzzle_date: targetDate,
@@ -209,7 +207,7 @@ async function generateBudgetBracketPuzzle(
     Avoid these movie IDs: ${[...recentMovieIds, ...Array.from(usedMovieIds)].join(', ')}.
     Return 4 movie TMDB IDs.`
     
-    const movieIds = await queryOpenAIForMovies('budget-bracket', prompt, config)
+    const movieIds = await queryOpenAIForMovies('budget-bracket', prompt)
     
     // Fetch movie details and validate budgets
     const validMovies = []
@@ -276,7 +274,7 @@ async function generateCastClimbPuzzle(
   Avoid these recent movie IDs: ${recentMovieIds.join(', ')}.
   Return 5 potential TMDB movie IDs.`
   
-  const suggestedIds = await queryOpenAIForMovies('cast-climb', prompt, config)
+  const suggestedIds = await queryOpenAIForMovies('cast-climb', prompt)
   
   for (const movieId of suggestedIds) {
     const movie = await getMovieById(movieId) as TMDBMovieDetails
@@ -324,7 +322,7 @@ async function generatePosterPixelsPuzzle(
   Avoid these recent movie IDs: ${recentMovieIds.join(', ')}.
   Return 5 potential TMDB movie IDs.`
   
-  const suggestedIds = await queryOpenAIForMovies('poster-pixels', prompt, config)
+  const suggestedIds = await queryOpenAIForMovies('poster-pixels', prompt)
   
   for (const movieId of suggestedIds) {
     const movie = await getMovieById(movieId) as TMDBMovieDetails
@@ -383,11 +381,7 @@ export async function generateSmartPuzzle(
     // Provide fallback suggestions
     const fallbackPrompt = `Suggest 5 popular movies that would work well for puzzle games. Return TMDB IDs.`
     try {
-      const suggestionIds = await queryOpenAIForMovies(
-        request.gameType,
-        fallbackPrompt,
-        request.config || DEFAULT_CONFIG
-      )
+      const suggestionIds = await queryOpenAIForMovies(request.gameType, fallbackPrompt)
       
       const suggestions = []
       for (const id of suggestionIds) {
@@ -400,7 +394,7 @@ export async function generateSmartPuzzle(
         error: error instanceof Error ? error.message : 'Unknown error',
         suggestions
       }
-    } catch (fallbackError) {
+    } catch {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
