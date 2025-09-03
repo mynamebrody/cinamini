@@ -63,7 +63,10 @@ export function setTutorialViewed(gameType: GameType): void {
   const legacyKey = LEGACY_STORAGE_KEYS[gameType]
   
   // Set cookie with 1 year expiry
-  Cookies.set(cookieName, 'true', { expires: 365 })
+  Cookies.set(cookieName, 'true', { 
+    expires: 365,
+    ...(process.env.NODE_ENV === 'production' ? { secure: true, sameSite: 'lax' as const } : {})
+  })
   
   // Also set localStorage for backward compatibility during transition period
   if (typeof window !== 'undefined') {

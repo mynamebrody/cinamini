@@ -30,7 +30,10 @@ export function Banner({ id, children, show = true, dismissible = true, classNam
 
   const handleDismiss = () => {
     setVisible(false)
-    Cookies.set(cookieKey, 'true', { expires: 30 })
+    Cookies.set(cookieKey, 'true', { 
+      expires: 30,
+      ...(process.env.NODE_ENV === 'production' ? { secure: true, sameSite: 'lax' as const } : {})
+    })
     onDismiss?.()
     setTimeout(() => setRender(false), 250)
   }
