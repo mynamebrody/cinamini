@@ -64,6 +64,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Banner spacing control so header sits below banner when visible */
+  :root { --banner-height: 0px; }
+  html.banner-visible body > *:first-child { margin-top: var(--banner-height); transition: margin-top 200ms ease; }
+
   /* Typography inspired by NYT */
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-funnel-display-bold), 'Georgia', 'Times', serif;
