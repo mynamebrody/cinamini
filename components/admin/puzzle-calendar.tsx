@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addMonths, subMonths, addWeeks, subWeeks } from "date-fns"
-import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image, Sparkles, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, Calendar, Film, DollarSign, Users, Image, Sparkles, Loader2, Layers, Wand2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { DndContext, DragEndEvent, useDraggable, useDroppable, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { getGameStyle } from "@/lib/game-styles"
+import { BulkScheduleDialog } from "@/components/admin/bulk-schedule-dialog"
+import AIGenerateDialog from "@/components/admin/ai-generate-dialog"
 
 interface Puzzle {
   id: string
@@ -213,6 +215,8 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
   const [draggedPuzzle, setDraggedPuzzle] = useState<Puzzle | null>(null)
   const [loading, setLoading] = useState(true)
   const [autoScheduling, setAutoScheduling] = useState(false)
+  const [showBulkSchedule, setShowBulkSchedule] = useState(false)
+  const [showAIGenerate, setShowAIGenerate] = useState(false)
 
   // Configure drag sensor with activation delay for click-and-hold
   const sensors = useSensors(
@@ -385,6 +389,12 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
       setAutoScheduling(false)
     }
   }
+
+  const mappedDraftsForBulk = puzzles.drafts.map(d => ({
+    id: d.id,
+    game_type: d.game_type,
+    film_title: d.film_title || (d.game_type === 'budget_bracket' ? `Budget Bracket (${Array.isArray(d.pairs) ? d.pairs.length : 5} pairs)` : 'Untitled')
+  }))
 
   const days = useMemo(() => {
     if (viewMode === 'week') {
@@ -582,6 +592,7 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
   }
 
   return (
+    <>
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -692,20 +703,42 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
                 {puzzles.drafts.length} unpublished • Hold to drag and schedule
               </span>
             </h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={autoScheduleDrafts}
-              disabled={puzzles.drafts.length === 0 || autoScheduling}
-              className="flex items-center gap-1.5 text-xs border-cinema-red/30 text-cinema-red hover:bg-cinema-red hover:text-white hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29)] hover:-translate-y-0.5 transition-all duration-200"
-            >
-              {autoScheduling ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Sparkles className="w-3 h-3" />
-              )}
-              Auto Schedule
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIGenerate(true)}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <Wand2 className="w-3 h-3" />
+                Generate with AI
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBulkSchedule(true)}
+                disabled={puzzles.drafts.length === 0}
+                className="flex items-center gap-1.5 text-xs"
+                title={puzzles.drafts.length === 0 ? 'No drafts to schedule' : 'Schedule multiple drafts'}
+              >
+                <Layers className="w-3 h-3" />
+                Bulk Schedule
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={autoScheduleDrafts}
+                disabled={puzzles.drafts.length === 0 || autoScheduling}
+                className="flex items-center gap-1.5 text-xs border-cinema-red/30 text-cinema-red hover:bg-cinema-red hover:text-white hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29)] hover:-translate-y-0.5 transition-all duration-200"
+              >
+                {autoScheduling ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                Auto Schedule
+              </Button>
+            </div>
           </div>
           
           <ScrollArea className="h-[250px] pr-3">
@@ -795,5 +828,22 @@ export function PuzzleCalendar({ onPuzzleClick, onAddPuzzle }: Omit<PuzzleCalend
         )}
       </DragOverlay>
     </DndContext>
+    {/* Dialogs mounted at root so header buttons can open them */}
+    <BulkScheduleDialog 
+      open={showBulkSchedule}
+      onOpenChange={setShowBulkSchedule}
+      drafts={mappedDraftsForBulk}
+      onScheduled={() => {
+        fetchPuzzles()
+      }}
+    />
+    <AIGenerateDialog
+      open={showAIGenerate}
+      onOpenChange={setShowAIGenerate}
+      onGenerated={() => {
+        fetchPuzzles()
+      }}
+    />
+    </>
   )
 }

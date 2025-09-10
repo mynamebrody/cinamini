@@ -365,7 +365,7 @@ export default function MovieSelector({
         }
         if (Array.isArray(bbRows)) {
           for (const row of bbRows) {
-            const pairs: any[] = (row as any).pairs || (row as any).movie_pairs || []
+            const pairs: any[] = (row as any).pairs || []
             if (!Array.isArray(pairs)) continue
             for (const pair of pairs) {
               const aRaw = pair?.movieA?.id; const bRaw = pair?.movieB?.id
@@ -378,7 +378,7 @@ export default function MovieSelector({
         }
         if (Array.isArray(bbFuture)) {
           for (const row of bbFuture) {
-            const pairs: any[] = (row as any).pairs || (row as any).movie_pairs || []
+            const pairs: any[] = (row as any).pairs || []
             if (!Array.isArray(pairs)) continue
             for (const pair of pairs) {
               const aRaw = pair?.movieA?.id; const bRaw = pair?.movieB?.id

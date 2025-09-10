@@ -2,6 +2,56 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { generateSmartPuzzle, getRecentMovieIds, GenerationConfig } from '@/lib/openai-service'
 
+function collectFilmIdsFromPuzzle(gameType: string, puzzle: any): number[] {
+  if (!puzzle) return []
+  if (gameType === 'budget-bracket') {
+    const ids = new Set<number>()
+    const pairs = Array.isArray(puzzle.pairs) ? puzzle.pairs : []
+    for (const pair of pairs) {
+      if (Array.isArray(pair)) {
+        for (const m of pair) {
+          if (typeof m?.id === 'number') ids.add(m.id)
+        }
+      }
+    }
+    return [...ids]
+  }
+  const id = typeof puzzle.film_id === 'number' ? puzzle.film_id : null
+  return id ? [id] : []
+}
+
+function validateBudgetPairs(pairs: any[], threshold: number) {
+  const violations: string[] = []
+  let closeCount = 0
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i]
+    if (!Array.isArray(pair) || pair.length !== 2) {
+      violations.push(`Round ${i + 1}: invalid pair shape`)
+      continue
+    }
+    const [a, b] = pair
+    const ab = Number(a?.budget || 0)
+    const bb = Number(b?.budget || 0)
+    if (!ab || !bb || ab <= 0 || bb <= 0) {
+      violations.push(`Round ${i + 1}: budgets missing or non-positive`)
+      continue
+    }
+    if (ab === bb) {
+      violations.push(`Round ${i + 1}: identical budgets not allowed`)
+      continue
+    }
+    const high = Math.max(ab, bb)
+    const low = Math.min(ab, bb)
+    const ratio = high / low
+    if (ratio <= 1 + threshold) closeCount++
+  }
+  // "mostly close" = at least 4 of 5 pairs pass the threshold
+  if (pairs.length >= 5 && closeCount < 4) {
+    violations.push(`At least 4 of 5 pairs must be within ${(threshold * 100).toFixed(0)}%`) 
+  }
+  return violations
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check admin authentication
@@ -79,6 +129,31 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Server-side eligibility checks (hard enforcement)
+    const filmIds = collectFilmIdsFromPuzzle(gameType, result.puzzle)
+    const disallowed = filmIds.filter(id => avoidMovieIds.includes(id))
+    if (disallowed.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Generated puzzle includes movies that violate recency rules (same-game 365d or any-game 30d).',
+          conflicts: disallowed
+        },
+        { status: 409 }
+      )
+    }
+
+    if (gameType === 'budget-bracket') {
+      const pairs = Array.isArray(result.puzzle?.pairs) ? result.puzzle.pairs : []
+      const threshold = Number(config?.budgetClosenessThreshold ?? 0.3)
+      const violations = validateBudgetPairs(pairs, isFinite(threshold) ? threshold : 0.3)
+      if (violations.length > 0) {
+        return NextResponse.json(
+          { error: 'Budget validation failed', violations },
+          { status: 422 }
+        )
+      }
+    }
+
     // Return the generated puzzle data
     return NextResponse.json({
       success: true,

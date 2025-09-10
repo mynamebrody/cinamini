@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
-import { CalendarDays, AlertCircle, TrendingUp, Package, Film, DollarSign, Gamepad2, ImageIcon } from "lucide-react"
+import { CalendarDays, AlertCircle, TrendingUp, Package, Film, DollarSign, Gamepad2, ImageIcon, Sparkles, Layers } from "lucide-react"
 import { PuzzleCalendar } from "@/components/admin/puzzle-calendar"
 import { PuzzleDetailDialog } from "@/components/admin/puzzle-detail-dialog"
+import { BulkScheduleDialog } from "@/components/admin/bulk-schedule-dialog"
+import AIGenerateDialog from "@/components/admin/ai-generate-dialog"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useRouter } from "next/navigation"
@@ -40,6 +42,8 @@ export default function SchedulePage() {
       poster_pixels: 0
     }
   })
+  const [showBulkSchedule, setShowBulkSchedule] = useState(false)
+  const [showAIGenerate, setShowAIGenerate] = useState(false)
 
   useEffect(() => {
     fetchStats()
@@ -216,7 +220,14 @@ export default function SchedulePage() {
   const handleCalendarUpdate = () => {
     // Refresh stats and calendar
     fetchStats()
+    updateScheduledGames()
   }
+
+  const mappedDraftsForBulk = drafts.map(d => ({
+    id: d.id,
+    game_type: d.game_type,
+    film_title: d.film_title || (d.game_type === 'budget_bracket' ? `Budget Bracket (${Array.isArray(d.pairs) ? d.pairs.length : 5} pairs)` : 'Untitled')
+  }))
 
   return (
     <div className="container mx-auto py-6 space-y-6">

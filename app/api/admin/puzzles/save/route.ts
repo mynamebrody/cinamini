@@ -96,6 +96,122 @@ export async function POST(request: Request) {
           { status: 409 }
         )
       }
+
+      // Enforce recency rules when publishing (or when a date is provided)
+      const isPublishing = Boolean(puzzleData?.is_published) || Boolean(puzzleData?.puzzle_date)
+      if (isPublishing) {
+        // Same game last 365 days
+        const sameGameCutoff = new Date()
+        sameGameCutoff.setDate(sameGameCutoff.getDate() - 365)
+        const sameGameCutoffStr = sameGameCutoff.toISOString().split('T')[0]
+        const { data: sameGameRecent } = await serviceSupabase
+          .from(tableName)
+          .select('id')
+          .eq('film_id', filmId)
+          .gte('puzzle_date', sameGameCutoffStr)
+          .limit(1)
+        if (sameGameRecent && sameGameRecent.length > 0) {
+          return NextResponse.json(
+            { error: 'This movie was used for this game in the past year.' },
+            { status: 409 }
+          )
+        }
+
+        // Any game last 30 days
+        const anyGameCutoff = new Date()
+        anyGameCutoff.setDate(anyGameCutoff.getDate() - 30)
+        const anyGameCutoffStr = anyGameCutoff.toISOString().split('T')[0]
+        const tables = ['retitled_puzzles', 'budget_bracket_puzzles', 'cast_climb_puzzles', 'poster_pixels_puzzles']
+        let foundRecent = false
+        for (const t of tables) {
+          if (t === 'budget_bracket_puzzles') {
+            const { data: rows } = await serviceSupabase
+              .from(t)
+              .select('pairs, puzzle_date')
+              .gte('puzzle_date', anyGameCutoffStr)
+            if (rows?.some((r: any) => Array.isArray(r.pairs) && r.pairs.some((pair: any[]) => pair?.some(m => m?.id === filmId)))) {
+              foundRecent = true
+              break
+            }
+          } else {
+            const { data: rows } = await serviceSupabase
+              .from(t)
+              .select('id, film_id, puzzle_date')
+              .eq('film_id', filmId)
+              .gte('puzzle_date', anyGameCutoffStr)
+              .limit(1)
+            if (rows && rows.length > 0) {
+              foundRecent = true
+              break
+            }
+          }
+        }
+        if (foundRecent) {
+          return NextResponse.json(
+            { error: 'This movie was used in the last 30 days in another game.' },
+            { status: 409 }
+          )
+        }
+      }
+    }
+
+    // If budget bracket, perform strict budget validations (no identical or zero budgets)
+    if (gameType === 'budget_bracket') {
+      if (!Array.isArray(puzzleData.pairs)) {
+        return NextResponse.json({ error: 'pairs must be an array' }, { status: 400 })
+      }
+      // Collect all movie ids for recency checks if publishing
+      const movieIds = new Set<number>()
+      for (let i = 0; i < puzzleData.pairs.length; i++) {
+        const pair = puzzleData.pairs[i]
+        if (!Array.isArray(pair) || pair.length !== 2) {
+          return NextResponse.json({ error: `Round ${i + 1}: invalid pair shape` }, { status: 400 })
+        }
+        const [a, b] = pair
+        const ab = Number(a?.budget || 0)
+        const bb = Number(b?.budget || 0)
+        if (!ab || !bb || ab <= 0 || bb <= 0) {
+          return NextResponse.json({ error: `Round ${i + 1}: budgets missing or non-positive` }, { status: 400 })
+        }
+        if (ab === bb) {
+          return NextResponse.json({ error: `Round ${i + 1}: identical budgets are not allowed` }, { status: 400 })
+        }
+        if (typeof a?.id === 'number') movieIds.add(a.id)
+        if (typeof b?.id === 'number') movieIds.add(b.id)
+      }
+
+      const isPublishing = Boolean(puzzleData?.is_published) || Boolean(puzzleData?.puzzle_date)
+      if (isPublishing && movieIds.size > 0) {
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
+        const cutoffStr = cutoff.toISOString().split('T')[0]
+        const tables = ['retitled_puzzles', 'budget_bracket_puzzles', 'cast_climb_puzzles', 'poster_pixels_puzzles']
+        // Check each id against the last 30 days across all games
+        for (const id of movieIds) {
+          let used = false
+          for (const t of tables) {
+            if (t === 'budget_bracket_puzzles') {
+              const { data: rows } = await serviceSupabase
+                .from(t)
+                .select('pairs, puzzle_date')
+                .gte('puzzle_date', cutoffStr)
+              if (rows?.some((r: any) => Array.isArray(r.pairs) && r.pairs.some((pair: any[]) => pair?.some(m => m?.id === id)))) {
+                used = true; break
+              }
+            } else {
+              const { data: rows } = await serviceSupabase
+                .from(t)
+                .select('film_id, puzzle_date')
+                .eq('film_id', id)
+                .gte('puzzle_date', cutoffStr)
+                .limit(1)
+              if (rows && rows.length > 0) { used = true; break }
+            }
+          }
+          if (used) {
+            return NextResponse.json({ error: `Movie ${id} was used in the last 30 days in another game.` }, { status: 409 })
+          }
+        }
+      }
     }
 
     // Insert the puzzle

@@ -475,8 +475,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       setPuzzleName(puzzleData.name || "")
       setIsPublished(!!puzzleData.puzzle_date) // Published if it has a date
       
-      // Parse and load movie pairs - Budget Bracket uses 'pairs' field (renamed from movie_pairs)
-      const pairsData = puzzleData.pairs || puzzleData.movie_pairs // Support both for backwards compatibility
+      // Parse and load movie pairs - Budget Bracket uses 'pairs' field
+      const pairsData = puzzleData.pairs
       let loadedPairs = []
       
       if (pairsData && Array.isArray(pairsData)) {
@@ -616,7 +616,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Check budget bracket puzzles (past 30 days)
       const budgetBracketPastQuery = supabase
         .from('budget_bracket_puzzles')
-        .select('id, movie_pairs, puzzle_date')
+        .select('id, pairs, puzzle_date')
         .gte('puzzle_date', pastDateStr)
         .lte('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
@@ -631,8 +631,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (budgetBracketPastData) {
         budgetBracketPastData.forEach(puzzle => {
           // Parse pairs to extract movie IDs
-          if (puzzle.movie_pairs && Array.isArray(puzzle.movie_pairs)) {
-            puzzle.movie_pairs.forEach((pair: any) => {
+          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
+            puzzle.pairs.forEach((pair: any) => {
               if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: false })
@@ -649,7 +649,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       // Check budget bracket puzzles (future scheduled)
       const budgetBracketFutureQuery = supabase
         .from('budget_bracket_puzzles')
-        .select('id, movie_pairs, puzzle_date')
+        .select('id, pairs, puzzle_date')
         .gt('puzzle_date', todayStr)
         .not('puzzle_date', 'is', null)
       
@@ -663,8 +663,8 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       if (budgetBracketFutureData) {
         budgetBracketFutureData.forEach(puzzle => {
           // Parse pairs to extract movie IDs
-          if (puzzle.movie_pairs && Array.isArray(puzzle.movie_pairs)) {
-            puzzle.movie_pairs.forEach((pair: any) => {
+          if (puzzle.pairs && Array.isArray(puzzle.pairs)) {
+            puzzle.pairs.forEach((pair: any) => {
               if (pair.movieA && pair.movieA.id) {
                 usedMovieIds.add(pair.movieA.id)
                 movieDateMap.set(pair.movieA.id, { date: puzzle.puzzle_date, isFuture: true })
@@ -1423,7 +1423,7 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         puzzle_date: puzzleDate || null,
         name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
-        pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure - column renamed from movie_pairs to pairs
+        pairs: hydrationResult.hydratedPairs,
         difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
         is_published: isPublished
       }

@@ -1,8 +1,11 @@
 // OpenAI service for smart puzzle generation with web search
 import { TMDBMovie, TMDBMovieDetails } from './types/tmdb'
-import { getMovieById, getMovieAlternativeTitles, getMovieCredits } from './tmdb'
+import { getMovieById, getMovieAlternativeTitles, getMovieCredits, searchMovies } from './tmdb'
+import { openai } from './openai-client'
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+// gpt-5 family by default; allow override via OPENAI_MODEL for specific gpt-5 variants
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5'
 
 export interface GenerationConfig {
   obscurityThreshold?: number // 1-10, where 1 is mainstream and 10 is very obscure
@@ -67,7 +70,7 @@ function isMovieAppropriate(movie: TMDBMovieDetails, config: GenerationConfig): 
   return true
 }
 
-// Query OpenAI for movie suggestions
+// Query OpenAI for movie suggestions using the Responses API with web_search
 async function queryOpenAIForMovies(
   gameType: string,
   prompt: string
@@ -75,61 +78,60 @@ async function queryOpenAIForMovies(
   if (!OPENAI_API_KEY) {
     throw new Error('OpenAI API key not configured')
   }
-
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Use gpt-4o which has better capabilities (GPT-5 not yet available)
-        messages: [
-          {
-            role: 'system',
-            content: `You are a movie puzzle generator assistant. You suggest appropriate movies for the game "${gameType}". 
-            Focus on movies that are well-known enough to be fun but not too obscure.
-            You should return a JSON object with a "movie_ids" field containing an array of TMDB movie ID numbers.
-            Example response format: {"movie_ids": [550, 680, 155, 27205, 13]}`
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        response_format: { type: "json_object" }
-      })
-    })
+    const response = await openai.responses.create({
+      model: OPENAI_MODEL, // gpt-5 family
+      tools: [ { type: 'web_search' } ],
+      input: [
+        {
+          role: 'system',
+          content: `You are a movie puzzle generator assistant for the "${gameType}" game. \
+Return STRICT JSON with a top-level key \"movie_ids\" containing an array of TMDB numeric IDs. \
+No prose. Example: {"movie_ids":[550,680,155]}`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ]
+    } as any)
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`)
+    let content: string = (response as any)?.output_text || '{}'
+    if (content.startsWith('```')) {
+      content = content.replace(/^```[a-zA-Z]*\n?/, '').replace(/```\s*$/, '')
     }
-
-    const data = await response.json()
-    
-    // Extract movie IDs from the response
-    const content = data.choices?.[0]?.message?.content || '{}'
-    let parsedContent
-    try {
-      parsedContent = JSON.parse(content)
-    } catch {
-      console.error('Failed to parse OpenAI response:', content)
-      throw new Error('Invalid JSON response from OpenAI')
+    const parsed = JSON.parse(content)
+    const raw = parsed.movie_ids || parsed.movies || parsed.ids || []
+    if (!Array.isArray(raw)) {
+      throw new Error('Invalid response format from OpenAI (responses)')
     }
-    
-    // Handle different response formats
-    const movieIds = parsedContent.movie_ids || parsedContent.movies || parsedContent.ids || []
-    
-    if (!Array.isArray(movieIds)) {
-      throw new Error('Invalid response format from OpenAI - expected array of movie IDs')
+    // Resolve to numeric TMDB IDs; accept numbers, numeric strings, or {title, year} objects
+    const ids: number[] = []
+    for (const item of raw) {
+      if (typeof item === 'number' && Number.isFinite(item)) {
+        ids.push(item)
+      } else if (typeof item === 'string') {
+        const asNum = Number(item)
+        if (Number.isFinite(asNum)) {
+          ids.push(asNum)
+        } else {
+          // Treat as title; search TMDB
+          const results = await searchMovies(item)
+          if (results && results.length > 0) ids.push(results[0].id)
+        }
+      } else if (item && typeof item === 'object') {
+        const title = (item.title || item.name || '').toString()
+        const year = item.year ? String(item.year) : ''
+        if (title) {
+          const q = year ? `${title} ${year}` : title
+          const results = await searchMovies(q)
+          if (results && results.length > 0) ids.push(results[0].id)
+        }
+      }
     }
-    
-    return movieIds
+    return Array.from(new Set(ids))
   } catch (error) {
-    console.error('Error querying OpenAI:', error)
+    console.error('Error querying OpenAI (responses):', error)
     throw error
   }
 }
@@ -154,11 +156,31 @@ async function generateRetitledPuzzle(
     if (!movie || !isMovieAppropriate(movie, config)) continue
     
     // Get alternative titles
-    const altTitles = await getMovieAlternativeTitles(movieId)
-    if (!altTitles || altTitles.titles.length === 0) continue
+    let altTitles = await getMovieAlternativeTitles(movieId)
+    // Fallback: ask OpenAI (with web search) for a localized title if TMDB translations are unavailable
+    if (!altTitles || !Array.isArray(altTitles.titles) || altTitles.titles.length === 0) {
+      try {
+        const resp = await openai.responses.create({
+          model: OPENAI_MODEL,
+          tools: [{ type: 'web_search' }],
+          input: [{
+            role: 'user',
+            content: `For the film "${movie.title}" (${movie.release_date?.slice(0,4) || ''}), list one non-US localized title with its ISO 3166-1 country code. Return JSON: {"title": string, "iso_3166_1": string}.`
+          }]
+        } as any)
+        let txt: string = (resp as any)?.output_text || '{}'
+        if (txt.startsWith('```')) txt = txt.replace(/^```[a-zA-Z]*\n?/, '').replace(/```\s*$/, '')
+        const parsed = JSON.parse(txt)
+        if (parsed && parsed.title && parsed.iso_3166_1) {
+          altTitles = { id: movieId, titles: [{ iso_3166_1: parsed.iso_3166_1, title: parsed.title, type: 'translation' }] } as any
+        }
+      } catch (e) {
+        // ignore and continue to next suggestion
+      }
+    }
     
     // Find interesting foreign title
-    const interestingTitles = altTitles.titles.filter(t => 
+    const interestingTitles = (altTitles?.titles || []).filter((t: any) => 
       t.iso_3166_1 !== 'US' && 
       t.title !== movie.title &&
       t.title.length > 3
@@ -172,7 +194,7 @@ async function generateRetitledPuzzle(
     // Get distractor movies (similar genre/era)
     const distractorPrompt = `Find 4 movies similar to "${movie.title}" (${movie.release_date?.substring(0, 4)}) 
     that could be plausible wrong answers. They should be from similar genres and time periods.
-    Return only TMDB IDs.`
+    Return TMDB IDs or exact titles if unknown.`
     
     const distractorIds = await queryOpenAIForMovies('retitled', distractorPrompt)
     
@@ -401,6 +423,35 @@ export async function generateSmartPuzzle(
       }
     }
   }
+}
+
+// Batch generation helper (future bulk actions)
+export async function generateSmartPuzzlesBatch(
+  requests: SmartPuzzleRequest[],
+  baseRecentMovieIds: number[] = []
+) {
+  const results: SmartPuzzleResponse[] = []
+  const used = new Set<number>(baseRecentMovieIds)
+  for (const req of requests) {
+    const res = await generateSmartPuzzle(req, [...used])
+    results.push(res)
+    // If successful, add all involved film ids to the set to avoid re-use within the batch
+    if (res.success && res.puzzle) {
+      const ids: number[] = (() => {
+        if (req.gameType === 'budget-bracket') {
+          const pairs = Array.isArray(res.puzzle?.pairs) ? res.puzzle.pairs : []
+          const s = new Set<number>()
+          for (const pair of pairs) {
+            if (Array.isArray(pair)) pair.forEach((m: any) => { if (m?.id) s.add(m.id) })
+          }
+          return [...s]
+        }
+        return typeof res.puzzle?.film_id === 'number' ? [res.puzzle.film_id] : []
+      })()
+      ids.forEach(id => used.add(id))
+    }
+  }
+  return results
 }
 
 // Check for recent movie usage across games

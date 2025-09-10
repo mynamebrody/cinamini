@@ -80,7 +80,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         puzzle_date: data.puzzle_date,
         seed_value: data.seed_value,
         puzzle_number: data.puzzle_number,
-        has_movie_pairs: !!data.movie_pairs,
+        has_pairs: !!data.pairs,
         name: data.name
       })
     } else {

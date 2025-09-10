@@ -115,6 +115,24 @@ Single interface for creating puzzles across all games.
 - **Draft/Published States**: Save work without making it live
 - **Movie Search Integration**: Advanced search with availability status
 
+#### Smart Generation (Admin-only)
+- Click the “Generate” wand in each editor to auto-suggest or fully generate a puzzle for the selected date.
+- Settings:
+  - Obscurity Level (1–10): caps how niche the film can be.
+  - Budget Closeness (Budget Bracket): max % difference between paired movie budgets.
+  - Avoid in any game (days): default 30 days.
+  - Avoid in same game (days): default 365 days.
+- Server enforcement:
+  - No same-game repeats in the last 365 days.
+  - No cross-game usage in the last 30 days.
+  - Budget Bracket pairs must have non-zero, non-identical budgets; at least 4/5 pairs must be within the configured closeness.
+
+#### OpenAI + Web Search
+- Configure these env vars (also see `.env.example`):
+  - `OPENAI_API_KEY` – required.
+  - `OPENAI_MODEL` – any gpt-5 family model (default: `gpt-5`).
+- The generator uses the OpenAI Responses API exclusively, with web search enabled by default.
+
 #### Retitled Puzzle Editor
 - Select movie and localized title
 - Add 3-5 distractor options
