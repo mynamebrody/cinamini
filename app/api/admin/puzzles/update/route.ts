@@ -106,6 +106,36 @@ export async function PUT(request: Request) {
       isPublished: existingPuzzle.is_published
     }
 
+    // Before update, prevent duplicate film usage for specific games if film_id is changing or present
+    if (['retitled', 'poster_pixels', 'cast_climb'].includes(gameType) && typeof puzzleData?.film_id !== 'undefined') {
+      const filmId = puzzleData.film_id
+      if (typeof filmId !== 'number') {
+        return NextResponse.json(
+          { error: 'film_id must be a number' },
+          { status: 400 }
+        )
+      }
+      const { data: dup, error: dupError } = await serviceSupabase
+        .from(tableName)
+        .select('id')
+        .eq('film_id', filmId)
+        .neq('id', puzzleId)
+        .limit(1)
+      if (dupError) {
+        console.error('Duplicate check failed:', dupError)
+        return NextResponse.json(
+          { error: 'Failed to validate puzzle uniqueness' },
+          { status: 500 }
+        )
+      }
+      if (dup && dup.length > 0) {
+        return NextResponse.json(
+          { error: 'A puzzle for this movie already exists for this game.' },
+          { status: 409 }
+        )
+      }
+    }
+
     // Remove fields that shouldn't be updated
     const updateData = { ...puzzleData }
     delete updateData.id

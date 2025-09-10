@@ -173,7 +173,7 @@
 
   .btn-primary:hover {
     background-color: white;
-    color: rgb(var(--cinema-red));
+    color: rgb(var(--cinema-red)) !important;
     border-color: rgb(var(--cinema-red));
     box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
                 2px 2px 0px rgb(var(--cinema-red)),
@@ -205,7 +205,7 @@
 
   .btn-ghost:hover {
     background-color: transparent;
-    color: rgb(var(--cinema-red));
+    color: rgb(var(--cinema-red)) !important;
     border: 1px solid rgb(var(--cinema-red));
     box-shadow: 1px 1px 0px rgb(var(--cinema-red)),
                 2px 2px 0px rgb(var(--cinema-red)),
