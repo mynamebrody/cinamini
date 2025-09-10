@@ -37,6 +37,7 @@ interface PuzzleData {
   film_id?: number
   film_title?: string
   film_poster_url?: string
+  film_poster_override_url?: string | null
   film_release_year?: number
   clarity_levels?: number[]
 }
@@ -239,7 +240,8 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
     
-    const posterPath = state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
+    // Prefer admin-selected override, then TMDB poster path, then legacy field
+    const posterPath = state.puzzle.film_poster_override_url || state.puzzle.movie_data?.poster_path || state.puzzle.film_poster_url
     if (!posterPath) {
       console.error("No poster path found in puzzle data")
       drawFallbackPoster(ctx, canvas)
@@ -828,15 +830,13 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
                   state.puzzle.film_release_year.toString() :
                   "Unknown"
               }
-              moviePosterUrl={
-                state.puzzle.movie_data?.poster_path ? 
-                  `https://image.tmdb.org/t/p/w342${state.puzzle.movie_data.poster_path}` :
-                state.puzzle.film_poster_url ?
-                  (state.puzzle.film_poster_url.startsWith('http') ? 
-                    state.puzzle.film_poster_url : 
-                    `https://image.tmdb.org/t/p/w342${state.puzzle.film_poster_url}`) :
-                  undefined
-              }
+              moviePosterUrl={(() => {
+                const override = state.puzzle?.film_poster_override_url
+                const poster = state.puzzle?.movie_data?.poster_path || state.puzzle?.film_poster_url
+                const chosen = override || poster
+                if (!chosen) return undefined
+                return chosen.startsWith('http') ? chosen : `https://image.tmdb.org/t/p/w342${chosen}`
+              })()}
               guesses={state.guesses}
               finalScore={state.finalScore || 0}
             />

@@ -109,6 +109,8 @@ export async function GET(request: NextRequest) {
         film_id: puzzle.film_id,
         film_title: puzzle.film_title,
         film_poster_url: puzzle.film_poster_url,
+        // Optional admin-selected override (if present, clients should prefer this)
+        film_poster_override_url: (puzzle as any).film_poster_override_url || null,
         film_release_year: puzzle.film_release_year,
         clarity_levels: puzzle.clarity_levels,
         // Legacy movie_data for backward compatibility
