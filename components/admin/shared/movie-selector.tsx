@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { Search, Film, AlertCircle, Check, Loader2 } from "lucide-react"
+import { Search, Film, AlertCircle, Check, Loader2, Eye, EyeOff } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,12 @@ interface MovieUsage {
   movieId: number
   totalUsage: number
   last30Days: {
+    retitled: number
+    budgetBracket: number
+    castClimb: number
+    posterPixels?: number
+  }
+  next30Days?: {
     retitled: number
     budgetBracket: number
     castClimb: number
@@ -93,6 +99,20 @@ export default function MovieSelector({
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsage, setMovieUsage] = useState<MovieUsage | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(false)
+  type UsageCounts = { retitled: number; budgetBracket: number; castClimb: number; posterPixels: number }
+  const [listUsage, setListUsage] = useState<Map<number, { past: UsageCounts; future: UsageCounts }>>(new Map())
+  const [showUsageBadges, setShowUsageBadges] = useState<boolean>(true)
+
+  // Persist badge-visibility across sessions
+  useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage.getItem('cinamini_admin_show_usage_badges') : null
+      if (raw !== null) setShowUsageBadges(raw === '1' || raw === 'true')
+    } catch {}
+  }, [])
+  useEffect(() => {
+    try { if (typeof window !== 'undefined') window.localStorage.setItem('cinamini_admin_show_usage_badges', showUsageBadges ? '1' : '0') } catch {}
+  }, [showUsageBadges])
   const [usedIds, setUsedIds] = useState<Set<number>>(new Set())
   
   // State for cached movie lists
@@ -142,6 +162,7 @@ export default function MovieSelector({
           movieId,
           totalUsage: 0,
           last30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 },
+          next30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 },
           usage: []
         })
         return
@@ -150,63 +171,82 @@ export default function MovieSelector({
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       const pastDateStr = thirtyDaysAgo.toISOString().split('T')[0]
+      const today = new Date(); const todayStr = today.toISOString().split('T')[0]
+      const plus30 = new Date(); plus30.setDate(plus30.getDate() + 30)
+      const futureDateStr = plus30.toISOString().split('T')[0]
 
       // Count per game (last 30 days)
-      const [retitledRes, castRes, posterRes] = await Promise.all([
+      const [retitledRes, castRes, posterRes, rFuture, cFuture, pFuture] = await Promise.all([
         supabase.from('retitled_puzzles')
           .select('id', { count: 'exact', head: true })
           .eq('film_id', movieId)
-          .gte('puzzle_date', pastDateStr),
+          .gte('puzzle_date', pastDateStr)
+          .lte('puzzle_date', todayStr),
         supabase.from('cast_climb_puzzles')
           .select('id', { count: 'exact', head: true })
           .eq('film_id', movieId)
-          .gte('puzzle_date', pastDateStr),
+          .gte('puzzle_date', pastDateStr)
+          .lte('puzzle_date', todayStr),
         supabase.from('poster_pixels_puzzles')
           .select('id', { count: 'exact', head: true })
           .eq('film_id', movieId)
           .gte('puzzle_date', pastDateStr)
+          .lte('puzzle_date', todayStr),
+        supabase.from('retitled_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gt('puzzle_date', todayStr)
+          .lte('puzzle_date', futureDateStr),
+        supabase.from('cast_climb_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gt('puzzle_date', todayStr)
+          .lte('puzzle_date', futureDateStr),
+        supabase.from('poster_pixels_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gt('puzzle_date', todayStr)
+          .lte('puzzle_date', futureDateStr)
       ])
 
       const retitledCount = retitledRes.count || 0
       const castCount = castRes.count || 0
       const posterCount = posterRes.count || 0
+      const retitledFuture = rFuture.count || 0
+      const castFuture = cFuture.count || 0
+      const posterFuture = pFuture.count || 0
 
       // Budget Bracket: fetch recent puzzles and count locally for membership
       let budgetCount = 0
-      try {
-        const { data: bbPairs, error: bbPairsError } = await supabase
+      let budgetFuture = 0
+      {
+        const { data: bbPairs } = await supabase
           .from('budget_bracket_puzzles')
           .select('id, pairs, puzzle_date')
           .gte('puzzle_date', pastDateStr)
+          .lte('puzzle_date', todayStr)
           .not('pairs', 'is', null)
-
-        if (bbPairsError) throw bbPairsError
         if (bbPairs && Array.isArray(bbPairs)) {
           for (const row of bbPairs) {
             const arr = (row as any).pairs || []
             if (Array.isArray(arr)) {
-              const hit = arr.some((pair: any) =>
-                pair?.movieA?.id === movieId || pair?.movieB?.id === movieId
-              )
+              const hit = arr.some((pair: any) => pair?.movieA?.id === movieId || pair?.movieB?.id === movieId)
               if (hit) budgetCount++
             }
           }
         }
-      } catch (_) {
-        // Fallback for older column name movie_pairs
-        const { data: bbPairs2 } = await supabase
+        const { data: bbF } = await supabase
           .from('budget_bracket_puzzles')
-          .select('id, movie_pairs, puzzle_date')
-          .gte('puzzle_date', pastDateStr)
-          .not('movie_pairs', 'is', null)
-        if (bbPairs2 && Array.isArray(bbPairs2)) {
-          for (const row of bbPairs2) {
-            const arr = (row as any).movie_pairs || []
+          .select('id, pairs, puzzle_date')
+          .gt('puzzle_date', todayStr)
+          .lte('puzzle_date', futureDateStr)
+          .not('pairs', 'is', null)
+        if (bbF && Array.isArray(bbF)) {
+          for (const row of bbF) {
+            const arr = (row as any).pairs || []
             if (Array.isArray(arr)) {
-              const hit = arr.some((pair: any) =>
-                pair?.movieA?.id === movieId || pair?.movieB?.id === movieId
-              )
-              if (hit) budgetCount++
+              const hit = arr.some((pair: any) => pair?.movieA?.id === movieId || pair?.movieB?.id === movieId)
+              if (hit) budgetFuture++
             }
           }
         }
@@ -221,16 +261,145 @@ export default function MovieSelector({
           castClimb: castCount,
           posterPixels: posterCount
         },
+        next30Days: {
+          retitled: retitledFuture,
+          budgetBracket: budgetFuture,
+          castClimb: castFuture,
+          posterPixels: posterFuture
+        },
         usage: []
       }
       setMovieUsage(usage)
     } catch (error) {
       console.error('Error fetching movie usage:', error)
-      setMovieUsage({ movieId, totalUsage: 0, last30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 }, usage: [] })
+      setMovieUsage({ movieId, totalUsage: 0, last30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 }, next30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 }, usage: [] })
     } finally {
       setLoadingUsage(false)
     }
   }
+
+  // Batch-fetch usage for the movies currently displayed (top 20 for efficiency)
+  useEffect(() => {
+    if (!showUsageBadges) return
+    const supabase = getSupabaseClient()
+    if (!supabase) return
+
+    const movies = (activeTab === 'search' ? searchResults : cachedLists[activeTab as Exclude<TabType, 'search'>]?.movies || [])
+    const ids = Array.from(new Set(movies.slice(0, 20).map(m => m.id)))
+    if (ids.length === 0) {
+      setListUsage(new Map())
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const past = new Date(); past.setDate(past.getDate() - 30)
+        const pastStr = past.toISOString().split('T')[0]
+        const today = new Date()
+        const todayStr = today.toISOString().split('T')[0]
+        const future = new Date(); future.setDate(future.getDate() + 30)
+        const futureStr = future.toISOString().split('T')[0]
+        const idSet = new Set(ids)
+
+        // Query simple tables with film_id and aggregate in client
+        const [
+          { data: rData }, { data: cData }, { data: pData },
+          { data: rFuture }, { data: cFuture }, { data: pFuture }
+        ] = await Promise.all([
+          supabase.from('retitled_puzzles').select('film_id, puzzle_date').in('film_id', ids).gte('puzzle_date', pastStr).lte('puzzle_date', todayStr),
+          supabase.from('cast_climb_puzzles').select('film_id, puzzle_date').in('film_id', ids).gte('puzzle_date', pastStr).lte('puzzle_date', todayStr),
+          supabase.from('poster_pixels_puzzles').select('film_id, puzzle_date').in('film_id', ids).gte('puzzle_date', pastStr).lte('puzzle_date', todayStr),
+          supabase.from('retitled_puzzles').select('film_id, puzzle_date').in('film_id', ids).gt('puzzle_date', todayStr).lte('puzzle_date', futureStr),
+          supabase.from('cast_climb_puzzles').select('film_id, puzzle_date').in('film_id', ids).gt('puzzle_date', todayStr).lte('puzzle_date', futureStr),
+          supabase.from('poster_pixels_puzzles').select('film_id, puzzle_date').in('film_id', ids).gt('puzzle_date', todayStr).lte('puzzle_date', futureStr)
+        ])
+
+        // Budget Bracket: fetch last 30 days and count membership per id
+        // Budget Bracket (past): use 'pairs' column only
+        const { data: bbRows } = await supabase
+          .from('budget_bracket_puzzles')
+          .select('pairs, puzzle_date')
+          .gte('puzzle_date', pastStr)
+          .lte('puzzle_date', todayStr)
+
+        // Budget Bracket (future): use 'pairs' column only
+        const { data: bbFuture } = await supabase
+          .from('budget_bracket_puzzles')
+          .select('pairs, puzzle_date')
+          .gt('puzzle_date', todayStr)
+          .lte('puzzle_date', futureStr)
+
+        const map = new Map<number, { past: UsageCounts; future: UsageCounts }>()
+        for (const id of ids) map.set(id, { past: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 }, future: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 } })
+
+        if (Array.isArray(rData)) {
+          for (const row of rData) {
+            if (idSet.has(row.film_id)) {
+              const curr = map.get(row.film_id)!; curr.past.retitled += 1
+            }
+          }
+        }
+        if (Array.isArray(cData)) {
+          for (const row of cData) {
+            if (idSet.has(row.film_id)) {
+              const curr = map.get(row.film_id)!; curr.past.castClimb += 1
+            }
+          }
+        }
+        if (Array.isArray(pData)) {
+          for (const row of pData) {
+            if (idSet.has(row.film_id)) {
+              const curr = map.get(row.film_id)!; curr.past.posterPixels += 1
+            }
+          }
+        }
+        if (Array.isArray(rFuture)) {
+          for (const row of rFuture) { if (idSet.has(row.film_id)) { const curr = map.get(row.film_id)!; curr.future.retitled += 1 } }
+        }
+        if (Array.isArray(cFuture)) {
+          for (const row of cFuture) { if (idSet.has(row.film_id)) { const curr = map.get(row.film_id)!; curr.future.castClimb += 1 } }
+        }
+        if (Array.isArray(pFuture)) {
+          for (const row of pFuture) { if (idSet.has(row.film_id)) { const curr = map.get(row.film_id)!; curr.future.posterPixels += 1 } }
+        }
+        if (Array.isArray(bbRows)) {
+          for (const row of bbRows) {
+            const pairs: any[] = (row as any).pairs || (row as any).movie_pairs || []
+            if (!Array.isArray(pairs)) continue
+            for (const pair of pairs) {
+              const aRaw = pair?.movieA?.id; const bRaw = pair?.movieB?.id
+              const a = typeof aRaw === 'string' ? parseInt(aRaw, 10) : aRaw
+              const b = typeof bRaw === 'string' ? parseInt(bRaw, 10) : bRaw
+              if (typeof a === 'number' && idSet.has(a)) { const curr = map.get(a)!; curr.past.budgetBracket += 1 }
+              if (typeof b === 'number' && idSet.has(b)) { const curr = map.get(b)!; curr.past.budgetBracket += 1 }
+            }
+          }
+        }
+        if (Array.isArray(bbFuture)) {
+          for (const row of bbFuture) {
+            const pairs: any[] = (row as any).pairs || (row as any).movie_pairs || []
+            if (!Array.isArray(pairs)) continue
+            for (const pair of pairs) {
+              const aRaw = pair?.movieA?.id; const bRaw = pair?.movieB?.id
+              const a = typeof aRaw === 'string' ? parseInt(aRaw, 10) : aRaw
+              const b = typeof bRaw === 'string' ? parseInt(bRaw, 10) : bRaw
+              if (typeof a === 'number' && idSet.has(a)) { const curr = map.get(a)!; curr.future.budgetBracket += 1 }
+              if (typeof b === 'number' && idSet.has(b)) { const curr = map.get(b)!; curr.future.budgetBracket += 1 }
+            }
+          }
+        }
+
+        if (!cancelled) setListUsage(map)
+      } catch (e) {
+        // Best-effort; keep listUsage empty on error
+        if (!cancelled) setListUsage(new Map())
+      }
+    })()
+
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showUsageBadges, activeTab, JSON.stringify(searchResults.map(m => m.id)), JSON.stringify((cachedLists[activeTab as Exclude<TabType, 'search'>]?.movies || []).map(m => m.id))])
 
   const hasValidBudget = useCallback((movie: any): boolean => {
     // For Budget Bracket games, enforce minimum $100 budget requirement
@@ -590,6 +759,18 @@ export default function MovieSelector({
         </div>
       </div>
 
+      {/* Controls */}
+      <div className="mb-2 flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowUsageBadges(v => !v)}
+          className="text-cinema-red border-cinema-red hover:bg-cinema-red/5"
+        >
+          {showUsageBadges ? (<><EyeOff className="w-4 h-4 mr-1" /> Hide Badges</>) : (<><Eye className="w-4 h-4 mr-1" /> Show Badges</>)}
+        </Button>
+      </div>
+
       {/* Main content area - Scrollable */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* Loading State */}
@@ -606,17 +787,63 @@ export default function MovieSelector({
             {getCurrentMovies().map((movie) => {
               const isSelected = selectedMovie?.id === movie.id
               const isDisabled = !!disableUsedInGame && usedIds.has(movie.id)
+              const u = listUsage.get(movie.id)
+              const exclude = excludeGameFromUsage
+              const r = u?.past.retitled || 0
+              const b = u?.past.budgetBracket || 0
+              const c = u?.past.castClimb || 0
+              const p = u?.past.posterPixels || 0
+              const rf = u?.future.retitled || 0
+              const bf = u?.future.budgetBracket || 0
+              const cf = u?.future.castClimb || 0
+              const pf = u?.future.posterPixels || 0
+              const showR = r > 0 && exclude !== 'retitled'
+              const showB = b > 0 && exclude !== 'budget_bracket'
+              const showC = c > 0 && exclude !== 'cast_climb'
+              const showP = p > 0 && exclude !== 'poster_pixels'
+              const showRF = rf > 0 && exclude !== 'retitled'
+              const showBF = bf > 0 && exclude !== 'budget_bracket'
+              const showCF = cf > 0 && exclude !== 'cast_climb'
+              const showPF = pf > 0 && exclude !== 'poster_pixels'
 
               return (
                 <div
                   key={movie.id}
                   onClick={() => { if (!isDisabled) handleSelectMovie(movie) }}
                   className={cn(
-                    "cursor-pointer transition-all rounded-lg relative",
-                    isSelected && "ring-2 ring-blue-500",
+                    "cursor-pointer transition-all rounded-lg relative border border-neutral-200",
+                    isSelected && "border-cinema-red shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]",
                     isDisabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
+                  {showUsageBadges && (showR || showB || showC || showP || showRF || showBF || showCF || showPF) && (
+                    <div className="absolute top-2 right-2 z-10 flex gap-1 flex-wrap justify-end pointer-events-none max-w-[60%]">
+                      {showR && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-yellow-100 text-yellow-800 border-yellow-300">Retitled: {r}</Badge>
+                      )}
+                      {showB && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-yellow-100 text-yellow-800 border-yellow-300">Budget: {b}</Badge>
+                      )}
+                      {showC && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-yellow-100 text-yellow-800 border-yellow-300">Cast: {c}</Badge>
+                      )}
+                      {showP && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-yellow-100 text-yellow-800 border-yellow-300">Poster: {p}</Badge>
+                      )}
+                      {showRF && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-100 text-amber-800 border-amber-300">Retitled S: {rf}</Badge>
+                      )}
+                      {showBF && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-100 text-amber-800 border-amber-300">Budget S: {bf}</Badge>
+                      )}
+                      {showCF && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-100 text-amber-800 border-amber-300">Cast S: {cf}</Badge>
+                      )}
+                      {showPF && (
+                        <Badge variant="outline" className="text-[10px] h-5 px-1.5 bg-amber-100 text-amber-800 border-amber-300">Poster S: {pf}</Badge>
+                      )}
+                    </div>
+                  )}
                   <MovieDetailsCard
                     movie={movie}
                     compact={true}
@@ -711,14 +938,13 @@ export default function MovieSelector({
                       setSelectedMovie(null)
                       setMovieUsage(null)
                     }}
-                    className="text-gray-500 hover:text-gray-700"
                   >
                     Cancel
                   </Button>
                   <Button
+                    variant="primary"
                     onClick={confirmSelection}
                     size="sm"
-                    className="bg-cinema-red text-white border border-cinema-red transition-all duration-200 hover:bg-white hover:text-cinema-red hover:shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)] hover:-translate-y-0.5"
                   >
                     <Check className="w-4 h-4 mr-1" />
                     Select Movie
@@ -739,9 +965,17 @@ export default function MovieSelector({
                 const b = movieUsage?.last30Days?.budgetBracket ?? 0
                 const c = movieUsage?.last30Days?.castClimb ?? 0
                 const p = movieUsage?.last30Days?.posterPixels ?? 0
+                const rf = movieUsage?.next30Days?.retitled ?? 0
+                const bf = movieUsage?.next30Days?.budgetBracket ?? 0
+                const cf = movieUsage?.next30Days?.castClimb ?? 0
+                const pf = movieUsage?.next30Days?.posterPixels ?? 0
                 const totalAll = (r + b + c + p)
                 const totalOther = totalAll - (
                   exclude === 'retitled' ? r : exclude === 'budget_bracket' ? b : exclude === 'cast_climb' ? c : exclude === 'poster_pixels' ? p : 0
+                )
+                const totalFutureAll = (rf + bf + cf + pf)
+                const totalFutureOther = totalFutureAll - (
+                  exclude === 'retitled' ? rf : exclude === 'budget_bracket' ? bf : exclude === 'cast_climb' ? cf : exclude === 'poster_pixels' ? pf : 0
                 )
 
                 if (totalOther > 0) {
@@ -773,6 +1007,30 @@ export default function MovieSelector({
                           <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
                             Poster: {p}
                           </Badge>
+                        )}
+                        {totalFutureOther > 0 && (
+                          <>
+                            {exclude !== 'retitled' && rf > 0 && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                                Retitled S: {rf}
+                              </Badge>
+                            )}
+                            {exclude !== 'budget_bracket' && bf > 0 && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                                Budget S: {bf}
+                              </Badge>
+                            )}
+                            {exclude !== 'cast_climb' && cf > 0 && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                                Cast S: {cf}
+                              </Badge>
+                            )}
+                            {exclude !== 'poster_pixels' && pf > 0 && (
+                              <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                                Poster S: {pf}
+                              </Badge>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
