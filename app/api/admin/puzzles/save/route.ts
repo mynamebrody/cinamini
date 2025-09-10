@@ -67,6 +67,37 @@ export async function POST(request: Request) {
       }
     }
     
+    // Before insert, prevent duplicate film usage for specific games
+    if (['retitled', 'poster_pixels', 'cast_climb'].includes(gameType)) {
+      const tableName = `${gameType}_puzzles`
+      const filmId = puzzleData.film_id
+      if (typeof filmId !== 'number') {
+        return NextResponse.json(
+          { error: 'film_id must be a number' },
+          { status: 400 }
+        )
+      }
+      const { data: existingDup, error: dupError } = await serviceSupabase
+        .from(tableName)
+        .select('id')
+        .eq('film_id', filmId)
+        .limit(1)
+
+      if (dupError) {
+        console.error('Duplicate check failed:', dupError)
+        return NextResponse.json(
+          { error: 'Failed to validate puzzle uniqueness' },
+          { status: 500 }
+        )
+      }
+      if (existingDup && existingDup.length > 0) {
+        return NextResponse.json(
+          { error: 'A puzzle for this movie already exists for this game.' },
+          { status: 409 }
+        )
+      }
+    }
+
     // Insert the puzzle
     const tableName = `${gameType}_puzzles`
     const { data, error } = await serviceSupabase

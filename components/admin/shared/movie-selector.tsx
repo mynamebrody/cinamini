@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import MovieDetailsCard from "./movie-details-card"
+import { getSupabaseClient } from "@/lib/supabase/client"
 
 interface Movie {
   id: number
@@ -58,6 +59,8 @@ interface MovieSelectorProps {
   selectedMovieId?: number | null
   showBudget?: boolean
   excludeIds?: number[]
+  // When provided, movies already used as the main puzzle film in this game are disabled/greyed
+  disableUsedInGame?: 'retitled' | 'poster_pixels' | 'cast_climb'
 }
 
 type TabType = 'search' | 'now_playing' | 'popular' | 'top_rated' | 'upcoming'
@@ -72,7 +75,8 @@ interface CachedList {
 export default function MovieSelector({ 
   onSelect, 
   showBudget = false,
-  excludeIds = []
+  excludeIds = [],
+  disableUsedInGame
 }: MovieSelectorProps) {
   const [activeTab, setActiveTab] = useState<TabType>('search')
   const [searchQuery, setSearchQuery] = useState("")
@@ -85,6 +89,7 @@ export default function MovieSelector({
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [movieUsage, setMovieUsage] = useState<MovieUsage | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(false)
+  const [usedIds, setUsedIds] = useState<Set<number>>(new Set())
   
   // State for cached movie lists
   const [cachedLists, setCachedLists] = useState<Record<Exclude<TabType, 'search'>, CachedList>>({
@@ -93,6 +98,36 @@ export default function MovieSelector({
     top_rated: { movies: [], loaded: false, loading: false },
     upcoming: { movies: [], loaded: false, loading: false }
   })
+
+  // Fetch already-used film IDs for the specified game (if any)
+  useEffect(() => {
+    let isCancelled = false
+    async function loadUsedIds() {
+      if (!disableUsedInGame) {
+        setUsedIds(new Set())
+        return
+      }
+      try {
+        const supabase = getSupabaseClient()
+        if (!supabase) return
+        const table = `${disableUsedInGame}_puzzles`
+        const { data, error } = await supabase
+          .from(table)
+          .select('film_id')
+        if (error) {
+          console.warn('Failed to fetch used movie ids:', error)
+          return
+        }
+        if (!isCancelled && Array.isArray(data)) {
+          setUsedIds(new Set<number>(data.map((r: any) => r.film_id).filter((v: any) => typeof v === 'number')))
+        }
+      } catch (e) {
+        console.warn('Error loading used movie ids:', e)
+      }
+    }
+    loadUsedIds()
+    return () => { isCancelled = true }
+  }, [disableUsedInGame])
 
   const fetchMovieUsage = async (movieId: number) => {
     setLoadingUsage(true)
@@ -482,20 +517,30 @@ export default function MovieSelector({
           <div className="space-y-3">
             {getCurrentMovies().map((movie) => {
               const isSelected = selectedMovie?.id === movie.id
+              const isDisabled = !!disableUsedInGame && usedIds.has(movie.id)
 
               return (
                 <div
                   key={movie.id}
-                  onClick={() => handleSelectMovie(movie)}
+                  onClick={() => { if (!isDisabled) handleSelectMovie(movie) }}
                   className={cn(
-                    "cursor-pointer transition-all rounded-lg",
-                    isSelected && "ring-2 ring-blue-500"
+                    "cursor-pointer transition-all rounded-lg relative",
+                    isSelected && "ring-2 ring-blue-500",
+                    isDisabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <MovieDetailsCard
                     movie={movie}
                     compact={true}
                   />
+                  {isDisabled && (
+                    <div className="absolute inset-0 rounded-lg bg-white/40" />
+                  )}
+                  {isDisabled && (
+                    <div className="absolute top-2 right-2">
+                      <Badge variant="outline" className="text-xs bg-gray-200 text-gray-700 border-gray-300">Already used</Badge>
+                    </div>
+                  )}
                 </div>
               )
             })}
