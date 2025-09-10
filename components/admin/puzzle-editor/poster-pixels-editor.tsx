@@ -683,6 +683,7 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
                 excludeIds={[]}
                 requirePoster={true}
                 disableUsedInGame={'poster_pixels'}
+                excludeGameFromUsage={'poster_pixels'}
               />
             </div>
           </Card>

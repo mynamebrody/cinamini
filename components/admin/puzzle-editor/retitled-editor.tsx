@@ -1177,6 +1177,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 }}
                 excludeIds={allOptions.map(option => option.id)}
                 disableUsedInGame={selectingDistractorIndex === null ? 'retitled' : undefined}
+                excludeGameFromUsage={'retitled'}
               />
             </div>
           </Card>

@@ -793,6 +793,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
                 onSelect={handleSelectMovie}
                 onClose={() => setShowMovieSelector(false)}
                 disableUsedInGame={'cast_climb'}
+                excludeGameFromUsage={'cast_climb'}
               />
             </div>
           </Card>

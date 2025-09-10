@@ -44,6 +44,7 @@ interface MovieUsage {
     retitled: number
     budgetBracket: number
     castClimb: number
+    posterPixels?: number
   }
   usage: Array<{
     puzzleId: string
@@ -61,6 +62,8 @@ interface MovieSelectorProps {
   excludeIds?: number[]
   // When provided, movies already used as the main puzzle film in this game are disabled/greyed
   disableUsedInGame?: 'retitled' | 'poster_pixels' | 'cast_climb'
+  // Exclude this game type from the usage summary (show usage in other games only)
+  excludeGameFromUsage?: 'retitled' | 'poster_pixels' | 'cast_climb' | 'budget_bracket'
 }
 
 type TabType = 'search' | 'now_playing' | 'popular' | 'top_rated' | 'upcoming'
@@ -76,7 +79,8 @@ export default function MovieSelector({
   onSelect, 
   showBudget = false,
   excludeIds = [],
-  disableUsedInGame
+  disableUsedInGame,
+  excludeGameFromUsage
 }: MovieSelectorProps) {
   const [activeTab, setActiveTab] = useState<TabType>('search')
   const [searchQuery, setSearchQuery] = useState("")
@@ -132,13 +136,97 @@ export default function MovieSelector({
   const fetchMovieUsage = async (movieId: number) => {
     setLoadingUsage(true)
     try {
-      const response = await fetch(`/api/admin/movies/usage?movieId=${movieId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setMovieUsage(data)
+      const supabase = getSupabaseClient()
+      if (!supabase) {
+        setMovieUsage({
+          movieId,
+          totalUsage: 0,
+          last30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 },
+          usage: []
+        })
+        return
       }
+
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const pastDateStr = thirtyDaysAgo.toISOString().split('T')[0]
+
+      // Count per game (last 30 days)
+      const [retitledRes, castRes, posterRes] = await Promise.all([
+        supabase.from('retitled_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gte('puzzle_date', pastDateStr),
+        supabase.from('cast_climb_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gte('puzzle_date', pastDateStr),
+        supabase.from('poster_pixels_puzzles')
+          .select('id', { count: 'exact', head: true })
+          .eq('film_id', movieId)
+          .gte('puzzle_date', pastDateStr)
+      ])
+
+      const retitledCount = retitledRes.count || 0
+      const castCount = castRes.count || 0
+      const posterCount = posterRes.count || 0
+
+      // Budget Bracket: fetch recent puzzles and count locally for membership
+      let budgetCount = 0
+      try {
+        const { data: bbPairs, error: bbPairsError } = await supabase
+          .from('budget_bracket_puzzles')
+          .select('id, pairs, puzzle_date')
+          .gte('puzzle_date', pastDateStr)
+          .not('pairs', 'is', null)
+
+        if (bbPairsError) throw bbPairsError
+        if (bbPairs && Array.isArray(bbPairs)) {
+          for (const row of bbPairs) {
+            const arr = (row as any).pairs || []
+            if (Array.isArray(arr)) {
+              const hit = arr.some((pair: any) =>
+                pair?.movieA?.id === movieId || pair?.movieB?.id === movieId
+              )
+              if (hit) budgetCount++
+            }
+          }
+        }
+      } catch (_) {
+        // Fallback for older column name movie_pairs
+        const { data: bbPairs2 } = await supabase
+          .from('budget_bracket_puzzles')
+          .select('id, movie_pairs, puzzle_date')
+          .gte('puzzle_date', pastDateStr)
+          .not('movie_pairs', 'is', null)
+        if (bbPairs2 && Array.isArray(bbPairs2)) {
+          for (const row of bbPairs2) {
+            const arr = (row as any).movie_pairs || []
+            if (Array.isArray(arr)) {
+              const hit = arr.some((pair: any) =>
+                pair?.movieA?.id === movieId || pair?.movieB?.id === movieId
+              )
+              if (hit) budgetCount++
+            }
+          }
+        }
+      }
+
+      const usage = {
+        movieId,
+        totalUsage: retitledCount + castCount + budgetCount + posterCount,
+        last30Days: {
+          retitled: retitledCount,
+          budgetBracket: budgetCount,
+          castClimb: castCount,
+          posterPixels: posterCount
+        },
+        usage: []
+      }
+      setMovieUsage(usage)
     } catch (error) {
-      console.error("Error fetching movie usage:", error)
+      console.error('Error fetching movie usage:', error)
+      setMovieUsage({ movieId, totalUsage: 0, last30Days: { retitled: 0, budgetBracket: 0, castClimb: 0, posterPixels: 0 }, usage: [] })
     } finally {
       setLoadingUsage(false)
     }
@@ -644,36 +732,60 @@ export default function MovieSelector({
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   <span className="text-sm text-gray-600">Checking usage...</span>
                 </div>
-              ) : movieUsage && movieUsage.totalUsage > 0 ? (
-                <div className="text-sm">
-                  <div className="flex items-center gap-2 text-yellow-700">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                    <span>Used {movieUsage.totalUsage} times in last 30 days</span>
+              ) : (() => {
+                // Compute usage excluding the current game type if requested
+                const exclude = excludeGameFromUsage
+                const r = movieUsage?.last30Days?.retitled ?? 0
+                const b = movieUsage?.last30Days?.budgetBracket ?? 0
+                const c = movieUsage?.last30Days?.castClimb ?? 0
+                const p = movieUsage?.last30Days?.posterPixels ?? 0
+                const totalAll = (r + b + c + p)
+                const totalOther = totalAll - (
+                  exclude === 'retitled' ? r : exclude === 'budget_bracket' ? b : exclude === 'cast_climb' ? c : exclude === 'poster_pixels' ? p : 0
+                )
+
+                if (totalOther > 0) {
+                  return (
+                    <div className="text-sm">
+                      <div className="flex items-center gap-2 text-yellow-700">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>
+                          Used {totalOther} times in last 30 days{exclude ? ' (other games)' : ''}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        {exclude !== 'retitled' && r > 0 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                            Retitled: {r}
+                          </Badge>
+                        )}
+                        {exclude !== 'budget_bracket' && b > 0 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                            Budget: {b}
+                          </Badge>
+                        )}
+                        {exclude !== 'cast_climb' && c > 0 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                            Cast: {c}
+                          </Badge>
+                        )}
+                        {exclude !== 'poster_pixels' && p > 0 && (
+                          <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                            Poster: {p}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className="flex items-center gap-2 text-green-700 text-sm">
+                    <Check className="w-4 h-4 flex-shrink-0" />
+                    <span>Available - Not used in the last 30 days{exclude ? ' (other games)' : ''}</span>
                   </div>
-                  <div className="flex gap-2 mt-2">
-                    {movieUsage.last30Days.retitled > 0 && (
-                      <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                        Retitled: {movieUsage.last30Days.retitled}
-                      </Badge>
-                    )}
-                    {movieUsage.last30Days.budgetBracket > 0 && (
-                      <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                        Budget: {movieUsage.last30Days.budgetBracket}
-                      </Badge>
-                    )}
-                    {movieUsage.last30Days.castClimb > 0 && (
-                      <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                        Cast: {movieUsage.last30Days.castClimb}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-green-700 text-sm">
-                  <Check className="w-4 h-4 flex-shrink-0" />
-                  <span>Available - Not used in the last 30 days</span>
-                </div>
-              )}
+                )
+              })()}
             </div>
           </Card>
         </div>
