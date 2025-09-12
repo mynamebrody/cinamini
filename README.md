@@ -78,6 +78,10 @@ TMDB_BASE_URL=https://api.themoviedb.org/3
 
 # Share Card Generation
 SHARE_CARD_SECRET=your_random_secret_for_share_urls
+ 
+# UI Feature Flags
+# Toggle the global site banner (default: off)
+NEXT_PUBLIC_GLOBAL_BANNER_ENABLED=false
 ```
 
 ### Database Setup

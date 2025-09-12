@@ -1,0 +1,38 @@
+{
+  // VS Code launch configurations for cinamini
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node-terminal",
+      "request": "launch",
+      "name": "Next.js: Start (prod)",
+      "command": "npm start",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "npm: build",
+      "env": {
+        "PORT": "3000",
+        "NODE_ENV": "production"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "url: (http://\\S+)",
+        "uriFormat": "%s"
+      }
+    },
+    {
+      "type": "node-terminal",
+      "request": "launch",
+      "name": "Next.js: Dev",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PORT": "3000"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "url: (http://\\S+)",
+        "uriFormat": "%s"
+      }
+    }
+  ]
+}
