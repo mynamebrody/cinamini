@@ -85,7 +85,6 @@ export async function GET() {
         countryCode: puzzle.country_code,
         countryName: puzzle.country_name || getCountryName(puzzle.country_code),
         flagEmoji: getCountryFlag(puzzle.country_code),
-        difficultyLevel: puzzle.difficulty_level,
         translationNote: puzzle.translation_note,
         seedValue: puzzle.seed_value,
         options: shuffledOptions
@@ -128,17 +127,15 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     }
 
     // Generate new puzzle using the unified seeding system
-    console.log(`Generating new Retitled puzzle for ${dateString}`)
     const generatedPuzzle = await generateDailyPuzzle(date)
-    
+
     if (!generatedPuzzle) {
       console.error("Failed to generate puzzle")
       return null
     }
 
     // Calculate the puzzle number based on days since launch
-    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'retitled', date)
-    console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${dateString}`)
+    await calculatePuzzleNumberFromLaunch(supabase, 'retitled', date)
 
     // Insert new puzzle into database
     const { data: insertedPuzzle, error: insertError } = await supabase
@@ -151,7 +148,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         country_code: generatedPuzzle.country_code,
         country_name: generatedPuzzle.country_name,
         distractor_ids: generatedPuzzle.distractor_ids,
-        difficulty_level: generatedPuzzle.difficulty_level,
         translation_note: generatedPuzzle.translation_note,
         seed_value: generatedPuzzle.seed_value
       })
@@ -161,7 +157,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     if (insertError) {
       // Check if it's a unique constraint violation (puzzle already exists)
       if (insertError.code === '23505') {
-        console.log("Puzzle was created concurrently, fetching existing one")
         const { data: concurrentPuzzle } = await supabase
           .from("retitled_puzzles")
     .select("*")
@@ -174,7 +169,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
       }
     }
 
-    console.log(`Successfully created Retitled puzzle for ${dateString}`)
     return insertedPuzzle
     
   } catch (error) {

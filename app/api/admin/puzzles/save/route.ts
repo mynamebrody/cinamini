@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { gameType, puzzleData } = body
-    
+
     if (!gameType || !puzzleData) {
       return NextResponse.json(
         { error: "Game type and puzzle data are required" },
@@ -100,6 +100,7 @@ export async function POST(request: Request) {
 
     // Insert the puzzle
     const tableName = `${gameType}_puzzles`
+
     const { data, error } = await serviceSupabase
       .from(tableName)
       .insert(puzzleData)
@@ -108,11 +109,18 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error(`Error saving ${gameType} puzzle:`, error)
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      })
       return NextResponse.json(
-        { 
+        {
           error: error.message,
           code: error.code,
-          details: error.details
+          details: error.details,
+          hint: error.hint
         },
         { status: 400 }
       )
@@ -155,16 +163,16 @@ function validateRetitledPuzzle(data: any): string | null {
       return `Missing required field for retitled puzzle: ${field}`
     }
   }
-  
+
   if (!Array.isArray(data.distractor_ids)) {
     return 'distractor_ids must be an array'
   }
-  
+
   // puzzle_date can be null for drafts
   if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
     return 'puzzle_date must be a string or null'
   }
-  
+
   return null
 }
 
@@ -195,108 +203,74 @@ function validatePosterPixelsPuzzle(data: any): string | null {
       return `Missing required field for poster pixels puzzle: ${field}`
     }
   }
-  
+
   // Validate film_id is a number
   if (typeof data.film_id !== 'number') {
     return 'film_id must be a number'
   }
-  
+
   // Validate film_release_year is a number
   if (typeof data.film_release_year !== 'number') {
     return 'film_release_year must be a number'
   }
-  
-  // Validate clarity_levels if provided
-  if (data.clarity_levels !== undefined) {
-    if (!Array.isArray(data.clarity_levels)) {
-      return 'clarity_levels must be an array'
-    }
-    // Should be exactly 5 levels: [5, 15, 35, 65, 100]
-    if (data.clarity_levels.length !== 5) {
-      return 'clarity_levels must contain exactly 5 levels'
-    }
-    for (const level of data.clarity_levels) {
-      if (typeof level !== 'number' || level < 0 || level > 100) {
-        return 'clarity_levels must contain numbers between 0 and 100'
-      }
-    }
-  }
-  
-  // Validate difficulty_level if provided
-  if (data.difficulty_level !== undefined) {
-    if (typeof data.difficulty_level !== 'number' || data.difficulty_level < 1 || data.difficulty_level > 5) {
-      return 'difficulty_level must be a number between 1 and 5'
-    }
-  }
-  
+
   // puzzle_date can be null for drafts
   if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
     return 'puzzle_date must be a string or null'
   }
-  
+
   // Validate is_published if provided
   if (data.is_published !== undefined && typeof data.is_published !== 'boolean') {
     return 'is_published must be a boolean'
   }
-  
+
   return null
 }
 
 function validateCastClimbPuzzle(data: any): string | null {
-  const required = ['film_id', 'film_title', 'actors', 'total_actors']
+  const required = ['film_id', 'film_title', 'actors']
   for (const field of required) {
     if (data[field] === undefined || data[field] === null) {
       return `Missing required field for cast climb puzzle: ${field}`
     }
   }
-  
+
   // Validate film_id is a number
   if (typeof data.film_id !== 'number') {
     return 'film_id must be a number'
   }
-  
+
   // Validate actors is an array
   if (!Array.isArray(data.actors)) {
     return 'actors must be an array'
   }
-  
-  // Validate total_actors is a number
-  if (typeof data.total_actors !== 'number' || data.total_actors < 1) {
-    return 'total_actors must be a positive number'
+
+  // Validate actors array has at least one actor
+  if (data.actors.length < 1) {
+    return 'actors array must contain at least one actor'
   }
-  
-  // Validate actors array has the right length
-  if (data.actors.length !== data.total_actors) {
-    return `actors array length (${data.actors.length}) must match total_actors (${data.total_actors})`
-  }
-  
+
   // Validate each actor object
   for (let i = 0; i < data.actors.length; i++) {
     const actor = data.actors[i]
-    if (!actor.id || !actor.name || !actor.character) {
-      return `Actor at index ${i} missing required fields (id, name, character)`
+    if (!actor.id || !actor.name) {
+      return `Actor at index ${i} missing required fields (id, name)`
     }
     if (typeof actor.id !== 'number') {
       return `Actor at index ${i} has invalid id (must be number)`
     }
+    // character can be empty string or null, that's fine
   }
-  
-  // Validate difficulty_level if provided
-  if (data.difficulty_level !== undefined) {
-    if (typeof data.difficulty_level !== 'number' || data.difficulty_level < 1 || data.difficulty_level > 5) {
-      return 'difficulty_level must be a number between 1 and 5'
-    }
-  }
-  
+
   // puzzle_date can be null for drafts
   if (data.puzzle_date !== undefined && data.puzzle_date !== null && typeof data.puzzle_date !== 'string') {
     return 'puzzle_date must be a string or null'
   }
-  
+
   // Validate is_published if provided
   if (data.is_published !== undefined && typeof data.is_published !== 'boolean') {
     return 'is_published must be a boolean'
   }
-  
+
   return null
 }

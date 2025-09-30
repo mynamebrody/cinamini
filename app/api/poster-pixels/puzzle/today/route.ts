@@ -68,8 +68,7 @@ export async function GET() {
         const selectedMovie = moviesWithPosters[selectedIndex]
 
         // Calculate the puzzle number based on the last puzzle date
-        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
-        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${today}`)
+        await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
 
         // Create the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
@@ -82,8 +81,6 @@ export async function GET() {
             film_poster_url: selectedMovie.poster_path,
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_${today}`,
-            difficulty_level: 1,
-            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: {
               id: selectedMovie.id,
@@ -136,9 +133,8 @@ export async function GET() {
         const selectedMovie = fallbackMovies[selectedIndex]
 
         // Calculate the puzzle number for fallback scenario too
-        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
-        console.log(`Calculated puzzle number (fallback): ${puzzleNumber} for date: ${today}`)
-        
+        await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
+
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
@@ -149,8 +145,6 @@ export async function GET() {
             film_poster_url: selectedMovie.poster_path,
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_fallback_${today}`,
-            difficulty_level: 1,
-            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: selectedMovie,
           })

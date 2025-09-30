@@ -54,7 +54,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (error) {
       if (error.code === 'PGRST116') { // No rows returned
-        console.log(`Puzzle not found: ${gameType} puzzle with ID ${puzzleId}`)
         return NextResponse.json(
           { error: "Puzzle not found" },
           { status: 404 }
@@ -62,7 +61,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       }
       console.error(`Error fetching ${gameType} puzzle with ID ${puzzleId}:`, error)
       return NextResponse.json(
-        { 
+        {
           error: error.message,
           code: error.code,
           details: error.details,
@@ -71,25 +70,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         },
         { status: 400 }
       )
-    }
-
-    // Log game-specific data for debugging
-    if (gameType === 'budget_bracket') {
-      console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
-        id: data.id,
-        puzzle_date: data.puzzle_date,
-        seed_value: data.seed_value,
-        puzzle_number: data.puzzle_number,
-        has_movie_pairs: !!data.movie_pairs,
-        name: data.name
-      })
-    } else {
-      console.log(`Successfully fetched ${gameType} puzzle ${puzzleId}:`, {
-        id: data.id,
-        puzzle_date: data.puzzle_date,
-        film_title: data.film_title,
-        has_poster_override: !!data.film_poster_override_url
-      })
     }
 
     return NextResponse.json({ 

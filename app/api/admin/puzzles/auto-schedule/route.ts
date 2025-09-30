@@ -54,35 +54,39 @@ export async function POST(request: Request) {
         }
         
         const tableName = `${gameType}_puzzles`
-        
+
+        // Budget Bracket uses 'name' field (optional), other games use 'film_title'
+        const titleField = gameType === 'budget_bracket' ? 'name' : 'film_title'
+
         // Check if there's already a puzzle on this date for this game type
         const { data: existingPuzzle } = await serviceSupabase
           .from(tableName)
-          .select('id, film_title')
+          .select(`id, ${titleField}`)
           .eq('puzzle_date', targetDate)
           .single()
-        
+
         if (existingPuzzle) {
-          throw new Error(`${gameType} puzzle already exists on ${targetDate}: ${existingPuzzle.film_title}`)
+          const title = existingPuzzle[titleField] || 'Untitled'
+          throw new Error(`${gameType} puzzle already exists on ${targetDate}: ${title}`)
         }
-        
+
         // Update the puzzle with the new date
         const { data: updatedPuzzle, error: updateError } = await serviceSupabase
           .from(tableName)
           .update({ puzzle_date: targetDate })
           .eq('id', puzzleId)
-          .select('id, film_title, puzzle_date')
+          .select(`id, ${titleField}, puzzle_date`)
           .single()
-        
+
         if (updateError) {
           throw new Error(`Failed to update puzzle ${puzzleId}: ${updateError.message}`)
         }
-        
+
         results.push({
           puzzleId,
           gameType,
           targetDate,
-          filmTitle: updatedPuzzle.film_title,
+          filmTitle: updatedPuzzle[titleField] || 'Untitled',
           success: true
         })
         

@@ -50,15 +50,12 @@ export interface CastClimbActor {
 export interface CastClimbPuzzle {
   id: string;
   puzzle_date: string;
-  puzzle_number: number;
   seed_value: string;
   film_id: number;
   film_title: string;
   film_poster_url: string | null;
   film_release_year: number;
   actors: CastClimbActor[];
-  total_actors: number;
-  difficulty_level: number;
   fun_fact: string | null;
 }
 
@@ -228,17 +225,15 @@ export async function generateDailyPuzzle(
 ): Promise<CastClimbPuzzle> {
   const seed = generateCastClimbSeed(date);
   const rng = new SeededRandom(seed);
-  // Puzzle number is handled by APIs, use 1 as fallback for puzzle generation
-  const actualPuzzleNumber = 1;
-  
+
   // Get movie pool with blended trending/classic mix
   const moviePool = await getBlendedMoviePool();
   const castClimbMovies = filterCastClimbMovies(moviePool);
-  
+
   if (castClimbMovies.length === 0) {
     throw new Error('No suitable movies found for Cast Climb puzzle');
   }
-  
+
   // Select random movie using seeded RNG
   const selectedMovie = rng.choice(castClimbMovies);
   
@@ -274,23 +269,19 @@ export async function generateDailyPuzzle(
     tmdb_id: actor.id
   })).reverse();
   
-  const difficulty = calculateDifficulty(selectedMovie, topCast);
   const funFact = generateFunFact(movieDetails, topCast);
-  
+
   return {
     id: '', // Will be set by database
     puzzle_date: date.toISOString().split('T')[0],
-    puzzle_number: actualPuzzleNumber,
     seed_value: seed,
     film_id: selectedMovie.tmdb_id,
     film_title: selectedMovie.title,
-    film_poster_url: selectedMovie.poster_path 
-      ? `https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}` 
+    film_poster_url: selectedMovie.poster_path
+      ? `https://image.tmdb.org/t/p/w500${selectedMovie.poster_path}`
       : null,
     film_release_year: new Date(selectedMovie.release_date).getFullYear(),
     actors,
-    total_actors: actors.length,
-    difficulty_level: difficulty,
     fun_fact: funFact
   };
 }

@@ -3,10 +3,10 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { type MoviePair } from '@/lib/budget-bracket'
 import { sendGuessWebhook } from '@/lib/webhooks'
 import { getMovieById } from '@/lib/tmdb'
+import { calculatePuzzleNumberFromLaunch } from '@/lib/puzzle-numbering'
 
 interface RoundGuessRequest {
   puzzle_id: number
-  puzzle_number: number
   round: number
   chosen_movie_tmdb_id: number
   round_time_ms: number
@@ -28,14 +28,13 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
 
     const body: RoundGuessRequest = await request.json()
-    const { 
-      puzzle_id, 
-      puzzle_number,
-      round, 
-      chosen_movie_tmdb_id, 
-      round_time_ms, 
+    const {
+      puzzle_id,
+      round,
+      chosen_movie_tmdb_id,
+      round_time_ms,
       cumulative_time_ms,
-      game_choices 
+      game_choices
     } = body
 
     // Validate input
@@ -53,6 +52,13 @@ export async function POST(request: NextRequest) {
     if (puzzleError || !puzzle) {
       return NextResponse.json({ error: 'Puzzle not found' }, { status: 404 })
     }
+
+    // Calculate puzzle number from puzzle date
+    const puzzleNumber = await calculatePuzzleNumberFromLaunch(
+      supabaseService,
+      'budget-bracket',
+      new Date(puzzle.puzzle_date)
+    )
 
     // Get the movie pair for this round
     const moviePairs = puzzle.pairs as MoviePair[]
@@ -87,12 +93,12 @@ export async function POST(request: NextRequest) {
     const webhookData = {
       event: 'guess' as const,
       game: 'budget-bracket' as const,
-      user: user 
+      user: user
         ? { isAuthenticated: true, id: user.id, email: user.email ?? null }
         : { isAuthenticated: false },
       guess: {
         puzzleId: puzzle_id,
-        puzzleNumber: puzzle_number,
+        puzzleNumber: puzzleNumber,
         round,
         chosenMovieTmdbId: chosen_movie_tmdb_id,
         chosenMovieTitle,

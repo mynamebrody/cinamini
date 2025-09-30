@@ -148,71 +148,98 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 const style = getGameStyle(game.game_id)
                 
                 return (
-                  <div
-                    key={game.game_id}
-                    className="group cursor-pointer transition-all duration-300 hover:scale-[1.03] border border-[#d1d2d4]"
-                    style={{
-                      boxShadow: 'none',
-                      borderRadius: 0
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = '#999'
-                      e.currentTarget.style.boxShadow = `1px 1px 0px #999,
-                                                        2px 2px 0px #999,
-                                                        3px 3px 0px #999,
-                                                        4px 4px 0px #999,
-                                                        5px 5px 0px #999,
-                                                        6px 6px 0px #999`
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = '#d1d2d4'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                    onClick={() => window.location.href = `/game/${game.game_id}`}
-                  >
+                  <div key={game.game_id} className="flex flex-col">
                     <div
-                      className="p-6 md:p-8 text-center h-72 flex flex-col justify-center items-center relative overflow-hidden"
-                      style={{ 
-                        backgroundColor: style.bgColor,
-                        borderRadius: 0,
-                        imageRendering: 'pixelated',
-                        shapeRendering: 'crispEdges'
+                      className="group cursor-pointer transition-all duration-300 hover:scale-[1.03] border border-[#d1d2d4]"
+                      style={{
+                        boxShadow: 'none',
+                        borderRadius: 0
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#999'
+                        e.currentTarget.style.boxShadow = `1px 1px 0px #999,
+                                                          2px 2px 0px #999,
+                                                          3px 3px 0px #999,
+                                                          4px 4px 0px #999,
+                                                          5px 5px 0px #999,
+                                                          6px 6px 0px #999`
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#d1d2d4'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }}
+                      onClick={() => window.location.href = `/game/${game.game_id}`}
+                    >
+                      <div
+                        className="p-6 md:p-8 text-center h-72 flex flex-col justify-center items-center relative overflow-hidden"
+                        style={{
+                          backgroundColor: style.bgColor,
+                          borderRadius: 0,
+                          imageRendering: 'pixelated',
+                          shapeRendering: 'crispEdges'
+                        }}
+                      >
+                        {/* Game Icon */}
+                        <div className="mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                          <GameLogo
+                            logo={style.logo}
+                            logoPng={style.logoPng}
+                            emoji={style.emoji}
+                            alt={game.display_name}
+                            width={80}
+                            height={80}
+                            className="w-16 h-16 md:w-20 md:h-20"
+                          />
+                        </div>
+
+                        {/* Game Title */}
+                        <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 font-funnel-display-bold text-white drop-shadow-sm">
+                          {game.display_name}
+                        </h2>
+
+                        {/* Game Description */}
+                        <p className="text-white/95 text-sm md:text-base font-funnel leading-relaxed max-w-xs md:max-w-sm drop-shadow-sm px-2 md:px-0">
+                          {game.description}
+                        </p>
+
+                        {/* Play Status */}
+                        {game.hasPlayedToday && (
+                          <div className="absolute top-5 right-5">
+                            <div className="bg-white/30 backdrop-blur-sm px-3 py-1.5 border border-[#d1d2d4] shadow-[1px_1px_0px_rgba(209,210,212,0.5),2px_2px_0px_rgba(209,210,212,0.5),3px_3px_0px_rgba(209,210,212,0.5),4px_4px_0px_rgba(209,210,212,0.5)]" style={{ borderRadius: 0 }}>
+                              <span className="text-xs font-semibold text-white font-funnel">
+                                ✓ Completed
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Archive Button */}
+                    <a
+                      href={`/game/${game.game_id}/archive`}
+                      className="w-full mt-4 px-4 py-3 bg-white border border-[#999] text-[#999] text-center font-funnel font-medium transition-all duration-200 hover:text-[#99251d] flex items-center justify-center gap-2"
+                      style={{ borderRadius: 0, boxShadow: 'none' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#99251d'
+                        e.currentTarget.style.boxShadow = `1px 1px 0px #99251d,
+                                                          2px 2px 0px #99251d,
+                                                          3px 3px 0px #99251d,
+                                                          4px 4px 0px #99251d`
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = '#999'
+                        e.currentTarget.style.boxShadow = 'none'
                       }}
                     >
-                      {/* Game Icon */}
-                      <div className="mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
-                        <GameLogo
-                          logo={style.logo}
-                          logoPng={style.logoPng}
-                          emoji={style.emoji}
-                          alt={game.display_name}
-                          width={80}
-                          height={80}
-                          className="w-16 h-16 md:w-20 md:h-20"
-                        />
-                      </div>
-                      
-                      {/* Game Title */}
-                      <h2 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 font-funnel-display-bold text-white drop-shadow-sm">
-                        {game.display_name}
-                      </h2>
-                      
-                      {/* Game Description */}
-                      <p className="text-white/95 text-sm md:text-base font-funnel leading-relaxed max-w-xs md:max-w-sm drop-shadow-sm px-2 md:px-0">
-                        {game.description}
-                      </p>
-
-                      {/* Play Status */}
-                      {game.hasPlayedToday && (
-                        <div className="absolute top-5 right-5">
-                          <div className="bg-white/30 backdrop-blur-sm px-3 py-1.5 border border-[#d1d2d4] shadow-[1px_1px_0px_rgba(209,210,212,0.5),2px_2px_0px_rgba(209,210,212,0.5),3px_3px_0px_rgba(209,210,212,0.5),4px_4px_0px_rgba(209,210,212,0.5)]" style={{ borderRadius: 0 }}>
-                            <span className="text-xs font-semibold text-white font-funnel">
-                              ✓ Completed
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                      </svg>
+                      Archive
+                    </a>
                   </div>
                 )
               })}

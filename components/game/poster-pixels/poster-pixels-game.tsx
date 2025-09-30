@@ -20,6 +20,7 @@ import { SiteFooter } from "../../site-footer"
 import { POSTER_PIXELS_LEVELS, getClarityPercentForIndex, getScoreForClarityPercent } from "@/lib/poster-pixels-config"
 import { useAnimatedClarity, easingFunctions } from "@/hooks/use-animated-clarity"
 import { useFinalRevealAnimation } from "@/hooks/use-final-reveal-animation"
+import ArchivedPuzzleGate from "@/components/archived-puzzle-gate"
 
 interface MovieData {
   id?: number
@@ -183,11 +184,21 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
         }
       } else {
         setGameState('ready')
-        
-        // Show how-to-play modal only if they've never seen the tutorial
-        const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
-        if (!hasSeenTutorial) {
-          setModalState('howtoplay')
+
+        // Check if this is today's puzzle
+        const today = new Date()
+        today.setUTCHours(0, 0, 0, 0)
+        const puzzleDateFromData = data.puzzle?.puzzle_date || data.puzzle_date
+        const puzzleDateObj = new Date((date || puzzleDateFromData) + 'T00:00:00Z')
+        const isTodaysPuzzle = puzzleDateObj.getTime() === today.getTime()
+
+        // Only show tutorial for today's puzzle or authenticated users
+        // (archived puzzles for anonymous users will show signup gate instead)
+        if (isTodaysPuzzle || !isAnonymous) {
+          const hasSeenTutorial = hasTutorialBeenViewed('poster-pixels')
+          if (!hasSeenTutorial) {
+            setModalState('howtoplay')
+          }
         }
       }
     } catch (error) {
@@ -575,33 +586,59 @@ export default function PosterPixelsGame({ date }: PosterPixelsGameProps = {}) {
   }
 
   // Memoize excludeMovieIds to prevent unnecessary re-renders of search component
-  const excludeMovieIds = useMemo(() => 
+  const excludeMovieIds = useMemo(() =>
     state.guesses
       .filter(g => g.movieId !== null)
       .map(g => g.movieId as number),
     [state.guesses]
   )
 
+  // Check if this is today's puzzle
+  const isToday = !date || (() => {
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const puzzleDateObj = new Date(date + 'T00:00:00Z')
+    return puzzleDateObj.getTime() === today.getTime()
+  })()
+
   if (gameState === "ready" && modalState !== 'howtoplay' && state.puzzle?.puzzle_date) {
     return (
-      <GameLanding
-        gameId="poster-pixels"
-        gameName="Poster Pixels"
-        puzzleNumber={state.puzzle?.puzzle_number}
-        puzzleDate={state.puzzle?.puzzle_date}
-        backgroundColor="#3a3a3c"
-        logo="/cinamini/games/PosterPixelsPoster.svg"
-        logoPng="/cinamini/games/PosterPixelsPoster.png"
-        emoji="🖼️"
-        onStart={async () => startGame()}
-      >
-        <div />
-      </GameLanding>
+      <>
+        <ArchivedPuzzleGate
+          puzzleNumber={state.puzzle.puzzle_number || 0}
+          puzzleDate={state.puzzle.puzzle_date}
+          gameName="Poster Pixels"
+          gameSlug="poster-pixels"
+          isAnonymous={isAnonymous}
+          isToday={isToday}
+        />
+        <GameLanding
+          gameId="poster-pixels"
+          gameName="Poster Pixels"
+          puzzleNumber={state.puzzle?.puzzle_number}
+          puzzleDate={state.puzzle?.puzzle_date}
+          backgroundColor="#3a3a3c"
+          logo="/cinamini/games/PosterPixelsPoster.svg"
+          logoPng="/cinamini/games/PosterPixelsPoster.png"
+          emoji="🖼️"
+          onStart={async () => startGame()}
+        >
+          <div />
+        </GameLanding>
+      </>
     )
   }
 
   return (
     <div className="game-container">
+      <ArchivedPuzzleGate
+        puzzleNumber={state.puzzle?.puzzle_number || 0}
+        puzzleDate={state.puzzle?.puzzle_date || ""}
+        gameName="Poster Pixels"
+        gameSlug="poster-pixels"
+        isAnonymous={isAnonymous}
+        isToday={isToday}
+      />
       <GameHeader 
         title="Poster Pixels" 
         onHelpClick={() => setModalState('howtoplay')}

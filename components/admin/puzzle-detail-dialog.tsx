@@ -149,7 +149,7 @@ export function PuzzleDetailDialog({
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Total Actors:</span>
-              <span className="text-sm font-medium">{puzzle.total_actors || 4}</span>
+              <span className="text-sm font-medium">{puzzle.actors?.length || 4}</span>
             </div>
             {puzzle.fun_fact && (
               <div className="flex items-start gap-2">

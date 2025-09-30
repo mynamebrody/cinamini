@@ -582,6 +582,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
   const savePuzzle = async () => {
     const wrongAnswers = allOptions.filter(option => !option.isCorrect)
+
     if (!selectedMovie || !customTitle.trim() || !selectedTitle || wrongAnswers.length < 3) {
       alert("Please complete all required fields and add at least 3 wrong answer options")
       return
@@ -623,7 +624,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
 
       let response
-      
+
       if (isEditMode && existingPuzzleId) {
         // Update existing puzzle
         response = await fetch('/api/admin/puzzles/update', {

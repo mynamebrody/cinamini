@@ -33,16 +33,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    console.log('=== ADMIN: Hydrating Budget Bracket pairs ===')
-    
     // Extract all unique TMDB IDs from the pairs
     const tmdbIds = new Set<number>()
     pairs.forEach((pair: any) => {
       if (pair.movieA?.id) tmdbIds.add(pair.movieA.id)
       if (pair.movieB?.id) tmdbIds.add(pair.movieB.id)
     })
-
-    console.log(`Extracting TMDB IDs: ${Array.from(tmdbIds).join(', ')}`)
 
     // Hydrate all movies from TMDB IDs
     const hydratedMovies = await hydrateMoviesFromTmdbIds(Array.from(tmdbIds))
@@ -147,8 +143,6 @@ export async function POST(request: NextRequest) {
         }
       }, { status: 400 })
     }
-
-    console.log(`Successfully hydrated ${hydratedPairs.length} pairs`)
 
     return NextResponse.json({
       success: true,

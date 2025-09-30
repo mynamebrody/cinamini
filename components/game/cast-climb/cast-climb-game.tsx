@@ -22,6 +22,7 @@ import { SiteFooter } from "../../site-footer"
 import Image from "next/image"
 import type { MovieSearchResult } from "@/lib/types/tmdb"
 import { useCastClimbShare } from "@/hooks/useGameShare"
+import ArchivedPuzzleGate from "@/components/archived-puzzle-gate"
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -200,11 +201,20 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
       } else {
         // User hasn't started the game today
         setGameState("ready")
-        
-        // Show how-to-play modal only if they've never seen the tutorial
-        const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
-        if (!hasSeenTutorial) {
-          setModalState("howtoplay")
+
+        // Check if this is today's puzzle
+        const today = new Date()
+        today.setUTCHours(0, 0, 0, 0)
+        const puzzleDateObj = new Date((date || data.puzzle.puzzleDate) + 'T00:00:00Z')
+        const isTodaysPuzzle = puzzleDateObj.getTime() === today.getTime()
+
+        // Only show tutorial for today's puzzle or authenticated users
+        // (archived puzzles for anonymous users will show signup gate instead)
+        if (isTodaysPuzzle || !isAnonymous) {
+          const hasSeenTutorial = hasTutorialBeenViewed('cast-climb')
+          if (!hasSeenTutorial) {
+            setModalState("howtoplay")
+          }
         }
       }
     } catch (err) {
@@ -503,6 +513,14 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
     setModalState('howtoplay')
   }
 
+  // Check if this is today's puzzle
+  const isToday = !date || (() => {
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const puzzleDateObj = new Date(date + 'T00:00:00Z')
+    return puzzleDateObj.getTime() === today.getTime()
+  })()
+
   // ============================================================================
   // RENDER
   // ============================================================================
@@ -510,25 +528,43 @@ export default function CastClimbGame({ date }: CastClimbGameProps = {}) {
   // Don't render the game container UI if we're showing the landing page
   if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzleDate) {
     return (
-      <GameLanding
-        gameId="cast-climb"
-        gameName="Cast Climb"
-        puzzleNumber={puzzle?.puzzleNumber}
-        puzzleDate={puzzle?.puzzleDate}
-        backgroundColor="#99251d"
-        logo="/cinamini/games/CastClimbPoster.svg"
-        logoPng="/cinamini/games/CastClimbPoster.png"
-        emoji="🎭"
-        onStart={startGame}
-        showBackButton={true}
-      >
-        {/* How to Play content removed from splash page */}
-      </GameLanding>
+      <>
+        <ArchivedPuzzleGate
+          puzzleNumber={puzzle.puzzleNumber}
+          puzzleDate={puzzle.puzzleDate}
+          gameName="Cast Climb"
+          gameSlug="cast-climb"
+          isAnonymous={isAnonymous}
+          isToday={isToday}
+        />
+        <GameLanding
+          gameId="cast-climb"
+          gameName="Cast Climb"
+          puzzleNumber={puzzle?.puzzleNumber}
+          puzzleDate={puzzle?.puzzleDate}
+          backgroundColor="#99251d"
+          logo="/cinamini/games/CastClimbPoster.svg"
+          logoPng="/cinamini/games/CastClimbPoster.png"
+          emoji="🎭"
+          onStart={startGame}
+          showBackButton={true}
+        >
+          {/* How to Play content removed from splash page */}
+        </GameLanding>
+      </>
     )
   }
 
   return (
     <div className="game-container">
+      <ArchivedPuzzleGate
+        puzzleNumber={puzzle?.puzzleNumber || 0}
+        puzzleDate={puzzle?.puzzleDate || ""}
+        gameName="Cast Climb"
+        gameSlug="cast-climb"
+        isAnonymous={isAnonymous}
+        isToday={isToday}
+      />
       {/* Celebration Confetti */}
       <CelebrationConfetti 
         show={showConfetti} 

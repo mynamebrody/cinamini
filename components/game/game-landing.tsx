@@ -81,7 +81,16 @@ export function GameLanding({
             variant="ghost"
             size="sm"
             onClick={handleBack}
-            className={`${useDarkText ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-900/10' : 'text-white/80 hover:text-white hover:bg-white/20'} transition-colors backdrop-blur-sm`}
+            className={`${useDarkText ? 'text-gray-700' : 'text-white/80'} transition-all backdrop-blur-sm hover:!bg-white hover:text-[#99251d] hover:border-[#99251d] border border-transparent`}
+            style={{ borderRadius: 0, boxShadow: 'none' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#ffffff'
+              e.currentTarget.style.boxShadow = '1px 1px 0px #99251d, 2px 2px 0px #99251d, 3px 3px 0px #99251d, 4px 4px 0px #99251d'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = ''
+              e.currentTarget.style.boxShadow = 'none'
+            }}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Games

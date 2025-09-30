@@ -34,7 +34,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
   useEffect(() => {
     const checkGameStatuses = async () => {
       const statuses: Record<string, boolean> = {}
-      
+
       // Fetch from server (works for both anonymous and authenticated users)
       try {
         const response = await fetch('/api/games')
@@ -42,7 +42,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
           const data = await response.json()
           // The API returns { games: [...] }, so we need to extract the games array
           const games = Array.isArray(data?.games) ? data.games : []
-          
+
           for (const game of ALL_GAMES) {
             if (game.id !== currentGameId) {
               const gameStatus = games.find((g: any) => g.game_id === game.id)
@@ -59,14 +59,15 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
           }
         }
       }
-      
+
       setGameStatuses(statuses)
     }
-    
+
     checkGameStatuses()
   }, [currentGameId, isAnonymous])
 
   const otherGames = ALL_GAMES.filter(game => game.id !== currentGameId)
+  const currentGame = ALL_GAMES.find(game => game.id === currentGameId)
 
   return (
     <div className="w-full mt-6">
@@ -80,7 +81,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
           <div className="space-y-3">
             {otherGames.map((game) => {
               const hasPlayed = gameStatuses[game.id]
-              
+
               return (
                 <div
                   key={game.id}
@@ -106,7 +107,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <Link href={game.path}>
                     <Button
                       size="sm"
@@ -123,6 +124,44 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
                 </div>
               )
             })}
+
+            {/* Archive entry for current game */}
+            {currentGame && (
+              <div
+                className="flex items-center justify-between p-3 bg-white border border-[rgb(var(--silver))] shadow-3d-grey"
+                style={{ borderRadius: 0 }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 flex items-center justify-center">
+                    <GameLogo
+                      logo={currentGame.logo}
+                      logoPng={currentGame.logoPng}
+                      emoji={currentGame.emoji}
+                      alt={`${currentGame.name} Archive`}
+                      width={32}
+                      height={32}
+                      className="w-8 h-8"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">{currentGame.name} Archive</h3>
+                    <div className="text-xs text-gray-600">
+                      Play previous games from the archive
+                    </div>
+                  </div>
+                </div>
+
+                <Link href={`/game/${currentGame.id}/archive`}>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="bg-[rgb(153,37,29)] hover:bg-white hover:text-[rgb(153,37,29)] text-white border border-[rgb(153,37,29)]"
+                  >
+                    Play
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -68,8 +68,10 @@ export async function updateSession(request: NextRequest) {
     }
 
     // If non-anonymous user is authenticated and trying to access auth pages, redirect to home
-    // Exception: Allow access to reset-password page during recovery flow
-    if (isAuthRoute && user && !isAnonymous && !request.nextUrl.pathname.startsWith("/auth/reset-password")) {
+    // Exception: Allow access to reset-password page during recovery flow and callback for email confirmation
+    if (isAuthRoute && user && !isAnonymous &&
+        !request.nextUrl.pathname.startsWith("/auth/reset-password") &&
+        request.nextUrl.pathname !== "/auth/callback") {
       return NextResponse.redirect(new URL("/", request.url))
     }
 

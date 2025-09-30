@@ -41,8 +41,6 @@ Return strictly JSON with this schema:
 { "facts": [ { "text": string, "source": { "title": string, "url": string } | null } ] }.`
 
 
-    console.log('[fun-facts] request', { title, year, user: user.id })
-    const startedAt = Date.now()
     let response
     try {
         response = await openai.responses.create({
@@ -57,9 +55,7 @@ Return strictly JSON with this schema:
       return NextResponse.json({ error: 'OpenAI request failed' }, { status: 502 })
     }
 
-    const durationMs = Date.now() - startedAt
     let content: string = (response as any)?.output_text || '{}'
-    console.log('[fun-facts] response', { durationMs, preview: content.slice(0, 200) })
     let parsed
     try {
       if (content.startsWith('```')) {
@@ -98,7 +94,6 @@ Return strictly JSON with this schema:
       return NextResponse.json({ error: 'No facts generated' }, { status: 400 })
     }
 
-    console.log('[fun-facts] success', { count: normalized.length })
     return NextResponse.json({ facts: normalized })
   } catch (error) {
     console.error('[fun-facts] unexpected error', error)

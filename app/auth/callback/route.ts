@@ -6,7 +6,15 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type')
-  const confirmed = requestUrl.searchParams.get('confirmed')
+
+  // Try to get redirect from query param first, then from cookie
+  let redirect = requestUrl.searchParams.get('redirect')
+
+  if (!redirect) {
+    const cookieStore = await cookies()
+    const redirectCookie = cookieStore.get('auth_redirect')
+    redirect = redirectCookie?.value || null
+  }
 
   // Helper function to get the correct base URL
   const getBaseUrl = () => {
@@ -46,18 +54,32 @@ export async function GET(request: Request) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       
       if (!error) {
+        // If there's a redirect param, use it regardless of type
+        if (redirect) {
+          const response = NextResponse.redirect(new URL(redirect, getBaseUrl()))
+          response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+          response.headers.set('Pragma', 'no-cache')
+          response.headers.set('Expires', '0')
+          // Clear the redirect cookie
+          response.cookies.delete('auth_redirect')
+          return response
+        }
+
         // If this is a password recovery flow, redirect to reset password page
         if (type === 'recovery') {
           return NextResponse.redirect(new URL('/auth/reset-password', getBaseUrl()))
         }
-        
-        // If this is an email confirmation flow, redirect to profile with confirmation message
-        if (confirmed === 'true') {
-          return NextResponse.redirect(new URL('/profile?emailConfirmed=true', getBaseUrl()))
+
+        // If this is an email confirmation flow, go to profile
+        if (type === 'signup') {
+          const response = NextResponse.redirect(new URL('/profile?emailConfirmed=true', getBaseUrl()))
+          response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+          response.headers.set('Pragma', 'no-cache')
+          response.headers.set('Expires', '0')
+          return response
         }
-        
-        // Force a brief delay and clear cache to ensure session is properly updated
-        // This helps prevent stale session issues after account conversion
+
+        // Default redirect to home
         const response = NextResponse.redirect(new URL('/', getBaseUrl()))
         response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
         response.headers.set('Pragma', 'no-cache')

@@ -42,14 +42,12 @@ export interface PosterPixelsMovie extends SeedableGameItem {
 export interface PosterPixelsPuzzle {
   id: string;
   puzzle_date: string;
-  puzzle_number: number;
   seed_value: string;
   film_id: number;
   film_title: string;
   film_release_year: number;
   poster_url: string;
   poster_path: string;
-  difficulty_level: number;
   fun_fact: string | null;
   total_attempts: number;
 }
@@ -264,51 +262,46 @@ export async function generatePosterPixelsPuzzle(
 ): Promise<PosterPixelsPuzzle> {
   const seed = generatePosterPixelsSeed(date);
   const rng = new SeededRandom(seed);
-  // Puzzle number is handled by APIs, use 1 as fallback for puzzle generation
-  const puzzleNumber = 1;
-  
+
   // Get movie pool with blended trending/classic mix
   const moviePool = await getBlendedMoviePool();
   const posterPixelsMovies = filterPosterPixelsMovies(moviePool);
-  
+
   if (posterPixelsMovies.length === 0) {
     throw new Error('No suitable movies found for Poster Pixels puzzle');
   }
-  
+
   // Select random movie using seeded RNG
   const selectedMovie = rng.choice(posterPixelsMovies);
-  
+
   // Get detailed movie information from TMDB
   const movieDetails = await getMovieDetails(selectedMovie.tmdb_id);
-  
+
   if (!movieDetails) {
     throw new Error(`Could not fetch details for movie ${selectedMovie.title}`);
   }
-  
+
   // Validate poster exists
   if (!selectedMovie.poster_path) {
     throw new Error(`Movie ${selectedMovie.title} doesn't have a poster`);
   }
-  
-  const difficulty = calculateDifficulty(selectedMovie);
+
   const funFact = generateFunFact(movieDetails);
   const posterUrl = getPosterUrl(selectedMovie.poster_path, 'w500');
-  
+
   if (!posterUrl) {
     throw new Error(`Could not generate poster URL for movie ${selectedMovie.title}`);
   }
-  
+
   return {
     id: '', // Will be set by database
     puzzle_date: date.toISOString().split('T')[0],
-    puzzle_number: puzzleNumber,
     seed_value: seed,
     film_id: selectedMovie.tmdb_id,
     film_title: selectedMovie.title,
     film_release_year: new Date(selectedMovie.release_date).getFullYear(),
     poster_url: posterUrl,
     poster_path: selectedMovie.poster_path,
-    difficulty_level: difficulty,
     fun_fact: funFact,
     total_attempts: POSTER_PIXELS_CONFIG.MAX_ATTEMPTS
   };

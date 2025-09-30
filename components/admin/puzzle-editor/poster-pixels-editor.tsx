@@ -327,13 +327,9 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
       if (puzzleData.film_id) {
         await fetchAndSelectMovie(puzzleData.film_id.toString())
       }
-      
+
       if (puzzleData.puzzle_date) {
         setPuzzleDate(puzzleData.puzzle_date)
-      }
-      
-      if (puzzleData.difficulty_level) {
-        setDifficultyLevel(puzzleData.difficulty_level)
       }
     }
   }
@@ -379,7 +375,6 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         film_poster_url: selectedMovie.poster_path,
         film_poster_override_url: selectedPosterPath !== selectedMovie.poster_path ? selectedPosterPath : null,
         film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
-        clarity_levels: Array.from(POSTER_PIXELS_LEVELS), // Default clarity progression
         fun_fact: funFact.trim() || null,
         is_published: isPublished,
         seed_value: seedValue

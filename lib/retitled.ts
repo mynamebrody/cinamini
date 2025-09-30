@@ -52,7 +52,6 @@ export interface RetitledPuzzle {
   country_code: string;
   country_name: string;
   distractor_ids: number[];
-  difficulty_level: number;
   translation_note?: string;
 }
 
@@ -583,13 +582,6 @@ export async function generateDailyPuzzle(date: Date): Promise<RetitledPuzzle | 
         continue;
       }
       
-      // Calculate difficulty
-      const difficulty = calculateDifficultyLevel(
-        candidateMovie,
-        selectedTitle.country_code as CountryCode,
-        selectedTitle.title
-      );
-      
       // Create puzzle
       return {
         id: `retitled_${date.toISOString().split('T')[0]}`,
@@ -601,7 +593,6 @@ export async function generateDailyPuzzle(date: Date): Promise<RetitledPuzzle | 
         country_code: selectedTitle.country_code,
         country_name: selectedTitle.country_name,
         distractor_ids: distractors.map(d => d.tmdb_id),
-        difficulty_level: difficulty,
         translation_note: generateTranslationNote(candidateMovie, selectedTitle)
       };
     }
@@ -704,7 +695,6 @@ function generateFallbackPuzzle(date: Date): RetitledPuzzle {
     country_code: selected.country_code,
     country_name: selected.country_name,
     distractor_ids: selected.distractors,
-    difficulty_level: DIFFICULTY_LEVELS.EASY,
     translation_note: `Fallback puzzle: ${selected.country_name} translation`
   };
 }

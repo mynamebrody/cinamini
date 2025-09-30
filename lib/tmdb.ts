@@ -8,7 +8,6 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 
 export async function getMovieById(movieId: number): Promise<TMDBMovie | null> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured, using fallback data')
     return getFallbackMovieData(movieId)
   }
 
@@ -122,7 +121,6 @@ export function getReleaseYear(releaseDate: string): string {
  */
 export async function getMovieTranslations(movieId: number): Promise<any | null> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured')
     return null
   }
 
@@ -208,7 +206,6 @@ export function getBackdropUrl(backdropPath: string | null, size: string = 'w128
  */
 export async function getTrendingMovies(timeWindow: 'day' | 'week' = 'day'): Promise<TMDBMovie[]> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured, returning empty trending list')
     return []
   }
 
@@ -240,7 +237,6 @@ export async function getTrendingMovies(timeWindow: 'day' | 'week' = 'day'): Pro
  */
 export async function getPopularMovies(page: number = 1): Promise<TMDBMovie[]> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured, returning empty popular list')
     return []
   }
 
@@ -272,7 +268,6 @@ export async function getPopularMovies(page: number = 1): Promise<TMDBMovie[]> {
  */
 export async function getMovieDetails(movieId: number): Promise<TMDBMovieDetails | null> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured')
     return null
   }
 
@@ -304,7 +299,6 @@ export async function getMovieDetails(movieId: number): Promise<TMDBMovieDetails
  */
 export async function getMovieAlternativeTitles(movieId: number): Promise<TMDBAlternativeTitles | null> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured')
     return null
   }
 
@@ -381,7 +375,6 @@ export async function enrichMoviesWithDetails(movies: TMDBMovie[]): Promise<any[
  */
 export async function searchMovies(query: string, page: number = 1): Promise<TMDBMovie[]> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured')
     return []
   }
 
@@ -413,7 +406,6 @@ export async function searchMovies(query: string, page: number = 1): Promise<TMD
  */
 export async function getMovieCredits(movieId: number): Promise<TMDBCreditsResponse | null> {
   if (!TMDB_API_KEY) {
-    console.warn('TMDB API key not configured')
     return null
   }
 

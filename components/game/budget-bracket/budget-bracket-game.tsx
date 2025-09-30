@@ -17,6 +17,7 @@ import { hasTutorialBeenViewed, setTutorialViewed } from "@/lib/game-tutorial-co
 import AnonymousResultNudge from "../anonymous-result-nudge"
 import { MorePuzzlesSection } from "../more-puzzles-section"
 import { SiteFooter } from "../../site-footer"
+import ArchivedPuzzleGate from "@/components/archived-puzzle-gate"
 
 interface PuzzleMovie {
   tmdb_id: number
@@ -34,7 +35,6 @@ interface PuzzlePair {
 interface PuzzleData {
   id: number
   puzzle_date: string
-  puzzle_number: number
   name?: string
   seed_value: string
   pairs: PuzzlePair[]
@@ -124,11 +124,20 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
       } else {
         // User hasn't played today
         setGameState('ready')
-        
-        // Show how-to-play modal only if they've never seen the tutorial
-        const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
-        if (!hasSeenTutorial) {
-          setModalState('howtoplay')
+
+        // Check if this is today's puzzle
+        const today = new Date()
+        today.setUTCHours(0, 0, 0, 0)
+        const puzzleDateObj = new Date((date || puzzleData.puzzle_date) + 'T00:00:00Z')
+        const isTodaysPuzzle = puzzleDateObj.getTime() === today.getTime()
+
+        // Only show tutorial for today's puzzle or authenticated users
+        // (archived puzzles for anonymous users will show signup gate instead)
+        if (isTodaysPuzzle || !isAnonymous) {
+          const hasSeenTutorial = hasTutorialBeenViewed('budget-bracket')
+          if (!hasSeenTutorial) {
+            setModalState('howtoplay')
+          }
         }
       }
     } catch (error) {
@@ -214,7 +223,6 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           puzzle_id: puzzle!.id,
-          puzzle_number: puzzle!.puzzle_number,
           round: currentRound,
           chosen_movie_tmdb_id: chosenMovieTmdbId,
           round_time_ms: currentChoice.time_taken_ms,
@@ -328,31 +336,56 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
     setModalState('howtoplay')
   }
 
+  // Check if this is today's puzzle
+  const isToday = !date || (() => {
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const puzzleDateObj = new Date(date + 'T00:00:00Z')
+    return puzzleDateObj.getTime() === today.getTime()
+  })()
 
   // Don't render the game container UI if we're showing the landing page
   if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzle_date) {
     return (
-      <GameLanding
-        gameId="budget-bracket"
-        gameName="Budget Bracket"
-        puzzleNumber={puzzle?.puzzle_number}
-        puzzleName={puzzle?.name}
-        puzzleDate={puzzle?.puzzle_date}
-        backgroundColor="#278646"
-        logo="/cinamini/games/BudgetBracketPoster.svg"
-        logoPng="/cinamini/games/BudgetBracketPoster.png"
-        emoji="💰"
-        onStart={startGame}
-        showBackButton={true}
-      >
-        <></>
-      </GameLanding>
+      <>
+        <ArchivedPuzzleGate
+          puzzleNumber={puzzle.puzzle_number || 0}
+          puzzleDate={puzzle.puzzle_date}
+          gameName="Budget Bracket"
+          gameSlug="budget-bracket"
+          isAnonymous={isAnonymous}
+          isToday={isToday}
+        />
+        <GameLanding
+          gameId="budget-bracket"
+          gameName="Budget Bracket"
+          puzzleNumber={puzzle?.puzzle_number}
+          puzzleName={puzzle?.name}
+          puzzleDate={puzzle?.puzzle_date}
+          backgroundColor="#278646"
+          logo="/cinamini/games/BudgetBracketPoster.svg"
+          logoPng="/cinamini/games/BudgetBracketPoster.png"
+          emoji="💰"
+          onStart={startGame}
+          showBackButton={true}
+        >
+          <></>
+        </GameLanding>
+      </>
     )
   }
 
   // Render the game
   return (
     <div className="game-container">
+      <ArchivedPuzzleGate
+        puzzleNumber={puzzle?.puzzle_number || 0}
+        puzzleDate={puzzle?.puzzle_date || ""}
+        gameName="Budget Bracket"
+        gameSlug="budget-bracket"
+        isAnonymous={isAnonymous}
+        isToday={isToday}
+      />
       <GameHeader 
         title="Budget Bracket" 
         onHelpClick={showHowToPlay}
