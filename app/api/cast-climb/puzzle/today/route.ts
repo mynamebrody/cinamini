@@ -155,7 +155,7 @@ export async function GET() {
         
         // Check if game is completed: either correct guess or all actors revealed
         const hasCorrectGuess = existingGuesses.some(g => g.is_correct)
-        const maxActors = puzzle.total_actors || 4
+        const maxActors = puzzle.actors?.length || 4
         
         // Check if game ended with give up or reached max actors revealed
         const hasGiveUp = existingGuesses.some(g => g.guess_film_title === "_GIVE_UP_")

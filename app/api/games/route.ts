@@ -83,7 +83,7 @@ export async function GET() {
             } else if (game.game_id === 'cast-climb') {
             const { data: todaysPuzzle } = await supabaseService
               .from("cast_climb_puzzles")
-              .select("id, total_actors")
+              .select("id, actors")
               .eq("puzzle_date", today)
               .single()
 
@@ -98,7 +98,7 @@ export async function GET() {
               if (guesses && guesses.length > 0) {
                 // Check if game is completed: either correct guess or max attempts reached
                 const hasCorrectGuess = guesses.some(g => g.is_correct)
-                const maxAttempts = todaysPuzzle.total_actors || 4
+                const maxAttempts = todaysPuzzle.actors?.length || 4
                 const hasReachedMaxAttempts = guesses.length >= maxAttempts
                 hasPlayedToday = hasCorrectGuess || hasReachedMaxAttempts
               }

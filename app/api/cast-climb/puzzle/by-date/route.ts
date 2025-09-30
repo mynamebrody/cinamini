@@ -43,7 +43,6 @@ export async function GET(request: NextRequest) {
         film_poster_url: puzzle.film_poster_url,
         film_release_year: puzzle.film_release_year,
         actors: puzzle.actors,
-        total_actors: puzzle.total_actors,
         difficulty_level: puzzle.difficulty_level,
         fun_fact: puzzle.fun_fact
       })
@@ -98,7 +97,7 @@ export async function GET(request: NextRequest) {
         filmPosterUrl: puzzle.film_poster_url,
         filmReleaseYear: puzzle.film_release_year,
         actors: puzzle.actors,
-        totalActors: puzzle.total_actors,
+        totalActors: puzzle.actors?.length || 4,
         difficultyLevel: puzzle.difficulty_level,
         funFact: puzzle.fun_fact
       },

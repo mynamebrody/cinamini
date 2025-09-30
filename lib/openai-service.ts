@@ -303,7 +303,6 @@ async function generateCastClimbPuzzle(
       film_poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
       film_release_year: movie.release_date ? new Date(movie.release_date).getFullYear() : null,
       actors: actors,
-      total_actors: 4,
       difficulty_level: Math.ceil(config.obscurityThreshold || 5)
     }
   }

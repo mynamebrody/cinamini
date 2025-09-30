@@ -163,13 +163,16 @@ async function generateCastClimbServerShare(
   // Fetch puzzle data
   const { data: puzzle } = await supabase
     .from('cast_climb_puzzles')
-    .select('puzzle_date, total_actors')
+    .select('puzzle_date, actors')
     .eq('id', puzzleId)
     .single()
-  
+
   if (!puzzle) {
     throw new ShareGenerationError('Puzzle not found', 'cast-climb', puzzleId)
   }
+
+  // Calculate total actors from the actors array
+  const totalActors = puzzle.actors?.length || 4
 
   // Fetch user guesses if authenticated
   const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'cast-climb', new Date(puzzle.puzzle_date))

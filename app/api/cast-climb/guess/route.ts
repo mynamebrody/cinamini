@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // Don't allow more guesses if they've reached max attempts (4 actors) or already won
     const hasWon = existingGuesses?.some(g => g.is_correct) || false
-    const maxAttempts = puzzle.total_actors || 4
+    const maxAttempts = puzzle.actors?.length || 4
     
     // Count ALL attempts (including skips) toward the max attempts limit
     const totalAttempts = existingGuesses?.length || 0
@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
         filmPosterUrl: puzzle.film_poster_url,
         filmReleaseYear: puzzle.film_release_year,
         actors: puzzle.actors,
-        totalActors: puzzle.total_actors,
+        totalActors: puzzle.actors?.length || 4,
         difficultyLevel: puzzle.difficulty_level,
         funFact: puzzle.fun_fact
       },
