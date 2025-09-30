@@ -82,8 +82,6 @@ export async function GET() {
             film_poster_url: selectedMovie.poster_path,
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_${today}`,
-            difficulty_level: 1,
-            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: {
               id: selectedMovie.id,
@@ -149,8 +147,6 @@ export async function GET() {
             film_poster_url: selectedMovie.poster_path,
             film_release_year: selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : null,
             seed_value: `pp_fallback_${today}`,
-            difficulty_level: 1,
-            clarity_levels: Array.from(POSTER_PIXELS_LEVELS),
             // Keep movie_data for backward compatibility
             movie_data: selectedMovie,
           })

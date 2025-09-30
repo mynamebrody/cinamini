@@ -56,8 +56,6 @@ export interface CastClimbPuzzle {
   film_poster_url: string | null;
   film_release_year: number;
   actors: CastClimbActor[];
-  total_actors: number;
-  difficulty_level: number;
   fun_fact: string | null;
 }
 
@@ -271,7 +269,6 @@ export async function generateDailyPuzzle(
     tmdb_id: actor.id
   })).reverse();
   
-  const difficulty = calculateDifficulty(selectedMovie, topCast);
   const funFact = generateFunFact(movieDetails, topCast);
 
   return {
@@ -285,8 +282,6 @@ export async function generateDailyPuzzle(
       : null,
     film_release_year: new Date(selectedMovie.release_date).getFullYear(),
     actors,
-    total_actors: actors.length,
-    difficulty_level: difficulty,
     fun_fact: funFact
   };
 }

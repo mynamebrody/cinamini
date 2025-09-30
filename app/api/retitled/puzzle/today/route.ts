@@ -85,7 +85,6 @@ export async function GET() {
         countryCode: puzzle.country_code,
         countryName: puzzle.country_name || getCountryName(puzzle.country_code),
         flagEmoji: getCountryFlag(puzzle.country_code),
-        difficultyLevel: puzzle.difficulty_level,
         translationNote: puzzle.translation_note,
         seedValue: puzzle.seed_value,
         options: shuffledOptions
@@ -151,7 +150,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
         country_code: generatedPuzzle.country_code,
         country_name: generatedPuzzle.country_name,
         distractor_ids: generatedPuzzle.distractor_ids,
-        difficulty_level: generatedPuzzle.difficulty_level,
         translation_note: generatedPuzzle.translation_note,
         seed_value: generatedPuzzle.seed_value
       })

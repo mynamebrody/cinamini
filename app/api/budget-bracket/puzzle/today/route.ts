@@ -86,7 +86,6 @@ export async function GET() {
             puzzle_date: todayStr,
             seed_value: seed,
             pairs: pairs,
-            difficulty_progression: DIFFICULTY_TARGETS,
             is_published: true
           })
 .select('*')
@@ -302,7 +301,6 @@ async function generateFallbackPuzzle(supabase: any, todayStr: string, seed: str
         puzzle_date: todayStr,
         seed_value: seed,
         pairs: pairs,
-        difficulty_progression: DIFFICULTY_TARGETS,
         is_published: true
       })
 .select('*')

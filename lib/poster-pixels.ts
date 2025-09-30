@@ -48,7 +48,6 @@ export interface PosterPixelsPuzzle {
   film_release_year: number;
   poster_url: string;
   poster_path: string;
-  difficulty_level: number;
   fun_fact: string | null;
   total_attempts: number;
 }
@@ -287,7 +286,6 @@ export async function generatePosterPixelsPuzzle(
     throw new Error(`Movie ${selectedMovie.title} doesn't have a poster`);
   }
 
-  const difficulty = calculateDifficulty(selectedMovie);
   const funFact = generateFunFact(movieDetails);
   const posterUrl = getPosterUrl(selectedMovie.poster_path, 'w500');
 
@@ -304,7 +302,6 @@ export async function generatePosterPixelsPuzzle(
     film_release_year: new Date(selectedMovie.release_date).getFullYear(),
     poster_url: posterUrl,
     poster_path: selectedMovie.poster_path,
-    difficulty_level: difficulty,
     fun_fact: funFact,
     total_attempts: POSTER_PIXELS_CONFIG.MAX_ATTEMPTS
   };
