@@ -127,17 +127,15 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     }
 
     // Generate new puzzle using the unified seeding system
-    console.log(`Generating new Retitled puzzle for ${dateString}`)
     const generatedPuzzle = await generateDailyPuzzle(date)
-    
+
     if (!generatedPuzzle) {
       console.error("Failed to generate puzzle")
       return null
     }
 
     // Calculate the puzzle number based on days since launch
-    const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabase, 'retitled', date)
-    console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${dateString}`)
+    await calculatePuzzleNumberFromLaunch(supabase, 'retitled', date)
 
     // Insert new puzzle into database
     const { data: insertedPuzzle, error: insertError } = await supabase
@@ -159,7 +157,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
     if (insertError) {
       // Check if it's a unique constraint violation (puzzle already exists)
       if (insertError.code === '23505') {
-        console.log("Puzzle was created concurrently, fetching existing one")
         const { data: concurrentPuzzle } = await supabase
           .from("retitled_puzzles")
     .select("*")
@@ -172,7 +169,6 @@ async function getOrCreateTodaysPuzzle(supabase: any, date: Date): Promise<any> 
       }
     }
 
-    console.log(`Successfully created Retitled puzzle for ${dateString}`)
     return insertedPuzzle
     
   } catch (error) {

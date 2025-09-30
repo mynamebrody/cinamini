@@ -5,28 +5,16 @@ import { POSTER_PIXELS_LEVELS, getScoreForClarityPercent } from "@/lib/poster-pi
 
 export async function POST(request: NextRequest) {
   try {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log("🚀 POSTER PIXELS GUESS API: Request received")
-    }
-    
     const supabase = await createClient()
-    
+
     // Get current user (optional for anonymous support)
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
     const isAnonymous = user.is_anonymous === true
-    
-    if (process.env.NODE_ENV !== 'production') {
-      console.log("🚀 POSTER PIXELS GUESS API: User authentication check", { 
-        isAuthenticated: !isAnonymous, 
-        isAnonymous,
-        userId: user?.id 
-      })
-    }
 
     const { 
       game_id, 

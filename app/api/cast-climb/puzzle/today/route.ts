@@ -30,23 +30,14 @@ export async function GET() {
       .eq("puzzle_date", todayString)
       .single()
 
-    console.log('Existing puzzle query result:', { 
-      hasData: !!existingPuzzle, 
-      error: puzzleError?.message,
-      errorCode: puzzleError?.code 
-    })
-
     let puzzle = existingPuzzle
 
     // If no puzzle exists, generate one
     if (!existingPuzzle || puzzleError) {
       try {
-        console.log('Generating new Cast Climb puzzle for', todayString)
-        
         // Calculate the puzzle number based on the last puzzle date
         const serviceSupabase = createServiceClient()
         const puzzleNumber = await calculatePuzzleNumberFromLaunch(serviceSupabase, 'cast-climb', today)
-        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${todayString}`)
         
         const generatedPuzzle = await generateDailyPuzzle(today, puzzleNumber)
         
@@ -75,7 +66,6 @@ export async function GET() {
         if (insertError) {
           // If it's a duplicate key error (race condition), try to get the existing puzzle
           if (insertError.code === '23505') {
-            console.log('Puzzle already exists (race condition), fetching existing puzzle')
             // Use service client for consistency and add small delay for transaction completion
             await new Promise(resolve => setTimeout(resolve, 100))
             const { data: existingPuzzleRetry, error: retryError } = await serviceSupabase
@@ -83,10 +73,9 @@ export async function GET() {
               .select("*")
               .eq("puzzle_date", todayString)
               .single()
-            
+
             if (!retryError && existingPuzzleRetry) {
               puzzle = existingPuzzleRetry
-              console.log('Successfully fetched existing puzzle after race condition')
             } else {
               console.error('Error fetching existing puzzle after race condition:', retryError)
               // If we still can't find it, there might be a database issue
@@ -96,10 +85,9 @@ export async function GET() {
                 .select("*")
                 .eq("puzzle_date", todayString)
                 .single()
-              
+
               if (!finalError && finalRetry) {
                 puzzle = finalRetry
-                console.log('Successfully fetched existing puzzle on final retry')
               } else {
                 console.error('Final retry also failed:', finalError)
                 throw new Error('Failed to save puzzle')
@@ -164,21 +152,9 @@ export async function GET() {
         
         // Track the last actors revealed for resuming incomplete games
         lastActorsRevealed = maxActorsRevealed
-        
+
         // Game is only "played" (complete) if it's finished
         hasPlayed = hasCorrectGuess || hasGiveUp || hasReachedMaxActors
-        
-        console.log('Cast Climb game state:', {
-          hasStarted,
-          hasPlayed,
-          hasPlayedBefore,
-          hasCorrectGuess,
-          hasGiveUp,
-          maxActorsRevealed,
-          lastActorsRevealed,
-          hasReachedMaxActors,
-          guessCount: existingGuesses.length
-        })
       }
     }
 

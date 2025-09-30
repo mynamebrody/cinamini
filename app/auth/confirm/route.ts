@@ -63,12 +63,11 @@ export async function GET(request: Request) {
           // Force session refresh after successful signup confirmation to prevent stale state
           try {
             await supabase.auth.refreshSession()
-            console.log('Session refreshed after signup confirmation')
           } catch (refreshError) {
             console.warn('Failed to refresh session after signup confirmation:', refreshError)
             // Continue anyway - session will be refreshed client-side if needed
           }
-          
+
           // Redirect to home page after successful signup confirmation with cache-busting headers
           const response = NextResponse.redirect(new URL('/', baseUrl))
           response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -91,12 +90,11 @@ export async function GET(request: Request) {
           // Force session refresh after successful email change to prevent stale state
           try {
             await supabase.auth.refreshSession()
-            console.log('Session refreshed after email change confirmation')
           } catch (refreshError) {
             console.warn('Failed to refresh session after email change:', refreshError)
             // Continue anyway - session will be refreshed client-side if needed
           }
-          
+
           // Redirect to profile page after successful email change with cache-busting headers
           const response = NextResponse.redirect(new URL('/profile', baseUrl))
           response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')

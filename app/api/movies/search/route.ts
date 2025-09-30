@@ -16,10 +16,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Log API key presence for debugging (without revealing the key)
-    console.log('TMDB API Key configured:', process.env.TMDB_API_KEY ? 'Yes' : 'No')
-    console.log('TMDB API Key length:', process.env.TMDB_API_KEY?.length || 0)
-
     // Movie search is available to both authenticated and anonymous users
 
     // Get search parameters
@@ -50,12 +46,10 @@ export async function GET(request: NextRequest) {
     tmdbUrl.searchParams.set('page', page)
     tmdbUrl.searchParams.set('include_adult', 'false')
 
-    console.log('Making TMDB request to:', tmdbUrl.toString())
-
     // Create manual timeout using AbortController for better compatibility
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-    
+
     const tmdbResponse = await fetch(tmdbUrl.toString(), {
       headers: {
         'Accept': 'application/json',
@@ -63,15 +57,12 @@ export async function GET(request: NextRequest) {
       },
       signal: controller.signal,
     })
-    
-    clearTimeout(timeoutId)
 
-    console.log('TMDB Response Status:', tmdbResponse.status, tmdbResponse.statusText)
+    clearTimeout(timeoutId)
 
     if (!tmdbResponse.ok) {
       const errorText = await tmdbResponse.text()
-      console.error('TMDB API error details:', errorText)
-      console.error('TMDB API error:', tmdbResponse.status, tmdbResponse.statusText)
+      console.error('TMDB API error:', tmdbResponse.status, tmdbResponse.statusText, errorText)
       
       // If 401, it's likely an API key issue
       if (tmdbResponse.status === 401) {

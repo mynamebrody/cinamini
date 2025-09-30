@@ -68,8 +68,7 @@ export async function GET() {
         const selectedMovie = moviesWithPosters[selectedIndex]
 
         // Calculate the puzzle number based on the last puzzle date
-        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
-        console.log(`Calculated puzzle number: ${puzzleNumber} for date: ${today}`)
+        await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
 
         // Create the puzzle (using service client to bypass RLS)
         const { data: newPuzzle, error: insertError } = await supabaseService
@@ -134,9 +133,8 @@ export async function GET() {
         const selectedMovie = fallbackMovies[selectedIndex]
 
         // Calculate the puzzle number for fallback scenario too
-        const puzzleNumber = await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
-        console.log(`Calculated puzzle number (fallback): ${puzzleNumber} for date: ${today}`)
-        
+        await calculatePuzzleNumberFromLaunch(supabaseService, 'poster-pixels', new Date(today))
+
         const { data: newPuzzle, error: insertError } = await supabaseService
           .from("poster_pixels_puzzles")
           .insert({
