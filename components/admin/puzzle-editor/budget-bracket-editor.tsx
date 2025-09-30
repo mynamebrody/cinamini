@@ -1419,12 +1419,28 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       }
       
       // Step 4: Create puzzle data with hydrated pairs
+      // Clean up pairs to remove unnecessary fields before saving
+      const cleanedPairs = hydrationResult.hydratedPairs.map(pair => {
+        const { movieA, movieB, ...pairRest } = pair
+
+        // Remove gameRelevanceScore and seedValue from movies as they're not stored
+        const cleanMovie = (movie: any) => {
+          const { gameRelevanceScore, seedValue, ...cleanedMovie } = movie
+          return cleanedMovie
+        }
+
+        return {
+          ...pairRest,
+          movieA: cleanMovie(movieA),
+          movieB: cleanMovie(movieB)
+        }
+      })
+
       const puzzleData = {
         puzzle_date: puzzleDate || null,
         name: puzzleName.trim() || null, // Include optional name
         seed_value: seedValue,
-        pairs: hydrationResult.hydratedPairs, // Use hydrated pairs with unified structure - column renamed from movie_pairs to pairs
-        difficulty_progression: [1.0, 0.8, 0.6, 0.4, 0.2],
+        pairs: cleanedPairs, // Use cleaned pairs without temporary fields
         is_published: isPublished
       }
 

@@ -464,8 +464,6 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
           ...actor,
           order: index // Update order based on current position
         })),
-        total_actors: 4,
-        difficulty_level: difficultyLevel,
         fun_fact: funFact,
         is_published: isPublished
       }
