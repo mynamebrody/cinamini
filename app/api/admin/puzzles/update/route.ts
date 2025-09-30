@@ -140,7 +140,6 @@ export async function PUT(request: Request) {
     const updateData = { ...puzzleData }
     delete updateData.id
     delete updateData.created_at
-    delete updateData.puzzle_number // Don't allow changing puzzle number
 
     // Update the puzzle
     const { data, error } = await serviceSupabase

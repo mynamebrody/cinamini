@@ -34,7 +34,6 @@ interface PuzzlePair {
 interface PuzzleData {
   id: number
   puzzle_date: string
-  puzzle_number: number
   name?: string
   seed_value: string
   pairs: PuzzlePair[]
@@ -214,7 +213,6 @@ export default function BudgetBracketGame({ date }: BudgetBracketGameProps = {})
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           puzzle_id: puzzle!.id,
-          puzzle_number: puzzle!.puzzle_number,
           round: currentRound,
           chosen_movie_tmdb_id: chosenMovieTmdbId,
           round_time_ms: currentChoice.time_taken_ms,

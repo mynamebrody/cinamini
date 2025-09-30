@@ -79,7 +79,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         id: data.id,
         puzzle_date: data.puzzle_date,
         seed_value: data.seed_value,
-        puzzle_number: data.puzzle_number,
         has_movie_pairs: !!data.movie_pairs,
         name: data.name
       })
