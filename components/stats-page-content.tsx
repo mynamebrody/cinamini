@@ -15,26 +15,26 @@ export default function StatsPageContent() {
       </div>
 
       {/* Stats Tabs */}
-      <Tabs defaultValue="cast-climb" className="w-full">
+      <Tabs defaultValue="retitled" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="cast-climb">Cast Climb</TabsTrigger>
           <TabsTrigger value="retitled">Retitled</TabsTrigger>
           <TabsTrigger value="budget-bracket">Budget Bracket</TabsTrigger>
+          <TabsTrigger value="cast-climb">Cast Climb</TabsTrigger>
           <TabsTrigger value="poster-pixels">Poster Pixels</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="cast-climb" className="mt-6">
-          <CastClimbStats />
-        </TabsContent>
-        
+
         <TabsContent value="retitled" className="mt-6">
           <RetitleStats />
         </TabsContent>
-        
+
         <TabsContent value="budget-bracket" className="mt-6">
           <BudgetBracketStats />
         </TabsContent>
-        
+
+        <TabsContent value="cast-climb" className="mt-6">
+          <CastClimbStats />
+        </TabsContent>
+
         <TabsContent value="poster-pixels" className="mt-6">
           <PosterPixelsStats />
         </TabsContent>
