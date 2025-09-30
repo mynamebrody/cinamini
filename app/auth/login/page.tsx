@@ -1,10 +1,15 @@
+import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import LoginForm from "@/components/login-form"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>
+}) {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -20,10 +25,12 @@ export default async function LoginPage() {
     data: { session },
   } = await supabase.auth.getSession()
 
-  // If user is logged in (but not anonymous), redirect to home page
+  // If user is logged in (but not anonymous), redirect appropriately
   // Anonymous users should be able to access login to upgrade their account
   if (session && !session.user.is_anonymous) {
-    redirect("/")
+    const params = await searchParams
+    const redirectUrl = params.redirect || "/"
+    redirect(redirectUrl)
   }
 
   // Get user data for header
@@ -47,11 +54,13 @@ export default async function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <SiteHeader user={user} displayName={displayName} />
-      
+
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <LoginForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <LoginForm />
+        </Suspense>
       </main>
-      
+
       <SiteFooter />
     </div>
   )

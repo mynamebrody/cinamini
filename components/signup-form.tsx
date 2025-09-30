@@ -3,6 +3,7 @@
 import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { useEffect, useState } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Loader2 } from "lucide-react"
@@ -34,6 +35,10 @@ function SubmitButton({ isAnonymous }: { isAnonymous: boolean }) {
 }
 
 export default function SignUpForm() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const redirectUrl = searchParams.get('redirect')
+
   // Initialize with null as the initial state
   const [state, formAction] = useActionState(signUp, null)
   const [isAnonymous, setIsAnonymous] = useState(false)
@@ -51,6 +56,9 @@ export default function SignUpForm() {
 
     checkAnonymousStatus()
   }, [])
+
+  // Note: We don't redirect immediately after signup because the user needs to confirm their email
+  // The redirect will happen after email confirmation via the auth callback handler
 
   return (
     <div className="w-full max-w-md space-y-8">
@@ -76,7 +84,15 @@ export default function SignUpForm() {
         {state?.success && (
           <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
             {state.success}
+            {redirectUrl && (
+              <p className="text-sm mt-2">After confirming your email, you'll be redirected back to the puzzle.</p>
+            )}
           </div>
+        )}
+
+        {/* Hidden input to pass redirect URL to the action */}
+        {redirectUrl && (
+          <input type="hidden" name="redirect" value={redirectUrl} />
         )}
 
         <div className="space-y-4">
@@ -111,7 +127,10 @@ export default function SignUpForm() {
 
         <div className="text-center text-neutral-600">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline">
+          <Link
+            href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : "/auth/login"}
+            className="text-cinema-red hover:text-cinema-red-dark font-medium hover:underline"
+          >
             Log in
           </Link>
         </div>

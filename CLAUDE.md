@@ -105,12 +105,20 @@ Seamless anonymous sign-in allows immediate gameplay without account creation, w
 - `AuthProvider` - Auto signs in anonymous users
 - `useGameMode` - Detects `user?.is_anonymous === true`
 - `AnonymousResultNudge` - Conversion prompts after games
+- `ArchivedPuzzleGate` - Blocks anonymous users from archived puzzles
 - Protected routes redirect anonymous users to sign-up
 
 ### Database Considerations
 - Anonymous users get full database records with `is_anonymous = true`
 - All game APIs work identically for anonymous and authenticated users
 - Stats preserved if user converts to full account
+
+### Archived Puzzle Access Control
+- **Today's Puzzle**: Accessible to all users (anonymous and authenticated)
+- **Archived Puzzles**: Require authenticated account
+- **Implementation**: `ArchivedPuzzleGate` component shows non-dismissible overlay for anonymous users
+- **Redirect Flow**: `/game/{game}/{date}` → Sign-up/Login → Back to `/game/{game}/{date}`
+- **Archive Calendar**: Visible to all users, only puzzle access is gated
 
 ## API Endpoints Structure
 
@@ -145,6 +153,18 @@ const utcDate = new Date(Date.UTC(year, month - 1, day))
 - Only today's puzzles created automatically
 - Historical puzzles are read-only
 - Frontend redirects when historical puzzles don't exist
+- Anonymous users blocked from archived puzzles via `ArchivedPuzzleGate`
+
+### Today vs Archived Puzzle Detection
+```typescript
+// Calculate if puzzle is today's puzzle
+const isToday = !date || (() => {
+  const today = new Date()
+  today.setUTCHours(0, 0, 0, 0)
+  const puzzleDateObj = new Date(date + 'T00:00:00Z')
+  return puzzleDateObj.getTime() === today.getTime()
+})()
+```
 
 ## Webhook Integration
 
@@ -190,6 +210,12 @@ webhookPromise.catch(error => {
 - Update local state before async operations
 - Use upsert for stats to prevent duplicate key errors
 
+### Authentication Redirects
+- Use query params for post-auth redirects: `?redirect=/game/retitled/2024-09-15`
+- Always URL-encode redirect values: `encodeURIComponent(redirectUrl)`
+- Forms read redirect from `useSearchParams()` and pass to router after success
+- Maintain redirect param across signup/login toggles
+
 ## Testing Strategy
 
 ### Game-Specific Testing
@@ -202,3 +228,6 @@ webhookPromise.catch(error => {
 - UTC midnight puzzle transitions
 - API field consistency between endpoints
 - Component re-renders and hook dependencies
+- Anonymous vs authenticated user access (today's puzzle vs archived)
+- Auth redirect flows with special characters in URLs
+- Archive calendar visibility for all users

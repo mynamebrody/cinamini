@@ -93,6 +93,7 @@ export async function signUp(prevState: any, formData: FormData) {
 
   const email = formData.get("email")
   const password = formData.get("password")
+  const redirect = formData.get("redirect")
 
   // Validate required fields
   if (!email || !password) {
@@ -106,15 +107,29 @@ export async function signUp(prevState: any, formData: FormData) {
     const { data: { user: currentUser } } = await supabase.auth.getUser()
     const isAnonymous = currentUser?.is_anonymous === true
 
-    const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?confirmed=true`
-    
+    // Store redirect in a cookie if provided
+    if (redirect) {
+      const cookieStore = await cookies()
+      cookieStore.set('auth_redirect', redirect.toString(), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 10, // 10 minutes
+        path: '/',
+      })
+    }
+
+    // Build simple callback URL without query params
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const callbackUrl = `${baseUrl}/auth/callback`
+
     if (isAnonymous) {
       // Convert anonymous account to permanent account with email/password
       const { error } = await supabase.auth.updateUser({
         email: email.toString(),
         password: password.toString(),
       }, {
-        emailRedirectTo: redirectTo,
+        emailRedirectTo: callbackUrl,
       })
 
       if (error) {
@@ -128,7 +143,7 @@ export async function signUp(prevState: any, formData: FormData) {
         email: email.toString(),
         password: password.toString(),
         options: {
-          emailRedirectTo: redirectTo,
+          emailRedirectTo: callbackUrl,
         },
       })
 

@@ -1,10 +1,15 @@
+import { Suspense } from "react"
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import SignUpForm from "@/components/signup-form"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 
-export default async function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string }>
+}) {
   // If Supabase is not configured, show setup message directly
   if (!isSupabaseConfigured) {
     return (
@@ -20,9 +25,11 @@ export default async function SignUpPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // If user is logged in but not anonymous, redirect to home page
+  // If user is logged in but not anonymous, redirect appropriately
   if (user && !user.is_anonymous) {
-    redirect("/")
+    const params = await searchParams
+    const redirectUrl = params.redirect || "/"
+    redirect(redirectUrl)
   }
 
   // Get display name if user exists
@@ -43,11 +50,13 @@ export default async function SignUpPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <SiteHeader user={user} displayName={displayName} />
-      
+
       <main className="flex-1 flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-        <SignUpForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SignUpForm />
+        </Suspense>
       </main>
-      
+
       <SiteFooter />
     </div>
   )

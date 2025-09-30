@@ -18,6 +18,7 @@ import { GameHeader } from "../game-header"
 import { GameLanding } from "../game-landing"
 import { InstructionCard, InstructionGrid } from "../instruction-card"
 import { GameModal, GameModalHeader, GameModalTitle, GameModalBody } from "../game-modal"
+import ArchivedPuzzleGate from "@/components/archived-puzzle-gate"
 
 interface PuzzleData {
   id: string
@@ -178,7 +179,7 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
           // User hasn't played today
           setPuzzle(data.puzzle)
           setGameState('ready')
-          
+
           // Show how-to-play modal only if they've never seen the tutorial
           const hasSeenTutorial = hasTutorialBeenViewed('retitled')
           if (!hasSeenTutorial) {
@@ -189,11 +190,19 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
         // Anonymous user
         setPuzzle(data.puzzle)
         setGameState('ready')
-        
-        // Check if this is the user's first time playing
-        const hasSeenTutorial = hasTutorialBeenViewed('retitled')
-        if (!hasSeenTutorial) {
-          setModalState('howtoplay')
+
+        // Check if this is today's puzzle
+        const today = new Date()
+        today.setUTCHours(0, 0, 0, 0)
+        const puzzleDateObj = new Date((date || data.puzzle.puzzleDate) + 'T00:00:00Z')
+        const isTodaysPuzzle = puzzleDateObj.getTime() === today.getTime()
+
+        // Only show tutorial for today's puzzle (archived puzzles will show signup gate instead)
+        if (isTodaysPuzzle) {
+          const hasSeenTutorial = hasTutorialBeenViewed('retitled')
+          if (!hasSeenTutorial) {
+            setModalState('howtoplay')
+          }
         }
       }
     } catch (err) {
@@ -275,40 +284,66 @@ export default function RetitleGame({ date }: RetitleGameProps = {}) {
     setModalState('howtoplay')
   }
 
+  // Check if this is today's puzzle
+  const isToday = !date || (() => {
+    const today = new Date()
+    today.setUTCHours(0, 0, 0, 0)
+    const puzzleDateObj = new Date(date + 'T00:00:00Z')
+    return puzzleDateObj.getTime() === today.getTime()
+  })()
+
   // Don't render the game container UI if we're showing the landing page
   if (gameState === "ready" && modalState !== 'howtoplay' && puzzle?.puzzleDate) {
     return (
-      <GameLanding
-        gameId="retitled"
-        gameName="Retitled"
-        puzzleNumber={puzzle?.puzzleNumber}
-        puzzleDate={puzzle?.puzzleDate}
-        backgroundColor="#ebbb4a"
-        logo="/cinamini/games/RetitledPoster.svg"
-        logoPng="/cinamini/games/RetitledPoster.png"
-        onStart={startGame}
-        showBackButton={true}
-      >
-        {/* Travel preparation globe */}
-        {puzzle && (
-          <div className="mt-8">
-            <RetitledGlobeProgress
-              countryCode={puzzle.countryCode}
-              countryName={puzzle.countryName}
-              flagEmoji={puzzle.flagEmoji}
-              gameState="preparing"
-              visitedCountries={visitedCountries}
-              className=""
-            />
-          </div>
-        )}
-      </GameLanding>
+      <>
+        <ArchivedPuzzleGate
+          puzzleNumber={puzzle.puzzleNumber}
+          puzzleDate={puzzle.puzzleDate}
+          gameName="Retitled"
+          gameSlug="retitled"
+          isAnonymous={isAnonymous}
+          isToday={isToday}
+        />
+        <GameLanding
+          gameId="retitled"
+          gameName="Retitled"
+          puzzleNumber={puzzle?.puzzleNumber}
+          puzzleDate={puzzle?.puzzleDate}
+          backgroundColor="#ebbb4a"
+          logo="/cinamini/games/RetitledPoster.svg"
+          logoPng="/cinamini/games/RetitledPoster.png"
+          onStart={startGame}
+          showBackButton={true}
+        >
+          {/* Travel preparation globe */}
+          {puzzle && (
+            <div className="mt-8">
+              <RetitledGlobeProgress
+                countryCode={puzzle.countryCode}
+                countryName={puzzle.countryName}
+                flagEmoji={puzzle.flagEmoji}
+                gameState="preparing"
+                visitedCountries={visitedCountries}
+                className=""
+              />
+            </div>
+          )}
+        </GameLanding>
+      </>
     )
   }
 
   // Render the game
   return (
     <div className="game-container">
+      <ArchivedPuzzleGate
+        puzzleNumber={puzzle?.puzzleNumber || 0}
+        puzzleDate={puzzle?.puzzleDate || ""}
+        gameName="Retitled"
+        gameSlug="retitled"
+        isAnonymous={isAnonymous}
+        isToday={isToday}
+      />
       {/* Celebration Confetti */}
       <RetitleCelebrationConfetti 
         show={showConfetti} 
