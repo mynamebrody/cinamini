@@ -49,8 +49,8 @@ export default function ArchivedPuzzleGate({
   const redirectUrl = `/game/${gameSlug}/${puzzleDate}`
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="bg-white shadow-[2px_2px_0px_rgb(58,58,60),4px_4px_0px_rgb(58,58,60),6px_6px_0px_rgb(58,58,60),8px_8px_0px_rgb(58,58,60)] max-w-2xl w-full p-8 space-y-6 border-4 border-cinema-red" style={{ borderRadius: 0 }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-white shadow-[1px_1px_0px_rgb(209,210,212),2px_2px_0px_rgb(209,210,212),3px_3px_0px_rgb(209,210,212),4px_4px_0px_rgb(209,210,212)] max-w-2xl w-full p-8 space-y-6 border-2 border-silver my-auto" style={{ borderRadius: 0 }}>
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="w-20 h-20 bg-cinema-red/10 flex items-center justify-center mx-auto" style={{ borderRadius: 0 }}>
@@ -133,10 +133,20 @@ export default function ArchivedPuzzleGate({
           <Button
             asChild
             variant="outline"
-            className="w-full h-12 text-base border-2 border-neutral-300 hover:bg-neutral-50 hover:border-cinema-red transition-all"
+            className="w-full h-12 text-base border border-neutral-300 hover:bg-neutral-50 hover:border-cinema-red transition-all"
           >
             <a href={`/auth/login?redirect=${encodeURIComponent(redirectUrl)}`}>
               Already have an account? Sign In
+            </a>
+          </Button>
+
+          <Button
+            asChild
+            variant="ghost"
+            className="w-full h-12 text-base text-neutral-600 hover:text-cinema-red hover:bg-transparent transition-all"
+          >
+            <a href={`/game/${gameSlug}`}>
+              Back to Today&apos;s Game
             </a>
           </Button>
         </div>
