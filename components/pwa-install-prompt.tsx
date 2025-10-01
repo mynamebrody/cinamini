@@ -15,7 +15,7 @@ const IOS_FALLBACK_PROMPT_DELAY_MS = 2000
 const debugLog = (...args: any[]) => {
   if (DEBUG_PWA_PROMPT) {
     // Prefix for easier filtering
-    // eslint-disable-next-line no-console
+     
     console.log('PWA Install Prompt:', ...args)
   }
 }
