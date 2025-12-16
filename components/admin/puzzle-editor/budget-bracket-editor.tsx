@@ -415,8 +415,28 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   const [autoFilling, setAutoFilling] = useState(false)
   const [cachedMoviesLoaded, setCachedMoviesLoaded] = useState(false)
   const [cachedMoviesLoading, setCachedMoviesLoading] = useState(false)
+  const [archivedDate, setArchivedDate] = useState<string | null>(null)
 
   const supabase = getSupabaseClient()
+
+  // Fetch archived_date for Budget Bracket
+  useEffect(() => {
+    const fetchArchivedDate = async () => {
+      try {
+        const response = await fetch('/api/games')
+        if (response.ok) {
+          const data = await response.json()
+          const budgetBracket = data.games?.find((g: any) => g.game_id === 'budget-bracket')
+          if (budgetBracket?.archived_date) {
+            setArchivedDate(budgetBracket.archived_date)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch archived date:', error)
+      }
+    }
+    fetchArchivedDate()
+  }, [])
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -1334,6 +1354,17 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       return
     }
 
+    // Check if puzzle date is on/after archived_date
+    if (puzzleDate && archivedDate) {
+      const puzzleDateUTC = new Date(puzzleDate + 'T00:00:00Z')
+      const archivedDateUTC = new Date(archivedDate + 'T00:00:00Z')
+      
+      if (puzzleDateUTC.getTime() >= archivedDateUTC.getTime()) {
+        alert(`Budget Bracket has been archived as of ${archivedDate}. Cannot create or edit puzzles for dates on or after the archived date.`)
+        return
+      }
+    }
+
     const incompletePairs = moviePairs.filter(pair => !pair.movieA || !pair.movieB)
     
     if (incompletePairs.length > 0) {
@@ -1530,6 +1561,26 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
         </p>
       </div>
 
+      {/* Archived Warning Banner */}
+      {archivedDate && puzzleDate && (() => {
+        const puzzleDateUTC = new Date(puzzleDate + 'T00:00:00Z')
+        const archivedDateUTC = new Date(archivedDate + 'T00:00:00Z')
+        const isArchived = puzzleDateUTC.getTime() >= archivedDateUTC.getTime()
+        
+        if (isArchived) {
+          return (
+            <div className="bg-amber-50 border border-amber-200 p-4" style={{ borderRadius: 0 }}>
+              <p className="text-sm text-amber-800 font-medium">
+                ⚠️ Budget Bracket has been archived as of {archivedDate}. 
+                Cannot create or edit puzzles for dates on or after the archived date. 
+                Please select a date before {archivedDate} to save this puzzle.
+              </p>
+            </div>
+          )
+        }
+        return null
+      })()}
+
       {/* Date, Name, and Status */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
@@ -1651,7 +1702,14 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
       <Button
         className="w-full"
         onClick={savePuzzle}
-        disabled={loading || moviePairs.some(p => !p.movieA || !p.movieB)}
+        disabled={loading || moviePairs.some(p => !p.movieA || !p.movieB) || (() => {
+          if (puzzleDate && archivedDate) {
+            const puzzleDateUTC = new Date(puzzleDate + 'T00:00:00Z')
+            const archivedDateUTC = new Date(archivedDate + 'T00:00:00Z')
+            return puzzleDateUTC.getTime() >= archivedDateUTC.getTime()
+          }
+          return false
+        })()}
       >
         {loading ? (
           <>

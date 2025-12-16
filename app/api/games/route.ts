@@ -104,18 +104,32 @@ export async function GET() {
               }
             }
           }
+          // Calculate if game is archived (archived_date is set and <= today)
+          const todayUTC = new Date()
+          todayUTC.setUTCHours(0, 0, 0, 0)
+          const archivedDate = game.archived_date ? new Date(game.archived_date + 'T00:00:00Z') : null
+          const isArchived = archivedDate !== null && archivedDate.getTime() <= todayUTC.getTime()
+          
           return {
             ...game,
-            hasPlayedToday
+            hasPlayedToday,
+            isArchived
           }
         })
       )
     } else {
       // For unauthenticated users, just return games without play status
-      gamesWithStatus = (games || []).map(game => ({
-        ...game,
-        hasPlayedToday: false
-      }))
+      const todayUTC = new Date()
+      todayUTC.setUTCHours(0, 0, 0, 0)
+      gamesWithStatus = (games || []).map(game => {
+        const archivedDate = game.archived_date ? new Date(game.archived_date + 'T00:00:00Z') : null
+        const isArchived = archivedDate !== null && archivedDate.getTime() <= todayUTC.getTime()
+        return {
+          ...game,
+          hasPlayedToday: false,
+          isArchived
+        }
+      })
     }
 
     return NextResponse.json({ 

@@ -50,6 +50,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Puzzle not found' }, { status: 404 })
     }
 
+    // Check if Budget Bracket is archived and puzzle date is today or future
+    const { data: gameData } = await supabaseService
+      .from('cinamini_games')
+      .select('archived_date')
+      .eq('game_id', 'budget-bracket')
+      .single()
+    
+    if (gameData?.archived_date) {
+      const todayUTC = new Date()
+      todayUTC.setUTCHours(0, 0, 0, 0)
+      const archivedDate = new Date(gameData.archived_date + 'T00:00:00Z')
+      const puzzleDate = new Date(puzzle.puzzle_date + 'T00:00:00Z')
+      
+      if (archivedDate.getTime() <= todayUTC.getTime() && puzzleDate.getTime() >= todayUTC.getTime()) {
+        return NextResponse.json(
+          { 
+            archived: true, 
+            archived_date: gameData.archived_date,
+            error: 'Budget Bracket has been archived and no longer receives new daily puzzles. You can still play archived puzzles from the archive calendar.' 
+          },
+          { status: 410 }
+        )
+      }
+    }
+
     // Check if user has already played this puzzle
     const { data: existingGame } = await supabase
       .from('budget_bracket_games')

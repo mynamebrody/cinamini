@@ -17,6 +17,30 @@ export async function GET() {
     const supabase = await createClient()
     const supabaseService = createServiceClient()
     
+    // Check if Budget Bracket is archived
+    const { data: gameData } = await supabaseService
+      .from('cinamini_games')
+      .select('archived_date')
+      .eq('game_id', 'budget-bracket')
+      .single()
+    
+    if (gameData?.archived_date) {
+      const todayUTC = new Date()
+      todayUTC.setUTCHours(0, 0, 0, 0)
+      const archivedDate = new Date(gameData.archived_date + 'T00:00:00Z')
+      
+      if (archivedDate.getTime() <= todayUTC.getTime()) {
+        return NextResponse.json(
+          { 
+            archived: true, 
+            archived_date: gameData.archived_date,
+            error: 'Budget Bracket has been archived and no longer receives new daily puzzles. You can still play archived puzzles from the archive calendar.' 
+          },
+          { status: 410 }
+        )
+      }
+    }
+    
     // Check if user is authenticated (optional now)
     const { data: { user } } = await supabase.auth.getUser()
 

@@ -2,15 +2,16 @@
 -- This file is automatically run when using `npx supabase db reset`
 
 -- Insert core game definitions
-INSERT INTO "public"."cinamini_games" ("game_id", "display_name", "description", "is_active", "launch_date", "created_at", "updated_at") VALUES 
-('budget-bracket', 'Budget Bracket', 'Compare movie budgets in this daily guessing game. Pick the film with the higher production cost!', true, CURRENT_DATE, NOW(), NOW()),
-('retitled', 'Retitled', 'Guess the English movie title from its foreign translation in this daily puzzle.', true, CURRENT_DATE, NOW(), NOW()),
-('poster-pixels', 'Poster Pixels', 'Guess the movie from its pixelated poster as it becomes clearer over 30 seconds!', true, CURRENT_DATE, NOW(), NOW()),
-('cast-climb', 'Cast Climb', 'Guess the movie from its cast list. Wrong guesses reveal more actors!', true, CURRENT_DATE, NOW(), NOW())
+INSERT INTO "public"."cinamini_games" ("game_id", "display_name", "description", "is_active", "launch_date", "archived_date", "created_at", "updated_at") VALUES 
+('budget-bracket', 'Budget Bracket', 'Compare movie budgets in this daily guessing game. Pick the film with the higher production cost!', true, CURRENT_DATE, CURRENT_DATE, NOW(), NOW()),
+('retitled', 'Retitled', 'Guess the English movie title from its foreign translation in this daily puzzle.', true, CURRENT_DATE, NULL, NOW(), NOW()),
+('poster-pixels', 'Poster Pixels', 'Guess the movie from its pixelated poster as it becomes clearer over 30 seconds!', true, CURRENT_DATE, NULL, NOW(), NOW()),
+('cast-climb', 'Cast Climb', 'Guess the movie from its cast list. Wrong guesses reveal more actors!', true, CURRENT_DATE, NULL, NOW(), NOW())
 ON CONFLICT (game_id) DO UPDATE SET
   display_name = EXCLUDED.display_name,
   description = EXCLUDED.description,
   is_active = EXCLUDED.is_active,
+  archived_date = EXCLUDED.archived_date,
   updated_at = NOW();
 
 -- Create a super admin user (You'll need to create this user via Supabase Auth first)

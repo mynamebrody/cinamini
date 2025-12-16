@@ -30,6 +30,7 @@ export default function SchedulePage() {
   const [gameMenuDate, setGameMenuDate] = useState<Date | null>(null)
   const [scheduledGames, setScheduledGames] = useState<Map<string, Set<string>>>(new Map())
   const [drafts, setDrafts] = useState<Puzzle[]>([])
+  const [gameMetadata, setGameMetadata] = useState<Map<string, { archived_date: string | null }>>(new Map())
   const [stats, setStats] = useState({
     totalScheduled: 0,
     totalDrafts: 0,
@@ -42,9 +43,27 @@ export default function SchedulePage() {
   })
 
   useEffect(() => {
+    fetchGameMetadata()
     fetchStats()
     updateScheduledGames()
   }, [])
+
+  const fetchGameMetadata = async () => {
+    try {
+      const response = await fetch('/api/games')
+      if (response.ok) {
+        const data = await response.json()
+        const games = data.games || []
+        const metadataMap = new Map<string, { archived_date: string | null }>()
+        games.forEach((game: any) => {
+          metadataMap.set(game.game_id, { archived_date: game.archived_date || null })
+        })
+        setGameMetadata(metadataMap)
+      }
+    } catch (error) {
+      console.error('Failed to fetch game metadata:', error)
+    }
+  }
 
   const updateScheduledGames = async () => {
     try {
@@ -187,6 +206,9 @@ export default function SchedulePage() {
   const getAllGamesWithStatus = (date: Date): Array<{id: string, name: string, icon: any, isAvailable: boolean}> => {
     const dateStr = format(date, 'yyyy-MM-dd')
     const scheduledForDate = scheduledGames.get(dateStr) || new Set()
+    const todayUTC = new Date()
+    todayUTC.setUTCHours(0, 0, 0, 0)
+    const selectedDateUTC = new Date(dateStr + 'T00:00:00Z')
     
     const allGames = [
       { id: 'retitled', name: 'Retitled', icon: Film },
@@ -195,15 +217,28 @@ export default function SchedulePage() {
       { id: 'poster-pixels', name: 'Poster Pixels', icon: ImageIcon }
     ]
     
-    return allGames.map(game => {
-      // Convert button ID format to database format for comparison
-      // Database uses underscores, buttons use hyphens
-      const dbGameType = game.id.replace(/-/g, '_')
-      return {
-        ...game,
-        isAvailable: !scheduledForDate.has(dbGameType)
-      }
-    })
+    return allGames
+      .filter(game => {
+        // Filter out games that are archived for this date
+        const metadata = gameMetadata.get(game.id)
+        if (metadata?.archived_date) {
+          const archivedDate = new Date(metadata.archived_date + 'T00:00:00Z')
+          // Hide game if selected date is on/after archived_date
+          if (selectedDateUTC.getTime() >= archivedDate.getTime()) {
+            return false
+          }
+        }
+        return true
+      })
+      .map(game => {
+        // Convert button ID format to database format for comparison
+        // Database uses underscores, buttons use hyphens
+        const dbGameType = game.id.replace(/-/g, '_')
+        return {
+          ...game,
+          isAvailable: !scheduledForDate.has(dbGameType)
+        }
+      })
   }
 
   const handlePuzzleClick = (puzzle: Puzzle) => {

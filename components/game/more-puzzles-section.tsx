@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useGameMode } from "@/hooks/use-game-mode"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { GameLogo } from "../game-logo"
 
@@ -25,11 +26,20 @@ const ALL_GAMES: GameInfo[] = [
 
 interface MorePuzzlesSectionProps {
   currentGameId: string
+  title?: string
+  showArchiveRow?: boolean
+  className?: string
 }
 
-export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
+export function MorePuzzlesSection({
+  currentGameId,
+  title = "More Puzzles",
+  showArchiveRow = true,
+  className,
+}: MorePuzzlesSectionProps) {
   const { isAnonymous } = useGameMode()
   const [gameStatuses, setGameStatuses] = useState<Record<string, boolean>>({})
+  const [activeGameIds, setActiveGameIds] = useState<Set<string> | null>(null)
 
   useEffect(() => {
     const checkGameStatuses = async () => {
@@ -43,6 +53,25 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
           // The API returns { games: [...] }, so we need to extract the games array
           const games = Array.isArray(data?.games) ? data.games : []
 
+          // Determine which games are active based on archived_date (UTC midnight boundary)
+          const todayUTC = new Date()
+          todayUTC.setUTCHours(0, 0, 0, 0)
+          const activeIds = new Set<string>()
+
+          for (const g of games) {
+            const archivedDate = g?.archived_date
+            if (!archivedDate) {
+              activeIds.add(g.game_id)
+              continue
+            }
+
+            const archivedDateObj = new Date(`${archivedDate}T00:00:00Z`)
+            if (Number.isNaN(archivedDateObj.getTime()) || archivedDateObj.getTime() > todayUTC.getTime()) {
+              activeIds.add(g.game_id)
+            }
+          }
+          setActiveGameIds(activeIds)
+
           for (const game of ALL_GAMES) {
             if (game.id !== currentGameId) {
               const gameStatus = games.find((g: any) => g.game_id === game.id)
@@ -52,6 +81,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
         }
       } catch (error) {
         console.error('Error checking game statuses:', error)
+        setActiveGameIds(null)
         // Fallback: mark all as not played
         for (const game of ALL_GAMES) {
           if (game.id !== currentGameId) {
@@ -66,15 +96,20 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
     checkGameStatuses()
   }, [currentGameId, isAnonymous])
 
-  const otherGames = ALL_GAMES.filter(game => game.id !== currentGameId)
+  const otherGames = ALL_GAMES.filter((game) => {
+    if (game.id === currentGameId) return false
+    // If we haven't loaded active games from the DB yet, don't hide anything.
+    if (!activeGameIds) return true
+    return activeGameIds.has(game.id)
+  })
   const currentGame = ALL_GAMES.find(game => game.id === currentGameId)
 
   return (
-    <div className="w-full mt-6">
+    <div className={cn("w-full mt-6", className)}>
       <Card className="bg-white border border-[rgb(var(--silver))] shadow-3d-grey" style={{ borderRadius: 0 }}>
         <CardHeader className="text-center">
           <CardTitle className="text-lg font-bold text-gray-800">
-            More Puzzles
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -126,7 +161,7 @@ export function MorePuzzlesSection({ currentGameId }: MorePuzzlesSectionProps) {
             })}
 
             {/* Archive entry for current game */}
-            {currentGame && (
+            {showArchiveRow && currentGame && (
               <div
                 className="flex items-center justify-between p-3 bg-white border border-[rgb(var(--silver))] shadow-3d-grey"
                 style={{ borderRadius: 0 }}

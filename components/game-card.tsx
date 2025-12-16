@@ -88,7 +88,7 @@ export default function GameCard({
         <Button
           variant="outline"
           size="default"
-          className="w-full border-2 border-neutral-300 font-semibold font-funnel text-neutral-700 transition-all duration-200 py-3 rounded-xl group-hover:bg-neutral-900 group-hover:text-white group-hover:border-neutral-900 hover:scale-[1.02]"
+          className="w-full border-2 border-neutral-300 font-semibold font-funnel text-neutral-700 transition-all duration-200 py-3 rounded-none group-hover:bg-neutral-900 group-hover:text-white group-hover:border-neutral-900 hover:scale-[1.02]"
           onClick={(e) => {
             e.stopPropagation()
             handlePlay()

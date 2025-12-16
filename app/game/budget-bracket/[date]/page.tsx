@@ -1,4 +1,4 @@
-import { isSupabaseConfigured } from "@/lib/supabase/server"
+import { isSupabaseConfigured, createServiceClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import BudgetBracketGame from "@/components/game/budget-bracket/budget-bracket-game"
 import { constructMetadata, gameMetadata } from "@/lib/metadata"
@@ -34,7 +34,7 @@ export default async function BudgetBracketDatePage({ params }: BudgetBracketDat
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
 
-  // If date is invalid or in the future, redirect to today's puzzle
+  // If date is invalid or in the future, redirect to archived message
   if (isNaN(puzzleDate.getTime()) || puzzleDate > today) {
     redirect("/game/budget-bracket")
   }
@@ -43,6 +43,23 @@ export default async function BudgetBracketDatePage({ params }: BudgetBracketDat
   const launchDate = new Date('2024-01-01T00:00:00Z')
   if (puzzleDate < launchDate) {
     redirect("/game/budget-bracket")
+  }
+
+  // Check if Budget Bracket is archived and if puzzle date is on/after archived_date
+  const supabaseService = createServiceClient()
+  const { data: gameData } = await supabaseService
+    .from('cinamini_games')
+    .select('archived_date')
+    .eq('game_id', 'budget-bracket')
+    .single()
+
+  if (gameData?.archived_date) {
+    const archivedDate = new Date(gameData.archived_date + 'T00:00:00Z')
+    
+    // If puzzle date is on/after archived_date, redirect to archived message
+    if (puzzleDate.getTime() >= archivedDate.getTime()) {
+      redirect("/game/budget-bracket")
+    }
   }
 
   return <BudgetBracketGame date={date} />

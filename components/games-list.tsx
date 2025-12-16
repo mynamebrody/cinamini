@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import GameCard from "./game-card"
-import { Loader2 } from "lucide-react"
+import { Loader2, Info } from "lucide-react"
 import { GameLogo } from "./game-logo"
 import { PuzzleCountdown } from "./puzzle-countdown"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip"
 
 interface Game {
   game_id: string
@@ -17,8 +18,9 @@ interface GamesListProps {
   isAuthenticated: boolean
 }
 
-// Define which games should be featured (2x2 grid on mobile, 4 across on desktop)
-const FEATURED_GAMES = ['retitled', 'budget-bracket', 'cast-climb', 'poster-pixels']
+// Define which games should be featured (2x2 grid on mobile, 3 across on desktop)
+// Budget Bracket is archived and appears in the Archived Games section
+const FEATURED_GAMES = ['retitled', 'cast-climb', 'poster-pixels']
 
 // Game logo and color mappings - New Sophisticated Cinema Palette
 const GAME_STYLES: Record<string, { emoji?: string; logo?: string; logoPng?: string; bgColor: string; textColor?: string }> = {
@@ -104,9 +106,27 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
     )
   }
 
-  // Separate featured games from regular games
-  const featuredGames = games.filter(game => FEATURED_GAMES.includes(game.game_id))
-  const regularGames = games.filter(game => !FEATURED_GAMES.includes(game.game_id))
+  // Separate games into active and archived
+  const todayUTC = new Date()
+  todayUTC.setUTCHours(0, 0, 0, 0)
+  
+  const activeGames = games.filter(game => {
+    // Game is active if it's not archived (archived_date is null or in the future)
+    if (!game.archived_date) return true
+    const archivedDate = new Date(game.archived_date + 'T00:00:00Z')
+    return archivedDate.getTime() > todayUTC.getTime()
+  })
+  
+  const archivedGames = games.filter(game => {
+    // Game is archived if archived_date is set and <= today
+    if (!game.archived_date) return false
+    const archivedDate = new Date(game.archived_date + 'T00:00:00Z')
+    return archivedDate.getTime() <= todayUTC.getTime()
+  })
+
+  // Separate featured games from regular games (only from active games)
+  const featuredGames = activeGames.filter(game => FEATURED_GAMES.includes(game.game_id))
+  const regularGames = activeGames.filter(game => !FEATURED_GAMES.includes(game.game_id))
 
   // Sort featured games by the order defined in FEATURED_GAMES
   const sortedFeaturedGames = featuredGames.sort((a, b) => {
@@ -138,12 +158,12 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
                 Today&apos;s Cinema Games
               </h1>
               <p className="text-base md:text-lg text-neutral-600 mt-3 md:mt-4 font-funnel max-w-2xl mx-auto px-4 md:px-0">
-                Four movie puzzles, updated daily. Can you solve them all?
+                Three movie puzzles, updated daily. Can you solve them all?
               </p>
             </div>
 
             {/* Featured Games Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto text-center">
               {sortedFeaturedGames.map((game) => {
                 const style = getGameStyle(game.game_id)
                 
@@ -252,6 +272,88 @@ export default function GamesList({ isAuthenticated }: GamesListProps) {
               Puzzles rotate at midnight UTC
             </p>
             <PuzzleCountdown />
+          </div>
+        </section>
+      )}
+
+      {/* Archived Games Section */}
+      {archivedGames.length > 0 && (
+        <section className="bg-neutral-50/50 py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 font-funnel-display-bold tracking-tight">
+                  Archived Games
+                </h2>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-neutral-500 hover:text-neutral-700 transition-colors">
+                        <Info className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="text-sm">
+                        Archived games aren&apos;t getting new daily puzzles while we focus on improving cinamini overall. 
+                        Some favorites may return in a new form!
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {archivedGames.map((game) => {
+                const style = getGameStyle(game.game_id)
+                return (
+                  <div
+                    key={game.game_id}
+                    className="bg-white border border-[#d1d2d4] p-6 flex flex-col"
+                    style={{ borderRadius: 0 }}
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex-shrink-0">
+                        <GameLogo
+                          logo={style.logo}
+                          logoPng={style.logoPng}
+                          emoji={style.emoji}
+                          alt={game.display_name}
+                          width={48}
+                          height={48}
+                          className="w-12 h-12"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-neutral-900 font-funnel-display-bold">
+                          {game.display_name}
+                        </h3>
+                        <p className="text-sm text-neutral-600 font-funnel mt-1">
+                          {game.description}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 mt-auto">
+                      <a
+                        href={`/game/${game.game_id}`}
+                        className="flex-1 px-4 py-2 bg-white border border-[#999] text-[#999] text-center font-funnel font-medium transition-all duration-200 hover:text-[#99251d] hover:border-[#99251d]"
+                        style={{ borderRadius: 0 }}
+                      >
+                        Why Archived
+                      </a>
+                      <a
+                        href={`/game/${game.game_id}/archive`}
+                        className="flex-1 px-4 py-2 bg-[rgb(39,134,70)] text-white text-center font-funnel font-medium transition-all duration-200 hover:bg-[rgb(55,160,90)]"
+                        style={{ borderRadius: 0 }}
+                      >
+                        Archive
+                      </a>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </section>
       )}
