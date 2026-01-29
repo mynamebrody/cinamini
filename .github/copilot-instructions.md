@@ -111,8 +111,8 @@ GET  /api/movies/search?q={query}        // TMDB search
 ### 3D Box Shadow Pattern
 The app uses distinctive layered shadows throughout:
 ```css
-shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),
-        3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]
+/* Tailwind utility class for 3D effect */
+shadow-[1px_1px_0px_rgb(153,37,29),2px_2px_0px_rgb(153,37,29),3px_3px_0px_rgb(153,37,29),4px_4px_0px_rgb(153,37,29)]
 ```
 
 ### Mobile-First Patterns
