@@ -1324,26 +1324,49 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
   }
 
   const handleSmartGeneration = async (puzzleData: any) => {
-    // Handle smart-generated puzzle data
-    if (puzzleData.pairs) {
-      // Full puzzle generated - populate all fields
-      if (puzzleData.puzzle_date) {
-        setPuzzleDate(puzzleData.puzzle_date)
-      }
-      
-      // Load the movie pairs
-      const newRounds = puzzleData.pairs.map((pair: any[], index: number) => ({
-        round: index + 1,
-        pair: pair.map(movie => ({
-          id: movie.id,
-          title: movie.title,
-          poster_path: movie.poster_path,
-          release_date: movie.release_date,
-          budget: movie.budget
-        }))
-      }))
-      
-      setRounds(newRounds)
+    // Smart Generate always OVERRIDES the editor's current state.
+    // Reset to an empty bracket of TOTAL_PAIRS slots first.
+    const emptyPairs: MoviePair[] = Array(TOTAL_PAIRS)
+      .fill(null)
+      .map(() => ({ movieA: null, movieB: null }))
+
+    // If the generator chose a different date than we were editing, drop edit
+    // mode so save doesn't collide with the existing record.
+    if (puzzleData.puzzle_date && puzzleData.puzzle_date !== puzzleDate) {
+      setIsEditMode(false)
+    }
+
+    if (puzzleData.puzzle_date) {
+      setPuzzleDate(puzzleData.puzzle_date)
+      setIsPublished(true)
+      onDateChange?.(puzzleData.puzzle_date)
+    }
+
+    if (Array.isArray(puzzleData.pairs) && puzzleData.pairs.length > 0) {
+      const nextPairs: MoviePair[] = emptyPairs.map((slot, index) => {
+        const pair = puzzleData.pairs[index]
+        if (!Array.isArray(pair) || pair.length < 2) return slot
+        const [a, b] = pair
+        const toMovie = (m: any): Movie | null => {
+          if (!m) return null
+          return {
+            id: m.id,
+            title: m.title,
+            poster_path: m.poster_path ?? null,
+            release_date: m.release_date ?? '',
+            budget: m.budget,
+            revenue: m.revenue,
+            runtime: m.runtime,
+            director: m.director,
+            writer: m.writer,
+            vote_average: m.vote_average,
+          }
+        }
+        return { movieA: toMovie(a), movieB: toMovie(b) }
+      })
+      setMoviePairs(nextPairs)
+    } else {
+      setMoviePairs(emptyPairs)
     }
   }
 
@@ -1637,13 +1660,11 @@ export default function BudgetBracketEditor({ prefilledDate, onDateChange, puzzl
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Movie Pairs</h3>
             <div className="flex items-center gap-3">
-              {!moviePairs.some(p => p.movieA || p.movieB) && puzzleDate && (
-                <SmartGenerationDialog
-                  gameType="budget-bracket"
-                  targetDate={puzzleDate}
-                  onGenerate={handleSmartGeneration}
-                />
-              )}
+              <SmartGenerationDialog
+                gameType="budget-bracket"
+                targetDate={puzzleDate}
+                onGenerate={handleSmartGeneration}
+              />
               <Button
                 variant="outline"
                 size="sm"

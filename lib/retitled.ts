@@ -467,7 +467,7 @@ export function calculateDifficultyLevel(
 /**
  * Calculate similarity between two titles (0-1, where 1 is identical)
  */
-function calculateTitleSimilarity(title1: string, title2: string): number {
+export function calculateTitleSimilarity(title1: string, title2: string): number {
   const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
   const norm1 = normalize(title1);
   const norm2 = normalize(title2);

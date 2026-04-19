@@ -188,6 +188,12 @@ SUPABASE_SERVICE_ROLE_KEY=
 TMDB_API_KEY=
 TMDB_BASE_URL=https://api.themoviedb.org/3
 
+# OpenAI (smart puzzle generator + admin fun-facts route)
+OPENAI_API_KEY=
+# Model slug passed to the Responses API by lib/ai/openai-responses.ts.
+# Must support the hosted `web_search` tool. Default: gpt-5-mini
+OPENAI_PUZZLE_MODEL=gpt-5-mini
+
 # Optional
 SHARE_CARD_SECRET=
 CINAMINI_GUESS_WEBHOOK_URL=

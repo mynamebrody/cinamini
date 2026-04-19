@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
-import { Save, Loader2, Plus, X, Image as ImageIcon, Check, Sparkles, ExternalLink } from "lucide-react"
+import { Save, Loader2, Plus, X, Image as ImageIcon, Check, Sparkles, ExternalLink, StopCircle } from "lucide-react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -16,6 +16,7 @@ import PosterClarityPreview from "../shared/poster-clarity-preview"
 import SmartGenerationDialog from "../shared/smart-generation-dialog"
 import { cn } from "@/lib/utils"
 import { POSTER_PIXELS_LEVELS } from "@/lib/poster-pixels-config"
+import { streamFunFacts, isAbortError, type FunFact } from "@/lib/admin/fun-facts-stream"
 
 interface Movie {
   id: number
@@ -53,9 +54,10 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [funFact, setFunFact] = useState("")
-  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFacts, setFunFacts] = useState<Array<FunFact>>([])
   const [funFactIndex, setFunFactIndex] = useState(0)
   const [isGeneratingFact, setIsGeneratingFact] = useState(false)
+  const funFactsAbortRef = useRef<AbortController | null>(null)
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showMovieSelector, setShowMovieSelector] = useState(false)
@@ -281,56 +283,96 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
   }
 
   const generateFunFact = async () => {
+    if (isGeneratingFact && funFactsAbortRef.current) {
+      funFactsAbortRef.current.abort()
+      funFactsAbortRef.current = null
+      return
+    }
+
     if (!selectedMovie) return
-    
+
     if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
       const nextIndex = funFactIndex + 1
       setFunFactIndex(nextIndex)
       setFunFact(funFacts[nextIndex].text)
       return
     }
-    
+
+    const controller = new AbortController()
+    funFactsAbortRef.current = controller
     setIsGeneratingFact(true)
+    setFunFacts([])
+    setFunFactIndex(0)
+
     try {
-      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
-      const resp = await fetch('/api/admin/movies/fun-facts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: selectedMovie.title, year })
+      const year = selectedMovie.release_date
+        ? new Date(selectedMovie.release_date).getFullYear()
+        : undefined
+      let firstShown = false
+      const facts = await streamFunFacts({
+        title: selectedMovie.title,
+        year,
+        signal: controller.signal,
+        onFact: (fact, index) => {
+          setFunFacts((prev) => {
+            const next = prev.slice()
+            next[index] = fact
+            return next
+          })
+          if (!firstShown) {
+            firstShown = true
+            setFunFactIndex(index)
+            setFunFact(fact.text)
+          }
+        },
       })
-      const data = await resp.json()
-      if (!resp.ok) {
-        throw new Error(data.error || 'Failed to generate fun facts')
-      }
-      const facts = Array.isArray(data.facts) ? data.facts : []
-      if (facts.length === 0) {
+      if (facts.length === 0 && !firstShown) {
         throw new Error('No fun facts returned')
       }
-      setFunFacts(facts)
-      setFunFactIndex(0)
-      setFunFact(facts[0].text)
     } catch (e: any) {
+      if (isAbortError(e)) return
       console.error('Fun fact generation failed:', e)
       alert(e?.message || 'Failed to generate fun facts')
     } finally {
       setIsGeneratingFact(false)
+      if (funFactsAbortRef.current === controller) {
+        funFactsAbortRef.current = null
+      }
     }
   }
 
   const handleSmartGeneration = async (puzzleData: any) => {
-    // Handle smart-generated puzzle data
-    if (puzzleData.selectedMovie) {
-      // User selected a suggestion - load it as the base movie
-      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
-    } else if (puzzleData) {
-      // Full puzzle generated - populate all fields
-      if (puzzleData.film_id) {
-        await fetchAndSelectMovie(puzzleData.film_id.toString())
-      }
+    // Smart Generate always OVERRIDES the editor's current state.
+    setFunFact("")
+    setFunFacts([])
+    setFunFactIndex(0)
+    setSelectedPosterPath(null)
+    setAlternativePosters([])
 
-      if (puzzleData.puzzle_date) {
-        setPuzzleDate(puzzleData.puzzle_date)
-      }
+    // If the generator chose a different date than we were editing, drop edit
+    // mode so save doesn't collide with the existing record.
+    if (puzzleData.puzzle_date && puzzleData.puzzle_date !== puzzleDate) {
+      setIsEditMode(false)
+    }
+
+    if (puzzleData.puzzle_date) {
+      setPuzzleDate(puzzleData.puzzle_date)
+      setIsPublished(true)
+      onDateChange?.(puzzleData.puzzle_date)
+    }
+
+    const movieId =
+      puzzleData.selectedMovie?.id ?? puzzleData.film_id ?? null
+    if (movieId != null) {
+      await fetchAndSelectMovie(String(movieId))
+    }
+
+    if (puzzleData.fun_fact) {
+      setFunFact(puzzleData.fun_fact)
+    } else if (puzzleData.suggestion_reasoning) {
+      // Suggestion path: prefill the fun-fact field with the model's one-line
+      // reasoning so the admin has context. They can regenerate later.
+      setFunFact(puzzleData.suggestion_reasoning)
     }
   }
 
@@ -498,13 +540,11 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Movie (must have poster)</Label>
-            {!selectedMovie && puzzleDate && (
-              <SmartGenerationDialog
-                gameType="poster-pixels"
-                targetDate={puzzleDate}
-                onGenerate={handleSmartGeneration}
-              />
-            )}
+            <SmartGenerationDialog
+              gameType="poster-pixels"
+              targetDate={puzzleDate}
+              onGenerate={handleSmartGeneration}
+            />
           </div>
           {selectedMovie ? (
             <div className="space-y-3">
@@ -567,12 +607,12 @@ export default function PosterPixelsEditor({ prefilledDate, prefilledMovieId, on
                 variant="ghost"
                 size="sm"
                 onClick={generateFunFact}
-                disabled={isGeneratingFact || !selectedMovie}
+                disabled={!selectedMovie && !isGeneratingFact}
               >
                 {isGeneratingFact ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                    Generating...
+                    <StopCircle className="w-4 h-4 mr-1" />
+                    Stop
                   </>
                 ) : (
                   <>

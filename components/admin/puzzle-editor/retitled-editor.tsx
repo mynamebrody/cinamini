@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
-import { Save, Loader2, Plus, X, Shuffle, GripVertical, Sparkles, ExternalLink } from "lucide-react"
+import { Save, Loader2, Plus, X, Shuffle, GripVertical, Sparkles, ExternalLink, StopCircle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { getCountryFlag, getCountryName } from "@/lib/flag-emojis"
+import { streamFunFacts, isAbortError, type FunFact } from "@/lib/admin/fun-facts-stream"
 
 interface Movie {
   id: number
@@ -55,6 +56,8 @@ interface AlternativeTitle {
   iso_3166_1: string
   title: string
   type: string
+  /** Where the title came from: TMDB alternative_titles or the translations endpoint. */
+  source?: 'alternative' | 'translation' | 'smart-generation'
 }
 
 interface PuzzleOption extends Movie {
@@ -145,9 +148,10 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
   const [existingPuzzleId, setExistingPuzzleId] = useState<string | null>(null)
   const [translationNote, setTranslationNote] = useState("")
-  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFacts, setFunFacts] = useState<Array<FunFact>>([])
   const [funFactIndex, setFunFactIndex] = useState(0)
   const [isGeneratingNote, setIsGeneratingNote] = useState(false)
+  const funFactsAbortRef = useRef<AbortController | null>(null)
 
   // Ref to track the last loaded puzzle ID to prevent infinite loops
   const lastLoadedPuzzleId = useRef<string | null>(null)
@@ -176,12 +180,29 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const fetchAlternativeTitles = useCallback(async (movieId: number, currentMovieTitle?: string) => {
     setLoadingTitles(true)
     try {
-      const response = await fetch(`/api/movies/${movieId}/alternative-titles`)
+      // `/localized-titles` returns the same merged list the smart generator
+      // picks from (alternative_titles + translations, filtered to supported
+      // countries). That guarantees the generator's pick exists in this
+      // dropdown.
+      const response = await fetch(`/api/movies/${movieId}/localized-titles`)
       if (response.ok) {
-        const data = await response.json()
-        const titles = (data.titles || [])
-          .filter((t: AlternativeTitle) => t.iso_3166_1 && t.title)
-          .filter((t: AlternativeTitle) => !currentMovieTitle || t.title !== currentMovieTitle)
+        const data = await response.json() as {
+          titles?: Array<{
+            title: string
+            country_code: string
+            country_name: string
+            english_name?: string
+          }>
+        }
+        const titles: AlternativeTitle[] = (data.titles ?? [])
+          .filter((t) => t.country_code && t.title)
+          .filter((t) => !currentMovieTitle || t.title !== currentMovieTitle)
+          .map((t) => ({
+            iso_3166_1: t.country_code,
+            title: t.title,
+            type: 'localized',
+            source: 'alternative' as const,
+          }))
         setAlternativeTitles(titles)
       }
     } catch (error) {
@@ -197,43 +218,61 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }, [selectedMovie, fetchAlternativeTitles])
 
+  // When the smart generator picks a title that (for any reason) isn't
+  // already in the fetched list — e.g., the generator tuned the string
+  // slightly, or the TMDB request lost the race — surface it as a synthetic
+  // row so the dropdown can still render it as the selected value instead
+  // of silently falling back to the placeholder.
   useEffect(() => {
-    if (selectedTitle) {
-      setCustomTitle(selectedTitle.title)
-      
-      // Only auto-populate country name when creating new puzzles, not when editing existing ones
-      if (!isEditMode) {
-        const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
-        setCountryName(autoCountryName)
-      }
-      
-      // Translate the title to English
-      const translateTitle = async () => {
-        try {
-          const response = await fetch('/api/translate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text: selectedTitle.title,
-              targetLang: 'en'
-            })
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            setEnglishTranslation(data.translatedText)
-          }
-        } catch (error) {
-          console.error('Translation error:', error)
-          // Fallback to the original title if translation fails
-          setEnglishTranslation(selectedTitle.title)
-        }
-      }
-      
-      translateTitle()
+    if (!selectedTitle) return
+    if (alternativeTitles.length === 0) return
+    const exists = alternativeTitles.some(
+      (t) =>
+        t.iso_3166_1 === selectedTitle.iso_3166_1 &&
+        t.title === selectedTitle.title,
+    )
+    if (exists) return
+    setAlternativeTitles((prev) => [
+      { ...selectedTitle, source: 'smart-generation' },
+      ...prev,
+    ])
+  }, [selectedTitle, alternativeTitles])
+
+  useEffect(() => {
+    if (!selectedTitle) return
+    setCustomTitle(selectedTitle.title)
+
+    // The smart generator already produced a back-translation AND a country
+    // label that came directly from the model's proposal — re-running Google
+    // Translate would clobber both. Skip the refresh for smart-gen picks so
+    // the admin keeps the exact context the model chose.
+    if (selectedTitle.source === 'smart-generation') return
+
+    if (!isEditMode) {
+      const autoCountryName = getCountryName(selectedTitle.iso_3166_1)
+      setCountryName(autoCountryName)
     }
+
+    const translateTitle = async () => {
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: selectedTitle.title,
+            targetLang: 'en',
+          }),
+        })
+        if (response.ok) {
+          const data = await response.json()
+          setEnglishTranslation(data.translatedText)
+        }
+      } catch (error) {
+        console.error('Translation error:', error)
+        setEnglishTranslation(selectedTitle.title)
+      }
+    }
+    translateTitle()
   }, [selectedTitle, isEditMode])
 
   useEffect(() => {
@@ -386,18 +425,27 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }, [puzzleId, loadExistingPuzzle, loadingPuzzle])
 
-  // Reconstruct allOptions when editing mode and both movie and distractors are loaded
-  // Only do this if allOptions is empty (for backward compatibility with older puzzles)
+  // Build `allOptions` whenever we have an answer movie but no options
+  // assembled yet. Fires for FOUR entry points:
+  //   1. Loading an existing puzzle in edit mode (legacy path).
+  //   2. Smart Generation prefilling distractors via handleSmartGeneration.
+  //   3. Picking a Smart Generation suggestion (no distractors yet — the
+  //      effect still seeds [correctOption] so the wrong-answer block
+  //      renders and the admin can use "Add Wrong Answer" / "Load Random".
+  //   4. Manual flow where the admin picks a movie via the search.
+  // The `allOptions.length === 0` guard means we never clobber an existing
+  // ordering — once allOptions is populated, the user owns the order via
+  // drag-and-drop / shuffle.
   useEffect(() => {
-    if (isEditMode && selectedMovie && distractors.length > 0 && allOptions.length === 0) {
-      const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
-      const distractorOptions: PuzzleOption[] = distractors.map(d => ({ ...d, isCorrect: false }))
-      
-      // In edit mode for older puzzles without option_order, start with correct answer first
-      // User can reorder as needed
-      setAllOptions([correctOption, ...distractorOptions])
-    }
-  }, [isEditMode, selectedMovie, distractors, allOptions.length])
+    if (!selectedMovie) return
+    if (allOptions.length > 0) return
+    const correctOption: PuzzleOption = { ...selectedMovie, isCorrect: true }
+    const distractorOptions: PuzzleOption[] = distractors.map((d) => ({
+      ...d,
+      isCorrect: false,
+    }))
+    setAllOptions([correctOption, ...distractorOptions])
+  }, [selectedMovie, distractors, allOptions.length])
 
   // Handle prefilled values from URL parameters (only when not in edit mode)
   useEffect(() => {
@@ -700,97 +748,150 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   }
 
   const handleSmartGeneration = async (puzzleData: any) => {
-    // Handle smart-generated puzzle data
-    if (puzzleData.selectedMovie) {
-      // User selected a suggestion - load it as the base movie
-      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
-    } else if (puzzleData) {
-      // Full puzzle generated - populate all fields
-      if (puzzleData.film_id) {
-        await fetchAndSelectMovie(puzzleData.film_id.toString())
-      }
-      
-      if (puzzleData.puzzle_date) {
-        setPuzzleDate(puzzleData.puzzle_date)
-      }
-      
-      if (puzzleData.localized_title) {
-        setCustomTitle(puzzleData.localized_title)
-      }
-      
-      if (puzzleData.country_code) {
-        setSelectedTitle({
-          iso_3166_1: puzzleData.country_code,
-          title: puzzleData.localized_title,
-          type: 'translation'
-        })
-        setCountryName(getCountryName(puzzleData.country_code))
-      }
-      
-      // Load distractor movies
-      if (puzzleData.distractor_ids && puzzleData.distractor_ids.length > 0) {
-        const distractorMovies = await Promise.all(
-          puzzleData.distractor_ids.map(async (id: number) => {
-            const response = await fetch(`/api/movies/${id}/details`)
-            if (response.ok) {
-              const movieData = await response.json()
-              return {
-                id: movieData.id,
-                title: movieData.title,
-                poster_path: movieData.poster_path,
-                release_date: movieData.release_date || '',
-                isCorrect: false
-              }
-            }
-            return null
-          })
-        )
-        
-        const validDistractors = distractorMovies.filter(m => m !== null) as PuzzleOption[]
-        setDistractors(validDistractors)
-      }
+    // Smart Generate always OVERRIDES the editor's current state.
+    setDistractors([])
+    setAllOptions([])
+    setAlternativeTitles([])
+    setCustomTitle("")
+    setEnglishTranslation("")
+    setSelectedTitle(null)
+    setCountryName("")
+    setTranslationNote("")
+    setFunFacts([])
+    setFunFactIndex(0)
 
-      if (puzzleData.translation_note) {
-        setTranslationNote(puzzleData.translation_note)
-      }
+    // If the generator chose a different date than we were editing, switch
+    // into "new puzzle" mode so save doesn't collide with the existing record.
+    if (puzzleData.puzzle_date && puzzleData.puzzle_date !== puzzleDate) {
+      setIsEditMode(false)
+      setExistingPuzzleId(null)
+    }
+
+    if (puzzleData.puzzle_date) {
+      setPuzzleDate(puzzleData.puzzle_date)
+      setIsPublished(true)
+      onDateChange?.(puzzleData.puzzle_date)
+    }
+
+    // Resolve the base movie. Suggestions come with `selectedMovie`, winners
+    // come with `film_id` directly.
+    const movieId =
+      puzzleData.selectedMovie?.id ?? puzzleData.film_id ?? null
+    if (movieId != null) {
+      await fetchAndSelectMovie(String(movieId))
+    }
+
+    // Prefill the localized title block from either the winning puzzle OR
+    // the suggestion's proposed alternative title so the admin sees the
+    // same thing the model was considering.
+    if (puzzleData.localized_title) {
+      setCustomTitle(puzzleData.localized_title)
+    }
+    if (puzzleData.english_translation) {
+      setEnglishTranslation(puzzleData.english_translation)
+    }
+    if (puzzleData.country_code) {
+      setSelectedTitle({
+        iso_3166_1: puzzleData.country_code,
+        title: puzzleData.localized_title ?? '',
+        type: 'translation',
+        source: 'smart-generation',
+      })
+      setCountryName(
+        puzzleData.country_name || getCountryName(puzzleData.country_code),
+      )
+    }
+
+    if (puzzleData.distractor_ids && puzzleData.distractor_ids.length > 0) {
+      const distractorMovies = await Promise.all(
+        puzzleData.distractor_ids.map(async (id: number) => {
+          const response = await fetch(`/api/movies/${id}/details`)
+          if (response.ok) {
+            const movieData = await response.json()
+            return {
+              id: movieData.id,
+              title: movieData.title,
+              poster_path: movieData.poster_path,
+              release_date: movieData.release_date || '',
+              isCorrect: false
+            }
+          }
+          return null
+        })
+      )
+
+      const validDistractors = distractorMovies.filter(m => m !== null) as PuzzleOption[]
+      setDistractors(validDistractors)
+    }
+
+    if (puzzleData.translation_note) {
+      setTranslationNote(puzzleData.translation_note)
+    } else if (puzzleData.suggestion_reasoning) {
+      // On the suggestion path we haven't generated a user-facing note yet;
+      // seed the textarea with the model's one-line reasoning so the admin
+      // has context. They can overwrite it or regenerate via fun-facts.
+      setTranslationNote(puzzleData.suggestion_reasoning)
     }
   }
 
   const generateTranslationNote = async () => {
+    // If a stream is in-flight, treat the button as a Stop affordance.
+    if (isGeneratingNote && funFactsAbortRef.current) {
+      funFactsAbortRef.current.abort()
+      funFactsAbortRef.current = null
+      return
+    }
+
     if (!selectedMovie) return
-    
-    // Cycle through preloaded facts first
+
+    // Cycle through preloaded facts first.
     if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
       const nextIndex = funFactIndex + 1
       setFunFactIndex(nextIndex)
       setTranslationNote(funFacts[nextIndex].text)
       return
     }
-    
+
+    const controller = new AbortController()
+    funFactsAbortRef.current = controller
     setIsGeneratingNote(true)
+    setFunFacts([])
+    setFunFactIndex(0)
+
     try {
-      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
-      const resp = await fetch('/api/admin/movies/fun-facts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: selectedMovie.title, year })
+      const year = selectedMovie.release_date
+        ? new Date(selectedMovie.release_date).getFullYear()
+        : undefined
+      let firstShown = false
+      const facts = await streamFunFacts({
+        title: selectedMovie.title,
+        year,
+        signal: controller.signal,
+        onFact: (fact, index) => {
+          setFunFacts((prev) => {
+            const next = prev.slice()
+            next[index] = fact
+            return next
+          })
+          if (!firstShown) {
+            firstShown = true
+            setFunFactIndex(index)
+            setTranslationNote(fact.text)
+          }
+        },
       })
-      const data = await resp.json()
-      if (!resp.ok) {
-        throw new Error(data.error || 'Failed to generate notes')
-      }
-      const facts = Array.isArray(data.facts) ? data.facts : []
-      if (facts.length === 0) {
+      if (facts.length === 0 && !firstShown) {
         throw new Error('No facts returned')
       }
-      setFunFacts(facts)
-      setFunFactIndex(0)
-      setTranslationNote(facts[0].text)
     } catch (e: any) {
+      if (isAbortError(e)) return
       console.error('Translation note generation failed:', e)
       alert(e?.message || 'Failed to generate translation notes')
     } finally {
       setIsGeneratingNote(false)
+      if (funFactsAbortRef.current === controller) {
+        funFactsAbortRef.current = null
+      }
     }
   }
 
@@ -862,13 +963,11 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Original Movie</Label>
-            {!selectedMovie && puzzleDate && (
-              <SmartGenerationDialog
-                gameType="retitled"
-                targetDate={puzzleDate}
-                onGenerate={handleSmartGeneration}
-              />
-            )}
+            <SmartGenerationDialog
+              gameType="retitled"
+              targetDate={puzzleDate}
+              onGenerate={handleSmartGeneration}
+            />
           </div>
           {selectedMovie ? (
             <MovieDetailsCard 
@@ -924,18 +1023,27 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                 </SelectTrigger>
                 <SelectContent className="z-[100] bg-white border border-gray-200">
                   {alternativeTitles.map((title, idx) => (
-                    <SelectItem 
-                      key={`title-${title.iso_3166_1}-${title.title}-${idx}`} 
+                    <SelectItem
+                      key={`title-${title.iso_3166_1}-${title.title}-${idx}`}
                       value={`${title.iso_3166_1}:${title.title}`}
                       className="hover:bg-gray-100 cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <span>{getCountryFlag(title.iso_3166_1)}</span>
                         <span className="flex-1">{title.title}</span>
-                        {title.type && (
-                          <Badge variant="secondary" className="text-xs">
-                            {title.type}
+                        {title.source === 'smart-generation' ? (
+                          <Badge
+                            variant="default"
+                            className="text-xs bg-purple-600 text-white"
+                          >
+                            Smart pick
                           </Badge>
+                        ) : (
+                          title.type && (
+                            <Badge variant="secondary" className="text-xs">
+                              {title.type}
+                            </Badge>
+                          )
                         )}
                       </div>
                     </SelectItem>
@@ -999,12 +1107,11 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
                   variant="ghost"
                   size="sm"
                   onClick={generateTranslationNote}
-                  disabled={isGeneratingNote}
                 >
                   {isGeneratingNote ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      Generating...
+                      <StopCircle className="w-4 h-4 mr-1" />
+                      Stop
                     </>
                   ) : (
                     <>
