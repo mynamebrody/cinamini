@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { Film, Gamepad2, DollarSign, ImageIcon, X } from "lucide-react"
 import Image from "next/image"
+import { useArchivedGames } from "@/hooks/use-archived-games"
 
 interface Movie {
   id: number
@@ -48,8 +49,13 @@ const AVAILABLE_GAMES = [
 
 export default function GameSelectorMenu({ movie, date, onClose, excludeGames = [] }: GameSelectorMenuProps) {
   const router = useRouter()
+  const { archivedGameIds } = useArchivedGames()
 
-  const availableGames = AVAILABLE_GAMES.filter(game => !excludeGames.includes(game.id))
+  // Archived games cannot receive new puzzles, so hide them from the selector
+  // used when creating a brand new puzzle from the admin dashboard.
+  const availableGames = AVAILABLE_GAMES.filter(
+    (game) => !excludeGames.includes(game.id) && !archivedGameIds.has(game.id),
+  )
 
   const handleGameSelect = (gameType: string) => {
     const params = new URLSearchParams()

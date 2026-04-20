@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { 
   Save, 
@@ -11,7 +11,8 @@ import {
   GripVertical,
   Info,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  StopCircle
 } from "lucide-react"
 import Image from "next/image"
 import { Card } from "@/components/ui/card"
@@ -45,6 +46,15 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { streamFunFacts, isAbortError, type FunFact } from "@/lib/admin/fun-facts-stream"
+import {
+  streamSmartGeneration,
+  isAbortError as isSmartGenAbortError,
+} from "@/lib/admin/smart-gen-stream"
+import AutoSmartGenBanner, {
+  type AutoSmartGenActivityEntry,
+  type AutoSmartGenState,
+} from "../shared/auto-smart-gen-banner"
 
 interface Movie {
   id: number
@@ -139,16 +149,23 @@ interface CastClimbEditorProps {
   onDateChange?: (date: string | null) => void
   onMovieChange?: (movieId: string | null) => void
   puzzleId?: string | null
+  /**
+   * Whether this editor is currently the active tab. Drives eager-vs-lazy
+   * auto-smart-generation when `prefilledMovieId` is provided via URL — only
+   * the active tab runs immediately, other tabs wait for the first switch.
+   */
+  isActiveTab?: boolean
 }
 
-export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDateChange, onMovieChange, puzzleId }: CastClimbEditorProps) {
+export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDateChange, onMovieChange, puzzleId, isActiveTab = false }: CastClimbEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [actors, setActors] = useState<Actor[]>([])
   const [funFact, setFunFact] = useState("")
-  const [funFacts, setFunFacts] = useState<Array<{ text: string, source: { title: string, url: string } | null }>>([])
+  const [funFacts, setFunFacts] = useState<Array<FunFact>>([])
   const [funFactIndex, setFunFactIndex] = useState(0)
   const [isGeneratingFact, setIsGeneratingFact] = useState(false)
+  const funFactsAbortRef = useRef<AbortController | null>(null)
   const [difficultyLevel, setDifficultyLevel] = useState(1)
   const [isPublished, setIsPublished] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -158,6 +175,17 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   const [showCastSelector, setShowCastSelector] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [loadingPuzzle, setLoadingPuzzle] = useState(false)
+
+  // Auto smart-gen-on-movieId state. Fires exactly once per
+  // (gameType, movieId) pair when the editor becomes the active tab and a
+  // `prefilledMovieId` is present (see runAutoSmartGen below).
+  const [autoRunState, setAutoRunState] = useState<AutoSmartGenState>('idle')
+  const [autoRunActivity, setAutoRunActivity] = useState<AutoSmartGenActivityEntry[]>([])
+  const [autoRunError, setAutoRunError] = useState<string | null>(null)
+  const [autoRunErrorDetail, setAutoRunErrorDetail] = useState<string | null>(null)
+  const autoRunAbortRef = useRef<AbortController | null>(null)
+  const autoRunKeyRef = useRef<string | null>(null)
+  const autoRunActivityIdRef = useRef(0)
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -357,12 +385,57 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
     onMovieChange?.(movie.id.toString())
   }
 
+  // Auto-generate fun fact after user selects a movie (new puzzles only).
+  //
+  // Two gates on top of the original `funFacts.length === 0` check:
+  //
+  //   1. `autoRunState === 'idle'` — while the auto-smart-gen flow for this
+  //      tab is running or flashing a "success" banner, let the strategy's
+  //      own fun_fact win instead of racing it with a second stream.
+  //   2. The selected movie isn't the URL-deep-linked one. If the admin hit
+  //      `/admin/puzzle-editor?movieId=X`, the auto-smart-gen flow *owns* X
+  //      end-to-end on every movie-based tab — including inactive ones that
+  //      only auto-run once the admin switches to them. Without this gate,
+  //      the non-active tabs would still `fetchAndSelectMovie(X)` on mount,
+  //      fall through this effect (because their autoRunState is "idle"
+  //      since the auto-run is deferred), and fire a redundant fun-facts
+  //      stream that sometimes returns empty and throws "No fun facts
+  //      returned".
   useEffect(() => {
-    if (selectedMovie && !isEditMode && funFacts.length === 0) {
+    const isAutoRunOwnedMovie = Boolean(
+      selectedMovie &&
+        prefilledMovieId &&
+        String(selectedMovie.id) === String(prefilledMovieId),
+    )
+    if (
+      selectedMovie &&
+      !isEditMode &&
+      funFacts.length === 0 &&
+      autoRunState === 'idle' &&
+      !isAutoRunOwnedMovie
+    ) {
       generateFunFact()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMovie])
+  }, [selectedMovie, autoRunState])
+
+  // After the auto-smart-gen flow finishes successfully, fetch the
+  // fun_fact list. The Cast Climb strategy intentionally leaves
+  // `fun_fact` null so the admin (or this effect) picks one from a
+  // freshly streamed batch — same behaviour as if the admin had
+  // selected the movie manually and clicked the button.
+  //
+  // The legacy effect above is gated on `!isAutoRunOwnedMovie` so it
+  // doesn't race the auto-run; this effect picks up the slack.
+  useEffect(() => {
+    if (autoRunState !== 'success') return
+    if (!selectedMovie) return
+    if (isEditMode) return
+    if (funFacts.length > 0) return
+    if (isGeneratingFact) return
+    generateFunFact()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunState, selectedMovie])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -377,67 +450,332 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   }
 
   const generateFunFact = async () => {
+    if (isGeneratingFact && funFactsAbortRef.current) {
+      funFactsAbortRef.current.abort()
+      funFactsAbortRef.current = null
+      return
+    }
+
     if (!selectedMovie) return
-    
-    // If we have cached facts and not at the end, cycle to next
+
     if (funFacts.length > 0 && funFactIndex < funFacts.length - 1) {
       const nextIndex = funFactIndex + 1
       setFunFactIndex(nextIndex)
       setFunFact(funFacts[nextIndex].text)
       return
     }
-    
+
+    const controller = new AbortController()
+    funFactsAbortRef.current = controller
     setIsGeneratingFact(true)
+    setFunFacts([])
+    setFunFactIndex(0)
+
     try {
-      const year = selectedMovie.release_date ? new Date(selectedMovie.release_date).getFullYear() : undefined
-      const resp = await fetch('/api/admin/movies/fun-facts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: selectedMovie.title, year })
+      const year = selectedMovie.release_date
+        ? new Date(selectedMovie.release_date).getFullYear()
+        : undefined
+      let firstShown = false
+      const facts = await streamFunFacts({
+        title: selectedMovie.title,
+        year,
+        signal: controller.signal,
+        onFact: (fact, index) => {
+          setFunFacts((prev) => {
+            const next = prev.slice()
+            next[index] = fact
+            return next
+          })
+          if (!firstShown) {
+            firstShown = true
+            setFunFactIndex(index)
+            // Functional setState so we don't clobber a fun_fact that
+            // was already populated (e.g. by an in-flight smart-gen
+            // race or user typing). The legacy "first fact wins"
+            // behaviour only kicks in when the field is empty.
+            setFunFact((prev) => prev || fact.text)
+          }
+        },
       })
-      const data = await resp.json()
-      if (!resp.ok) {
-        throw new Error(data.error || 'Failed to generate fun facts')
-      }
-      const facts = Array.isArray(data.facts) ? data.facts : []
-      if (facts.length === 0) {
+      if (facts.length === 0 && !firstShown) {
         throw new Error('No fun facts returned')
       }
-      setFunFacts(facts)
-      setFunFactIndex(0)
-      setFunFact(facts[0].text)
     } catch (e: any) {
+      if (isAbortError(e)) return
       console.error('Fun fact generation failed:', e)
       alert(e?.message || 'Failed to generate fun facts')
     } finally {
       setIsGeneratingFact(false)
+      if (funFactsAbortRef.current === controller) {
+        funFactsAbortRef.current = null
+      }
     }
   }
 
   const handleSmartGeneration = async (puzzleData: any) => {
-    // Handle smart-generated puzzle data
-    if (puzzleData.selectedMovie) {
-      // User selected a suggestion - load it as the base movie
-      await fetchAndSelectMovie(puzzleData.selectedMovie.id.toString())
-    } else if (puzzleData) {
-      // Full puzzle generated - populate all fields
-      if (puzzleData.film_id) {
-        await fetchAndSelectMovie(puzzleData.film_id.toString())
-      }
-      
-      if (puzzleData.puzzle_date) {
-        setPuzzleDate(puzzleData.puzzle_date)
-      }
-      
-      if (puzzleData.actors && puzzleData.actors.length > 0) {
-        setActors(puzzleData.actors)
-      }
-      
-      if (puzzleData.fun_fact) {
-        setFunFact(puzzleData.fun_fact)
-      }
+    // Smart Generate always OVERRIDES the editor's current state.
+    setActors([])
+    setFullCast([])
+    setFunFact("")
+    setFunFacts([])
+    setFunFactIndex(0)
+
+    // If the generator chose a different date than we were editing, drop edit
+    // mode so we don't collide with the existing record when saving.
+    if (puzzleData.puzzle_date && puzzleData.puzzle_date !== puzzleDate) {
+      setIsEditMode(false)
+    }
+
+    if (puzzleData.puzzle_date) {
+      setPuzzleDate(puzzleData.puzzle_date)
+      setIsPublished(true)
+      onDateChange?.(puzzleData.puzzle_date)
+    }
+
+    const movieId =
+      puzzleData.selectedMovie?.id ?? puzzleData.film_id ?? null
+    if (movieId != null) {
+      await fetchAndSelectMovie(String(movieId))
+    }
+
+    if (puzzleData.actors && puzzleData.actors.length > 0) {
+      setActors(puzzleData.actors)
+    }
+
+    if (puzzleData.fun_fact) {
+      setFunFact(puzzleData.fun_fact)
+    } else if (puzzleData.suggestion_reasoning) {
+      // Suggestion path: prefill the fun-fact field with the model's one-line
+      // reasoning so the admin has context. They can regenerate via the
+      // fun-facts button.
+      setFunFact(puzzleData.suggestion_reasoning)
     }
   }
+
+  const pushAutoRunActivity = useCallback(
+    (entry: Omit<AutoSmartGenActivityEntry, 'id'>) => {
+      setAutoRunActivity((prev) => {
+        autoRunActivityIdRef.current += 1
+        const next = [
+          ...prev,
+          { ...entry, id: String(autoRunActivityIdRef.current) },
+        ]
+        if (next.length > 40) next.shift()
+        return next
+      })
+    },
+    [],
+  )
+
+  const resetAutoRunBanner = useCallback(() => {
+    setAutoRunState('idle')
+    setAutoRunActivity([])
+    setAutoRunError(null)
+    setAutoRunErrorDetail(null)
+  }, [])
+
+  const stopAutoRun = useCallback(() => {
+    if (autoRunAbortRef.current) {
+      autoRunAbortRef.current.abort()
+      autoRunAbortRef.current = null
+    }
+    resetAutoRunBanner()
+  }, [resetAutoRunBanner])
+
+  // Banner "Choose another movie" — abort the stream, drop the current
+  // selection, and open the manual movie selector.
+  const handleAutoRunChangeMovie = useCallback(() => {
+    if (autoRunAbortRef.current) {
+      autoRunAbortRef.current.abort()
+      autoRunAbortRef.current = null
+    }
+    resetAutoRunBanner()
+    setSelectedMovie(null)
+    setActors([])
+    setFullCast([])
+    setFunFact("")
+    setFunFacts([])
+    setFunFactIndex(0)
+    onMovieChange?.(null)
+    setShowMovieSelector(true)
+  }, [onMovieChange, resetAutoRunBanner])
+
+  const runAutoSmartGen = useCallback(
+    async (movieId: string) => {
+      const numericId = Number(movieId)
+      if (!Number.isFinite(numericId) || numericId <= 0) return
+
+      // Flip to `running` *before* any awaits so the fun-fact effect (which
+      // is gated on `autoRunState === 'idle'`) doesn't race us and fire a
+      // redundant fun-facts stream while we resolve the target date.
+      if (autoRunAbortRef.current) autoRunAbortRef.current.abort()
+      const controller = new AbortController()
+      autoRunAbortRef.current = controller
+      setAutoRunState('running')
+      setAutoRunActivity([])
+      setAutoRunError(null)
+      setAutoRunErrorDetail(null)
+      autoRunActivityIdRef.current = 0
+
+      let targetDate = puzzleDate
+      if (!targetDate) {
+        try {
+          const res = await fetch(
+            `/api/admin/puzzles/next-available-date?gameType=cast-climb`,
+            { signal: controller.signal },
+          )
+          const data = (await res.json().catch(() => ({}))) as {
+            date?: string
+            error?: string
+          }
+          if (!res.ok || !data?.date) {
+            setAutoRunState('failed')
+            setAutoRunError(
+              data?.error ||
+                'Could not find an available puzzle date. Set one manually and try again.',
+            )
+            return
+          }
+          targetDate = data.date
+        } catch (err) {
+          if (isSmartGenAbortError(err)) return
+          setAutoRunState('failed')
+          setAutoRunError(
+            err instanceof Error
+              ? err.message
+              : 'Could not resolve the next available puzzle date.',
+          )
+          return
+        }
+      }
+
+      try {
+        await streamSmartGeneration({
+          gameType: 'cast-climb',
+          targetDate,
+          forcedFilmId: numericId,
+          signal: controller.signal,
+          onEvent: (event) => {
+            switch (event.kind) {
+              case 'status':
+                pushAutoRunActivity({
+                  label: event.label,
+                  detail: event.detail,
+                  variant: 'status',
+                })
+                break
+              case 'tool-call':
+                pushAutoRunActivity({
+                  label: `Tool call: ${event.name}`,
+                  variant: 'tool',
+                })
+                break
+              case 'candidates':
+                pushAutoRunActivity({
+                  label: `Model proposed ${event.ids.length} candidate${event.ids.length === 1 ? '' : 's'}`,
+                  detail: event.reasoning,
+                  variant: 'candidates',
+                })
+                break
+              case 'candidate-scored': {
+                const a = event.attempt
+                const ok = a.verdict === 'accepted'
+                const actorsPreview = a.actors
+                  ? a.actors
+                      .slice(0, 2)
+                      .map((x) => x.name)
+                      .join(', ')
+                  : undefined
+                pushAutoRunActivity({
+                  label: `${ok ? '✓' : '✗'} ${a.movie.title}${a.movie.release_year ? ` (${a.movie.release_year})` : ''}`,
+                  detail: ok
+                    ? actorsPreview
+                      ? `Cast: ${actorsPreview}${a.actors && a.actors.length > 2 ? ` + ${a.actors.length - 2} more` : ''}`
+                      : a.reasoning
+                    : a.reason,
+                  variant: ok ? 'scored-ok' : 'scored-ko',
+                })
+                break
+              }
+              case 'success':
+                setAutoRunState('success')
+                handleSmartGeneration({
+                  ...(event.puzzle as object),
+                  puzzle_date:
+                    (event.puzzle as { puzzle_date?: string }).puzzle_date ||
+                    targetDate,
+                })
+                setTimeout(() => {
+                  resetAutoRunBanner()
+                }, 1500)
+                break
+              case 'exclusion_conflict':
+                setAutoRunState('excluded')
+                setAutoRunError(event.reason)
+                break
+              case 'suggestions':
+                setAutoRunState('failed')
+                setAutoRunError(
+                  event.error ||
+                    'Could not build a Cast Climb puzzle from this movie.',
+                )
+                break
+              case 'error':
+                setAutoRunState('failed')
+                setAutoRunError(event.error)
+                if ('detail' in event && event.detail) {
+                  setAutoRunErrorDetail(event.detail)
+                }
+                break
+              case 'aborted':
+              case 'done':
+              case 'model-text-delta':
+                break
+            }
+          },
+        })
+      } catch (err) {
+        if (isSmartGenAbortError(err)) return
+        setAutoRunState('failed')
+        setAutoRunError(
+          err instanceof Error ? err.message : 'Auto smart-gen failed.',
+        )
+      } finally {
+        if (autoRunAbortRef.current === controller) {
+          autoRunAbortRef.current = null
+        }
+      }
+    },
+    [puzzleDate, pushAutoRunActivity, resetAutoRunBanner],
+  )
+
+  // Kick off auto smart-gen when:
+  //   - A `?movieId=<id>` is present in the URL
+  //   - This editor is the currently active tab (eager for the initial tab;
+  //     lazy for the others, which fire on first switch)
+  //   - The admin isn't editing an existing puzzle
+  //   - We haven't already auto-run for this specific (gameType, movieId)
+  //     in this session
+  useEffect(() => {
+    if (!prefilledMovieId) return
+    if (!isActiveTab) return
+    if (puzzleId) return
+    if (isEditMode) return
+    const key = `cast-climb:${prefilledMovieId}`
+    if (autoRunKeyRef.current === key) return
+    autoRunKeyRef.current = key
+    runAutoSmartGen(prefilledMovieId)
+  }, [prefilledMovieId, isActiveTab, puzzleId, isEditMode, runAutoSmartGen])
+
+  // Clean up any in-flight auto-run stream on unmount.
+  useEffect(() => {
+    return () => {
+      if (autoRunAbortRef.current) {
+        autoRunAbortRef.current.abort()
+        autoRunAbortRef.current = null
+      }
+    }
+  }, [])
 
   const savePuzzle = async () => {
     if (!selectedMovie || actors.length !== 4) {
@@ -544,17 +882,37 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Editor Form */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            {isEditMode ? "Edit Cast Climb Puzzle" : "Create Cast Climb Puzzle"}
-          </h2>
-          <p className="text-sm text-gray-600">
-            Players guess the movie from its cast members revealed one by one
-          </p>
-        </div>
+    <div className="space-y-4">
+      {autoRunState !== 'idle' && (
+        <AutoSmartGenBanner
+          state={autoRunState}
+          gameLabel="Cast Climb"
+          activity={autoRunActivity}
+          errorMessage={autoRunError}
+          errorDetail={autoRunErrorDetail}
+          onStop={stopAutoRun}
+          onChangeMovie={
+            autoRunState === 'excluded' || autoRunState === 'failed'
+              ? handleAutoRunChangeMovie
+              : undefined
+          }
+          onDismiss={
+            autoRunState === 'failed' ? resetAutoRunBanner : undefined
+          }
+        />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Editor Form */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">
+              {isEditMode ? "Edit Cast Climb Puzzle" : "Create Cast Climb Puzzle"}
+            </h2>
+            <p className="text-sm text-gray-600">
+              Players guess the movie from its cast members revealed one by one
+            </p>
+          </div>
 
         {/* Date and Status */}
         <div className="grid grid-cols-2 gap-4">
@@ -610,13 +968,11 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Movie to Guess</Label>
-            {!selectedMovie && puzzleDate && (
-              <SmartGenerationDialog
-                gameType="cast-climb"
-                targetDate={puzzleDate}
-                onGenerate={handleSmartGeneration}
-              />
-            )}
+            <SmartGenerationDialog
+              gameType="cast-climb"
+              targetDate={puzzleDate}
+              onGenerate={handleSmartGeneration}
+            />
           </div>
           {selectedMovie ? (
             <MovieDetailsCard 
@@ -697,12 +1053,11 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
                   variant="ghost"
                   size="sm"
                   onClick={generateFunFact}
-                  disabled={isGeneratingFact}
                 >
                   {isGeneratingFact ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      Generating...
+                      <StopCircle className="w-4 h-4 mr-1" />
+                      Stop
                     </>
                   ) : (
                     <>
@@ -891,6 +1246,7 @@ export default function CastClimbEditor({ prefilledDate, prefilledMovieId, onDat
         </div>,
         document.body
       )}
+      </div>
     </div>
   )
 }

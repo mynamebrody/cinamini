@@ -203,6 +203,33 @@ export default function SchedulePage() {
     setGameMenuDate(null) // Close menu
   }
 
+  // Rows to render in the "Game Coverage" card. Archived games are hidden
+  // here because the card is meant to summarize coverage for games still
+  // receiving new daily puzzles.
+  const coverageRows = (() => {
+    const definitions: Array<{
+      id: string
+      dbKey: 'retitled' | 'budget_bracket' | 'cast_climb' | 'poster_pixels'
+      label: string
+      badgeClass: string
+    }> = [
+      { id: 'retitled', dbKey: 'retitled', label: 'Retitled', badgeClass: 'admin-badge-default' },
+      { id: 'budget-bracket', dbKey: 'budget_bracket', label: 'Budget Bracket', badgeClass: 'admin-badge-success' },
+      { id: 'cast-climb', dbKey: 'cast_climb', label: 'Cast Climb', badgeClass: 'admin-badge-default' },
+      { id: 'poster-pixels', dbKey: 'poster_pixels', label: 'Poster Pixels', badgeClass: 'admin-badge-default' },
+    ]
+
+    const todayUTC = new Date()
+    todayUTC.setUTCHours(0, 0, 0, 0)
+
+    return definitions.filter((row) => {
+      const metadata = gameMetadata.get(row.id)
+      if (!metadata?.archived_date) return true
+      const archivedDate = new Date(metadata.archived_date + 'T00:00:00Z')
+      return archivedDate.getTime() > todayUTC.getTime()
+    })
+  })()
+
   const getAllGamesWithStatus = (date: Date): Array<{id: string, name: string, icon: any, isAvailable: boolean}> => {
     const dateStr = format(date, 'yyyy-MM-dd')
     const scheduledForDate = scheduledGames.get(dateStr) || new Set()
@@ -307,30 +334,14 @@ export default function SchedulePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium font-funnel">Retitled</span>
-                <span className="admin-badge admin-badge-default text-xs">
-                  {stats.gamesWithPuzzles.retitled}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium font-funnel">Budget Bracket</span>
-                <span className="admin-badge admin-badge-success text-xs">
-                  {stats.gamesWithPuzzles.budget_bracket}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium font-funnel">Cast Climb</span>
-                <span className="admin-badge admin-badge-default text-xs">
-                  {stats.gamesWithPuzzles.cast_climb}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium font-funnel">Poster Pixels</span>
-                <span className="admin-badge admin-badge-default text-xs">
-                  {stats.gamesWithPuzzles.poster_pixels}
-                </span>
-              </div>
+              {coverageRows.map((row) => (
+                <div key={row.dbKey} className="flex items-center justify-between">
+                  <span className="text-xs font-medium font-funnel">{row.label}</span>
+                  <span className={`admin-badge ${row.badgeClass} text-xs`}>
+                    {stats.gamesWithPuzzles[row.dbKey]}
+                  </span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

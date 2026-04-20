@@ -10,7 +10,9 @@ import {
   BarChart3,
   PenTool,
   Mailbox,
-  Users
+  Users,
+  Sparkles,
+  History
 } from "lucide-react"
 
 export default async function AdminLayout({
@@ -39,6 +41,8 @@ export default async function AdminLayout({
     { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { name: "Movie Search", href: "/admin/movies", icon: Film },
     { name: "User Controls", href: "/admin/users", icon: Users },
+    { name: "Puzzle Prompts", href: "/admin/puzzle-prompts", icon: Sparkles },
+    { name: "Generation Logs", href: "/admin/puzzle-generation-logs", icon: History },
     { 
       name: "Supabase DB", 
       href: process.env.NODE_ENV !== "production" 

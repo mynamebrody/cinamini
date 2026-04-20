@@ -2,6 +2,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 import { generateCastClimbSeed } from "@/lib/cast-climb"
 import { generateDailySeed } from "@/lib/game-seeding"
+import { findRecencyConflict } from "@/lib/puzzle-generator/eligibility"
 
 export async function POST(request: Request) {
   try {
@@ -95,6 +96,27 @@ export async function POST(request: Request) {
           { error: 'A puzzle for this movie already exists for this game.' },
           { status: 409 }
         )
+      }
+
+      // Per GH #55: reject the save if this film appears in ANY game within
+      // 30 days on either side of the target puzzle_date. Skipped for drafts
+      // (no puzzle_date) since we don't yet know when it'll go live.
+      if (typeof puzzleData.puzzle_date === 'string' && puzzleData.puzzle_date.length > 0) {
+        const conflict = await findRecencyConflict(
+          serviceSupabase,
+          filmId,
+          puzzleData.puzzle_date,
+          { windowDays: 30 },
+        )
+        if (conflict) {
+          return NextResponse.json(
+            {
+              error: `Film is already used in a ${conflict.gameType} puzzle on ${conflict.puzzleDate}, which is within the 30-day cross-game window.`,
+              conflict,
+            },
+            { status: 409 },
+          )
+        }
       }
     }
 
