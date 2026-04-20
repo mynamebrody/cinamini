@@ -22,16 +22,16 @@ export const SUPPORTED_GAME_TYPES: readonly PuzzleGameType[] = [
 /**
  * Caller-tunable knobs. Populated from `SmartGenerationDialog` state.
  *
- * Only `obscurityThreshold` is surfaced in the current UI; the others exist
+ * Only `minVoteCount` is surfaced in the current UI; the others exist
  * so future dialog changes or server-side callers (bulk) can override them.
  */
 export interface GenerationConfig {
   /**
-   * 1 = mainstream blockbusters only, 10 = very obscure films.
-   * The eligibility check rejects any candidate whose computed obscurity
-   * score exceeds this threshold.
+   * Minimum TMDB `vote_count` a film must have to be eligible. Films with
+   * fewer votes are rejected by the eligibility check. Use 0 to disable the
+   * filter entirely.
    */
-  obscurityThreshold?: number
+  minVoteCount?: number
   /**
    * How many days back the "used in any game" exclusion window extends.
    * Defaults to 30 per issue #55 and must stay >= 30 to satisfy the rule.
@@ -46,12 +46,11 @@ export interface GenerationConfig {
 }
 
 export const DEFAULT_GENERATION_CONFIG: Required<GenerationConfig> = {
-  // The score formula is `10 - log10(vote_count)`; a threshold of 7 admits
-  // films with vote_count >= 1,000 (effectively "anything with traction on
-  // TMDB"). Anything stricter rejects household-name films like Inception
-  // and Star Wars, which led to admins seeing every smart-gen candidate
-  // marked "rejected" with no way through.
-  obscurityThreshold: 7,
+  // 1,000 votes is "has real traction on TMDB" — admits every household-name
+  // film (Godfather ~22k, Jaws ~11k, Inception ~40k) while filtering out
+  // student films, regional shorts, and unreleased noise. Admins can lower
+  // this to 0 to disable the filter entirely.
+  minVoteCount: 1000,
   avoidRecentDays: 30,
   retitledMaxBackTranslationSimilarity: 0.6,
 }
@@ -78,6 +77,36 @@ export interface GenerationRequest {
    * matter (admin "Grounded" toggle).
    */
   includeWebSearch?: boolean
+  /**
+   * Skip the LLM candidate-selection step and force the generator to use
+   * exactly this TMDB film id as the winning movie. The rest of the
+   * pipeline (localized titles, back-translation, distractor blending,
+   * cast selection, poster resolution, etc.) runs unchanged.
+   *
+   * The generator still respects `excludedFilmIds`: when a forced id is
+   * already excluded, the orchestrator short-circuits with an
+   * `exclusion_conflict` event instead of calling the strategy.
+   *
+   * Used by the admin puzzle-editor to auto-generate for a specific film
+   * when a user deep-links via `?movieId=<id>`.
+   */
+  forcedFilmId?: number
+  /**
+   * How the strategy picks the winning movie when `forcedFilmId` is not set:
+   *   - `'auto'` (default): strategy inspects candidates in batches and
+   *     short-circuits at the first eligible one — used by bulk callers
+   *     and by the `?movieId=<id>` phase-2 build.
+   *   - `'manual'`: strategy inspects ALL candidates (no short-circuit),
+   *     emits a `candidate-scored` event per candidate, then terminates
+   *     with `candidates-ready` and does NOT build a puzzle. The admin
+   *     dialog uses this to populate a progressive picker; clicking a
+   *     card kicks off a second call with `forcedFilmId` in `'auto'`
+   *     mode to build the puzzle.
+   *
+   * Ignored when `forcedFilmId` is set (there is no candidate list to
+   * iterate in that case).
+   */
+  selectionMode?: 'auto' | 'manual'
 }
 
 /** Result returned to the caller. */
@@ -159,24 +188,64 @@ export interface StrategyContext {
    * step genuinely requires grounded citations.
    */
   includeWebSearch: boolean
+  /**
+   * When set, strategies MUST skip their `streamStructured` LLM
+   * candidate-selection step and treat this TMDB id as the sole candidate.
+   * The rest of each strategy's pipeline (inspection, distractors, cast
+   * selection, poster, schema validation) continues normally.
+   *
+   * The orchestrator guarantees this id is NOT in `excludedFilmIds` when a
+   * strategy's `generate` is invoked.
+   */
+  forcedFilmId?: number
+  /**
+   * `'auto'` (default): inspect candidates in batches, short-circuit at
+   * the first eligible one, then build the puzzle payload.
+   *
+   * `'manual'`: inspect every candidate (no short-circuit), emit one
+   * `candidate-scored` per attempt, then yield `candidates-ready` and
+   * return without building a puzzle. The orchestrator turns that
+   * StrategyResult into a terminal `candidates-ready` event so the admin
+   * dialog can present a progressive picker.
+   *
+   * Strategies treat `forcedFilmId` as higher priority: when set, they
+   * always run the full single-candidate pipeline regardless of this flag.
+   */
+  selectionMode: 'auto' | 'manual'
 }
 
-/** Per-strategy result shape. */
-export interface StrategyResult<TPuzzle> {
-  /** Save-ready puzzle payload matching the `save` route's validator. */
-  puzzle: TPuzzle
-  /** TMDB ids the model proposed, for logging. */
-  candidateIds: number[]
-  /**
-   * Per-candidate metadata accumulated during generation. Returned on the
-   * success path so the admin UI can show the runner-ups (and the "why this
-   * movie" reasoning) even after the strategy settled on a winner.
-   */
-  attempts?: CandidateAttempt[]
-  /** Usage from the underlying AI SDK call, for logging. */
-  tokensIn?: number
-  tokensOut?: number
-}
+/**
+ * Per-strategy result shape. A strategy's `generate` either builds and
+ * returns a full puzzle (`'success'`) or — in manual-selection mode —
+ * returns a list of inspected candidate attempts for the admin to pick
+ * from (`'candidates-ready'`).
+ */
+export type StrategyResult<TPuzzle> =
+  | {
+      outcome: 'success'
+      /** Save-ready puzzle payload matching the `save` route's validator. */
+      puzzle: TPuzzle
+      /** TMDB ids the model proposed, for logging. */
+      candidateIds: number[]
+      /**
+       * Per-candidate metadata accumulated during generation. Returned on the
+       * success path so the admin UI can show the runner-ups (and the "why
+       * this movie" reasoning) even after the strategy settled on a winner.
+       */
+      attempts?: CandidateAttempt[]
+      /** Usage from the underlying AI SDK call, for logging. */
+      tokensIn?: number
+      tokensOut?: number
+    }
+  | {
+      outcome: 'candidates-ready'
+      /** Every inspected candidate (accepted + rejected), in model order. */
+      attempts: CandidateAttempt[]
+      /** TMDB ids the model proposed, for logging. */
+      candidateIds: number[]
+      tokensIn?: number
+      tokensOut?: number
+    }
 
 /**
  * Strategies may throw `StrategyNoneEligibleError` to signal the route should

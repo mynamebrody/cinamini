@@ -10,7 +10,7 @@
  *               per issue #55). This includes the `pairs` array inside
  *               `budget_bracket_puzzles`.
  *
- *  2. Quality filter (`isMovieAppropriate`): obscurity threshold, poster
+ *  2. Quality filter (`isMovieAppropriate`): minimum TMDB vote count, poster
  *     presence, not adult, released between 1960 and current year.
  *
  * Save-time guards live in `app/api/admin/puzzles/save/route.ts`; the
@@ -219,31 +219,104 @@ export async function findRecencyConflict(
   return null
 }
 
-export interface ObscurityOptions {
-  /** 1..10, matching the UI slider. Higher = allow more obscure films. */
-  threshold: number
-}
-
 /**
- * Compute an obscurity score for a movie. Lower = more mainstream.
+ * Build a human-readable explanation for why `filmId` is currently in the
+ * exclusion set for `gameType`. Walks every puzzles table looking for the
+ * most recent usage of the film and describes that usage in a sentence an
+ * admin can act on (e.g. "Already used in retitled on 2025-11-04").
  *
- *   score = clamp(1, 10, 10 - log10(vote_count))
- *
- * Ported verbatim from the old `isMovieAppropriate` helper in
- * lib/openai-service.ts so behavior is unchanged. Returned as a helper the
- * strategies can call directly.
+ * Used by the orchestrator when `forcedFilmId` is excluded: we short-circuit
+ * with an `exclusion_conflict` event and include this reason string so the
+ * admin UI doesn't have to replicate the lookup.
  */
-export function computeObscurityScore(movie: Pick<TMDBMovie, 'vote_count'>): number {
-  const voteCount = movie.vote_count || 1
-  return Math.min(10, Math.max(1, 10 - Math.log10(voteCount)))
+export async function describeExclusionReason(
+  supabase: SupabaseClient,
+  filmId: number,
+  options: { gameType: PuzzleGameType; avoidRecentDays: number },
+): Promise<string> {
+  const sameGameTable = GAME_TYPE_TO_TABLE[options.gameType]
+  const { data: sameRows, error: sameErr } = await supabase
+    .from(sameGameTable)
+    .select('puzzle_date')
+    .eq('film_id', filmId)
+    .order('puzzle_date', { ascending: false })
+    .limit(1)
+  if (!sameErr && sameRows && sameRows.length > 0) {
+    const date = (sameRows[0] as any).puzzle_date
+    return `Already used in ${options.gameType} on ${date}. A film can only appear in the same game once.`
+  }
+
+  const cutoff = new Date()
+  cutoff.setUTCDate(cutoff.getUTCDate() - options.avoidRecentDays)
+  const cutoffDateStr = cutoff.toISOString().slice(0, 10)
+
+  let latest: { gameType: PuzzleGameType | 'budget-bracket'; date: string } | null = null
+  for (const table of ANY_GAME_TABLES) {
+    if (table === 'budget_bracket_puzzles') {
+      const { data, error } = await supabase
+        .from(table)
+        .select('puzzle_date, pairs')
+        .gte('puzzle_date', cutoffDateStr)
+        .order('puzzle_date', { ascending: false })
+      if (error) continue
+      for (const row of (data ?? []) as any[]) {
+        if (!Array.isArray(row.pairs)) continue
+        const has = row.pairs.some(
+          (pair: any) =>
+            Array.isArray(pair) && pair.some((m: any) => m?.id === filmId),
+        )
+        if (has) {
+          if (!latest || row.puzzle_date > latest.date) {
+            latest = { gameType: 'budget-bracket', date: row.puzzle_date }
+          }
+          break
+        }
+      }
+    } else {
+      const gameType: PuzzleGameType =
+        table === 'retitled_puzzles'
+          ? 'retitled'
+          : table === 'cast_climb_puzzles'
+            ? 'cast-climb'
+            : 'poster-pixels'
+      const { data, error } = await supabase
+        .from(table)
+        .select('puzzle_date')
+        .eq('film_id', filmId)
+        .gte('puzzle_date', cutoffDateStr)
+        .order('puzzle_date', { ascending: false })
+        .limit(1)
+      if (error) continue
+      const row = (data ?? [])[0] as any
+      if (row?.puzzle_date) {
+        if (!latest || row.puzzle_date > latest.date) {
+          latest = { gameType, date: row.puzzle_date }
+        }
+      }
+    }
+  }
+
+  if (latest) {
+    return `Used in ${latest.gameType} on ${latest.date}, within the last ${options.avoidRecentDays} days. A film can't appear in any game within that window.`
+  }
+
+  return `This film is currently excluded from ${options.gameType}. It may have been added to the exclusion list manually.`
+}
+
+export interface VoteCountOptions {
+  /**
+   * Minimum TMDB vote_count a film must have. Films with fewer are rejected.
+   * Use 0 to disable the vote-count filter entirely.
+   */
+  minVoteCount: number
 }
 
 /**
- * Full gate: obscurity + poster + adult + release-year guards.
+ * Full gate: vote-count + poster + adult + release-year guards.
  */
 export function isMovieAppropriate(
   movie: TMDBMovie | TMDBMovieDetails,
-  options: ObscurityOptions,
+  options: VoteCountOptions,
 ): boolean {
   return describeIneligibility(movie, options) === null
 }
@@ -252,17 +325,15 @@ export function isMovieAppropriate(
  * Like `isMovieAppropriate`, but returns a specific reason on failure (or
  * null if the movie passes every gate). Used by the strategies so the
  * `Activity` log in the smart-generation dialog tells the admin which
- * filter rejected each candidate instead of the old vague "Obscurity /
- * poster / era filters rejected this film" message.
+ * filter rejected each candidate instead of a vague generic message.
  */
 export function describeIneligibility(
   movie: TMDBMovie | TMDBMovieDetails,
-  options: ObscurityOptions,
+  options: VoteCountOptions,
 ): string | null {
-  const score = computeObscurityScore(movie)
-  if (score > options.threshold) {
-    const votes = movie.vote_count ?? 0
-    return `Too obscure: score ${score.toFixed(2)} > threshold ${options.threshold} (only ${votes.toLocaleString()} TMDB votes). Raise the obscurity slider to allow this.`
+  const votes = movie.vote_count ?? 0
+  if (options.minVoteCount > 0 && votes < options.minVoteCount) {
+    return `Only ${votes.toLocaleString()} TMDB votes (minimum ${options.minVoteCount.toLocaleString()}). Lower the minimum vote count to include this.`
   }
   if (!movie.poster_path) {
     return 'No poster image on TMDB.'

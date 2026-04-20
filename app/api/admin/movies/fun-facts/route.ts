@@ -35,23 +35,25 @@ import {
   resolveModelId,
 } from '@/lib/ai/openai-responses'
 
-// IMPORTANT: this schema is consumed by OpenAI Structured Outputs (via
-// `streamObject`), which is much stricter than vanilla JSON Schema:
+// The streaming path below hands this schema to OpenAI's Responses API
+// with `strict: false` (see `providerOptions.openai.strictJsonSchema`
+// on the `streamObject` call). Strict mode is off for two reasons:
 //
-//   1. `format: "uri"` is not in OpenAI's allow-list, so we cannot use
-//      `z.string().url()` — it would map to `format: "uri"` and the API
-//      rejects the whole response_format. We accept any string here and
-//      validate URL shape ourselves in `sanitizeSource` below.
+//   1. Zod v4 + AI SDK v6 emit `.nullable()` fields as an `anyOf` branch
+//      and drop the key from the outer `required` array, which OpenAI's
+//      strict validator rejects with "required ... Missing 'source'".
+//   2. Strict mode also disallows common JSON-Schema `format` values like
+//      `"uri"`, so `z.string().url()` would be rejected outright.
 //
-//   2. EVERY property must appear in the JSON Schema `required` array;
-//      OpenAI rejects schemas that omit any key from `required`. Zod's
-//      `.optional()` causes the AI SDK to drop the key from `required`,
-//      so we use `.nullable()` instead — the field is always present in
-//      the model's response and may be `null` when there's no source.
-//
-// Both rules are platform-specific: a regular Zod `.optional()` /
-// `.url()` works fine for plain JSON validation, just not for OpenAI's
-// structured-output schema check.
+// With strict mode off, the schema is still passed to the model as a
+// guideline but isn't enforced server-side by OpenAI, so the shape can
+// drift. We therefore validate every response ourselves:
+//   - `streamObject` parses each chunk against `ResponseSchema` before
+//     it reaches us, and we run `stabilizeFact` / `normalizeFacts` as a
+//     belt-and-suspenders pass.
+//   - `sanitizeSource` drops sources whose URL isn't a real HTTP(S) URL
+//     so broken citations downgrade to "fact without link" instead of
+//     surfacing to the admin.
 const SourceSchema = z.object({
   title: z.string().min(1),
   url: z.string().min(1),
@@ -238,20 +240,74 @@ function streamFunFacts(args: {
           return
         }
 
+        // `streamObject` can surface upstream errors in two different
+        // ways depending on when they happen:
+        //   - synchronous/early: the `await stream.object` below rejects
+        //     and we emit the error from the inner catch
+        //   - mid-stream (e.g. OpenAI rejects the response_format schema
+        //     after the request starts): the error is delivered via
+        //     `onError` and the partial stream finishes "successfully"
+        //     with nothing in it, which used to surface client-side as
+        //     an opaque "No facts returned"
+        // We capture that onError message here so the client sees the
+        // real reason instead of an empty done line.
+        let streamError: string | null = null
+
         const stream = streamObject({
           model: openai.responses(modelId),
           schema: ResponseSchema,
+          schemaName: 'fun_facts',
           system: args.system,
           prompt: args.prompt,
           abortSignal: args.signal,
+          // gpt-5 / gpt-5-mini are reasoning models on the Responses API
+          // and spend a chunk of `max_output_tokens` on internal reasoning
+          // *before* emitting a single character of the JSON payload. If
+          // the budget runs out mid-reasoning, the API still returns 200
+          // but with no message content — the stream closes successfully
+          // and `stream.object.facts` is empty, which used to surface as
+          // "No facts returned" client-side. Giving it a generous cap so
+          // it has room for reasoning + six facts after.
+          maxOutputTokens: 4000,
+          providerOptions: {
+            openai: {
+              // Zod v4 + AI SDK v6 emit nullable fields as an anyOf and
+              // omit them from the outer `required` array, which OpenAI's
+              // strict response_format validator rejects ("Missing 'source'").
+              // Turning strict mode off keeps the schema as a guideline —
+              // we still validate the final object via the Zod schema
+              // that `streamObject` applies for us.
+              strictJsonSchema: false,
+              // Fun facts are a short, mostly-retrieval task — we don't
+              // need much deliberation. "minimal" keeps the reasoning
+              // budget tiny so the model spends its output tokens on the
+              // actual JSON. Without this the model can exhaust its
+              // budget on reasoning and return an empty response.
+              reasoningEffort: 'minimal',
+            },
+          },
+          onError: ({ error }) => {
+            if (isAbortError(error) || args.signal.aborted) return
+            streamError =
+              error instanceof Error
+                ? error.message
+                : typeof error === 'string'
+                  ? error
+                  : 'stream failed'
+            console.warn('[fun-facts] streamObject error', error)
+          },
         })
 
         const flushed: Fact[] = []
+        let partialIterations = 0
+        let lastPartialFactsLength = 0
         for await (const partial of stream.partialObjectStream) {
           if (args.signal.aborted) break
+          partialIterations += 1
           const factsPartial = Array.isArray(partial?.facts)
             ? (partial.facts as Array<Partial<Fact> | undefined>)
             : []
+          lastPartialFactsLength = factsPartial.length
           for (let i = 0; i < factsPartial.length; i += 1) {
             const entry = factsPartial[i]
             if (!entry) continue
@@ -272,12 +328,36 @@ function streamFunFacts(args: {
               writeLine({ kind: 'fact', index: i, fact: normalized[i] })
             }
           }
-          writeLine({ kind: 'done', facts: flushed.filter(Boolean) })
+          const finalFacts = flushed.filter(Boolean)
+          if (finalFacts.length === 0) {
+            console.warn('[fun-facts] empty stream', {
+              partialIterations,
+              lastPartialFactsLength,
+              finalObjFactsLength: Array.isArray(finalObj?.facts)
+                ? finalObj.facts.length
+                : 'not-array',
+              finalObjKeys: finalObj ? Object.keys(finalObj) : [],
+              streamError,
+            })
+          }
+          if (finalFacts.length === 0 && streamError) {
+            writeLine({ kind: 'error', error: streamError })
+          } else {
+            writeLine({ kind: 'done', facts: finalFacts })
+          }
         } catch (err) {
+          console.warn('[fun-facts] stream.object rejected', {
+            partialIterations,
+            lastPartialFactsLength,
+            streamError,
+            err: err instanceof Error ? err.message : String(err),
+          })
           if (isAbortError(err) || args.signal.aborted) {
             writeLine({ kind: 'aborted' })
           } else {
-            const message = err instanceof Error ? err.message : 'stream failed'
+            const message =
+              streamError ||
+              (err instanceof Error ? err.message : 'stream failed')
             writeLine({ kind: 'error', error: message })
           }
         }

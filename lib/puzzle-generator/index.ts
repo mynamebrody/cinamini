@@ -16,9 +16,10 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { getMovieById } from '@/lib/tmdb'
 import { AIStructuredError, resolveModelId } from '@/lib/ai/openai-responses'
-import { buildExclusionSet } from './eligibility'
+import { buildExclusionSet, describeExclusionReason } from './eligibility'
 import { resolvePrompt } from './prompts'
 import { logGeneration, entryToMeta, type LogEntry } from './logger'
+import { writeCandidateCache } from './candidate-cache'
 import { getStrategy } from './strategies/registry'
 import {
   DEFAULT_GENERATION_CONFIG,
@@ -128,6 +129,43 @@ export async function* generatePuzzleStream(
     return
   }
 
+  // Short-circuit before spending OpenAI tokens (or even resolving the
+  // prompt) if the caller forced a specific film id that's already in the
+  // exclusion set. The admin UI renders a dedicated inline banner for this
+  // case so the experience is clearer than a generic failure.
+  if (typeof req.forcedFilmId === 'number' && exclusion.ids.has(req.forcedFilmId)) {
+    const reason = await describeExclusionReason(supabase, req.forcedFilmId, {
+      gameType: req.gameType,
+      avoidRecentDays: Math.max(30, config.avoidRecentDays),
+    })
+    const logBase: Omit<LogEntry, 'outcome'> = {
+      adminUserId: req.adminUserId,
+      gameType: req.gameType,
+      targetDate: req.targetDate,
+      modelId,
+      promptId: null,
+      promptVersion: null,
+      config: config as unknown as Record<string, unknown>,
+      excludedCount: exclusion.ids.size,
+      candidateIds: [req.forcedFilmId],
+      finalFilmId: null,
+      durationMs: Date.now() - startedAt,
+    }
+    await writeLog(supabase, {
+      ...logBase,
+      outcome: 'suggestions',
+      error: `forced film ${req.forcedFilmId} excluded: ${reason}`,
+    })
+    yield {
+      kind: 'exclusion_conflict',
+      forcedFilmId: req.forcedFilmId,
+      reason,
+      meta: entryToMeta(logBase),
+    }
+    yield { kind: 'done' }
+    return
+  }
+
   yield {
     kind: 'status',
     label: 'Resolving prompt',
@@ -136,7 +174,7 @@ export async function* generatePuzzleStream(
 
   const resolvedPrompt = await resolvePrompt(supabase, req.gameType, {
     target_date: req.targetDate,
-    obscurity_threshold: config.obscurityThreshold,
+    min_vote_count: config.minVoteCount,
     excluded_ids: formatExcludedIds(exclusion.ids),
   })
 
@@ -157,6 +195,14 @@ export async function* generatePuzzleStream(
   // keeps the strategies framework-agnostic.
   const prompt = sanitizePrompt(resolvedPrompt, { includeWebSearch })
 
+  // Manual mode only applies when we're actually going to ask the model
+  // for a candidate list — a forced id collapses the pipeline to a single
+  // candidate and always runs the full auto build.
+  const selectionMode: 'auto' | 'manual' =
+    req.selectionMode === 'manual' && typeof req.forcedFilmId !== 'number'
+      ? 'manual'
+      : 'auto'
+
   const ctx = {
     gameType: req.gameType,
     targetDate: req.targetDate,
@@ -166,11 +212,18 @@ export async function* generatePuzzleStream(
     prompt,
     modelId,
     includeWebSearch,
+    forcedFilmId: req.forcedFilmId,
+    selectionMode,
   }
 
   yield {
     kind: 'status',
-    label: 'Asking the model for candidates',
+    label:
+      typeof req.forcedFilmId === 'number'
+        ? `Using forced film id ${req.forcedFilmId}`
+        : selectionMode === 'manual'
+          ? 'Asking the model for candidates (admin picks)'
+          : 'Asking the model for candidates',
     detail: `${modelId}${includeWebSearch ? ' + web_search' : ''}`,
   }
 
@@ -183,6 +236,47 @@ export async function* generatePuzzleStream(
       if (next.done) {
         const result = next.value
         candidateIdsFromStrategy = result.candidateIds
+        if (result.outcome === 'candidates-ready') {
+          const logBase: Omit<LogEntry, 'outcome'> = {
+            adminUserId: req.adminUserId,
+            gameType: req.gameType,
+            targetDate: req.targetDate,
+            modelId,
+            promptId: prompt.id,
+            promptVersion: prompt.version,
+            config: config as unknown as Record<string, unknown>,
+            excludedCount: exclusion.ids.size,
+            candidateIds: result.candidateIds,
+            finalFilmId: null,
+            durationMs: Date.now() - startedAt,
+            tokensIn: result.tokensIn,
+            tokensOut: result.tokensOut,
+          }
+          await writeLog(supabase, {
+            ...logBase,
+            outcome: 'candidates_ready',
+          })
+          // Persist the inspected candidates so the dialog can re-render the
+          // picker instantly on next open without spending another LLM call.
+          // Best-effort: failures inside writeCandidateCache are already
+          // swallowed and logged, so the picker still works if the cache is
+          // unavailable.
+          await writeCandidateCache(supabase, {
+            gameType: req.gameType,
+            attempts: result.attempts,
+            targetDate: req.targetDate ?? null,
+            configSnapshot: (req.config ?? null) as
+              | Record<string, unknown>
+              | null,
+          })
+          yield {
+            kind: 'candidates-ready',
+            attempts: result.attempts,
+            meta: entryToMeta(logBase),
+          }
+          yield { kind: 'done' }
+          return
+        }
         const finalFilmId =
           (result.puzzle as { film_id?: number }).film_id ?? null
         const logBase: Omit<LogEntry, 'outcome'> = {
@@ -336,6 +430,14 @@ export async function generatePuzzle(
         suggestions: ev.suggestions,
         meta: ev.meta,
       }
+    } else if (ev.kind === 'exclusion_conflict') {
+      // Non-streaming callers get a plain error; the streaming NDJSON
+      // admin UI is the only surface that needs the rich variant.
+      result = {
+        outcome: 'error',
+        error: `Forced film ${ev.forcedFilmId} is excluded: ${ev.reason}`,
+        meta: ev.meta,
+      }
     } else if (ev.kind === 'error') {
       result = {
         outcome: 'error',
@@ -347,6 +449,17 @@ export async function generatePuzzle(
       result = {
         outcome: 'aborted',
         meta: emptyMeta(req.gameType, req.targetDate, resolveModelId(req.modelOverride), 0),
+      }
+    } else if (ev.kind === 'candidates-ready') {
+      // Non-streaming callers shouldn't be asking for manual-pick mode
+      // (there's no admin in the loop to pick from the cards) but if one
+      // does, surface it as a plain error instead of dropping into the
+      // "Generator exited without a terminal event" fallback below.
+      result = {
+        outcome: 'error',
+        error:
+          'candidates-ready is only supported by the streaming admin dialog; non-streaming callers must use selectionMode: "auto".',
+        meta: ev.meta,
       }
     }
   }
@@ -361,9 +474,9 @@ export async function generatePuzzle(
 
 function mergeConfig(override?: GenerationConfig): Required<GenerationConfig> {
   return {
-    obscurityThreshold:
-      clampThreshold(override?.obscurityThreshold) ??
-      DEFAULT_GENERATION_CONFIG.obscurityThreshold,
+    minVoteCount:
+      clampMinVoteCount(override?.minVoteCount) ??
+      DEFAULT_GENERATION_CONFIG.minVoteCount,
     avoidRecentDays:
       override?.avoidRecentDays ?? DEFAULT_GENERATION_CONFIG.avoidRecentDays,
     retitledMaxBackTranslationSimilarity:
@@ -372,9 +485,9 @@ function mergeConfig(override?: GenerationConfig): Required<GenerationConfig> {
   }
 }
 
-function clampThreshold(value: number | undefined): number | undefined {
-  if (typeof value !== 'number' || Number.isNaN(value)) return undefined
-  return Math.min(10, Math.max(1, value))
+function clampMinVoteCount(value: number | undefined): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  return Math.max(0, Math.floor(value))
 }
 
 function isValidISODate(value: string): boolean {

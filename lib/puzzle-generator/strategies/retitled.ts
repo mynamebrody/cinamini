@@ -333,7 +333,7 @@ async function inspectCandidate(
 
   const summary = toMovieSummary(movie)
   const ineligibilityReason = describeIneligibility(movie, {
-    threshold: ctx.config.obscurityThreshold,
+    minVoteCount: ctx.config.minVoteCount,
   })
   if (ineligibilityReason !== null) {
     return {
@@ -388,24 +388,6 @@ async function inspectCandidate(
   }
 }
 
-function buildTranslationNote(
-  englishTitle: string,
-  scored: ScoredLocalizedTitle,
-): string {
-  const { title, similarity } = scored
-  const countryName =
-    title.country_name ||
-    getCountryName(title.country_code) ||
-    title.country_code
-  if (similarity < 0.2) {
-    return `The ${countryName} title takes a completely different approach to "${englishTitle}".`
-  }
-  if (similarity < 0.4) {
-    return `The ${countryName} title diverges meaningfully from "${englishTitle}".`
-  }
-  return `The ${countryName} title is recognisably different from "${englishTitle}".`
-}
-
 export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
   gameType: 'retitled',
   outputSchema: RetitledPuzzleSchema,
@@ -422,24 +404,38 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
       distractorIds?: number[]
     }> = []
 
-    for await (const ev of streamStructured({
-      schema: CandidatesSchema,
-      system: ctx.prompt.system,
-      prompt: buildSuggestionsPrompt(ctx.prompt.user),
-      modelId: ctx.modelId,
-      includeWebSearch: ctx.includeWebSearch,
-      abortSignal: signal,
-    })) {
-      if (ev.kind === 'text-delta') {
-        yield { kind: 'model-text-delta', delta: ev.delta }
-      } else if (ev.kind === 'tool-call') {
-        yield { kind: 'tool-call', name: ev.name }
-      } else if (ev.kind === 'final') {
-        tokensIn = ev.result.usage.tokensIn
-        tokensOut = ev.result.usage.tokensOut
-        modelCandidates = ev.result.object
-      } else if (ev.kind === 'error') {
-        throw ev.error
+    if (typeof ctx.forcedFilmId === 'number') {
+      // Admin deep-linked with `?movieId=<id>`: skip the LLM candidate step
+      // entirely and treat the forced id as the sole candidate. The rest of
+      // the pipeline (localized title scoring, distractor blending, schema
+      // validation) runs unchanged, and the existing pool-based
+      // `pickDistractors` fallback fills all 4 red herrings.
+      modelCandidates = [
+        {
+          id: ctx.forcedFilmId,
+          reasoning: 'Admin forced this film via URL',
+        },
+      ]
+    } else {
+      for await (const ev of streamStructured({
+        schema: CandidatesSchema,
+        system: ctx.prompt.system,
+        prompt: buildSuggestionsPrompt(ctx.prompt.user),
+        modelId: ctx.modelId,
+        includeWebSearch: ctx.includeWebSearch,
+        abortSignal: signal,
+      })) {
+        if (ev.kind === 'text-delta') {
+          yield { kind: 'model-text-delta', delta: ev.delta }
+        } else if (ev.kind === 'tool-call') {
+          yield { kind: 'tool-call', name: ev.name }
+        } else if (ev.kind === 'final') {
+          tokensIn = ev.result.usage.tokensIn
+          tokensOut = ev.result.usage.tokensOut
+          modelCandidates = ev.result.object
+        } else if (ev.kind === 'error') {
+          throw ev.error
+        }
       }
     }
 
@@ -449,10 +445,16 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
 
     modelCandidates = modelCandidates.slice(0, MAX_CANDIDATES)
     const candidateIds = modelCandidates.map((c) => c.id)
+    // Manual picker mode: inspect every candidate (no short-circuit) and
+    // hand the attempts to the admin dialog to choose from. Forced ids
+    // always run the full single-candidate pipeline regardless.
+    const manualMode =
+      ctx.selectionMode === 'manual' && typeof ctx.forcedFilmId !== 'number'
     yield {
       kind: 'candidates',
       ids: candidateIds,
       reasoning: modelCandidates[0]?.reasoning,
+      items: modelCandidates.map((c) => ({ id: c.id, reasoning: c.reasoning })),
     }
 
     if (candidateIds.length === 0) {
@@ -467,7 +469,9 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
 
     yield {
       kind: 'status',
-      label: 'Scoring candidates',
+      label: manualMode
+        ? 'Inspecting all candidates'
+        : 'Scoring candidates',
       detail: `Inspecting ${candidateIds.length} candidate(s) in parallel batches of ${CANDIDATE_BATCH_SIZE}`,
     }
 
@@ -478,7 +482,7 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
 
     for (let i = 0; i < modelCandidates.length; i += CANDIDATE_BATCH_SIZE) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-      if (winner) break
+      if (!manualMode && winner) break
 
       const batch = modelCandidates.slice(i, i + CANDIDATE_BATCH_SIZE)
       const results = await Promise.all(
@@ -494,6 +498,16 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
         if (!winner && result.winner) {
           winner = result.winner
         }
+      }
+    }
+
+    if (manualMode) {
+      return {
+        outcome: 'candidates-ready',
+        attempts,
+        candidateIds,
+        tokensIn,
+        tokensOut,
       }
     }
 
@@ -552,7 +566,13 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
         getCountryName(winner.scored.title.country_code) ||
         winner.scored.title.country_code,
       distractor_ids: distractorIds,
-      translation_note: buildTranslationNote(winner.movie.title, winner.scored),
+      // Intentionally omitted — the editor auto-fetches a fun fact
+      // after smart-gen succeeds and uses its first entry as the
+      // translation note. A canned "takes a different approach"
+      // phrase would otherwise linger because the functional
+      // setState guard in the editor preserves the first non-empty
+      // value.
+      translation_note: undefined,
       english_translation: winner.scored.backTranslation,
       is_published: false,
     }
@@ -569,6 +589,7 @@ export const retitledStrategy: PuzzleStrategy<RetitledPuzzlePayload> = {
     }
 
     return {
+      outcome: 'success',
       puzzle: parsed.data,
       candidateIds,
       attempts,

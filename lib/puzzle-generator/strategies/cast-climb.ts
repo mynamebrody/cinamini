@@ -138,7 +138,7 @@ async function inspectCandidate(
 
   const summary = toMovieSummary(movie)
   const ineligibilityReason = describeIneligibility(movie, {
-    threshold: ctx.config.obscurityThreshold,
+    minVoteCount: ctx.config.minVoteCount,
   })
   if (ineligibilityReason !== null) {
     return {
@@ -217,24 +217,36 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
     let tokensOut: number | undefined
     let modelCandidates: Array<{ id: number; reasoning?: string }> = []
 
-    for await (const ev of streamStructured({
-      schema: CandidatesSchema,
-      system: ctx.prompt.system,
-      prompt: buildSuggestionsPrompt(ctx.prompt.user),
-      modelId: ctx.modelId,
-      includeWebSearch: ctx.includeWebSearch,
-      abortSignal: signal,
-    })) {
-      if (ev.kind === 'text-delta') {
-        yield { kind: 'model-text-delta', delta: ev.delta }
-      } else if (ev.kind === 'tool-call') {
-        yield { kind: 'tool-call', name: ev.name }
-      } else if (ev.kind === 'final') {
-        tokensIn = ev.result.usage.tokensIn
-        tokensOut = ev.result.usage.tokensOut
-        modelCandidates = ev.result.object
-      } else if (ev.kind === 'error') {
-        throw ev.error
+    if (typeof ctx.forcedFilmId === 'number') {
+      // Admin deep-linked with `?movieId=<id>`: skip the LLM candidate step
+      // entirely and treat the forced id as the sole candidate. Cast
+      // selection and fun-fact generation downstream continue normally.
+      modelCandidates = [
+        {
+          id: ctx.forcedFilmId,
+          reasoning: 'Admin forced this film via URL',
+        },
+      ]
+    } else {
+      for await (const ev of streamStructured({
+        schema: CandidatesSchema,
+        system: ctx.prompt.system,
+        prompt: buildSuggestionsPrompt(ctx.prompt.user),
+        modelId: ctx.modelId,
+        includeWebSearch: ctx.includeWebSearch,
+        abortSignal: signal,
+      })) {
+        if (ev.kind === 'text-delta') {
+          yield { kind: 'model-text-delta', delta: ev.delta }
+        } else if (ev.kind === 'tool-call') {
+          yield { kind: 'tool-call', name: ev.name }
+        } else if (ev.kind === 'final') {
+          tokensIn = ev.result.usage.tokensIn
+          tokensOut = ev.result.usage.tokensOut
+          modelCandidates = ev.result.object
+        } else if (ev.kind === 'error') {
+          throw ev.error
+        }
       }
     }
 
@@ -244,10 +256,16 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
 
     modelCandidates = modelCandidates.slice(0, MAX_CANDIDATES)
     const candidateIds = modelCandidates.map((c) => c.id)
+    // Admin-pick (manual) mode only makes sense when we actually asked the
+    // model for a list; a forced single candidate always runs the auto
+    // pipeline so the caller gets a save-ready puzzle.
+    const manualMode =
+      ctx.selectionMode === 'manual' && typeof ctx.forcedFilmId !== 'number'
     yield {
       kind: 'candidates',
       ids: candidateIds,
       reasoning: modelCandidates[0]?.reasoning,
+      items: modelCandidates.map((c) => ({ id: c.id, reasoning: c.reasoning })),
     }
 
     if (candidateIds.length === 0) {
@@ -262,7 +280,9 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
 
     yield {
       kind: 'status',
-      label: 'Scoring candidates',
+      label: manualMode
+        ? 'Inspecting all candidates'
+        : 'Scoring candidates',
       detail: `Checking ensemble casts for ${candidateIds.length} candidate(s)`,
     }
 
@@ -271,7 +291,7 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
 
     for (let i = 0; i < modelCandidates.length; i += CANDIDATE_BATCH_SIZE) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
-      if (winner) break
+      if (!manualMode && winner) break
 
       const batch = modelCandidates.slice(i, i + CANDIDATE_BATCH_SIZE)
       const results = await Promise.all(
@@ -285,6 +305,16 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
         if (!winner && result.winner) {
           winner = result.winner
         }
+      }
+    }
+
+    if (manualMode) {
+      return {
+        outcome: 'candidates-ready',
+        attempts,
+        candidateIds,
+        tokensIn,
+        tokensOut,
       }
     }
 
@@ -327,6 +357,7 @@ export const castClimbStrategy: PuzzleStrategy<CastClimbPuzzlePayload> = {
     }
 
     return {
+      outcome: 'success',
       puzzle: parsed.data,
       candidateIds,
       attempts,

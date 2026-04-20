@@ -37,6 +37,14 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { getCountryFlag, getCountryName } from "@/lib/flag-emojis"
 import { streamFunFacts, isAbortError, type FunFact } from "@/lib/admin/fun-facts-stream"
+import {
+  streamSmartGeneration,
+  isAbortError as isSmartGenAbortError,
+} from "@/lib/admin/smart-gen-stream"
+import AutoSmartGenBanner, {
+  type AutoSmartGenActivityEntry,
+  type AutoSmartGenState,
+} from "../shared/auto-smart-gen-banner"
 
 interface Movie {
   id: number
@@ -124,11 +132,18 @@ interface RetitledEditorProps {
   prefilledDate?: string | null
   prefilledMovieId?: string | null
   puzzleId?: string | null
+  /**
+   * Whether this editor is currently the active tab in the puzzle-editor
+   * shell. Drives eager-vs-lazy auto-smart-generation when `prefilledMovieId`
+   * is provided via URL. All editor tabs mount simultaneously, so without
+   * this flag every movie-based tab would auto-run OpenAI calls on load.
+   */
+  isActiveTab?: boolean
   onDateChange?: (date: string | null) => void
   onMovieChange?: (movieId: string | null) => void
 }
 
-export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzleId, onDateChange, onMovieChange }: RetitledEditorProps) {
+export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzleId, isActiveTab = false, onDateChange, onMovieChange }: RetitledEditorProps) {
   const [puzzleDate, setPuzzleDate] = useState("")
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null)
   const [selectedTitle, setSelectedTitle] = useState<AlternativeTitle | null>(null)
@@ -152,6 +167,17 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   const [funFactIndex, setFunFactIndex] = useState(0)
   const [isGeneratingNote, setIsGeneratingNote] = useState(false)
   const funFactsAbortRef = useRef<AbortController | null>(null)
+
+  // Auto smart-gen-on-movieId state. Fires exactly once per
+  // (gameType, movieId) pair when the editor becomes the active tab and a
+  // `prefilledMovieId` is present (see runAutoSmartGen below).
+  const [autoRunState, setAutoRunState] = useState<AutoSmartGenState>('idle')
+  const [autoRunActivity, setAutoRunActivity] = useState<AutoSmartGenActivityEntry[]>([])
+  const [autoRunError, setAutoRunError] = useState<string | null>(null)
+  const [autoRunErrorDetail, setAutoRunErrorDetail] = useState<string | null>(null)
+  const autoRunAbortRef = useRef<AbortController | null>(null)
+  const autoRunKeyRef = useRef<string | null>(null)
+  const autoRunActivityIdRef = useRef(0)
 
   // Ref to track the last loaded puzzle ID to prevent infinite loops
   const lastLoadedPuzzleId = useRef<string | null>(null)
@@ -287,7 +313,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     return () => document.removeEventListener('keydown', handleEscape)
   }, [showMovieSelector])
 
-  const fetchAndSelectMovie = useCallback(async (movieId: string) => {
+  const fetchAndSelectMovie = useCallback(async (movieId: string): Promise<Movie | null> => {
     try {
       const response = await fetch(`/api/movies/${movieId}/details`)
       if (response.ok) {
@@ -307,10 +333,12 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         }
         
         setSelectedMovie(movie)
+        return movie
       }
     } catch (error) {
       console.error('Error fetching movie details:', error)
     }
+    return null
   }, [])
 
   const loadExistingPuzzle = useCallback(async (puzzleId: string) => {
@@ -482,13 +510,286 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     }
   }
 
-  // Auto-generate translation note after user selects a movie (new puzzles only)
+  // Auto-generate translation note after user selects a movie (new puzzles only).
+  //
+  // Two gates on top of the original `!translationNote / !isGeneratingNote`:
+  //
+  //   1. `autoRunState === 'idle'` — while the auto-smart-gen flow for this
+  //      tab is running or flashing a "success" banner, let the strategy's
+  //      own translation_note win instead of racing it with a fun-facts
+  //      stream.
+  //   2. The selected movie isn't the URL-deep-linked one. If the admin hit
+  //      `/admin/puzzle-editor?movieId=X`, the auto-smart-gen flow *owns* X
+  //      end-to-end on every movie-based tab — including inactive ones that
+  //      only auto-run once the admin switches to them. Without this gate,
+  //      the non-active tabs would still `fetchAndSelectMovie(X)` on mount,
+  //      fall through this effect (because their autoRunState is "idle"
+  //      since the auto-run is deferred), and fire a redundant fun-facts
+  //      stream that sometimes returns empty and throws "No facts returned".
   useEffect(() => {
-    if (selectedMovie && !isEditMode && !translationNote && !isGeneratingNote) {
+    const isAutoRunOwnedMovie = Boolean(
+      selectedMovie &&
+        prefilledMovieId &&
+        String(selectedMovie.id) === String(prefilledMovieId),
+    )
+    if (
+      selectedMovie &&
+      !isEditMode &&
+      !translationNote &&
+      !isGeneratingNote &&
+      autoRunState === 'idle' &&
+      !isAutoRunOwnedMovie
+    ) {
       generateTranslationNote()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMovie])
+  }, [selectedMovie, autoRunState])
+
+  // After the auto-smart-gen flow finishes successfully, preload the
+  // 6-item fun-facts list so the admin can cycle through them without
+  // having to click "Generate fun fact" first.
+  //
+  // This is the counterpart to the legacy effect above: that effect is
+  // gated on `!isAutoRunOwnedMovie` to avoid racing the auto-run. Once
+  // the auto-run is *done* the race is moot — we can safely fetch.
+  // `generateTranslationNote`'s onFact uses a functional setState so it
+  // won't overwrite the back-translation that smart-gen already set.
+  useEffect(() => {
+    if (autoRunState !== 'success') return
+    if (!selectedMovie) return
+    if (isEditMode) return
+    if (funFacts.length > 0) return
+    if (isGeneratingNote) return
+    generateTranslationNote()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunState, selectedMovie])
+
+  const pushAutoRunActivity = useCallback(
+    (entry: Omit<AutoSmartGenActivityEntry, 'id'>) => {
+      setAutoRunActivity((prev) => {
+        autoRunActivityIdRef.current += 1
+        const next = [
+          ...prev,
+          { ...entry, id: String(autoRunActivityIdRef.current) },
+        ]
+        // keep the list bounded so a long run doesn't blow out memory
+        if (next.length > 40) next.shift()
+        return next
+      })
+    },
+    [],
+  )
+
+  const resetAutoRunBanner = useCallback(() => {
+    setAutoRunState('idle')
+    setAutoRunActivity([])
+    setAutoRunError(null)
+    setAutoRunErrorDetail(null)
+  }, [])
+
+  const stopAutoRun = useCallback(() => {
+    if (autoRunAbortRef.current) {
+      autoRunAbortRef.current.abort()
+      autoRunAbortRef.current = null
+    }
+    resetAutoRunBanner()
+  }, [resetAutoRunBanner])
+
+  // Wired to the banner's "Choose another movie" button. Clears the
+  // prefilled id and reopens the movie selector so the admin can pick a
+  // different film without mucking with the URL.
+  const handleAutoRunChangeMovie = useCallback(() => {
+    if (autoRunAbortRef.current) {
+      autoRunAbortRef.current.abort()
+      autoRunAbortRef.current = null
+    }
+    resetAutoRunBanner()
+    setSelectedMovie(null)
+    setAlternativeTitles([])
+    setSelectedTitle(null)
+    setCustomTitle("")
+    setEnglishTranslation("")
+    setCountryName("")
+    onMovieChange?.(null)
+    setSelectingDistractorIndex(null)
+    setShowMovieSelector(true)
+  }, [onMovieChange, resetAutoRunBanner])
+
+  const runAutoSmartGen = useCallback(
+    async (movieId: string) => {
+      const numericId = Number(movieId)
+      if (!Number.isFinite(numericId) || numericId <= 0) return
+
+      // Flip to `running` *before* any awaits so the translation-note effect
+      // (which is gated on `autoRunState === 'idle'`) doesn't race us and
+      // fire a redundant fun-facts stream while we resolve the target date.
+      if (autoRunAbortRef.current) autoRunAbortRef.current.abort()
+      const controller = new AbortController()
+      autoRunAbortRef.current = controller
+      setAutoRunState('running')
+      setAutoRunActivity([])
+      setAutoRunError(null)
+      setAutoRunErrorDetail(null)
+      autoRunActivityIdRef.current = 0
+
+      // Resolve target date: prefer what's already in the editor; otherwise
+      // ask the server for the next available slot for this game type.
+      let targetDate = puzzleDate
+      if (!targetDate) {
+        try {
+          const res = await fetch(
+            `/api/admin/puzzles/next-available-date?gameType=retitled`,
+            { signal: controller.signal },
+          )
+          const data = (await res.json().catch(() => ({}))) as {
+            date?: string
+            error?: string
+          }
+          if (!res.ok || !data?.date) {
+            setAutoRunState('failed')
+            setAutoRunError(
+              data?.error ||
+                'Could not find an available puzzle date. Set one manually and try again.',
+            )
+            return
+          }
+          targetDate = data.date
+        } catch (err) {
+          if (isSmartGenAbortError(err)) return
+          setAutoRunState('failed')
+          setAutoRunError(
+            err instanceof Error
+              ? err.message
+              : 'Could not resolve the next available puzzle date.',
+          )
+          return
+        }
+      }
+
+      try {
+        await streamSmartGeneration({
+          gameType: 'retitled',
+          targetDate,
+          forcedFilmId: numericId,
+          signal: controller.signal,
+          onEvent: (event) => {
+            switch (event.kind) {
+              case 'status':
+                pushAutoRunActivity({
+                  label: event.label,
+                  detail: event.detail,
+                  variant: 'status',
+                })
+                break
+              case 'tool-call':
+                pushAutoRunActivity({
+                  label: `Tool call: ${event.name}`,
+                  variant: 'tool',
+                })
+                break
+              case 'candidates':
+                pushAutoRunActivity({
+                  label: `Model proposed ${event.ids.length} candidate${event.ids.length === 1 ? '' : 's'}`,
+                  detail: event.reasoning,
+                  variant: 'candidates',
+                })
+                break
+              case 'candidate-scored': {
+                const a = event.attempt
+                const ok = a.verdict === 'accepted'
+                pushAutoRunActivity({
+                  label: `${ok ? '✓' : '✗'} ${a.movie.title}${a.movie.release_year ? ` (${a.movie.release_year})` : ''}`,
+                  detail: ok
+                    ? a.localizedTitle
+                      ? `“${a.localizedTitle.title}” — ${a.localizedTitle.countryName} · back-translates to “${a.localizedTitle.backTranslation}” (similarity ${a.localizedTitle.similarity.toFixed(2)})`
+                      : a.reasoning
+                    : a.reason,
+                  variant: ok ? 'scored-ok' : 'scored-ko',
+                })
+                break
+              }
+              case 'success':
+                setAutoRunState('success')
+                handleSmartGeneration({
+                  ...(event.puzzle as object),
+                  puzzle_date: (event.puzzle as { puzzle_date?: string }).puzzle_date || targetDate,
+                })
+                // collapse the banner after a short "done" flash
+                setTimeout(() => {
+                  resetAutoRunBanner()
+                }, 1500)
+                break
+              case 'exclusion_conflict':
+                setAutoRunState('excluded')
+                setAutoRunError(event.reason)
+                break
+              case 'suggestions':
+                // For a forced run, `suggestions` means the strategy tried
+                // the forced film but couldn't build a valid puzzle from it
+                // (e.g. no distinctive localized title). Treat as a
+                // terminal failure — no suggestion-list UI here.
+                setAutoRunState('failed')
+                setAutoRunError(
+                  event.error ||
+                    'Could not build a Retitled puzzle from this movie.',
+                )
+                break
+              case 'error':
+                setAutoRunState('failed')
+                setAutoRunError(event.error)
+                if ('detail' in event && event.detail) {
+                  setAutoRunErrorDetail(event.detail)
+                }
+                break
+              case 'aborted':
+              case 'done':
+              case 'model-text-delta':
+                break
+            }
+          },
+        })
+      } catch (err) {
+        if (isSmartGenAbortError(err)) return
+        setAutoRunState('failed')
+        setAutoRunError(
+          err instanceof Error ? err.message : 'Auto smart-gen failed.',
+        )
+      } finally {
+        if (autoRunAbortRef.current === controller) {
+          autoRunAbortRef.current = null
+        }
+      }
+    },
+    [puzzleDate, pushAutoRunActivity, resetAutoRunBanner],
+  )
+
+  // Kick off auto smart-gen when:
+  //   - A `?movieId=<id>` is present in the URL
+  //   - This editor is the currently active tab (eager for the initial
+  //     tab; lazy for the others, which fire on first switch)
+  //   - The admin isn't editing an existing puzzle (`!puzzleId`)
+  //   - We haven't already auto-run for this specific (gameType, movieId)
+  //     in this session (so toggling tabs doesn't re-trigger)
+  useEffect(() => {
+    if (!prefilledMovieId) return
+    if (!isActiveTab) return
+    if (puzzleId) return
+    if (isEditMode) return
+    const key = `retitled:${prefilledMovieId}`
+    if (autoRunKeyRef.current === key) return
+    autoRunKeyRef.current = key
+    runAutoSmartGen(prefilledMovieId)
+  }, [prefilledMovieId, isActiveTab, puzzleId, isEditMode, runAutoSmartGen])
+
+  // Clean up any in-flight auto-run stream on unmount.
+  useEffect(() => {
+    return () => {
+      if (autoRunAbortRef.current) {
+        autoRunAbortRef.current.abort()
+        autoRunAbortRef.current = null
+      }
+    }
+  }, [])
 
   const handleSelectMovie = (movie: Movie) => {
     if (selectingDistractorIndex !== null) {
@@ -777,8 +1078,9 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
     // come with `film_id` directly.
     const movieId =
       puzzleData.selectedMovie?.id ?? puzzleData.film_id ?? null
+    let correctMovie: Movie | null = null
     if (movieId != null) {
-      await fetchAndSelectMovie(String(movieId))
+      correctMovie = await fetchAndSelectMovie(String(movieId))
     }
 
     // Prefill the localized title block from either the winning puzzle OR
@@ -822,6 +1124,21 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
 
       const validDistractors = distractorMovies.filter(m => m !== null) as PuzzleOption[]
       setDistractors(validDistractors)
+
+      // Seed allOptions atomically with both the correct answer AND the
+      // distractors. The `useEffect([selectedMovie, distractors, ...])`
+      // above would otherwise fire after the `setDistractors([])`/
+      // `setAllOptions([])` batch commits but *before* the distractors
+      // below have landed, writing `[correctOption]` on its own — and
+      // then the `allOptions.length > 0` guard would lock the real
+      // distractors out for the rest of the session.
+      if (correctMovie) {
+        const correctOption: PuzzleOption = {
+          ...correctMovie,
+          isCorrect: true,
+        }
+        setAllOptions([correctOption, ...validDistractors])
+      }
     }
 
     if (puzzleData.translation_note) {
@@ -876,7 +1193,12 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
           if (!firstShown) {
             firstShown = true
             setFunFactIndex(index)
-            setTranslationNote(fact.text)
+            // Functional setState so we don't clobber a translation_note
+            // that the auto-smart-gen flow (or a previous run) already
+            // set for this movie. The legacy "first fact becomes the
+            // translation note" behaviour only kicks in when the field
+            // is genuinely empty.
+            setTranslationNote((prev) => prev || fact.text)
           }
         },
       })
@@ -914,17 +1236,37 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Editor Form */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">
-            {isEditMode ? "Edit Retitled Puzzle" : "Create Retitled Puzzle"}
-          </h2>
-          <p className="text-sm text-gray-600">
-            Players guess the original movie from its foreign title
-          </p>
-        </div>
+    <div className="space-y-4">
+      {autoRunState !== 'idle' && (
+        <AutoSmartGenBanner
+          state={autoRunState}
+          gameLabel="Retitled"
+          activity={autoRunActivity}
+          errorMessage={autoRunError}
+          errorDetail={autoRunErrorDetail}
+          onStop={stopAutoRun}
+          onChangeMovie={
+            autoRunState === 'excluded' || autoRunState === 'failed'
+              ? handleAutoRunChangeMovie
+              : undefined
+          }
+          onDismiss={
+            autoRunState === 'failed' ? resetAutoRunBanner : undefined
+          }
+        />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Editor Form */}
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold mb-4">
+              {isEditMode ? "Edit Retitled Puzzle" : "Create Retitled Puzzle"}
+            </h2>
+            <p className="text-sm text-gray-600">
+              Players guess the original movie from its foreign title
+            </p>
+          </div>
 
         {/* Date and Status */}
         <div className="grid grid-cols-2 gap-4">
@@ -1292,6 +1634,7 @@ export default function RetitledEditor({ prefilledDate, prefilledMovieId, puzzle
         </div>,
         document.body
       )}
+      </div>
     </div>
   )
 }

@@ -68,14 +68,32 @@ export type RichSuggestion = CandidateAttempt
 
 /**
  * Every event the generator can emit during a single `generatePuzzleStream`
- * invocation. Exactly one terminal event (`success`, `suggestions`, `error`,
- * or `aborted`) is emitted, followed by `done`.
+ * invocation. Exactly one terminal event (`success`, `suggestions`,
+ * `candidates-ready`, `exclusion_conflict`, `error`, or `aborted`) is
+ * emitted, followed by `done`.
  */
 export type GenerationEvent =
   | { kind: 'status'; label: string; detail?: string }
   | { kind: 'model-text-delta'; delta: string }
   | { kind: 'tool-call'; name: string }
-  | { kind: 'candidates'; ids: number[]; reasoning?: string }
+  | {
+      kind: 'candidates'
+      ids: number[]
+      /**
+       * Deprecated: first candidate's reasoning only. New consumers should
+       * use `items` instead — this is kept for backwards compatibility with
+       * existing log/activity-feed renderers.
+       */
+      reasoning?: string
+      /**
+       * Per-candidate reasoning the LLM produced. Same length/order as `ids`;
+       * individual entries may omit `reasoning` if the model didn't provide
+       * one. Populated whenever the strategy has access to per-id reasoning
+       * (i.e. whenever it called `streamStructured` to get the candidate
+       * list — not the `forcedFilmId` path).
+       */
+      items?: Array<{ id: number; reasoning?: string }>
+    }
   | { kind: 'candidate-scored'; attempt: CandidateAttempt }
   | {
       kind: 'suggestions'
@@ -84,6 +102,31 @@ export type GenerationEvent =
       meta: GenerationMeta
     }
   | { kind: 'success'; puzzle: unknown; meta: GenerationMeta }
+  /**
+   * Terminal event emitted only when the request used `selectionMode:
+   * 'manual'`. Carries the full set of inspected candidates (accepted +
+   * rejected) so the admin dialog can present a picker. Followed by
+   * `done`. When the admin picks one, the client issues a second
+   * generation call with `forcedFilmId` + `selectionMode: 'auto'` to run
+   * the full puzzle-build pipeline for that film.
+   */
+  | {
+      kind: 'candidates-ready'
+      attempts: CandidateAttempt[]
+      meta: GenerationMeta
+    }
+  /**
+   * Emitted only when a caller provided `forcedFilmId` AND that id is
+   * already in the DB-driven exclusion set. The orchestrator short-circuits
+   * before spending any OpenAI tokens so the admin UI can show an inline
+   * "can't use this movie" banner instead of a generic failure.
+   */
+  | {
+      kind: 'exclusion_conflict'
+      forcedFilmId: number
+      reason: string
+      meta: GenerationMeta
+    }
   | {
       kind: 'error'
       error: string

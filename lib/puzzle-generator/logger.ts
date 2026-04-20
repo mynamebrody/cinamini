@@ -9,7 +9,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { GenerationMeta, PuzzleGameType } from './types'
 
-export type LogOutcome = 'success' | 'suggestions' | 'error'
+export type LogOutcome =
+  | 'success'
+  | 'suggestions'
+  | 'error'
+  /**
+   * Admin-pick mode: the strategy inspected every model candidate without
+   * short-circuiting and emitted a `candidates-ready` terminal event. No
+   * puzzle was built — the admin is expected to pick one and trigger a
+   * second run with `forcedFilmId`.
+   */
+  | 'candidates_ready'
 
 export interface LogEntry {
   adminUserId?: string

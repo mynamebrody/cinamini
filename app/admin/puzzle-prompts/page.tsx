@@ -297,7 +297,7 @@ export default function PuzzlePromptsPage() {
                     />
                     <p className="text-xs text-neutral-500 mt-1 font-funnel">
                       Supported vars: <code>{"{{target_date}}"}</code>{" "}
-                      <code>{"{{obscurity_threshold}}"}</code>{" "}
+                      <code>{"{{min_vote_count}}"}</code>{" "}
                       <code>{"{{excluded_ids}}"}</code>
                     </p>
                   </div>

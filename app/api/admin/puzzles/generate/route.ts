@@ -43,7 +43,7 @@ import {
 } from '@/lib/openai-service'
 
 interface LegacyClientConfig {
-  obscurityThreshold?: number
+  minVoteCount?: number
   avoidRecentDays?: number
   avoidSameGameDays?: number
   budgetClosenessThreshold?: number
@@ -82,6 +82,8 @@ export async function POST(request: NextRequest) {
       extraExclusions?: number[]
       includeWebSearch?: boolean
       stream?: boolean
+      forcedFilmId?: number
+      selectionMode?: string
     }
 
     if (!body.gameType || !body.targetDate) {
@@ -122,6 +124,13 @@ export async function POST(request: NextRequest) {
       modelOverride: body.modelOverride,
       extraExclusions: body.extraExclusions,
       includeWebSearch: body.includeWebSearch ?? false,
+      forcedFilmId:
+        typeof body.forcedFilmId === 'number' &&
+        Number.isFinite(body.forcedFilmId) &&
+        body.forcedFilmId > 0
+          ? body.forcedFilmId
+          : undefined,
+      selectionMode: body.selectionMode === 'manual' ? 'manual' : 'auto',
     }
 
     const wantsStream =
@@ -223,16 +232,11 @@ export async function GET() {
       model: resolveModelId(),
       activePrompts,
       defaultConfig: {
-        obscurityThreshold: 7,
+        minVoteCount: 1000,
         avoidRecentDays: 30,
         retitledMaxBackTranslationSimilarity: 0.6,
       },
       thresholds: {
-        obscurity: {
-          min: 1,
-          max: 10,
-          description: '1 = mainstream blockbusters, 10 = very obscure films',
-        },
         avoidRecent: {
           min: 30,
           max: 90,
@@ -335,8 +339,8 @@ function adaptClientConfig(
 ): GenerationConfig | undefined {
   if (!config) return undefined
   const out: GenerationConfig = {}
-  if (typeof config.obscurityThreshold === 'number') {
-    out.obscurityThreshold = config.obscurityThreshold
+  if (typeof config.minVoteCount === 'number') {
+    out.minVoteCount = config.minVoteCount
   }
   if (typeof config.avoidRecentDays === 'number') {
     out.avoidRecentDays = config.avoidRecentDays
@@ -370,7 +374,6 @@ async function handleLegacyBudgetBracket(args: {
   const avoidMovieIds = Array.from(new Set([...allRecentIds, ...sameGameIds]))
 
   const legacyConfig: LegacyGenerationConfig = {
-    obscurityThreshold: args.config?.obscurityThreshold ?? 7,
     budgetClosenessThreshold: args.config?.budgetClosenessThreshold ?? 0.3,
     avoidRecentDays: recentDays,
     avoidSameGameDays: sameGameDays,

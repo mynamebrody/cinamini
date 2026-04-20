@@ -17,8 +17,6 @@ import { getMovieById } from './tmdb'
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
 export interface GenerationConfig {
-  /** 1..10. 1 = mainstream blockbusters, 10 = very obscure films. */
-  obscurityThreshold?: number
   /** Percentage difference allowed between paired budgets (e.g. 0.3 = 30%). */
   budgetClosenessThreshold?: number
   /** Days to look back for any game type (default 30). */
@@ -41,7 +39,6 @@ export interface SmartPuzzleResponse {
 }
 
 const DEFAULT_CONFIG: Required<GenerationConfig> = {
-  obscurityThreshold: 5,
   budgetClosenessThreshold: 0.3,
   avoidRecentDays: 30,
   avoidSameGameDays: 365,

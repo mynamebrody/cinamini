@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Wand2,
   Loader2,
@@ -12,6 +12,7 @@ import {
   Sparkles,
   Activity,
   ChevronRight,
+  Film,
 } from "lucide-react"
 import {
   Dialog,
@@ -33,6 +34,10 @@ import type {
   GenerationEvent,
   RichSuggestion,
 } from "@/lib/puzzle-generator/events"
+import {
+  streamSmartGeneration,
+  isAbortError as isSmartGenAbortError,
+} from "@/lib/admin/smart-gen-stream"
 
 interface SmartGenerationDialogProps {
   gameType: 'retitled' | 'budget-bracket' | 'cast-climb' | 'poster-pixels'
@@ -57,6 +62,57 @@ interface ActivityEntry {
   variant: 'status' | 'candidates' | 'scored-ok' | 'scored-ko' | 'tool' | 'error'
 }
 
+/**
+ * UI state machine for the admin-pick smart-gen flow.
+ *
+ *   'idle'     — dialog open, no stream running. Settings panel is primary.
+ *   'picking'  — phase-1 stream running or the card list is awaiting a click.
+ *                Cards progressively enrich as candidate-scored events arrive.
+ *   'building' — admin picked a card; phase-2 stream is running with
+ *                forcedFilmId, will terminate with success / rejection.
+ */
+type DialogPhase = 'idle' | 'picking' | 'building'
+
+/**
+ * One card in the candidate picker. We seed with whatever the `candidates`
+ * event carries (id + optional model reasoning), hydrate with basic TMDB
+ * details via `/api/movies/{id}/details`, and then enrich with the full
+ * `CandidateAttempt` once `candidate-scored` lands.
+ */
+interface CandidateCardState {
+  id: number
+  title?: string
+  posterPath?: string | null
+  releaseYear?: number | null
+  reasoning?: string
+  status: 'pending' | 'inspecting' | 'accepted' | 'rejected'
+  /** Full attempt data once candidate-scored arrives. */
+  attempt?: CandidateAttempt
+  /** Rejection reason — either from inspection or from a failed phase-2 build. */
+  rejectionReason?: string
+}
+
+/**
+ * Defaults for the dialog's tunable knobs. `minVoteCount` filters candidates
+ * with fewer than this many TMDB votes — 1000 admits every household-name
+ * film (Godfather ~22k, Jaws ~11k) while keeping out student / regional
+ * shorts. The dialog resets `config` to this object every time it opens so
+ * one accidental tweak can't stick across runs.
+ */
+interface DialogConfig {
+  minVoteCount: number
+  budgetClosenessThreshold: number
+  avoidRecentDays: number
+  avoidSameGameDays: number
+}
+
+const DEFAULT_DIALOG_CONFIG: DialogConfig = {
+  minVoteCount: 1000,
+  budgetClosenessThreshold: 0.3,
+  avoidRecentDays: 30,
+  avoidSameGameDays: 365,
+}
+
 function formatDisplayDate(iso: string): string {
   if (!iso) return ""
   const [y, m, d] = iso.split("-").map(Number)
@@ -69,6 +125,41 @@ function formatDisplayDate(iso: string): string {
     day: "numeric",
     timeZone: "UTC",
   })
+}
+
+/**
+ * Convert cached `CandidateAttempt[]` into the `CandidateCardState[]`
+ * shape the picker renders. Status comes straight from `attempt.verdict`;
+ * rejection reason, TMDB basics, and model reasoning all carry over. No
+ * network requests — everything the picker needs is in the attempt row.
+ */
+function attemptsToCards(attempts: CandidateAttempt[]): CandidateCardState[] {
+  return attempts.map((attempt) => ({
+    id: attempt.movie.id,
+    title: attempt.movie.title,
+    posterPath: attempt.movie.poster_path,
+    releaseYear: attempt.movie.release_year ?? null,
+    reasoning: attempt.reasoning,
+    status: attempt.verdict === 'accepted' ? 'accepted' : 'rejected',
+    attempt,
+    rejectionReason: attempt.verdict === 'rejected' ? attempt.reason : undefined,
+  }))
+}
+
+/** Human-friendly relative time ("2 min ago", "3 h ago", "1 d ago"). */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime()
+  if (!Number.isFinite(then)) return ''
+  const diffMs = Date.now() - then
+  if (diffMs < 0) return 'just now'
+  const sec = Math.round(diffMs / 1000)
+  if (sec < 60) return `${sec}s ago`
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min} min ago`
+  const hr = Math.round(min / 60)
+  if (hr < 24) return `${hr} h ago`
+  const days = Math.round(hr / 24)
+  return `${days} d ago`
 }
 
 export default function SmartGenerationDialog({
@@ -87,11 +178,8 @@ export default function SmartGenerationDialog({
   const [resolvingDate, setResolvingDate] = useState(false)
   const [dateSource, setDateSource] = useState<'editor' | 'auto'>('editor')
 
-  const [config, setConfig] = useState({
-    obscurityThreshold: 7,
-    budgetClosenessThreshold: 0.3,
-    avoidRecentDays: 30,
-    avoidSameGameDays: 365,
+  const [config, setConfig] = useState<DialogConfig>({
+    ...DEFAULT_DIALOG_CONFIG,
   })
   const [includeWebSearch, setIncludeWebSearch] = useState(false)
 
@@ -100,8 +188,36 @@ export default function SmartGenerationDialog({
   const [activity, setActivity] = useState<ActivityEntry[]>([])
   const [errorDetail, setErrorDetail] = useState<string | null>(null)
 
+  const [phase, setPhase] = useState<DialogPhase>('idle')
+  const [candidateCards, setCandidateCards] = useState<CandidateCardState[]>([])
+  const [buildingForId, setBuildingForId] = useState<number | null>(null)
+
+  /**
+   * Snapshot of the cached candidate row the dialog opened on, or `null`
+   * when we showed the live picker. Used to:
+   *   - render the "Showing cached candidates from Xm ago" banner
+   *   - badge mismatches when the current targetDate / config differ from
+   *     what the cache was written against
+   *   - distinguish the cache-hit UX (no Generate button, only Regenerate
+   *     in the banner) from the live-picker UX.
+   */
+  const [cacheMeta, setCacheMeta] = useState<{
+    createdAt: string
+    targetDate: string | null
+    configSnapshot: Partial<DialogConfig> | null
+  } | null>(null)
+  /** Loading indicator for the cache fetch on open. */
+  const [cacheLoading, setCacheLoading] = useState(false)
+
   const abortRef = useRef<AbortController | null>(null)
   const activityIdRef = useRef(0)
+  /** Separate controller so closing the dialog cancels the cache fetch. */
+  const cacheAbortRef = useRef<AbortController | null>(null)
+  // Mirror of `phase` / `buildingForId` — handleStreamEvent is invoked
+  // synchronously from the NDJSON parser and can't wait for setState to
+  // flush. Refs give it a stable, up-to-date view of the current phase.
+  const phaseRef = useRef<DialogPhase>('idle')
+  const buildingForIdRef = useRef<number | null>(null)
 
   const isStreamingSupported = gameType !== 'budget-bracket'
   const activePrompt = meta.activePrompts?.[gameType]
@@ -126,6 +242,27 @@ export default function SmartGenerationDialog({
       }
     }
   }, [targetDate, open])
+
+  // Reset tunable knobs AND picker state every time the dialog opens. Without
+  // this, a one-off tweak (e.g. a preset vote-count chip in a previous life
+  // of the component) would stick across runs, and old candidate cards from
+  // a closed-but-remounted dialog would render stale.
+  useEffect(() => {
+    if (open) {
+      setConfig({ ...DEFAULT_DIALOG_CONFIG })
+      setCandidateCards([])
+      setBuildingForId(null)
+      buildingForIdRef.current = null
+      setPhase('idle')
+      phaseRef.current = 'idle'
+      setSuggestions([])
+      setActivity([])
+      setError(null)
+      setErrorDetail(null)
+      setSuccess(false)
+      setCacheMeta(null)
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -188,12 +325,113 @@ export default function SmartGenerationDialog({
       abortRef.current.abort()
       abortRef.current = null
     }
+    if (!open && cacheAbortRef.current) {
+      cacheAbortRef.current.abort()
+      cacheAbortRef.current = null
+    }
   }, [open])
+
+  /**
+   * Load the latest cached candidate list for this game type when the
+   * dialog opens. On hit, seed the picker with cached cards so the admin
+   * sees options instantly; on miss, stay in 'idle' so the Smart Generate
+   * button is the primary action.
+   *
+   * Skipped for budget-bracket (no candidate picker) and when a forced
+   * film id is driving the dialog (not applicable here — forced-id runs
+   * happen from the editors, not from this dialog). Config/date mismatches
+   * are surfaced as banner pills in the UI; they do not prevent reuse.
+   */
+  useEffect(() => {
+    if (!open) return
+    if (!isStreamingSupported) return
+
+    const controller = new AbortController()
+    cacheAbortRef.current = controller
+    setCacheLoading(true)
+
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/admin/puzzles/candidate-cache?gameType=${gameType}`,
+          { signal: controller.signal },
+        )
+        if (!res.ok) {
+          setCacheLoading(false)
+          return
+        }
+        const data = (await res.json()) as
+          | { hit: false }
+          | {
+              hit: true
+              attempts: CandidateAttempt[]
+              createdAt: string
+              targetDate: string | null
+              configSnapshot: Partial<DialogConfig> | null
+            }
+        if (controller.signal.aborted) return
+
+        if (data.hit) {
+          const cards = attemptsToCards(data.attempts)
+          if (cards.length > 0) {
+            setCandidateCards(cards)
+            setPhase('picking')
+            phaseRef.current = 'picking'
+            setCacheMeta({
+              createdAt: data.createdAt,
+              targetDate: data.targetDate,
+              configSnapshot: data.configSnapshot,
+            })
+          }
+        }
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return
+        console.warn('[SmartGenerationDialog] cache fetch failed:', err)
+      } finally {
+        if (!controller.signal.aborted) setCacheLoading(false)
+      }
+    })()
+
+    return () => {
+      controller.abort()
+    }
+  }, [open, gameType, isStreamingSupported])
 
   const displayDate = useMemo(
     () => (resolvedDate ? formatDisplayDate(resolvedDate) : ""),
     [resolvedDate],
   )
+
+  /**
+   * Warnings to surface on the cache banner. Cache key is `game_type` only
+   * so a mismatched `target_date` / `config` snapshot doesn't invalidate
+   * the cards — but the admin should know the cards were generated against
+   * different inputs so an unexpected phase-2 rejection or a regenerate
+   * impulse isn't surprising.
+   */
+  const cacheMismatches = useMemo<string[]>(() => {
+    if (!cacheMeta) return []
+    const notes: string[] = []
+    if (
+      cacheMeta.targetDate &&
+      resolvedDate &&
+      cacheMeta.targetDate !== resolvedDate
+    ) {
+      notes.push(
+        `Cached for ${formatDisplayDate(cacheMeta.targetDate)}; current slot is ${formatDisplayDate(resolvedDate)}`,
+      )
+    }
+    const cachedVotes = cacheMeta.configSnapshot?.minVoteCount
+    if (
+      typeof cachedVotes === 'number' &&
+      cachedVotes !== config.minVoteCount
+    ) {
+      notes.push(
+        `Min votes was ${cachedVotes.toLocaleString()} when cached; current is ${config.minVoteCount.toLocaleString()}`,
+      )
+    }
+    return notes
+  }, [cacheMeta, resolvedDate, config.minVoteCount])
 
   const handleCancel = () => {
     if (abortRef.current) {
@@ -206,7 +444,279 @@ export default function SmartGenerationDialog({
       variant: 'error',
     })
     setIsGenerating(false)
+    // If we cancel during a phase-2 build, keep the picker visible so the
+    // admin can choose a different film. If we cancel during phase 1, drop
+    // back to idle so the Generate button reactivates cleanly.
+    if (phaseRef.current === 'building') {
+      setBuildingForId(null)
+      buildingForIdRef.current = null
+      setPhase('picking')
+      phaseRef.current = 'picking'
+    } else {
+      setPhase('idle')
+      phaseRef.current = 'idle'
+    }
   }
+
+  /**
+   * Fetch basic TMDB details for each candidate id so the skeleton cards
+   * can render something useful (title / poster / year) before the
+   * per-candidate `candidate-scored` event arrives with the full attempt.
+   *
+   * Fire-and-forget: `candidate-scored` will overwrite these fields with
+   * the authoritative values, so any failures here just leave the card as
+   * "Inspecting…" until the server catches up.
+   */
+  const hydrateCandidateCards = useCallback(
+    (ids: number[], signal: AbortSignal) => {
+      for (const id of ids) {
+        fetch(`/api/movies/${id}/details`, { signal })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (!data) return
+            const releaseYear =
+              typeof data.release_date === 'string' &&
+              data.release_date.length >= 4
+                ? Number.parseInt(data.release_date.slice(0, 4), 10)
+                : null
+            setCandidateCards((prev) =>
+              prev.map((card) =>
+                card.id === id
+                  ? {
+                      ...card,
+                      title: card.title ?? data.title,
+                      posterPath: card.posterPath ?? data.poster_path ?? null,
+                      releaseYear:
+                        card.releaseYear ??
+                        (Number.isFinite(releaseYear) ? releaseYear : null),
+                    }
+                  : card,
+              ),
+            )
+          })
+          .catch(() => {
+            // ignore — candidate-scored will fill these fields anyway.
+          })
+      }
+    },
+    [],
+  )
+
+  /**
+   * Translate one `GenerationEvent` into activity-feed + picker-state
+   * updates. Shared across phase 1 (picker) and phase 2 (build) because
+   * most events mean the same thing in both; the phase-specific branches
+   * look at `phaseRef.current` / `buildingForIdRef.current` for context.
+   */
+  const handleStreamEvent = useCallback(
+    (event: GenerationEvent) => {
+      switch (event.kind) {
+        case 'status':
+          pushActivity({
+            label: event.label,
+            detail: event.detail,
+            variant: 'status',
+          })
+          break
+        case 'model-text-delta':
+          // too noisy for the feed
+          break
+        case 'tool-call':
+          pushActivity({
+            label: `Tool call: ${event.name}`,
+            variant: 'tool',
+          })
+          break
+        case 'candidates': {
+          pushActivity({
+            label: `Model proposed ${event.ids.length} candidate${event.ids.length === 1 ? '' : 's'}`,
+            detail: event.reasoning,
+            variant: 'candidates',
+          })
+          // Only seed picker cards in phase 1 — a phase-2 run's `candidates`
+          // event is always a single forced id, which doesn't need a picker.
+          if (phaseRef.current === 'picking') {
+            const items: Array<{ id: number; reasoning?: string }> =
+              event.items ?? event.ids.map((id) => ({ id }))
+            const seeded: CandidateCardState[] = items.map((item) => ({
+              id: item.id,
+              reasoning: item.reasoning,
+              status: 'inspecting',
+            }))
+            setCandidateCards(seeded)
+            // hydrate TMDB basics in parallel so cards aren't empty while
+            // the model/TMDB pipeline works through its batches.
+            if (abortRef.current) {
+              hydrateCandidateCards(event.ids, abortRef.current.signal)
+            }
+          }
+          break
+        }
+        case 'candidate-scored': {
+          const a = event.attempt
+          const ok = a.verdict === 'accepted'
+          pushActivity({
+            label: `${ok ? '✓' : '✗'} ${a.movie.title}${a.movie.release_year ? ` (${a.movie.release_year})` : ''}`,
+            detail: ok
+              ? a.localizedTitle
+                ? `“${a.localizedTitle.title}” — ${a.localizedTitle.countryName} · back-translates to “${a.localizedTitle.backTranslation}” (similarity ${a.localizedTitle.similarity.toFixed(2)})`
+                : a.reasoning
+              : a.reason,
+            variant: ok ? 'scored-ok' : 'scored-ko',
+          })
+          // Merge the enriched attempt into the matching picker card. Also
+          // handle the edge case where the model's `candidates` event
+          // didn't list this id (shouldn't happen but keeps the feed and
+          // picker in sync).
+          if (phaseRef.current === 'picking') {
+            setCandidateCards((prev) => {
+              const next = prev.slice()
+              const idx = next.findIndex((card) => card.id === a.movie.id)
+              const merged: CandidateCardState = {
+                id: a.movie.id,
+                title: a.movie.title,
+                posterPath: a.movie.poster_path,
+                releaseYear: a.movie.release_year ?? null,
+                reasoning: a.reasoning ?? prev[idx]?.reasoning,
+                status: ok ? 'accepted' : 'rejected',
+                attempt: a,
+                rejectionReason: ok ? undefined : a.reason,
+              }
+              if (idx === -1) {
+                next.push(merged)
+              } else {
+                next[idx] = merged
+              }
+              return next
+            })
+          }
+          break
+        }
+        case 'candidates-ready':
+          // Phase-1 terminal event: every candidate has been inspected.
+          // The UI stays in 'picking' waiting for the admin to click a card.
+          pushActivity({
+            label: `Inspected ${event.attempts.length} candidate${event.attempts.length === 1 ? '' : 's'}`,
+            detail: 'Pick one to build the puzzle.',
+            variant: 'status',
+          })
+          break
+        case 'suggestions': {
+          // Phase 2: the admin's picked film failed the full pipeline
+          // (e.g. Retitled couldn't assemble 4 distractors). Flip the card
+          // to rejected, surface the reason, and return to the picker.
+          if (
+            phaseRef.current === 'building' &&
+            buildingForIdRef.current !== null
+          ) {
+            const pickedId = buildingForIdRef.current
+            const reason = event.error || 'Build failed for this film.'
+            setCandidateCards((prev) =>
+              prev.map((card) =>
+                card.id === pickedId
+                  ? {
+                      ...card,
+                      status: 'rejected',
+                      rejectionReason: reason,
+                    }
+                  : card,
+              ),
+            )
+            setBuildingForId(null)
+            buildingForIdRef.current = null
+            setPhase('picking')
+            phaseRef.current = 'picking'
+            setError(reason)
+            break
+          }
+          // Phase-1 fallback: the LLM itself returned no candidates, so the
+          // strategy threw `StrategyNoneEligibleError`. Render the legacy
+          // suggestion list so the admin can still pick something.
+          setSuggestions(event.suggestions)
+          setError(
+            event.error ||
+              'Could not generate puzzle automatically. Here are some suggestions:',
+          )
+          break
+        }
+        case 'exclusion_conflict':
+          // Only the forced-film (phase 2 / editor auto-run) path reaches
+          // this. If we're mid-build, flip the card; otherwise just show
+          // the reason as a plain error.
+          if (
+            phaseRef.current === 'building' &&
+            buildingForIdRef.current !== null
+          ) {
+            const pickedId = buildingForIdRef.current
+            const reason = `Excluded: ${event.reason}`
+            setCandidateCards((prev) =>
+              prev.map((card) =>
+                card.id === pickedId
+                  ? { ...card, status: 'rejected', rejectionReason: reason }
+                  : card,
+              ),
+            )
+            setBuildingForId(null)
+            buildingForIdRef.current = null
+            setPhase('picking')
+            phaseRef.current = 'picking'
+            setError(reason)
+          } else {
+            setError(
+              `This film (TMDB ${event.forcedFilmId}) can't be used right now: ${event.reason}`,
+            )
+          }
+          break
+        case 'success':
+          setSuccess(true)
+          onGenerate({ ...(event.puzzle as object), puzzle_date: resolvedDate })
+          setPhase('idle')
+          phaseRef.current = 'idle'
+          setTimeout(() => {
+            setOpen(false)
+            setSuccess(false)
+          }, 1500)
+          break
+        case 'error': {
+          const message = event.error
+          const detail = 'detail' in event ? event.detail : undefined
+          if (detail) {
+            setErrorDetail(detail)
+            pushActivity({
+              variant: 'error',
+              label: message,
+              detail,
+            })
+          }
+          if (
+            phaseRef.current === 'building' &&
+            buildingForIdRef.current !== null
+          ) {
+            const pickedId = buildingForIdRef.current
+            setCandidateCards((prev) =>
+              prev.map((card) =>
+                card.id === pickedId
+                  ? { ...card, status: 'rejected', rejectionReason: message }
+                  : card,
+              ),
+            )
+            setBuildingForId(null)
+            buildingForIdRef.current = null
+            setPhase('picking')
+            phaseRef.current = 'picking'
+          }
+          setError(message)
+          break
+        }
+        case 'aborted':
+          // cancel handler already updated UI state; nothing to do here.
+          break
+        case 'done':
+          break
+      }
+    },
+    [hydrateCandidateCards, onGenerate, resolvedDate],
+  )
 
   const handleGenerate = async () => {
     if (!resolvedDate) {
@@ -214,7 +724,6 @@ export default function SmartGenerationDialog({
       return
     }
 
-    // abort any previous run
     if (abortRef.current) abortRef.current.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -226,16 +735,27 @@ export default function SmartGenerationDialog({
     setSuggestions([])
     setActivity([])
     activityIdRef.current = 0
-
-    const payload = {
-      gameType,
-      targetDate: resolvedDate,
-      config,
-      includeWebSearch,
-    }
+    setCandidateCards([])
+    setBuildingForId(null)
+    buildingForIdRef.current = null
+    // Clear the cache banner so it doesn't linger next to a now-stale
+    // timestamp while the regenerate stream is running. When the new
+    // phase-1 finishes the server writes a fresh cache row, but the
+    // dialog's own state is authoritative from this point on until it
+    // reopens, so we don't re-show the banner mid-run.
+    setCacheMeta(null)
 
     if (!isStreamingSupported) {
-      // Budget-bracket falls through to legacy JSON (it doesn't stream).
+      // Budget-bracket still uses the legacy non-streaming JSON path and
+      // doesn't benefit from the manual-pick picker.
+      setPhase('idle')
+      phaseRef.current = 'idle'
+      const payload = {
+        gameType,
+        targetDate: resolvedDate,
+        config,
+        includeWebSearch,
+      }
       try {
         const response = await fetch('/api/admin/puzzles/generate', {
           method: 'POST',
@@ -262,7 +782,7 @@ export default function SmartGenerationDialog({
           }, 1500)
         }
       } catch (err) {
-        if (isAbortError(err)) return
+        if (isSmartGenAbortError(err)) return
         setError(err instanceof Error ? err.message : 'An unexpected error occurred')
       } finally {
         setIsGenerating(false)
@@ -271,58 +791,21 @@ export default function SmartGenerationDialog({
       return
     }
 
+    setPhase('picking')
+    phaseRef.current = 'picking'
+
     try {
-      const response = await fetch('/api/admin/puzzles/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/x-ndjson',
-        },
-        body: JSON.stringify(payload),
+      await streamSmartGeneration({
+        gameType,
+        targetDate: resolvedDate,
+        includeWebSearch,
+        config,
+        selectionMode: 'manual',
         signal: controller.signal,
+        onEvent: handleStreamEvent,
       })
-
-      if (!response.ok || !response.body) {
-        let message = `Request failed (${response.status})`
-        try {
-          const body = await response.json()
-          if (body?.error) message = body.error
-        } catch {
-          // ignore
-        }
-        throw new Error(message)
-      }
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buf = ''
-
-      while (true) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buf += decoder.decode(value, { stream: true })
-        const lines = buf.split('\n')
-        buf = lines.pop() ?? ''
-        for (const line of lines) {
-          if (!line.trim()) continue
-          try {
-            const event = JSON.parse(line) as GenerationEvent
-            handleEvent(event)
-          } catch (err) {
-            console.warn('[SmartGenerationDialog] bad NDJSON line:', line, err)
-          }
-        }
-      }
-      if (buf.trim()) {
-        try {
-          const event = JSON.parse(buf) as GenerationEvent
-          handleEvent(event)
-        } catch {
-          // ignore trailing buffer parse errors
-        }
-      }
     } catch (err) {
-      if (isAbortError(err)) return
+      if (isSmartGenAbortError(err)) return
       setError(err instanceof Error ? err.message : 'An unexpected error occurred')
     } finally {
       setIsGenerating(false)
@@ -330,81 +813,54 @@ export default function SmartGenerationDialog({
     }
   }
 
-  const handleEvent = (event: GenerationEvent) => {
-    switch (event.kind) {
-      case 'status':
-        pushActivity({
-          label: event.label,
-          detail: event.detail,
-          variant: 'status',
+  /**
+   * Phase 2: the admin picked a card. Run the full puzzle-build pipeline
+   * for that film via `forcedFilmId` + `selectionMode: 'auto'`. The event
+   * handler is shared with phase 1, so the switch / merge logic in
+   * `handleStreamEvent` handles success / suggestions / error uniformly.
+   */
+  const handleSelectCandidate = useCallback(
+    async (id: number) => {
+      if (!resolvedDate) return
+
+      if (abortRef.current) abortRef.current.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
+      setIsGenerating(true)
+      setError(null)
+      setErrorDetail(null)
+      setBuildingForId(id)
+      buildingForIdRef.current = id
+      setPhase('building')
+      phaseRef.current = 'building'
+      setCandidateCards((prev) =>
+        prev.map((card) =>
+          card.id === id ? { ...card, status: 'inspecting', rejectionReason: undefined } : card,
+        ),
+      )
+
+      try {
+        await streamSmartGeneration({
+          gameType,
+          targetDate: resolvedDate,
+          includeWebSearch,
+          config,
+          forcedFilmId: id,
+          selectionMode: 'auto',
+          signal: controller.signal,
+          onEvent: handleStreamEvent,
         })
-        break
-      case 'model-text-delta':
-        // Omit raw text deltas from the activity feed — they're too noisy.
-        // (Still useful for future debugging; see console.debug.)
-        break
-      case 'tool-call':
-        pushActivity({
-          label: `Tool call: ${event.name}`,
-          variant: 'tool',
-        })
-        break
-      case 'candidates':
-        pushActivity({
-          label: `Model proposed ${event.ids.length} candidate${event.ids.length === 1 ? '' : 's'}`,
-          detail: event.reasoning,
-          variant: 'candidates',
-        })
-        break
-      case 'candidate-scored': {
-        const a = event.attempt
-        const ok = a.verdict === 'accepted'
-        pushActivity({
-          label: `${ok ? '✓' : '✗'} ${a.movie.title}${a.movie.release_year ? ` (${a.movie.release_year})` : ''}`,
-          detail: ok
-            ? a.localizedTitle
-              ? `“${a.localizedTitle.title}” — ${a.localizedTitle.countryName} · back-translates to “${a.localizedTitle.backTranslation}” (similarity ${a.localizedTitle.similarity.toFixed(2)})`
-              : a.reasoning
-            : a.reason,
-          variant: ok ? 'scored-ok' : 'scored-ko',
-        })
-        break
+      } catch (err) {
+        if (isSmartGenAbortError(err)) return
+        setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      } finally {
+        setIsGenerating(false)
+        abortRef.current = null
       }
-      case 'suggestions':
-        setSuggestions(event.suggestions)
-        setError(
-          event.error ||
-            'Could not generate puzzle automatically. Here are some suggestions:',
-        )
-        break
-      case 'success':
-        setSuccess(true)
-        onGenerate({ ...(event.puzzle as object), puzzle_date: resolvedDate })
-        setTimeout(() => {
-          setOpen(false)
-          setSuccess(false)
-        }, 1500)
-        break
-      case 'error': {
-        setError(event.error)
-        const detail = 'detail' in event ? event.detail : undefined
-        if (detail) {
-          setErrorDetail(detail)
-          pushActivity({
-            variant: 'error',
-            label: event.error,
-            detail,
-          })
-        }
-        break
-      }
-      case 'aborted':
-        // pushed by the cancel handler; no-op here
-        break
-      case 'done':
-        break
-    }
-  }
+    },
+    [resolvedDate, gameType, includeWebSearch, config, handleStreamEvent],
+  )
 
   const handleSelectSuggestion = (suggestion: RichSuggestion) => {
     onGenerate({
@@ -524,27 +980,65 @@ export default function SmartGenerationDialog({
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="obscurity">Movie Obscurity Level</Label>
+                <Label htmlFor="min-votes">Minimum TMDB Votes</Label>
                 <Badge variant="secondary">
-                  {config.obscurityThreshold}/10
+                  {config.minVoteCount === 0
+                    ? 'Any'
+                    : config.minVoteCount.toLocaleString()}
                 </Badge>
               </div>
-              <Slider
-                id="obscurity"
-                min={1}
-                max={10}
-                step={1}
-                value={[config.obscurityThreshold]}
-                onValueChange={([value]) =>
-                  setConfig((prev) => ({ ...prev, obscurityThreshold: value }))
-                }
-                className="w-full"
+              <Input
+                id="min-votes"
+                type="number"
+                min={0}
+                step={100}
+                value={config.minVoteCount}
+                onChange={(e) => {
+                  const parsed = parseInt(e.target.value, 10)
+                  setConfig((prev) => ({
+                    ...prev,
+                    minVoteCount: Number.isFinite(parsed)
+                      ? Math.max(0, parsed)
+                      : 0,
+                  }))
+                }}
+                disabled={isGenerating}
+                className="h-9"
               />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { value: 0, label: 'Any' },
+                  { value: 100, label: '100+' },
+                  { value: 1000, label: '1,000+' },
+                  { value: 5000, label: '5,000+' },
+                ].map((preset) => (
+                  <Button
+                    key={preset.value}
+                    type="button"
+                    variant={
+                      config.minVoteCount === preset.value
+                        ? 'secondary'
+                        : 'outline'
+                    }
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        minVoteCount: preset.value,
+                      }))
+                    }
+                    disabled={isGenerating}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
               <p className="text-xs text-gray-500">
-                Maximum allowed obscurity. 1 = blockbusters only (~1M+ TMDB
-                votes), 7 = mainstream cinema (≥1k votes), 10 = anything goes.
-                Raise this if every candidate is being rejected as too
-                obscure.
+                Films with fewer TMDB votes are skipped.{' '}
+                {config.minVoteCount === 0
+                  ? 'Currently accepting any film with a poster.'
+                  : `Currently requiring at least ${config.minVoteCount.toLocaleString()} votes. Set to 0 to disable.`}
               </p>
             </div>
 
@@ -735,6 +1229,92 @@ export default function SmartGenerationDialog({
             </Alert>
           )}
 
+          {cacheLoading && candidateCards.length === 0 && !isGenerating && (
+            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Looking up cached candidates…
+            </div>
+          )}
+
+          {cacheMeta && candidateCards.length > 0 && phase !== 'building' && (
+            <div className="rounded-md border border-purple-200 bg-purple-50/60 p-3 space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs space-y-1 min-w-0">
+                    <div className="text-purple-900 font-medium">
+                      Showing cached candidates from{' '}
+                      {formatRelativeTime(cacheMeta.createdAt)}
+                    </div>
+                    <div className="text-purple-800/80">
+                      Click an accepted film to build the puzzle, or regenerate
+                      to get a fresh list.
+                    </div>
+                    {cacheMismatches.length > 0 && (
+                      <ul className="pt-1 space-y-0.5">
+                        {cacheMismatches.map((note) => (
+                          <li
+                            key={note}
+                            className="inline-flex items-center gap-1 text-[11px] text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded"
+                          >
+                            <AlertCircle className="w-3 h-3" />
+                            {note}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerate}
+                  disabled={isGenerating || resolvingDate || !resolvedDate}
+                  className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                >
+                  <Wand2 className="w-3.5 h-3.5 mr-1.5" />
+                  Regenerate
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {candidateCards.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-sm">
+                  {phase === 'building'
+                    ? 'Building puzzle…'
+                    : 'Pick a candidate to build the puzzle'}
+                </Label>
+                {phase === 'picking' && isGenerating && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-gray-500">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Inspecting…
+                  </span>
+                )}
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {candidateCards.map((card) => (
+                  <CandidateCardButton
+                    key={card.id}
+                    card={card}
+                    gameType={gameType}
+                    disabled={phase === 'building'}
+                    isBuildingThisCard={buildingForId === card.id}
+                    onSelect={handleSelectCandidate}
+                  />
+                ))}
+              </div>
+              {phase === 'picking' && !isGenerating && !cacheMeta && (
+                <p className="text-[11px] text-gray-500">
+                  Click an accepted film to run the full puzzle-build pipeline.
+                  Re-run Smart Generate to get a fresh candidate list.
+                </p>
+              )}
+            </div>
+          )}
+
           {suggestions.length > 0 && (
             <div className="space-y-2">
               <Label>Pick a suggested movie to prefill the editor</Label>
@@ -758,35 +1338,304 @@ export default function SmartGenerationDialog({
                 className="border-red-300 text-red-700 hover:bg-red-50"
               >
                 <StopCircle className="w-4 h-4 mr-2" />
-                Cancel Generation
+                {phase === 'building' ? 'Cancel Build' : 'Cancel Generation'}
               </Button>
             ) : (
               <Button variant="outline" onClick={() => setOpen(false)}>
                 Close
               </Button>
             )}
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || resolvingDate || !resolvedDate}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Generate Puzzle
-                </>
-              )}
-            </Button>
+            {/*
+             * On a cache hit (cacheMeta set + cards visible) the banner's
+             * "Regenerate" button is the primary action, so we hide this
+             * main button to avoid two competing Generate affordances. We
+             * keep it visible during an active stream (so the spinner has
+             * a home) and on a live-picker post-stream (where "Re-run" is
+             * the discoverable regenerate control).
+             */}
+            {!(cacheMeta && candidateCards.length > 0 && !isGenerating) && (
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || resolvingDate || !resolvedDate}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {phase === 'building' ? 'Building…' : 'Finding candidates…'}
+                  </>
+                ) : candidateCards.length > 0 && phase === 'picking' ? (
+                  <>
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Re-run Smart Generate
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Smart Generate
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
     </Dialog>
   )
+}
+
+/**
+ * Progressive picker card rendered during manual-mode Smart Generate.
+ *
+ * The card moves through up to four states as data arrives:
+ *
+ *   pending / inspecting — seeded from the `candidates` event; basic TMDB
+ *     metadata may already be hydrated but no verdict yet.
+ *   accepted — `candidate-scored` verdict is 'accepted'; clickable to
+ *     run the full phase-2 puzzle-build pipeline.
+ *   rejected — either the inspection rejected it (ineligible / no distractors
+ *     / no poster / etc.) or an admin-picked phase-2 build failed. The card
+ *     is non-interactive and shows the reason.
+ */
+function CandidateCardButton({
+  card,
+  gameType,
+  disabled,
+  isBuildingThisCard,
+  onSelect,
+}: {
+  card: CandidateCardState
+  gameType: SmartGenerationDialogProps['gameType']
+  /** True while a phase-2 build is in flight anywhere in the picker. */
+  disabled: boolean
+  /** True when this particular card is the one being built. */
+  isBuildingThisCard: boolean
+  onSelect: (id: number) => void
+}) {
+  const { status, title, posterPath, releaseYear, reasoning, attempt } = card
+  const isClickable = status === 'accepted' && !disabled
+  const isRejected = status === 'rejected'
+  const displayTitle = title ?? attempt?.movie.title ?? `TMDB #${card.id}`
+
+  const borderClass = isBuildingThisCard
+    ? 'border-purple-400 bg-purple-50 ring-2 ring-purple-300'
+    : status === 'accepted'
+      ? 'border-purple-200 bg-purple-50/40 hover:bg-purple-50 hover:border-purple-400'
+      : isRejected
+        ? 'border-gray-200 bg-gray-50/60 opacity-75'
+        : 'border-gray-200 bg-white'
+
+  return (
+    <button
+      type="button"
+      disabled={!isClickable}
+      onClick={isClickable ? () => onSelect(card.id) : undefined}
+      className={cn(
+        'w-full text-left p-2.5 rounded-md border transition-colors',
+        borderClass,
+        !isClickable && 'cursor-default',
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <CandidatePoster posterPath={posterPath} title={displayTitle} />
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-baseline gap-2">
+            <div
+              className={cn(
+                'font-medium text-sm truncate',
+                isRejected && 'text-gray-500 line-through',
+              )}
+            >
+              {displayTitle}
+            </div>
+            {releaseYear != null && (
+              <div className="text-xs text-gray-500">{releaseYear}</div>
+            )}
+            <StatusBadge
+              status={status}
+              isBuildingThisCard={isBuildingThisCard}
+            />
+          </div>
+
+          {reasoning && status !== 'rejected' && (
+            <div className="text-[11px] text-gray-600 italic break-words">
+              “{reasoning}”
+            </div>
+          )}
+
+          {/* Retitled-specific: localized title preview */}
+          {gameType === 'retitled' && attempt?.localizedTitle && (
+            <div className="text-xs text-gray-700 space-y-0.5">
+              <div>
+                <span className="text-gray-500">Proposed:</span>{' '}
+                <span className="italic">“{attempt.localizedTitle.title}”</span>{' '}
+                <span className="text-gray-400">
+                  ({attempt.localizedTitle.countryCode} —{' '}
+                  {attempt.localizedTitle.countryName})
+                </span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-gray-500">Back-translates:</span>
+                <span className="italic">
+                  “{attempt.localizedTitle.backTranslation}”
+                </span>
+                <Badge
+                  variant={
+                    attempt.localizedTitle.similarity < 0.3
+                      ? 'default'
+                      : 'secondary'
+                  }
+                  className={cn(
+                    'text-[10px] h-4 px-1.5',
+                    attempt.localizedTitle.similarity < 0.3
+                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                      : attempt.localizedTitle.similarity < 0.5
+                        ? 'bg-amber-100 text-amber-800 hover:bg-amber-100'
+                        : 'bg-gray-100 text-gray-800',
+                  )}
+                >
+                  similarity {attempt.localizedTitle.similarity.toFixed(2)}
+                </Badge>
+              </div>
+            </div>
+          )}
+
+          {/* Cast Climb-specific: preview the 4 billed actors picked */}
+          {gameType === 'cast-climb' &&
+            attempt?.actors &&
+            attempt.actors.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-0.5">
+                {attempt.actors.slice(0, 4).map((actor) => (
+                  <div
+                    key={actor.id}
+                    className="flex flex-col items-center w-12"
+                    title={`${actor.name}${actor.character ? ` — ${actor.character}` : ''}`}
+                  >
+                    {actor.profile_path ? (
+                      <picture>
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${actor.profile_path}`}
+                          alt={actor.name}
+                          width={32}
+                          height={32}
+                          className="w-8 h-8 object-cover rounded-full"
+                        />
+                      </picture>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                        <Film className="w-3 h-3 text-gray-500" />
+                      </div>
+                    )}
+                    <div className="text-[10px] text-gray-600 mt-0.5 truncate w-full text-center">
+                      {actor.name.split(' ').slice(-1)[0]}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          {/* Poster Pixels-specific: confirm we resolved a poster URL */}
+          {gameType === 'poster-pixels' && status === 'accepted' && (
+            <div className="text-[11px] text-gray-500">
+              Poster resolved · ready to build
+            </div>
+          )}
+
+          {isRejected && card.rejectionReason && (
+            <div className="text-[11px] text-red-600">
+              Rejected: {card.rejectionReason}
+            </div>
+          )}
+          {status === 'inspecting' && (
+            <div className="text-[11px] text-gray-500 inline-flex items-center gap-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Inspecting…
+            </div>
+          )}
+        </div>
+        {isClickable && (
+          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+        )}
+      </div>
+    </button>
+  )
+}
+
+function CandidatePoster({
+  posterPath,
+  title,
+}: {
+  posterPath?: string | null
+  title: string
+}) {
+  if (posterPath) {
+    return (
+      <picture>
+        <img
+          src={`https://image.tmdb.org/t/p/w92${posterPath}`}
+          alt={title}
+          width={48}
+          height={72}
+          className="w-12 h-[72px] object-cover rounded flex-shrink-0"
+        />
+      </picture>
+    )
+  }
+  return (
+    <div className="w-12 h-[72px] rounded flex-shrink-0 bg-gray-100 border border-gray-200 flex items-center justify-center">
+      <Film className="w-4 h-4 text-gray-400" />
+    </div>
+  )
+}
+
+function StatusBadge({
+  status,
+  isBuildingThisCard,
+}: {
+  status: CandidateCardState['status']
+  isBuildingThisCard: boolean
+}) {
+  if (isBuildingThisCard) {
+    return (
+      <Badge
+        variant="secondary"
+        className="text-[10px] h-4 px-1.5 bg-purple-100 text-purple-800 hover:bg-purple-100 ml-auto"
+      >
+        <Loader2 className="w-2.5 h-2.5 mr-1 animate-spin" />
+        Building
+      </Badge>
+    )
+  }
+  switch (status) {
+    case 'pending':
+    case 'inspecting':
+      return (
+        <Badge
+          variant="secondary"
+          className="text-[10px] h-4 px-1.5 bg-gray-100 text-gray-700 ml-auto"
+        >
+          Pending
+        </Badge>
+      )
+    case 'accepted':
+      return (
+        <Badge
+          variant="secondary"
+          className="text-[10px] h-4 px-1.5 bg-green-100 text-green-800 hover:bg-green-100 ml-auto"
+        >
+          Accepted
+        </Badge>
+      )
+    case 'rejected':
+      return (
+        <Badge
+          variant="secondary"
+          className="text-[10px] h-4 px-1.5 bg-red-50 text-red-700 hover:bg-red-50 ml-auto"
+        >
+          Rejected
+        </Badge>
+      )
+  }
 }
 
 function SuggestionCard({
@@ -915,10 +1764,4 @@ function suggestionFromLegacy(list: Array<{
     }
     return attempt
   })
-}
-
-function isAbortError(err: unknown): boolean {
-  if (!err || typeof err !== 'object') return false
-  const name = (err as { name?: string }).name
-  return name === 'AbortError'
 }

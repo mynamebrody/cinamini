@@ -23,7 +23,7 @@ export interface ResolvedPromptTemplate {
 
 export interface PromptVariables {
   target_date: string
-  obscurity_threshold: string | number
+  min_vote_count: string | number
   excluded_ids: string
   [key: string]: string | number
 }
@@ -59,7 +59,7 @@ const FALLBACK_TEMPLATES: Record<PuzzleGameType, FallbackTemplate> = {
       'Find 8 candidate movies for a Retitled puzzle on {{target_date}}. ' +
       'Requirements: the film should have at least one non-English / non-US localized title on TMDB ' +
       "whose literal English back-translation is meaningfully different from the movie's original English title. " +
-      'Obscurity threshold (1 = blockbuster, 10 = obscure): {{obscurity_threshold}}. ' +
+      'Minimum TMDB vote count (films with fewer votes will be ignored): {{min_vote_count}}. ' +
       'Do NOT suggest any of these TMDB movie IDs (already used): {{excluded_ids}}. ' +
       'Return JSON shaped like: {"candidates": [{"id": <TMDB id>, "reasoning": "<one sentence>"}, ...]}.',
   },
@@ -73,7 +73,7 @@ const FALLBACK_TEMPLATES: Record<PuzzleGameType, FallbackTemplate> = {
       'Find 8 candidate movies for a Cast Climb puzzle on {{target_date}}. ' +
       'Requirements: the film must have at least 4 credited cast members with recognisable names and TMDB profile photos, ' +
       'and a mix of supporting + lead performances (so progressive reveals feel meaningful). ' +
-      'Obscurity threshold (1 = blockbuster, 10 = obscure): {{obscurity_threshold}}. ' +
+      'Minimum TMDB vote count (films with fewer votes will be ignored): {{min_vote_count}}. ' +
       'Do NOT suggest any of these TMDB movie IDs (already used): {{excluded_ids}}. ' +
       'Return JSON shaped like: {"candidates": [{"id": <TMDB id>, "reasoning": "<one sentence>"}, ...]}.',
   },
@@ -86,7 +86,7 @@ const FALLBACK_TEMPLATES: Record<PuzzleGameType, FallbackTemplate> = {
     user:
       'Find 8 candidate movies for a Poster Pixels puzzle on {{target_date}}. ' +
       'Requirements: iconic, recognisable poster art (distinctive silhouettes, typography, or colour palette) that reads well when pixelated. ' +
-      'Obscurity threshold (1 = blockbuster, 10 = obscure): {{obscurity_threshold}}. ' +
+      'Minimum TMDB vote count (films with fewer votes will be ignored): {{min_vote_count}}. ' +
       'Do NOT suggest any of these TMDB movie IDs (already used): {{excluded_ids}}. ' +
       'Return JSON shaped like: {"candidates": [{"id": <TMDB id>, "reasoning": "<one sentence>"}, ...]}.',
   },

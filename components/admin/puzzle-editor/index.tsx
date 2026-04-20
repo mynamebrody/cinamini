@@ -232,6 +232,7 @@ export default function PuzzleEditor() {
                   prefilledDate={!hasInitialized ? selectedDate : gameStates.retitled.date}
                   prefilledMovieId={!hasInitialized ? selectedMovieId : gameStates.retitled.movieId}
                   puzzleId={gameStates.retitled.puzzleId}
+                  isActiveTab={activeTab === 'retitled'}
                   onDateChange={(date) => updateGameDate('retitled', date)}
                   onMovieChange={(movieId) => updateGameMovieId('retitled', movieId)}
                 />
@@ -258,6 +259,7 @@ export default function PuzzleEditor() {
                   prefilledDate={!hasInitialized ? selectedDate : gameStates['cast-climb'].date}
                   prefilledMovieId={!hasInitialized ? selectedMovieId : gameStates['cast-climb'].movieId}
                   puzzleId={gameStates['cast-climb'].puzzleId}
+                  isActiveTab={activeTab === 'cast-climb'}
                   onDateChange={(date) => updateGameDate('cast-climb', date)}
                   onMovieChange={(movieId) => updateGameMovieId('cast-climb', movieId)}
                 />
@@ -272,6 +274,7 @@ export default function PuzzleEditor() {
                   prefilledDate={!hasInitialized ? selectedDate : gameStates['poster-pixels'].date}
                   prefilledMovieId={!hasInitialized ? selectedMovieId : gameStates['poster-pixels'].movieId}
                   puzzleId={gameStates['poster-pixels'].puzzleId}
+                  isActiveTab={activeTab === 'poster-pixels'}
                   onDateChange={(date) => updateGameDate('poster-pixels', date)}
                   onMovieChange={(movieId) => updateGameMovieId('poster-pixels', movieId)}
                 />
